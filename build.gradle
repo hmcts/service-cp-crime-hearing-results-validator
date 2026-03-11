@@ -40,7 +40,6 @@ springBoot {
 
 dependencies {
   implementation libs.api.casehearing.results.validator
-  implementation libs.hmcts.crime.template
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator

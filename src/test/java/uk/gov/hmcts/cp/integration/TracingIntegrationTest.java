@@ -6,13 +6,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import uk.gov.hmcts.cp.entities.ExampleEntity;
-import uk.gov.hmcts.cp.repositories.ExampleRepository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -41,21 +38,11 @@ class TracingIntegrationTest extends IntegrationTestBase {
 
     private final PrintStream originalStdOut = System.out;
 
-    @Autowired
-    ExampleRepository exampleRepository;
-
-    private ExampleEntity entity;
-
     @BeforeEach
     void setup() {
         MDC.put(TRACE_ID_FIELD, TEST_TRACE_ID_1);
         MDC.put(SPAN_ID_FIELD, TEST_SPAN_ID_1);
         MDC.put("applicationName", springApplicationName);
-        entity = exampleRepository.save(
-                ExampleEntity.builder()
-                        .exampleText("Welcome to service-cp-crime-casehearing-results-validator")
-                        .build()
-        );
     }
 
     @AfterEach
@@ -66,15 +53,15 @@ class TracingIntegrationTest extends IntegrationTestBase {
 
     @Test
     void incoming_request_should_add_new_tracing() throws Exception {
-        final MvcResultHelper result = performRequestAndCaptureLogs("/example/{example_id}", null, null);
-        final Map<String, Object> rootControllerLog = findRootControllerLog(result.capturedLogOutput());
+        final MvcResultHelper result = performRequestAndCaptureLogs("/api/validation/rules", null, null);
+        final Map<String, Object> controllerLog = findControllerLog(result.capturedLogOutput());
 
-        assertThat(rootControllerLog).isNotNull();
-        assertNotNull(rootControllerLog.get(TRACE_ID_FIELD));
-        assertNotNull(rootControllerLog.get(SPAN_ID_FIELD));
-        assertThat(rootControllerLog).containsEntry("applicationName", springApplicationName);
+        assertThat(controllerLog).isNotNull();
+        assertNotNull(controllerLog.get(TRACE_ID_FIELD));
+        assertNotNull(controllerLog.get(SPAN_ID_FIELD));
+        assertThat(controllerLog).containsEntry("applicationName", springApplicationName);
 
-        assertCommonLogFields(rootControllerLog);
+        assertCommonLogFields(controllerLog);
     }
 
     @Test
@@ -83,10 +70,10 @@ class TracingIntegrationTest extends IntegrationTestBase {
         MDC.put(TRACE_ID_FIELD, TEST_TRACE_ID_2);
         MDC.put(SPAN_ID_FIELD, TEST_SPAN_ID_2);
 
-        final MvcResultHelper result = performRequestAndCaptureLogs("/example/{example_id}", TEST_TRACE_ID_2, TEST_SPAN_ID_2);
-        final Map<String, Object> rootControllerLog = findRootControllerLog(result.capturedLogOutput());
+        final MvcResultHelper result = performRequestAndCaptureLogs("/api/validation/rules", TEST_TRACE_ID_2, TEST_SPAN_ID_2);
+        final Map<String, Object> controllerLog = findControllerLog(result.capturedLogOutput());
 
-        assertTracingFields(rootControllerLog, TEST_TRACE_ID_2, TEST_SPAN_ID_2);
+        assertTracingFields(controllerLog, TEST_TRACE_ID_2, TEST_SPAN_ID_2);
         assertResponseHeaders(result.mvcResult(), TEST_TRACE_ID_2, TEST_SPAN_ID_2);
     }
 
@@ -99,7 +86,8 @@ class TracingIntegrationTest extends IntegrationTestBase {
     private MvcResultHelper performRequestAndCaptureLogs(final String path, final String traceId, final String spanId) throws Exception {
         final ByteArrayOutputStream capturedStdOut = captureStdOut();
 
-        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get(path, entity.getId());
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get(path)
+                .header("CJSCPPUID", "test-user");
         if (traceId != null) {
             requestBuilder = requestBuilder.header(TRACE_ID_FIELD, traceId);
         }
@@ -114,7 +102,7 @@ class TracingIntegrationTest extends IntegrationTestBase {
         return new MvcResultHelper(result, capturedStdOut.toString(StandardCharsets.UTF_8));
     }
 
-    private Map<String, Object> findRootControllerLog(final String logOutput) throws Exception {
+    private Map<String, Object> findControllerLog(final String logOutput) throws Exception {
         final String[] logLines = logOutput.split("\n");
         final ObjectMapper objectMapper = new ObjectMapper();
         final TypeReference<Map<String, Object>> typeReference = new TypeReference<>() {
@@ -122,7 +110,7 @@ class TracingIntegrationTest extends IntegrationTestBase {
 
         Map<String, Object> stringObjectMap = null;
         for (final String logLine : logLines) {
-            if (logLine.contains("ExampleController") && stringObjectMap == null) {
+            if (logLine.contains("ValidationRulesController") && stringObjectMap == null) {
                 stringObjectMap = objectMapper.readValue(logLine, typeReference);
             }
         }
@@ -130,7 +118,7 @@ class TracingIntegrationTest extends IntegrationTestBase {
         if (stringObjectMap != null) {
             return stringObjectMap;
         } else {
-            throw new AssertionError("RootController log message not found in output: " + logOutput);
+            throw new AssertionError("Controller log message not found in output: " + logOutput);
         }
     }
 
@@ -142,8 +130,8 @@ class TracingIntegrationTest extends IntegrationTestBase {
     }
 
     private void assertCommonLogFields(final Map<String, Object> log) {
-        assertEquals("uk.gov.hmcts.cp.controllers.ExampleController", log.get("logger_name"));
-        assertEquals(log.get("message"), "getExampleByExampleId example for " + entity.getId() + "\n");
+        assertEquals("uk.gov.hmcts.cp.controllers.ValidationRulesController", log.get("logger_name"));
+        assertEquals(log.get("message"), "List validation rules for user=test-user\n");
     }
 
     private void assertResponseHeaders(final MvcResult result, final String expectedTraceId, final String expectedSpanId) {

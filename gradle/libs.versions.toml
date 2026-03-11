@@ -1,12 +1,11 @@
 [versions]
-api-casehearing-results-validator="0.0.0-cf5604a"
+api-casehearing-results-validator = "0.1.0-SNAPSHOT"
 spring-boot = "4.0.3"
 spring-dependency-management = "1.1.7"
 ben-manes-versions = "0.53.0"
 cyclonedx-bom = "3.2.0"
 gradle-git-properties = "2.5.7"
 avast-docker-compose = "0.17.21"
-hmcts-crime-template = "2.0.2"
 jjwt = "0.13.0"
 swagger-core = "2.2.45"
 junit-bom = "6.0.3"
@@ -18,7 +17,6 @@ testcontainers = "1.21.4"
 
 [libraries]
 api-casehearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-casehearing-results-validator", version.ref = "api-casehearing-results-validator" }
-hmcts-crime-template = { module = "uk.gov.hmcts.cp:api-hmcts-crime-template", version.ref = "hmcts-crime-template" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 hibernate-validator = { module = "org.hibernate.validator:hibernate-validator" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
