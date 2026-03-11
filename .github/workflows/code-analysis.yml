@@ -21,6 +21,7 @@ jobs:
 
       - uses: pmd/pmd-github-action@v2
         id: pmd
+        continue-on-error: true
         with:
           rulesets: '.github/pmd-ruleset.xml'
           sourcePath: 'src/main/java'

@@ -18,6 +18,7 @@ jobs:
       AZURE_DEVOPS_ARTIFACT_TOKEN: ${{ secrets.AZURE_DEVOPS_ARTIFACT_TOKEN }}
       HMCTS_ADO_PAT: ${{ secrets.HMCTS_CP_ADO_PAT }}
     with:
+      environment: dev
       is_publish: ${{ github.event_name == 'push' }}
       trigger_docker: ${{ github.event_name == 'push' }}
       trigger_deploy: ${{ github.event_name == 'push' }}

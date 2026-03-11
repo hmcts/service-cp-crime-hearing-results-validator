@@ -3,7 +3,7 @@
   "name": "main",
   "target": "branch",
   "source_type": "Repository",
-  "source": "hmcts/service-cp-crime-scheduleandlist-courtschedule",
+  "source": "hmcts/service-cp-crime-casehearing-results-validator",
   "enforcement": "active",
   "conditions": {
     "ref_name": {

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: service-UPDATE-TO-BE-NAME-OF-SERVICE
+    name: service-cp-crime-casehearing-results-validator
   datasource:
     url: ${APP_NAME_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${APP_NAME_DATASOURCE_USERNAME:postgres}
