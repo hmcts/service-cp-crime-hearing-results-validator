@@ -11,7 +11,7 @@ class ActuatorIntegrationTest extends IntegrationTestBase {
 
     @Test
     void actuator_info_should_have_build_fields() throws Exception {
-        String name = "service-cp-crime-casehearing-results-validator";
+        String name = "service-cp-crime-hearing-results-validator";
         mockMvc.perform(get("/actuator/info"))
                 .andDo(print())
                 .andExpect(status().isOk())

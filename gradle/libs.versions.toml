@@ -1,5 +1,5 @@
 [versions]
-api-casehearing-results-validator = "0.0.0-51e9a63"
+api-hearing-results-validator = "0.0.0-48f9a61"
 spring-boot = "4.0.3"
 spring-dependency-management = "1.1.7"
 ben-manes-versions = "0.53.0"
@@ -16,7 +16,7 @@ mapstruct = "1.6.3"
 testcontainers = "1.21.4"
 
 [libraries]
-api-casehearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-casehearing-results-validator", version.ref = "api-casehearing-results-validator" }
+api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 hibernate-validator = { module = "org.hibernate.validator:hibernate-validator" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }

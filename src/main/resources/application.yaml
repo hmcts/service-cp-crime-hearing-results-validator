@@ -1,6 +1,6 @@
 spring:
   application:
-    name: service-cp-crime-casehearing-results-validator
+    name: service-cp-crime-hearing-results-validator
   datasource:
     url: ${APP_NAME_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${APP_NAME_DATASOURCE_USERNAME:postgres}
@@ -39,7 +39,7 @@ management:
         enabled: true                  # liveness/readiness groups
   metrics:
     tags:
-      service: service-cp-crime-casehearing-results-validator
+      service: service-cp-crime-hearing-results-validator
       cluster: ${CLUSTER_NAME:local}
       region: ${REGION:local}
   tracing:

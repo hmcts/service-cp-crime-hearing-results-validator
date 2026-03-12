@@ -39,7 +39,7 @@ springBoot {
 }
 
 dependencies {
-  implementation libs.api.casehearing.results.validator
+  implementation libs.api.hearing.results.validator
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
