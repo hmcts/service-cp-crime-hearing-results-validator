@@ -87,7 +87,8 @@ class TracingIntegrationTest extends IntegrationTestBase {
         final ByteArrayOutputStream capturedStdOut = captureStdOut();
 
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get(path)
-                .header("CJSCPPUID", "test-user");
+                .header("CJSCPPUID", "test-user")
+                .header("CPP-ACTION", "validation-service.rules");
         if (traceId != null) {
             requestBuilder = requestBuilder.header(TRACE_ID_FIELD, traceId);
         }

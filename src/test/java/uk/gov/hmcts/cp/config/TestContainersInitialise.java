@@ -25,7 +25,10 @@ public class TestContainersInitialise
         TestPropertyValues.of(
                 "spring.datasource.url=" + postgreSQLContainer.getJdbcUrl(),
                 "spring.datasource.username=" + postgreSQLContainer.getUsername(),
-                "spring.datasource.password=" + postgreSQLContainer.getPassword()
+                "spring.datasource.password=" + postgreSQLContainer.getPassword(),
+                "spring.jms.listener.auto-startup=false",
+                "management.health.jms.enabled=false",
+                "spring.autoconfigure.exclude=uk.gov.hmcts.cp.filter.audit.config.ArtemisAuditAutoConfiguration"
         ).applyTo(context.getEnvironment());
     }
 }

@@ -1,0 +1,30 @@
+cp:
+  audit:
+    high-availability: ${ARTEMIS_HA:false}
+    hosts:
+      - ${ARTEMIS_HOST_PRIMARY:localhost}
+      - ${ARTEMIS_HOST_SECONDARY:}
+    port: ${ARTEMIS_PORT:61616}
+    user: ${ARTEMIS_USER:}
+    password: ${ARTEMIS_PASSWORD:}
+    ssl-enabled: ${ARTEMIS_SSL_ENABLED:true}
+    client-auth-required: ${ARTEMIS_CLIENT_AUTH_REQUIRED:false}
+    keystore: ${ARTEMIS_KEYSTORE:}
+    keystore-password: ${ARTEMIS_KEYSTORE_PASSWORD:}
+    truststore: ${ARTEMIS_TRUSTSTORE:}
+    truststore-password: ${ARTEMIS_TRUSTSTORE_PASSWORD:}
+    verify-host: ${ARTEMIS_VERIFY_HOST:false}
+    jms:
+      reconnect-attempts: ${JMS_RECONNECT_ATTEMPTS:-1}
+      initial-connect-attempts: ${JMS_INITIAL_CONNECT_ATTEMPTS:10}
+      retry-interval-ms: ${JMS_RETRY_INTERVAL_MS:2000}
+      retry-multiplier: ${JMS_RETRY_MULTIPLIER:1.5}
+      max-retry-interval-ms: ${JMS_MAX_RETRY_INTERVAL_MS:30000}
+      connection-ttl-ms: ${JMS_CONNECTION_TTL_MS:60000}
+      call-timeout-ms: ${JMS_CALL_TIMEOUT_MS:15000}
+      session-cache-size: ${JMS_SESSION_CACHE_SIZE:10}
+
+audit:
+  http:
+    enabled: ${HTTP_AUDIT_ENABLED:false}
+    openapi-rest-spec: ${AUDIT_OPENAPI_SPEC:openapi.yaml}

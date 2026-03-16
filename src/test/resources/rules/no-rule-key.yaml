@@ -1,0 +1,3 @@
+notRule:
+  id: "TEST-001"
+  title: "This YAML has no top-level 'rule' key"

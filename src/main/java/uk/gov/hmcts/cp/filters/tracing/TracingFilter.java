@@ -36,8 +36,8 @@ public class TracingFilter extends OncePerRequestFilter {
         }
     }
 
-    public void populateMDC(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws IOException, ServletException {
-        log.info("TracingFilter for uri:{}", Encode.forJava(request.getRequestURI()));
+    private void populateMDC(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws IOException, ServletException {
+        log.debug("TracingFilter for uri:{}", Encode.forJava(request.getRequestURI()));
         MDC.put(APPLICATION_NAME, applicationName);
         if (request.getHeader(TRACE_ID) != null) {
             MDC.put(TRACE_ID, request.getHeader(TRACE_ID));

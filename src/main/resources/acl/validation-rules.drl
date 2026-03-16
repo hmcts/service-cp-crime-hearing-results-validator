@@ -1,0 +1,31 @@
+import uk.gov.moj.cpp.authz.drools.Outcome;
+import uk.gov.moj.cpp.authz.drools.Action;
+
+global uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Allow – validate"
+when
+  $o: Outcome()
+  $a: Action(name == "validation-service.validate")
+  eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($a, "Legal Advisers", "Court Clerks", "System Users"))
+then
+  $o.setSuccess(true);
+end
+
+rule "Allow – rules"
+when
+  $o: Outcome()
+  $a: Action(name == "validation-service.rules")
+  eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($a, "Legal Advisers", "Court Clerks", "System Users"))
+then
+  $o.setSuccess(true);
+end
+
+rule "Allow – rules-detail"
+when
+  $o: Outcome()
+  $a: Action(name == "validation-service.rules-detail")
+  eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($a, "Legal Advisers", "Court Clerks", "System Users"))
+then
+  $o.setSuccess(true);
+end
