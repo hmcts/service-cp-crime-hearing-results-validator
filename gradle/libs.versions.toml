@@ -1,5 +1,5 @@
 [versions]
-api-hearing-results-validator = "0.0.999"
+api-hearing-results-validator = "0.0.0-63d7178"
 spring-boot = "4.0.3"
 spring-dependency-management = "1.1.7"
 ben-manes-versions = "0.53.0"
