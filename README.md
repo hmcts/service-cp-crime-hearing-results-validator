@@ -62,6 +62,24 @@ gradle -v
 gradle build
 ```
 
+## Adding HMCTS Library Dependencies
+
+This service's base package is `uk.gov.hmcts.cp`, which means Spring Boot component scanning picks up `@Component` classes from any library JAR under that same package. For example, `cp-audit-filter-springboot` has beans in `uk.gov.hmcts.cp.filter.audit` that get scanned directly, bypassing the library's autoconfiguration conditionals.
+
+When adding a new `uk.gov.hmcts.cp.*` library, check whether it has `@Component`-annotated classes. If so, add an exclude filter in `Application.java`:
+
+```java
+@ComponentScan(
+    basePackages = "uk.gov.hmcts.cp",
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "uk\\.gov\\.hmcts\\.cp\\.filter\\.audit\\..*"
+    )
+)
+```
+
+Libraries under different base packages (e.g. `uk.gov.moj.cpp.authz` for `cp-auth-rules-filter`) are not affected.
+
 ## Tests
 
 ```bash

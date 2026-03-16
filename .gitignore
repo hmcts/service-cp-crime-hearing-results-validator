@@ -31,5 +31,9 @@ applicationinsights-agent-*.jar
 
 .env
 
+.claude/
+.codex/
+.gemini/
+
 .DS_Store
 */.DS_Store
