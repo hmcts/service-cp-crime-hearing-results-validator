@@ -1,12 +1,13 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import org.springframework.stereotype.Component;
+import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,15 +21,22 @@ public class CustodialPreprocessor {
         Set<String> shortCodes = config.getFilterShortCodes().stream()
                 .map(String::toUpperCase)
                 .collect(Collectors.toUnmodifiableSet());
+
+        Map<String, String> defendantGrouping = buildDefendantGrouping(request);
+
+        Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
+        for (ResultLineDto rl : request.getResultLines()) {
+            String groupKey = defendantGrouping.getOrDefault(rl.getDefendantId(), rl.getDefendantId());
+            linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(rl);
+        }
+
         Map<String, DefendantContext> result = new LinkedHashMap<>();
 
-        Set<String> defendantIds = request.getResultLines().stream()
-                .map(ResultLineDto::getDefendantId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        for (Map.Entry<String, List<ResultLineDto>> groupEntry : linesByGroup.entrySet()) {
+            String groupKey = groupEntry.getKey();
+            List<ResultLineDto> groupLines = groupEntry.getValue();
 
-        for (String defendantId : defendantIds) {
-            List<ResultLineDto> custodialLines = request.getResultLines().stream()
-                    .filter(rl -> defendantId.equals(rl.getDefendantId()))
+            List<ResultLineDto> custodialLines = groupLines.stream()
                     .filter(rl -> rl.getShortCode() != null
                             && shortCodes.contains(rl.getShortCode().toUpperCase()))
                     .toList();
@@ -51,9 +59,6 @@ public class CustodialPreprocessor {
             List<String> hasInfoOffenceIds = new ArrayList<>();
             List<String> hasBothOffenceIds = new ArrayList<>();
             boolean primaryFound = false;
-
-            // The first custodial offence without concurrent/consecutive info
-            // is the primary sentence — exclude it from noInfo.
             boolean primaryClaimed = false;
 
             for (Map.Entry<String, List<ResultLineDto>> entry : byOffence.entrySet()) {
@@ -78,7 +83,7 @@ public class CustodialPreprocessor {
                 }
             }
 
-            result.put(defendantId, new DefendantContext(
+            result.put(groupKey, new DefendantContext(
                     noInfoOffenceIds.size(),
                     hasInfoOffenceIds.size(),
                     hasBothOffenceIds.size(),
@@ -91,5 +96,18 @@ public class CustodialPreprocessor {
         }
 
         return result;
+    }
+
+    private Map<String, String> buildDefendantGrouping(DraftValidationRequest request) {
+        Map<String, String> grouping = new HashMap<>();
+        if (request.getDefendants() != null) {
+            for (DefendantDto d : request.getDefendants()) {
+                String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
+                        ? d.getMasterDefendantId()
+                        : d.getId();
+                grouping.put(d.getId(), groupKey);
+            }
+        }
+        return grouping;
     }
 }

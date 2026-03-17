@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
@@ -188,6 +189,64 @@ class CustodialPreprocessorTest {
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
+    @Test
+    void should_group_by_masterDefendantId_when_present() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d2", "off2")),
+                List.of(),
+                List.of(defendant("d1", "John", "master-1"),
+                        defendant("d2", "John", "master-1")));
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).hasSize(1);
+        assertThat(result).containsKey("master-1");
+        DefendantContext ctx = result.get("master-1");
+        assertThat(ctx.totalOffences()).isEqualTo(2);
+        assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
+        assertThat(ctx.noInfoCount()).isEqualTo(1);
+        assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
+    }
+
+    @Test
+    void should_fall_back_to_defendantId_when_masterDefendantId_absent() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                List.of(defendant("d1", "John", null)));
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).hasSize(1);
+        assertThat(result).containsKey("d1");
+        assertThat(result.get("d1").totalOffences()).isEqualTo(2);
+    }
+
+    @Test
+    void should_not_group_different_masterDefendantIds_together() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d2", "off2")),
+                List.of(),
+                List.of(defendant("d1", "John", "master-1"),
+                        defendant("d2", "Jane", "master-2")));
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).isEmpty();
+    }
+
+    private static DefendantDto defendant(String id, String name, String masterDefendantId) {
+        return DefendantDto.builder()
+                .id(id)
+                .name(name)
+                .masterDefendantId(masterDefendantId)
+                .build();
+    }
+
     private static ResultLineDto resultLine(String id, String shortCode, String defendantId, String offenceId) {
         return ResultLineDto.builder()
                 .id(id)
@@ -199,13 +258,20 @@ class CustodialPreprocessorTest {
     }
 
     private static DraftValidationRequest buildRequest(List<ResultLineDto> resultLines, List<OffenceDto> offences) {
+        return buildRequest(resultLines, offences, List.of());
+    }
+
+    private static DraftValidationRequest buildRequest(List<ResultLineDto> resultLines,
+                                                        List<OffenceDto> offences,
+                                                        List<DefendantDto> defendants) {
         return DraftValidationRequest.builder()
                 .hearingId("h1")
                 .hearingDay(java.time.LocalDate.of(2026, 3, 11))
                 .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
                 .resultLines(resultLines)
-                .defendants(List.of())
+                .defendants(defendants)
                 .offences(offences)
                 .build();
     }
 }
+
