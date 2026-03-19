@@ -65,7 +65,7 @@ azure:
 authz:
   http:
     enabled: ${AUTHZ_ENABLED:true}
-    identity-url-template: ${IDENTITY_URL:http://localhost:8080}/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions
+    identity-url-template: ${CP_BASE_URL:http://localhost:8080}/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions
     user-id-header: "CJSCPPUID"
     action-header: "CPP-ACTION"
     accept-header: "application/vnd.usersgroups.get-logged-in-user-permissions+json"
