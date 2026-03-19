@@ -43,7 +43,7 @@ public class ActionHeaderFilter extends OncePerRequestFilter {
             return;
         }
 
-        String action = resolveAction(request.getRequestURI());
+        String action = resolveAction(request.getServletPath());
         if (action != null) {
             filterChain.doFilter(new ActionHeaderRequestWrapper(request, action), response);
         } else {
