@@ -1,15 +1,13 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.ArrayList;
@@ -18,46 +16,33 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
 public class CelValidationRule implements ValidationRule {
-
-    private static final String RULE_PATH = "rules/DR-SENT-002.yaml";
 
     private final RuleDefinition ruleDefinition;
     private final CustodialPreprocessor preprocessor;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
-    private final ValidationRuleRepository ruleRepository;
-    private volatile Optional<ValidationRuleEntity> cachedOverride;
+    private final RuleOverrideService ruleOverrideService;
 
-    public CelValidationRule(CustodialPreprocessor preprocessor,
+    public CelValidationRule(String rulePath,
+                             CustodialPreprocessor preprocessor,
                              CelExpressionEvaluator evaluator,
                              MessageTemplateResolver messageResolver,
                              OffenceDisplayHelper offenceDisplayHelper,
-                             ValidationRuleRepository ruleRepository) {
-        this.ruleDefinition = RuleDefinitionLoader.load(RULE_PATH);
+                             RuleOverrideService ruleOverrideService) {
+        this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
         this.preprocessor = preprocessor;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
-        this.ruleRepository = ruleRepository;
-    }
-
-    @PostConstruct
-    void loadOverride() {
-        try {
-            this.cachedOverride = ruleRepository.findById(ruleDefinition.getId());
-        } catch (Exception e) {
-            log.warn("Failed to load rule override for {}: {}", ruleDefinition.getId(), e.getMessage());
-            this.cachedOverride = Optional.empty();
-        }
+        this.ruleOverrideService = ruleOverrideService;
     }
 
     @Override
     public RuleDetailResponse getRuleDetail() {
-        Optional<ValidationRuleEntity> override = findOverride();
+        Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
 
         boolean enabled = override.map(ValidationRuleEntity::isEnabled)
                 .orElse(ruleDefinition.isEnabled());
@@ -76,7 +61,7 @@ public class CelValidationRule implements ValidationRule {
 
     @Override
     public List<ValidationIssue> evaluate(DraftValidationRequest request) {
-        Optional<ValidationRuleEntity> override = findOverride();
+        Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
 
         boolean enabled = override.map(ValidationRuleEntity::isEnabled)
                 .orElse(ruleDefinition.isEnabled());
@@ -121,19 +106,6 @@ public class CelValidationRule implements ValidationRule {
         }
 
         return issues;
-    }
-
-    private Optional<ValidationRuleEntity> findOverride() {
-        if (cachedOverride != null) {
-            return cachedOverride;
-        }
-        try {
-            cachedOverride = ruleRepository.findById(ruleDefinition.getId());
-            return cachedOverride;
-        } catch (Exception e) {
-            log.warn("Failed to load rule override for {}: {}", ruleDefinition.getId(), e.getMessage());
-            return Optional.empty();
-        }
     }
 
     private ValidationIssue.SeverityEnum mapSeverity(String severity) {

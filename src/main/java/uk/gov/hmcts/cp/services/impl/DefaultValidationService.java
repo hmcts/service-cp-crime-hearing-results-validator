@@ -1,9 +1,8 @@
 package uk.gov.hmcts.cp.services.impl;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.observation.annotation.Observed;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
@@ -18,17 +17,20 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DefaultValidationService implements ValidationService {
 
     private final List<ValidationRule> rules;
-    private final MeterRegistry meterRegistry;
+
+    public DefaultValidationService(@Qualifier("validationRules") List<ValidationRule> rules) {
+        this.rules = rules;
+    }
 
     @Override
+    @Observed(name = "validation.request")
     public DraftValidationResponse validate(DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
-        Timer.Sample sample = Timer.start(meterRegistry);
+        long startNanos = System.nanoTime();
 
         List<String> rulesEvaluated = new ArrayList<>();
         List<ValidationIssue> errors = new ArrayList<>();
@@ -48,11 +50,7 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
-        Timer timer = Timer.builder("validation.request")
-                .description("Time spent validating draft hearing results")
-                .register(meterRegistry);
-        long processingTimeNanos = sample.stop(timer);
-        long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(processingTimeNanos);
+        long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
 
         return DraftValidationResponse.builder()
                 .validationId("val-" + UUID.randomUUID())

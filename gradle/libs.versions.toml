@@ -17,10 +17,12 @@ mapstruct = "1.6.3"
 cel-tools = "0.5.1"
 testcontainers = "1.21.4"
 wiremock = "3.13.0"
+caffeine = "3.2.0"
 
 [libraries]
 api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
 hibernate-validator = { module = "org.hibernate.validator:hibernate-validator" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
 cp-auth-rules-filter = { module = "uk.gov.hmcts.cp:cp-auth-rules-filter", version.ref = "cp-auth-rules-filter" }
@@ -51,6 +53,7 @@ cel-tools = { module = "org.projectnessie.cel:cel-tools", version.ref = "cel-too
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

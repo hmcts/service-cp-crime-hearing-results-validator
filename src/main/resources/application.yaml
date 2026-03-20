@@ -77,6 +77,10 @@ authz:
       - "/actuator"
       - "/error"
 
+validation:
+  cache:
+    override-ttl-seconds: ${RULE_OVERRIDE_CACHE_TTL:30}
+
 logging:
   level:
     root: INFO

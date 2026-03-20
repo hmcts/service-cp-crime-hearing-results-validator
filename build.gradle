@@ -43,6 +43,8 @@ dependencies {
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
+  implementation libs.spring.boot.starter.cache
+  implementation libs.caffeine
   implementation libs.hibernate.validator
   implementation libs.spring.boot.starter.opentelemetry
   implementation libs.cp.auth.rules.filter

@@ -1,7 +1,7 @@
 package uk.gov.hmcts.cp.services.impl;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -13,11 +13,14 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class DefaultValidationRulesService implements ValidationRulesService {
 
     private final List<ValidationRule> rules;
+
+    public DefaultValidationRulesService(@Qualifier("validationRules") List<ValidationRule> rules) {
+        this.rules = rules;
+    }
 
     @Override
     public RuleListResponse listRules() {

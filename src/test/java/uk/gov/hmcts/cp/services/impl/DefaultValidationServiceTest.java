@@ -1,6 +1,5 @@
 package uk.gov.hmcts.cp.services.impl;
 
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
@@ -16,7 +15,7 @@ class DefaultValidationServiceTest {
 
     @Test
     void no_rules_should_return_valid_response() {
-        DefaultValidationService service = new DefaultValidationService(List.of(), new SimpleMeterRegistry());
+        DefaultValidationService service = new DefaultValidationService(List.of());
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -40,7 +39,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.ERROR)
                         .message("Test error")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(errorRule), new SimpleMeterRegistry());
+        DefaultValidationService service = new DefaultValidationService(List.of(errorRule));
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -61,7 +60,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.WARNING)
                         .message("Test warning")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(warningRule), new SimpleMeterRegistry());
+        DefaultValidationService service = new DefaultValidationService(List.of(warningRule));
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -88,7 +87,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.WARNING)
                         .message("Warning from rule 2")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), new SimpleMeterRegistry());
+        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2));
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -103,7 +102,7 @@ class DefaultValidationServiceTest {
 
     @Test
     void validate_should_generate_unique_validation_ids() {
-        DefaultValidationService service = new DefaultValidationService(List.of(), new SimpleMeterRegistry());
+        DefaultValidationService service = new DefaultValidationService(List.of());
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();

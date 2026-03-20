@@ -29,6 +29,7 @@ class ActionHeaderFilterTest {
     @Test
     void should_set_validate_action_for_validate_path() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
+        request.setServletPath("/api/validation/validate");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -40,6 +41,7 @@ class ActionHeaderFilterTest {
     @Test
     void should_set_rules_action_for_rules_path() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules");
+        request.setServletPath("/api/validation/rules");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -51,6 +53,7 @@ class ActionHeaderFilterTest {
     @Test
     void should_set_rules_detail_action_for_rules_id_path() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002");
+        request.setServletPath("/api/validation/rules/DR-SENT-002");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -62,6 +65,7 @@ class ActionHeaderFilterTest {
     @Test
     void should_not_override_existing_action_header() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
+        request.setServletPath("/api/validation/validate");
         request.addHeader("CPP-ACTION", "custom-action");
 
         filter.doFilterInternal(request, response, filterChain);
@@ -74,6 +78,7 @@ class ActionHeaderFilterTest {
     @Test
     void should_pass_through_unknown_paths_without_action() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/actuator/health");
+        request.setServletPath("/actuator/health");
 
         filter.doFilterInternal(request, response, filterChain);
 

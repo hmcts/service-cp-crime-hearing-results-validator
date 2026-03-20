@@ -21,11 +21,12 @@ class CelValidationRuleScenarioTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule(
+            "rules/DR-SENT-002.yaml",
             new CustodialPreprocessor(),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.repository.ValidationRuleRepository.class));
+            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
 
     @Nested
     @DisplayName("AC1 – Pass scenarios")

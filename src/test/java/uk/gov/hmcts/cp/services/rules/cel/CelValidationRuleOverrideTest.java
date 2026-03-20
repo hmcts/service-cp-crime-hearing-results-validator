@@ -8,8 +8,8 @@ import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,13 +26,13 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine
 class CelValidationRuleOverrideTest {
 
     @Mock
-    private ValidationRuleRepository ruleRepository;
+    private RuleOverrideService ruleOverrideService;
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
 
     @Test
     void getRuleDetail_should_use_db_severity_override() {
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
                         .id("DR-SENT-002")
                         .enabled(true)
@@ -41,11 +41,12 @@ class CelValidationRuleOverrideTest {
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleRepository);
+                ruleOverrideService);
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.WARNING);
@@ -54,7 +55,7 @@ class CelValidationRuleOverrideTest {
 
     @Test
     void getRuleDetail_should_use_db_enabled_override() {
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
                         .id("DR-SENT-002")
                         .enabled(false)
@@ -63,11 +64,12 @@ class CelValidationRuleOverrideTest {
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleRepository);
+                ruleOverrideService);
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getEnabled()).isFalse();
@@ -75,7 +77,7 @@ class CelValidationRuleOverrideTest {
 
     @Test
     void evaluate_should_skip_when_disabled_in_db() {
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
                         .id("DR-SENT-002")
                         .enabled(false)
@@ -84,11 +86,12 @@ class CelValidationRuleOverrideTest {
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleRepository);
+                ruleOverrideService);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -107,14 +110,15 @@ class CelValidationRuleOverrideTest {
 
     @Test
     void evaluate_should_work_when_no_db_override_exists() {
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.empty());
+        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.empty());
 
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleRepository);
+                ruleOverrideService);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -134,15 +138,16 @@ class CelValidationRuleOverrideTest {
 
     @Test
     void evaluate_should_fallback_to_yaml_when_db_throws_exception() {
-        when(ruleRepository.findById("DR-SENT-002"))
-                .thenThrow(new RuntimeException("DB connection failed"));
+        when(ruleOverrideService.findOverride("DR-SENT-002"))
+                .thenReturn(Optional.empty());
 
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleRepository);
+                ruleOverrideService);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -161,13 +166,14 @@ class CelValidationRuleOverrideTest {
     }
 
     @Test
-    void getRuleDetail_should_fallback_to_yaml_when_null_repository() {
+    void getRuleDetail_should_fallback_to_yaml_when_no_override() {
         CelValidationRule rule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
                 new CustodialPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(ValidationRuleRepository.class));
+                mock(RuleOverrideService.class));
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getRuleId()).isEqualTo("DR-SENT-002");
