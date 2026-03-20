@@ -17,6 +17,8 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import uk.gov.hmcts.cp.openapi.model.DefendantDto;
+
 class CelValidationRuleScenarioTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();

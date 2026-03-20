@@ -121,9 +121,37 @@ class CustodialPreprocessorTest {
     }
 
     @Test
+    void should_populate_defendant_name() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                List.of(defendant("d1", "John Smith", null)));
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result.get("d1").defendantName()).isEqualTo("John Smith");
+    }
+
+    @Test
+    void should_populate_defendant_name_from_first_defendant_in_group() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d2", "off2")),
+                List.of(),
+                List.of(defendant("d1", "John Smith", "master-1"),
+                        defendant("d2", "John Smith", "master-1")));
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result.get("master-1").defendantName()).isEqualTo("John Smith");
+    }
+
+    @Test
     void toCelContext_should_return_count_map() {
         DefendantContext ctx = new DefendantContext(
-                2, 1, 0, 0, 3,
+                "John", 2, 1, 0, 0, 3,
                 List.of(), List.of(), List.of(), List.of());
 
         Map<String, Long> celCtx = ctx.toCelContext();
@@ -137,7 +165,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_return_correct_list() {
         DefendantContext ctx = new DefendantContext(
-                0, 0, 0, 0, 0,
+                "John", 0, 0, 0, 0, 0,
                 List.of("a"), List.of("b"), List.of("c"), List.of("a", "b", "c"));
 
         assertThat(ctx.getOffenceIdSet("noInfoOffenceIds")).containsExactly("a");
@@ -149,7 +177,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_throw_for_unknown_set_name() {
         DefendantContext ctx = new DefendantContext(
-                0, 0, 0, 0, 0,
+                "John", 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of(), List.of());
 
         assertThatThrownBy(() -> ctx.getOffenceIdSet("bogus"))

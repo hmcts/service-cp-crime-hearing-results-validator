@@ -19,11 +19,16 @@ public class MessageTemplateResolver {
     }
 
     public String resolve(String template,
+                          String defendantName,
                           List<String> affectedOffenceIds,
                           Map<String, OffenceDto> offenceMap,
                           List<String> allOffenceIds) {
         String formatted = formatOffenceNumbers(affectedOffenceIds, offenceMap, allOffenceIds);
-        return template.replace("${offenceNumbers}", formatted);
+        String result = template.replace("${offenceNumbers}", formatted);
+        if (defendantName != null) {
+            result = result.replace("${defendantName}", defendantName);
+        }
+        return result;
     }
 
     private String formatOffenceNumbers(List<String> offenceIds,

@@ -14,14 +14,18 @@ public class OffenceDisplayHelper {
                                        Map<String, OffenceDto> offenceMap,
                                        List<String> allOffenceIds) {
         OffenceDto offence = offenceMap.get(id);
+        String countNumber;
         if (offence != null && offence.getOrderIndex() != null) {
-            return String.valueOf(offence.getOrderIndex());
+            countNumber = String.valueOf(offence.getOrderIndex());
+        } else {
+            int index = allOffenceIds.indexOf(id);
+            countNumber = index >= 0 ? String.valueOf(index + 1) : id;
         }
-        int index = allOffenceIds.indexOf(id);
-        if (index >= 0) {
-            return String.valueOf(index + 1);
+
+        if (offence != null && offence.getCaseUrn() != null && !offence.getCaseUrn().isBlank()) {
+            return countNumber + " (" + offence.getCaseUrn() + ")";
         }
-        return id;
+        return countNumber;
     }
 
     public List<AffectedOffence> buildAffectedOffences(List<String> offenceIds,

@@ -23,6 +23,7 @@ public class CustodialPreprocessor {
                 .collect(Collectors.toUnmodifiableSet());
 
         Map<String, String> defendantGrouping = buildDefendantGrouping(request);
+        Map<String, String> defendantNames = buildDefendantNames(request);
 
         Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
         for (ResultLineDto rl : request.getResultLines()) {
@@ -84,6 +85,7 @@ public class CustodialPreprocessor {
             }
 
             result.put(groupKey, new DefendantContext(
+                    defendantNames.getOrDefault(groupKey, "Unknown"),
                     noInfoOffenceIds.size(),
                     hasInfoOffenceIds.size(),
                     hasBothOffenceIds.size(),
@@ -96,6 +98,19 @@ public class CustodialPreprocessor {
         }
 
         return result;
+    }
+
+    private Map<String, String> buildDefendantNames(DraftValidationRequest request) {
+        Map<String, String> names = new HashMap<>();
+        if (request.getDefendants() != null) {
+            for (DefendantDto d : request.getDefendants()) {
+                String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
+                        ? d.getMasterDefendantId()
+                        : d.getId();
+                names.putIfAbsent(groupKey, d.getName());
+            }
+        }
+        return names;
     }
 
     private Map<String, String> buildDefendantGrouping(DraftValidationRequest request) {

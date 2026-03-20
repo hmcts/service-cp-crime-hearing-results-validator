@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 public record DefendantContext(
+        String defendantName,
         long noInfoCount,
         long hasInfoCount,
         long hasBothCount,

@@ -72,9 +72,6 @@ public class CelValidationRule implements ValidationRule {
 
         List<ValidationIssue> issues = new ArrayList<>();
 
-        List<String> allOffenceIds = request.getOffences().stream()
-                .map(OffenceDto::getId)
-                .toList();
         Map<String, OffenceDto> offenceMap = request.getOffences().stream()
                 .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
 
@@ -91,9 +88,10 @@ public class CelValidationRule implements ValidationRule {
 
                     String message = messageResolver.resolve(
                             condition.getMessageTemplate(),
+                            context.defendantName(),
                             affectedIds,
                             offenceMap,
-                            allOffenceIds);
+                            context.allOffenceIds());
 
                     issues.add(ValidationIssue.builder()
                             .ruleId(ruleDefinition.getId())

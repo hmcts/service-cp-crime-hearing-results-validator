@@ -22,11 +22,26 @@ class MessageTemplateResolverTest {
 
         String result = resolver.resolve(
                 "Offence/counts ${offenceNumbers} have issues",
+                "John Smith",
                 List.of("off1", "off2"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [1, 2] have issues");
+        assertThat(result).isEqualTo("Offence/counts [1 (32AH9105826), 2 (32AH9105826)] have issues");
+    }
+
+    @Test
+    void resolve_should_replace_defendantName_placeholder() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+
+        String result = resolver.resolve(
+                "${defendantName} offence/counts ${offenceNumbers} have issues",
+                "John Smith",
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS);
+
+        assertThat(result).isEqualTo("John Smith offence/counts [1 (32AH9105826)] have issues");
     }
 
     @Test
@@ -35,11 +50,28 @@ class MessageTemplateResolverTest {
 
         String result = resolver.resolve(
                 "Offence/counts ${offenceNumbers} show issues",
+                "Jane Doe",
                 List.of("off2"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [2] show issues");
+        assertThat(result).isEqualTo("Offence/counts [2 (32AH9105826)] show issues");
+    }
+
+    @Test
+    void resolve_should_include_different_urns_for_cross_case_offences() {
+        Map<String, OffenceDto> offenceMap = Map.of(
+                "off1", offenceWithUrn("off1", 1, "32AH9105826"),
+                "off2", offenceWithUrn("off2", 1, "32AH9105999"));
+
+        String result = resolver.resolve(
+                "Offence/counts ${offenceNumbers} have issues",
+                "John Smith",
+                List.of("off1", "off2"),
+                offenceMap,
+                ALL_OFFENCE_IDS);
+
+        assertThat(result).isEqualTo("Offence/counts [1 (32AH9105826), 1 (32AH9105999)] have issues");
     }
 
     @Test
@@ -50,6 +82,7 @@ class MessageTemplateResolverTest {
 
         String result = resolver.resolve(
                 "Offence/counts ${offenceNumbers} missing",
+                "John Smith",
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
@@ -61,7 +94,7 @@ class MessageTemplateResolverTest {
     void resolve_with_no_placeholders_should_return_unchanged() {
         String template = "All offences have info and there is no primary sentence";
 
-        String result = resolver.resolve(template, List.of("off1"), Map.of(), ALL_OFFENCE_IDS);
+        String result = resolver.resolve(template, "John Smith", List.of("off1"), Map.of(), ALL_OFFENCE_IDS);
 
         assertThat(result).isEqualTo(template);
     }
@@ -70,11 +103,26 @@ class MessageTemplateResolverTest {
     void resolve_should_use_id_when_offence_not_in_map_and_not_in_list() {
         String result = resolver.resolve(
                 "Offence/counts ${offenceNumbers} unknown",
+                "John Smith",
                 List.of("unknown-id"),
                 Map.of(),
                 ALL_OFFENCE_IDS);
 
         assertThat(result).isEqualTo("Offence/counts [unknown-id] unknown");
+    }
+
+    @Test
+    void resolve_should_handle_null_defendantName() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+
+        String result = resolver.resolve(
+                "${defendantName} offence/counts ${offenceNumbers} have issues",
+                null,
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS);
+
+        assertThat(result).isEqualTo("${defendantName} offence/counts [1 (32AH9105826)] have issues");
     }
 
     private static OffenceDto offence(String id, int orderIndex) {
@@ -83,6 +131,17 @@ class MessageTemplateResolverTest {
                 .offenceCode("TH68001")
                 .offenceTitle("Test offence")
                 .orderIndex(orderIndex)
+                .caseUrn("32AH9105826")
+                .build();
+    }
+
+    private static OffenceDto offenceWithUrn(String id, int orderIndex, String caseUrn) {
+        return OffenceDto.builder()
+                .id(id)
+                .offenceCode("TH68001")
+                .offenceTitle("Test offence")
+                .orderIndex(orderIndex)
+                .caseUrn(caseUrn)
                 .build();
     }
 }
