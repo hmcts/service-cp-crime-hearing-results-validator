@@ -47,7 +47,7 @@ class RuleDefinitionTest {
 
         ConditionDefinition ac2 = rule.getConditions().get(1);
         assertThat(ac2.getId()).isEqualTo("AC2");
-        assertThat(ac2.getExpression()).isEqualTo("noInfoCount > 1");
+        assertThat(ac2.getExpression()).isEqualTo("noInfoCount > 0");
         assertThat(ac2.getSeverity()).isEqualTo("ERROR");
 
         ConditionDefinition ac4 = rule.getConditions().get(2);

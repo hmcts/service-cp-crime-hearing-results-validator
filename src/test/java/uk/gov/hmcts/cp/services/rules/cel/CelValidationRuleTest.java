@@ -81,7 +81,7 @@ class CelValidationRuleTest {
         assertThat(error.getRuleId()).isEqualTo("DR-SENT-002");
         assertThat(error.getMessage()).contains("John Smith");
         assertThat(error.getMessage()).contains("do not include details");
-        assertThat(error.getMessage()).contains("[2 (32AH9105826), 3 (32AH9105826)]");
+        assertThat(error.getMessage()).contains("Offence 2 (URN:32AH9105826) and Offence 3 (URN:32AH9105826)");
         assertThat(error.getAffectedOffences()).hasSize(2);
     }
 
@@ -107,7 +107,7 @@ class CelValidationRuleTest {
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
         assertThat(warning.getMessage()).contains("John Smith");
         assertThat(warning.getMessage()).contains("both concurrent and consecutive");
-        assertThat(warning.getMessage()).contains("[2 (32AH9105826)]");
+        assertThat(warning.getMessage()).contains("Offence 2 (URN:32AH9105826)");
     }
 
     @Test

@@ -29,8 +29,8 @@ rule:
       expression: "hasBothCount > 0"
       severity: WARNING
       messageTemplate: >-
-        ${defendantName} offence/counts ${offenceNumbers} show they are both
-        concurrent and consecutive. Please confirm this is correct before sharing
+        ${defendantName} ${offenceNumbers} show they are both concurrent and
+        consecutive. Please confirm this is correct before sharing
       affectedOffenceSet: "hasBothOffenceIds"
 
     - id: "AC2"
@@ -38,9 +38,9 @@ rule:
       expression: "noInfoCount > 0"
       severity: ERROR
       messageTemplate: >-
-        ${defendantName} offence/counts ${offenceNumbers} do not include details
-        of whether they are concurrent or consecutive. There should be only one
-        primary sentence, therefore one result without concurrent or consecutive
+        ${defendantName} ${offenceNumbers} do not include details of whether
+        they are concurrent or consecutive. There should be only one primary
+        sentence, therefore one result without concurrent or consecutive
         information
       affectedOffenceSet: "noInfoOffenceIds"
 

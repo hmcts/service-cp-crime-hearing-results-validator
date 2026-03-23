@@ -71,7 +71,7 @@ class CelValidationRuleScenarioTest {
     class Ac2Error {
 
         @Test
-        @DisplayName("S3: 3 offences – 1 primary, 1 no-info, 1 concurrent → Pass (only 1 non-primary missing info)")
+        @DisplayName("S3: 3 offences – 1 primary, 1 no-info, 1 concurrent → Error AC2 (1 non-primary missing info)")
         void s3_one_primary_one_no_info_one_concurrent() {
             List<ResultLineDto> lines = List.of(
                     resultLine("rl1", "IMP", "d1", "off1"),
@@ -85,7 +85,9 @@ class CelValidationRuleScenarioTest {
 
             List<ValidationIssue> issues = rule.evaluate(request);
 
-            assertThat(issues).isEmpty();
+            assertThat(issues).hasSize(1);
+            assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+            assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
         }
 
         @Test
@@ -321,7 +323,7 @@ class CelValidationRuleScenarioTest {
         }
 
         @Test
-        @DisplayName("S14: 2 cases – both no-info (same defendant) → Pass (first is primary, only 1 no-info)")
+        @DisplayName("S14: 2 cases – both no-info (same defendant) → Error AC2 (1 non-primary missing info)")
         void s14_cross_case_both_no_info() {
             List<ResultLineDto> lines = List.of(
                     resultLine("rl1", "IMP", "d1", "off1"),
@@ -332,7 +334,8 @@ class CelValidationRuleScenarioTest {
 
             List<ValidationIssue> issues = rule.evaluate(request);
 
-            assertThat(issues).isEmpty();
+            assertThat(issues).hasSize(1);
+            assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         }
 
         @Test

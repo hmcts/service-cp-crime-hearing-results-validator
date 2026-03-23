@@ -34,9 +34,18 @@ public class MessageTemplateResolver {
     private String formatOffenceNumbers(List<String> offenceIds,
                                         Map<String, OffenceDto> offenceMap,
                                         List<String> allOffenceIds) {
-        return offenceIds.stream()
+        List<String> formatted = offenceIds.stream()
                 .map(id -> offenceDisplayHelper.resolveDisplayNumber(id, offenceMap, allOffenceIds))
                 .sorted(Comparator.naturalOrder())
-                .collect(Collectors.joining(", ", "[", "]"));
+                .toList();
+
+        if (formatted.size() == 1) {
+            return formatted.getFirst();
+        }
+        if (formatted.size() == 2) {
+            return formatted.get(0) + " and " + formatted.get(1);
+        }
+        return String.join(", ", formatted.subList(0, formatted.size() - 1))
+                + " and " + formatted.getLast();
     }
 }

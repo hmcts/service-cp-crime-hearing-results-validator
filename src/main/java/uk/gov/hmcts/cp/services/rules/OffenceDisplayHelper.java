@@ -23,9 +23,9 @@ public class OffenceDisplayHelper {
         }
 
         if (offence != null && offence.getCaseUrn() != null && !offence.getCaseUrn().isBlank()) {
-            return countNumber + " (" + offence.getCaseUrn() + ")";
+            return "Offence " + countNumber + " (URN:" + offence.getCaseUrn() + ")";
         }
-        return countNumber;
+        return "Offence " + countNumber;
     }
 
     public List<AffectedOffence> buildAffectedOffences(List<String> offenceIds,

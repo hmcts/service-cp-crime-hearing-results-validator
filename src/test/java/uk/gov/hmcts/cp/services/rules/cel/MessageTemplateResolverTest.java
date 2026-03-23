@@ -15,19 +15,19 @@ class MessageTemplateResolverTest {
     private final MessageTemplateResolver resolver = new MessageTemplateResolver(new OffenceDisplayHelper());
 
     @Test
-    void resolve_should_replace_offenceNumbers_with_formatted_list() {
+    void resolve_should_replace_offenceNumbers_with_and_separated_list() {
         Map<String, OffenceDto> offenceMap = Map.of(
                 "off1", offence("off1", 1),
                 "off2", offence("off2", 2));
 
         String result = resolver.resolve(
-                "Offence/counts ${offenceNumbers} have issues",
+                "${offenceNumbers} have issues",
                 "John Smith",
                 List.of("off1", "off2"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [1 (32AH9105826), 2 (32AH9105826)] have issues");
+        assertThat(result).isEqualTo("Offence 1 (URN:32AH9105826) and Offence 2 (URN:32AH9105826) have issues");
     }
 
     @Test
@@ -35,13 +35,13 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
         String result = resolver.resolve(
-                "${defendantName} offence/counts ${offenceNumbers} have issues",
+                "${defendantName} ${offenceNumbers} have issues",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("John Smith offence/counts [1 (32AH9105826)] have issues");
+        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826) have issues");
     }
 
     @Test
@@ -49,13 +49,13 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off2", offence("off2", 2));
 
         String result = resolver.resolve(
-                "Offence/counts ${offenceNumbers} show issues",
+                "${offenceNumbers} show issues",
                 "Jane Doe",
                 List.of("off2"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [2 (32AH9105826)] show issues");
+        assertThat(result).isEqualTo("Offence 2 (URN:32AH9105826) show issues");
     }
 
     @Test
@@ -65,13 +65,13 @@ class MessageTemplateResolverTest {
                 "off2", offenceWithUrn("off2", 1, "32AH9105999"));
 
         String result = resolver.resolve(
-                "Offence/counts ${offenceNumbers} have issues",
+                "${offenceNumbers} have issues",
                 "John Smith",
                 List.of("off1", "off2"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [1 (32AH9105826), 1 (32AH9105999)] have issues");
+        assertThat(result).isEqualTo("Offence 1 (URN:32AH9105826) and Offence 1 (URN:32AH9105999) have issues");
     }
 
     @Test
@@ -81,13 +81,13 @@ class MessageTemplateResolverTest {
                         .offenceTitle("Theft").build());
 
         String result = resolver.resolve(
-                "Offence/counts ${offenceNumbers} missing",
+                "${offenceNumbers} missing",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [1] missing");
+        assertThat(result).isEqualTo("Offence 1 missing");
     }
 
     @Test
@@ -102,13 +102,13 @@ class MessageTemplateResolverTest {
     @Test
     void resolve_should_use_id_when_offence_not_in_map_and_not_in_list() {
         String result = resolver.resolve(
-                "Offence/counts ${offenceNumbers} unknown",
+                "${offenceNumbers} unknown",
                 "John Smith",
                 List.of("unknown-id"),
                 Map.of(),
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("Offence/counts [unknown-id] unknown");
+        assertThat(result).isEqualTo("Offence unknown-id unknown");
     }
 
     @Test
@@ -116,13 +116,31 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
         String result = resolver.resolve(
-                "${defendantName} offence/counts ${offenceNumbers} have issues",
+                "${defendantName} ${offenceNumbers} have issues",
                 null,
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("${defendantName} offence/counts [1 (32AH9105826)] have issues");
+        assertThat(result).isEqualTo("${defendantName} Offence 1 (URN:32AH9105826) have issues");
+    }
+
+    @Test
+    void resolve_should_use_and_for_three_offences() {
+        Map<String, OffenceDto> offenceMap = Map.of(
+                "off1", offence("off1", 1),
+                "off2", offence("off2", 2),
+                "off3", offence("off3", 3));
+
+        String result = resolver.resolve(
+                "${offenceNumbers} have issues",
+                "John Smith",
+                List.of("off1", "off2", "off3"),
+                offenceMap,
+                ALL_OFFENCE_IDS);
+
+        assertThat(result).isEqualTo(
+                "Offence 1 (URN:32AH9105826), Offence 2 (URN:32AH9105826) and Offence 3 (URN:32AH9105826) have issues");
     }
 
     private static OffenceDto offence(String id, int orderIndex) {
