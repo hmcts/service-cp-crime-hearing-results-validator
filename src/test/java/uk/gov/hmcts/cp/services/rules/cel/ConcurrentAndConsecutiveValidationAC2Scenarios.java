@@ -10,16 +10,15 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@Nested
 @DisplayName("AC2 – Error scenarios")
 @TestMethodOrder(MethodOrderer.MethodName.class)
 
@@ -39,12 +38,12 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
      */
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
-    private final CelValidationRule rule = new CelValidationRule(
+    private final CelValidationRule rule = new CelValidationRule("rules/DR-SENT-002.yaml",
             new CustodialPreprocessor(),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.repository.ValidationRuleRepository.class));
+            mock(RuleOverrideService.class));
 
     @Test
     @DisplayName("AC2-S1: 1 custodial offence – 1 primary (primary missing info)- No Error")
@@ -113,6 +112,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
 
     }
+
     @Test
     @DisplayName("AC2-S5: 3 offences – 1 primary, 1 info and 1  no-info, → Pass (only 1 non-primary missing info)")
     void ac2_s5_one_primary_one_no_info_one_concurrent() {
@@ -265,7 +265,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         List<ValidationIssue> issues = rule.evaluate(request);
 
         assertThat(issues).hasSize(0);
-}
+    }
 
 
 }
