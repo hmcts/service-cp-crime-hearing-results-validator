@@ -427,5 +427,4 @@ class CelValidationRuleScenarioTest {
             assertThat(issues).isEmpty();
         }
     }
-
 }
