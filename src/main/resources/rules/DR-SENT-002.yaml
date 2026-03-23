@@ -35,7 +35,7 @@ rule:
 
     - id: "AC2"
       name: "Multiple offences missing info"
-      expression: "noInfoCount > 1"
+      expression: "noInfoCount > 0"
       severity: ERROR
       messageTemplate: >-
         ${defendantName} offence/counts ${offenceNumbers} do not include details

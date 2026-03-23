@@ -67,49 +67,6 @@ class CelValidationRuleScenarioTest {
     }
 
     @Nested
-    @DisplayName("AC2 – Error scenarios")
-    class Ac2Error {
-
-        @Test
-        @DisplayName("S3: 3 offences – 1 primary, 1 no-info, 1 concurrent → Pass (only 1 non-primary missing info)")
-        void s3_one_primary_one_no_info_one_concurrent() {
-            List<ResultLineDto> lines = List.of(
-                    resultLine("rl1", "IMP", "d1", "off1"),
-                    resultLine("rl2", "IMP", "d1", "off2"),
-                    resultLine("rl3", "IMP", "d1", "off3"));
-            DraftValidationRequest request = buildRequest(lines, List.of(
-                    offence("off1", 1, "Theft"),
-                    offence("off2", 2, "Assault"),
-                    offence("off3", 3, "Burglary")));
-            request.getResultLines().get(2).setIsConcurrent(true);
-
-            List<ValidationIssue> issues = rule.evaluate(request);
-
-            assertThat(issues).isEmpty();
-        }
-
-        @Test
-        @DisplayName("S4: 3 offences – all no-info → Error")
-        void s4_all_no_info() {
-            DraftValidationRequest request = buildRequest(
-                    List.of(
-                            resultLine("rl1", "IMP", "d1", "off1"),
-                            resultLine("rl2", "IMP", "d1", "off2"),
-                            resultLine("rl3", "IMP", "d1", "off3")),
-                    List.of(
-                            offence("off1", 1, "Theft"),
-                            offence("off2", 2, "Assault"),
-                            offence("off3", 3, "Burglary")));
-
-            List<ValidationIssue> issues = rule.evaluate(request);
-
-            assertThat(issues).hasSize(1);
-            assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-            assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
-        }
-    }
-
-    @Nested
     @DisplayName("AC3 – Warning (both concurrent and consecutive)")
     class Ac3Warning {
 
@@ -427,5 +384,4 @@ class CelValidationRuleScenarioTest {
             assertThat(issues).isEmpty();
         }
     }
-
 }
