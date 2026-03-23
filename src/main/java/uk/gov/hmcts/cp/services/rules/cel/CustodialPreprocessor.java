@@ -107,10 +107,19 @@ public class CustodialPreprocessor {
                 String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
                         ? d.getMasterDefendantId()
                         : d.getId();
-                names.putIfAbsent(groupKey, d.getName());
+                names.putIfAbsent(groupKey, buildFullName(d));
             }
         }
         return names;
+    }
+
+    private String buildFullName(DefendantDto defendant) {
+        String first = defendant.getFirstName();
+        String last = defendant.getLastName();
+        if (first != null && last != null) {
+            return first + " " + last;
+        }
+        return first != null ? first : last;
     }
 
     private Map<String, String> buildDefendantGrouping(DraftValidationRequest request) {

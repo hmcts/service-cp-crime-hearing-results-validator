@@ -28,7 +28,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                 {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
                 {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off4", "isConcurrent": true}
               ],
-              "defendants": [{"id": "d1", "name": "John Doe"}],
+              "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
               "offences": [
                 {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
                 {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},

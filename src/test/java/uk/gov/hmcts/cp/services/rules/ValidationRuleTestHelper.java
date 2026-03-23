@@ -12,7 +12,8 @@ import java.util.Map;
 
 public final class ValidationRuleTestHelper {
 
-    public static final String DEFAULT_DEFENDANT_NAME = "John Smith";
+    public static final String DEFAULT_DEFENDANT_FIRST_NAME = "John";
+    public static final String DEFAULT_DEFENDANT_LAST_NAME = "Smith";
 
     private ValidationRuleTestHelper() {
     }
@@ -48,10 +49,11 @@ public final class ValidationRuleTestHelper {
                 .build();
     }
 
-    public static DefendantDto defendant(String id, String name) {
+    public static DefendantDto defendant(String id, String firstName, String lastName) {
         return DefendantDto.builder()
                 .id(id)
-                .name(name)
+                .firstName(firstName)
+                .lastName(lastName)
                 .build();
     }
 
@@ -67,7 +69,7 @@ public final class ValidationRuleTestHelper {
         Map<String, DefendantDto> defendants = new LinkedHashMap<>();
         for (ResultLineDto rl : resultLines) {
             defendants.computeIfAbsent(rl.getDefendantId(),
-                    id -> defendant(id, DEFAULT_DEFENDANT_NAME));
+                    id -> defendant(id, DEFAULT_DEFENDANT_FIRST_NAME, DEFAULT_DEFENDANT_LAST_NAME));
         }
 
         return DraftValidationRequest.builder()

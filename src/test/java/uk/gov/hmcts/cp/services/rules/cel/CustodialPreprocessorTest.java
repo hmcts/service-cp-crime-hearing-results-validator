@@ -267,10 +267,12 @@ class CustodialPreprocessorTest {
         assertThat(result).isEmpty();
     }
 
-    private static DefendantDto defendant(String id, String name, String masterDefendantId) {
+    private static DefendantDto defendant(String id, String fullName, String masterDefendantId) {
+        String[] parts = fullName.split(" ", 2);
         return DefendantDto.builder()
                 .id(id)
-                .name(name)
+                .firstName(parts[0])
+                .lastName(parts.length > 1 ? parts[1] : null)
                 .masterDefendantId(masterDefendantId)
                 .build();
     }
