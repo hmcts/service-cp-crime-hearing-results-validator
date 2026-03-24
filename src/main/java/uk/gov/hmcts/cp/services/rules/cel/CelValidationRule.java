@@ -16,6 +16,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Validation rule implementation backed by a YAML rule definition and CEL expressions.
+ */
 @Slf4j
 public class CelValidationRule implements ValidationRule {
 
@@ -46,8 +49,14 @@ public class CelValidationRule implements ValidationRule {
 
         boolean enabled = override.map(ValidationRuleEntity::isEnabled)
                 .orElse(ruleDefinition.isEnabled());
-        String severity = override.map(ValidationRuleEntity::getSeverity)
+        String rawSeverity = override.map(ValidationRuleEntity::getSeverity)
                 .orElse("ERROR");
+        String severity = normalizeSeverity(rawSeverity);
+        if (severity == null) {
+            log.warn("Invalid severity override '{}' for rule {}, falling back to ERROR",
+                    rawSeverity, ruleDefinition.getId());
+            severity = "ERROR";
+        }
 
         return RuleDetailResponse.builder()
                 .ruleId(ruleDefinition.getId())
@@ -93,9 +102,11 @@ public class CelValidationRule implements ValidationRule {
                             offenceMap,
                             context.allOffenceIds());
 
+                    String effectiveSeverity = resolveEffectiveSeverity(
+                            condition.getSeverity(), override);
                     issues.add(ValidationIssue.builder()
                             .ruleId(ruleDefinition.getId())
-                            .severity(mapSeverity(condition.getSeverity()))
+                            .severity(mapSeverity(effectiveSeverity))
                             .message(message)
                             .affectedOffences(offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap))
                             .build());
@@ -106,7 +117,43 @@ public class CelValidationRule implements ValidationRule {
         return issues;
     }
 
+    /**
+     * Resolves the effective severity using the DB override as a ceiling.
+     * WARNING &lt; ERROR, so a DB override of WARNING caps any ERROR condition down to WARNING.
+     */
+    private String resolveEffectiveSeverity(String yamlSeverity,
+                                            Optional<ValidationRuleEntity> override) {
+        String dbSeverity = override.map(ValidationRuleEntity::getSeverity).orElse(null);
+        if (dbSeverity == null) {
+            return yamlSeverity;
+        }
+        String normalizedDb = normalizeSeverity(dbSeverity);
+        if (normalizedDb == null) {
+            log.warn("Invalid severity override '{}' for rule {}, falling back to YAML severity",
+                    dbSeverity, ruleDefinition.getId());
+            return yamlSeverity;
+        }
+        int yamlOrdinal = severityOrdinal(yamlSeverity);
+        int dbOrdinal = severityOrdinal(normalizedDb);
+        return yamlOrdinal <= dbOrdinal ? yamlSeverity : normalizedDb;
+    }
+
+    private String normalizeSeverity(String severity) {
+        if (severity == null) {
+            return null;
+        }
+        String upper = severity.trim().toUpperCase();
+        if ("ERROR".equals(upper) || "WARNING".equals(upper)) {
+            return upper;
+        }
+        return null;
+    }
+
+    private int severityOrdinal(String severity) {
+        return "WARNING".equalsIgnoreCase(severity) ? 0 : 1;
+    }
+
     private ValidationIssue.SeverityEnum mapSeverity(String severity) {
-        return ValidationIssue.SeverityEnum.valueOf(severity);
+        return ValidationIssue.SeverityEnum.valueOf(normalizeSeverity(severity));
     }
 }

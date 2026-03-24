@@ -7,8 +7,10 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
+/**
+ * Expands rule message templates with defendant names and formatted offence references.
+ */
 @Component
 public class MessageTemplateResolver {
 
@@ -35,8 +37,9 @@ public class MessageTemplateResolver {
                                         Map<String, OffenceDto> offenceMap,
                                         List<String> allOffenceIds) {
         List<String> formatted = offenceIds.stream()
+                .sorted(Comparator.comparingInt(
+                        id -> offenceDisplayHelper.resolveOrderIndex(id, offenceMap, allOffenceIds)))
                 .map(id -> offenceDisplayHelper.resolveDisplayNumber(id, offenceMap, allOffenceIds))
-                .sorted(Comparator.naturalOrder())
                 .toList();
 
         if (formatted.size() == 1) {

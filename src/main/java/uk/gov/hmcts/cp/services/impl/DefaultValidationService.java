@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Runs every configured validation rule and aggregates their issues into the API response.
+ */
 @Service
 @Slf4j
 public class DefaultValidationService implements ValidationService {
@@ -37,16 +40,23 @@ public class DefaultValidationService implements ValidationService {
         List<ValidationIssue> warnings = new ArrayList<>();
 
         for (ValidationRule rule : rules) {
-            String ruleId = rule.getRuleDetail().getRuleId();
-            rulesEvaluated.add(ruleId);
+            String ruleId = "unknown";
+            try {
+                ruleId = rule.getRuleDetail().getRuleId();
 
-            List<ValidationIssue> issues = rule.evaluate(request);
-            for (ValidationIssue issue : issues) {
-                if (issue.getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
-                    errors.add(issue);
-                } else {
-                    warnings.add(issue);
+                List<ValidationIssue> issues = rule.evaluate(request);
+                for (ValidationIssue issue : issues) {
+                    if (issue.getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
+                        errors.add(issue);
+                    } else {
+                        warnings.add(issue);
+                    }
                 }
+
+                rulesEvaluated.add(ruleId);
+            } catch (Exception e) {
+                log.error("Rule {} skipped due to evaluation failure for hearingId={}: {}",
+                        ruleId, request.getHearingId(), e.getMessage(), e);
             }
         }
 

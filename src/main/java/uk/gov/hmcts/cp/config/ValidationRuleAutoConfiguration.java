@@ -15,8 +15,12 @@ import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Discovers YAML-backed validation rules on the classpath and exposes them as application beans.
+ */
 @Configuration
 @Slf4j
 public class ValidationRuleAutoConfiguration {
@@ -42,6 +46,8 @@ public class ValidationRuleAutoConfiguration {
             rules.add(new CelValidationRule(path, preprocessor, evaluator,
                     messageResolver, offenceDisplayHelper, ruleOverrideService));
         }
+
+        rules.sort(Comparator.comparingInt(r -> r.getRuleDetail().getPriority()));
 
         log.info("Auto-discovered {} validation rule(s) from classpath:rules/", rules.size());
         return rules;

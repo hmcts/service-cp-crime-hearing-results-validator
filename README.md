@@ -32,10 +32,39 @@ Rule files are located in `src/main/resources/rules/`.
 
 ### Adding a New Rule
 
-1. Create a YAML rule file in `src/main/resources/rules/`
+1. Create a YAML rule file named `DR-<category>-<number>.yaml` in `src/main/resources/rules/`
 2. Define the preprocessing configuration, CEL conditions, and message templates
-3. Create a corresponding `ValidationRule` implementation that loads the YAML
-4. The rule is auto-discovered via Spring component scanning
+3. The rule is auto-discovered at startup by `ValidationRuleAutoConfiguration` (no Java code needed)
+
+### Runtime Rule Overrides
+
+Rules can be toggled or have their severity adjusted at runtime via the `validation_rule` database table, without redeployment.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | VARCHAR(20) | Rule ID, must match the YAML file (e.g. `DR-SENT-002`) |
+| `enabled` | BOOLEAN | `false` disables the rule entirely |
+| `severity` | VARCHAR(20) | Maximum severity ceiling (see below) |
+| `updated_at` | TIMESTAMP | Last modification time |
+| `updated_by` | VARCHAR(100) | User who made the change |
+
+#### Severity Ceiling Model
+
+A single rule can contain multiple conditions with different severities. For example, DR-SENT-002 has:
+
+- **AC2** (missing concurrent/consecutive info) — `ERROR` (blocks sharing)
+- **AC3** (both concurrent and consecutive) — `WARNING` (advisory)
+- **AC4** (no primary sentence) — `WARNING` (advisory)
+
+The database `severity` column acts as a **ceiling**, not a blanket replacement. It caps condition severities downward but never upgrades them:
+
+| Condition | YAML severity | DB override = `WARNING` | DB override = `ERROR` | No override |
+|-----------|--------------|------------------------|----------------------|-------------|
+| AC2 | ERROR | WARNING (capped) | ERROR | ERROR |
+| AC3 | WARNING | WARNING | WARNING | WARNING |
+| AC4 | WARNING | WARNING | WARNING | WARNING |
+
+This means setting a rule's severity to `WARNING` in the database effectively says "stop this rule from blocking shares" — all conditions become non-blocking while still surfacing as warnings. Setting it to `ERROR` (or having no override) leaves each condition at its YAML-defined severity.
 
 ## API Endpoints
 

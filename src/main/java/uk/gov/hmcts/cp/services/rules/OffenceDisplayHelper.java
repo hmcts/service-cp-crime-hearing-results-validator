@@ -7,6 +7,9 @@ import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Builds user-facing offence references for validation messages and affected offence payloads.
+ */
 @Component
 public class OffenceDisplayHelper {
 
@@ -26,6 +29,17 @@ public class OffenceDisplayHelper {
             return "Offence " + countNumber + " (URN:" + offence.getCaseUrn() + ")";
         }
         return "Offence " + countNumber;
+    }
+
+    public int resolveOrderIndex(String id,
+                                  Map<String, OffenceDto> offenceMap,
+                                  List<String> allOffenceIds) {
+        OffenceDto offence = offenceMap.get(id);
+        if (offence != null && offence.getOrderIndex() != null) {
+            return offence.getOrderIndex();
+        }
+        int index = allOffenceIds.indexOf(id);
+        return index >= 0 ? index + 1 : Integer.MAX_VALUE;
     }
 
     public List<AffectedOffence> buildAffectedOffences(List<String> offenceIds,
