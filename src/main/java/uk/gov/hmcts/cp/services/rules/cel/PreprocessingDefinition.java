@@ -11,6 +11,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * YAML-backed preprocessing configuration for a CEL validation rule.
+ */
 public class PreprocessingDefinition {
 
     private String type;

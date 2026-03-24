@@ -10,8 +10,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * End-to-end tests for the validation-rule metadata endpoints.
+ */
 class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
 
+    /**
+     * Verifies listing rules returns the configured rule summary and identifiers.
+     */
     @Test
     void list_rules_should_return_ok_with_rules() throws Exception {
         mockMvc.perform(get("/api/validation/rules")
@@ -24,6 +30,9 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.rules[0].ruleId", is("DR-SENT-002")));
     }
 
+    /**
+     * Verifies fetching a known rule id returns that rule's detail payload.
+     */
     @Test
     void get_rule_by_id_should_return_ok_with_rule_detail() throws Exception {
         mockMvc.perform(get("/api/validation/rules/{ruleId}", "DR-SENT-002")
@@ -34,6 +43,9 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.enabled", is(true)));
     }
 
+    /**
+     * Verifies unknown rule ids are converted into the structured 404 error contract.
+     */
     @Test
     void get_rule_by_id_should_return_404_with_structured_error_body() throws Exception {
         mockMvc.perform(get("/api/validation/rules/{ruleId}", "UNKNOWN-RULE")

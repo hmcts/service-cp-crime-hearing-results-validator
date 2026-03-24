@@ -15,6 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for {@link RuleOverrideService}.
+ */
 class RuleOverrideServiceTest {
 
     @Mock
@@ -23,6 +26,10 @@ class RuleOverrideServiceTest {
     @InjectMocks
     private RuleOverrideService ruleOverrideService;
 
+    /**
+     * Verifies the service returns a populated override when the repository contains a row for the
+     * requested rule id.
+     */
     @Test
     void findOverride_should_return_entity_when_found() {
         ValidationRuleEntity entity = ValidationRuleEntity.builder()
@@ -40,6 +47,9 @@ class RuleOverrideServiceTest {
         assertThat(result.get().isEnabled()).isFalse();
     }
 
+    /**
+     * Verifies the absence of an override is surfaced as an empty optional.
+     */
     @Test
     void findOverride_should_return_empty_when_not_found() {
         when(ruleRepository.findById("UNKNOWN")).thenReturn(Optional.empty());
@@ -49,6 +59,9 @@ class RuleOverrideServiceTest {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * Verifies repository failures are swallowed so rule evaluation can continue with YAML defaults.
+     */
     @Test
     void findOverride_should_return_empty_when_db_throws() {
         when(ruleRepository.findById("DR-SENT-002")).thenThrow(new RuntimeException("DB error"));

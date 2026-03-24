@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 
+/**
+ * Boots a reusable PostgreSQL test container and injects its connection details into Spring tests.
+ */
 public class TestContainersInitialise
         implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -19,6 +22,11 @@ public class TestContainersInitialise
         postgreSQLContainer.start(); // start once
     }
 
+    /**
+     * Applies container-backed datasource properties to the integration-test application context.
+     *
+     * @param context Spring application context under initialization
+     */
     @Override
     public void initialize(ConfigurableApplicationContext context) {
 

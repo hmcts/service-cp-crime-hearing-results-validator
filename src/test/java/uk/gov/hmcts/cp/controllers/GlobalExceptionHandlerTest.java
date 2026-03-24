@@ -18,8 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@link GlobalExceptionHandler}.
+ */
 class GlobalExceptionHandlerTest {
 
+    /**
+     * Verifies that a {@link ResponseStatusException} with an explicit reason is mapped to the same
+     * HTTP status and a structured error body that includes the current trace id.
+     */
     @Test
     void handle_response_status_exception_should_return_error_response_with_correct_fields() {
         // Arrange
@@ -63,6 +70,10 @@ class GlobalExceptionHandlerTest {
         );
     }
 
+    /**
+     * Verifies the fallback scenario where a {@link ResponseStatusException} has no explicit
+     * reason, so the handler uses the exception message instead.
+     */
     @Test
     void handle_response_status_exception_with_null_reason_should_use_message() {
         // Arrange
@@ -93,6 +104,10 @@ class GlobalExceptionHandlerTest {
         assertThat(error.getMessage()).isNotBlank();
     }
 
+    /**
+     * Verifies the handler returns {@code no-trace} when no current span is available for a
+     * response-status failure.
+     */
     @Test
     void handle_response_status_exception_with_null_span_should_return_no_trace() {
         // Arrange
@@ -118,6 +133,9 @@ class GlobalExceptionHandlerTest {
         assertEquals("Server error", error.getMessage());
     }
 
+    /**
+     * Verifies uncaught exceptions are converted into a standard HTTP 500 payload with trace data.
+     */
     @Test
     void handle_generic_exception_should_return_500_with_structured_error() {
         // Arrange
@@ -148,6 +166,9 @@ class GlobalExceptionHandlerTest {
         assertNotNull(error.getTimestamp());
     }
 
+    /**
+     * Verifies the generic-exception path still succeeds when tracing is unavailable.
+     */
     @Test
     void handle_generic_exception_with_null_span_should_return_no_trace() {
         // Arrange

@@ -17,6 +17,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for {@link ValidationRulesController}.
+ */
 class ValidationRulesControllerTest {
 
     @Mock
@@ -25,6 +28,9 @@ class ValidationRulesControllerTest {
     @InjectMocks
     ValidationRulesController validationRulesController;
 
+    /**
+     * Covers the list-rules endpoint when the service returns a successful rule summary.
+     */
     @Test
     void list_rules_should_delegate_to_service_and_return_ok() {
         RuleListResponse expected = RuleListResponse.builder()
@@ -41,6 +47,9 @@ class ValidationRulesControllerTest {
         assertThat(response.getBody()).isEqualTo(expected);
     }
 
+    /**
+     * Covers the rule-detail endpoint when the requested rule exists and is returned successfully.
+     */
     @Test
     void get_rule_by_id_should_delegate_to_service_and_return_ok() {
         RuleDetailResponse expected = RuleDetailResponse.builder()

@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for ACL and identity-group based access around HTTP endpoints.
+ */
 class AuthzFilterIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
@@ -30,6 +33,9 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
         stubIdentityResponse("System Users");
     }
 
+    /**
+     * Verifies a user resolved into the Court Clerks group can call the validation endpoint.
+     */
     @Test
     void request_with_user_in_court_clerks_group_should_succeed() throws Exception {
         IDENTITY_WIRE_MOCK.resetAll();
@@ -43,6 +49,9 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies a user resolved into the Legal Advisers group can call the validation endpoint.
+     */
     @Test
     void request_with_legal_adviser_group_should_succeed() throws Exception {
         IDENTITY_WIRE_MOCK.resetAll();
@@ -56,6 +65,9 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies users outside the allowed groups are rejected with HTTP 403.
+     */
     @Test
     void request_with_user_not_in_allowed_group_should_return_403() throws Exception {
         IDENTITY_WIRE_MOCK.resetAll();
@@ -69,6 +81,9 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isForbidden());
     }
 
+    /**
+     * Verifies the request is rejected with HTTP 401 when the mandatory identity header is absent.
+     */
     @Test
     void request_without_cjscppuid_header_should_return_401() throws Exception {
         mockMvc.perform(post(VALIDATE_URL)
@@ -78,6 +93,9 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * Verifies unauthenticated access is still allowed for the health endpoint.
+     */
     @Test
     void actuator_health_should_be_accessible_without_auth() throws Exception {
         mockMvc.perform(get("/actuator/health"))

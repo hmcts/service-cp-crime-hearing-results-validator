@@ -13,6 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration test proving database overrides are applied during validation.
+ */
 class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
@@ -41,6 +44,10 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
     @Resource
     private ValidationRuleRepository repository;
 
+    /**
+     * Verifies the seeded DR-SENT-002 override is present at startup and that the validation
+     * response reflects its configured enabled/severity behaviour.
+     */
     @Test
     void validate_should_use_seeded_override_from_startup() throws Exception {
         ValidationRuleEntity entity = repository.findById("DR-SENT-002").orElseThrow();

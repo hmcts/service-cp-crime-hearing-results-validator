@@ -17,6 +17,9 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Persistence model for runtime rule overrides loaded from the validation_rule table.
+ */
 public class ValidationRuleEntity {
 
     @Id

@@ -14,12 +14,18 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+/**
+ * Tests for YAML-driven validation rule discovery.
+ */
 class ValidationRuleAutoConfigurationTest {
 
     private final ValidationRuleAutoConfiguration config = new ValidationRuleAutoConfiguration();
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
 
+    /**
+     * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
+     */
     @Test
     void should_discover_DR_SENT_002_rule() throws IOException {
         List<ValidationRule> rules = config.validationRules(
@@ -33,6 +39,9 @@ class ValidationRuleAutoConfigurationTest {
         assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
     }
 
+    /**
+     * Verifies each YAML file contributes exactly one validation rule instance.
+     */
     @Test
     void should_create_one_rule_per_yaml_file() throws IOException {
         List<ValidationRule> rules = config.validationRules(

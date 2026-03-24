@@ -12,11 +12,17 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Live HTTP checks for actuator endpoints against a running service instance.
+ */
 class  ActuatorHttpLiveTest {
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
 
+    /**
+     * Verifies the health endpoint reports the service as UP on a running environment.
+     */
     @Test
     void health_is_up() {
         final ResponseEntity<String> res = http.exchange(
@@ -28,6 +34,9 @@ class  ActuatorHttpLiveTest {
         assertThat(res.getBody()).contains("\"status\":\"UP\"");
     }
 
+    /**
+     * Verifies the Prometheus scrape endpoint is exposed when that monitoring path is enabled.
+     */
     @Disabled // Lets revisit this during our monitoring spike
     @Test
     void prometheus_is_exposed() {

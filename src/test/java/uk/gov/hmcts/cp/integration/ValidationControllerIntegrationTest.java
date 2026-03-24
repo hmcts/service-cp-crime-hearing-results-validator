@@ -13,6 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * End-to-end tests for the draft validation endpoint and its main acceptance scenarios.
+ */
 class ValidationControllerIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
@@ -29,6 +32,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
             }
             """;
 
+    /**
+     * Covers the empty-hearing scenario where no data is present and the endpoint should return a
+     * clean advisory response with no issues.
+     */
     @Test
     void validate_empty_arrays_should_return_valid() throws Exception {
         mockMvc.perform(post(VALIDATE_URL)
@@ -46,6 +53,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002")));
     }
 
+    /**
+     * Covers AC1 where there is exactly one primary custodial sentence and the remaining custodial
+     * offence already carries concurrency information, so no issue is raised.
+     */
     @Test
     void ac1_single_offence_without_info_should_be_valid() throws Exception {
         String request = """
@@ -76,6 +87,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings", empty()));
     }
 
+    /**
+     * Covers AC2 where multiple non-primary custodial offences omit concurrent or consecutive
+     * information, so the payload is invalid and an error is returned.
+     */
     @Test
     void ac2_multiple_offences_missing_info_should_produce_error() throws Exception {
         String request = """
@@ -112,6 +127,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors[0].message", startsWith("John Doe Offence 2 and Offence 3")));
     }
 
+    /**
+     * Covers AC3 where one offence is marked both concurrent and consecutive, which should produce
+     * a warning without invalidating the request.
+     */
     @Test
     void ac3_offence_with_both_concurrent_and_consecutive_should_produce_warning() throws Exception {
         String request = """
@@ -145,6 +164,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings[0].message", startsWith("John Doe Offence 2")));
     }
 
+    /**
+     * Covers AC4 where all custodial offences have relationship data and therefore no primary
+     * sentence can be inferred, resulting in a warning only.
+     */
     @Test
     void ac4_all_offences_have_info_no_primary_should_produce_warning() throws Exception {
         String request = """
@@ -177,6 +200,9 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings[0].message", startsWith("John Doe")));
     }
 
+    /**
+     * Verifies the authentication filter rejects validation requests that omit the user header.
+     */
     @Test
     void validate_should_return_401_when_missing_CJSCPPUID_header() throws Exception {
         mockMvc.perform(post(VALIDATE_URL)
@@ -186,6 +212,9 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * Verifies the API returns HTTP 400 when the request body is missing entirely.
+     */
     @Test
     void validate_should_return_400_when_no_request_body() throws Exception {
         mockMvc.perform(post(VALIDATE_URL)
@@ -195,6 +224,9 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies malformed JSON is translated into the standard bad-request response.
+     */
     @Test
     void validate_should_return_400_when_malformed_json() throws Exception {
         mockMvc.perform(post(VALIDATE_URL)

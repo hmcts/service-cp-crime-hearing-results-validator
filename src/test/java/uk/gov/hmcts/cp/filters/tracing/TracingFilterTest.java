@@ -23,6 +23,9 @@ import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.SPAN_ID;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.TRACE_ID;
 
 @ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for {@link TracingFilter}.
+ */
 class TracingFilterTest {
     @Mock
     private HttpServletRequest request;
@@ -33,6 +36,10 @@ class TracingFilterTest {
 
     private final TracingFilter tracingFilter = new TracingFilter("myAppName");
 
+    /**
+     * Verifies the filter copies inbound trace headers into the MDC and echoes them on the
+     * response for downstream consumers.
+     */
     @Test
     void filter_should_use_incoming_traceId() throws ServletException, IOException {
         when(request.getHeader(TRACE_ID)).thenReturn("incoming-traceId");

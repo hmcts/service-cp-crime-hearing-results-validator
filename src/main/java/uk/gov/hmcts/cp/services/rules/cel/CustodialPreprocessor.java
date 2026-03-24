@@ -14,8 +14,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+/**
+ * Preprocesses custodial result lines into per-defendant summaries consumed by CEL conditions.
+ */
 public class CustodialPreprocessor {
 
+    /**
+     * Groups custodial result lines by defendant (or master defendant) and derives the offence
+     * counts and offence-id sets needed by the validation rule conditions.
+     *
+     * @param request draft validation request being evaluated
+     * @param config preprocessing configuration loaded from YAML
+     * @return map of defendant grouping key to derived context
+     */
     public Map<String, DefendantContext> preprocess(DraftValidationRequest request,
                                                      PreprocessingDefinition config) {
         Set<String> shortCodes = config.getFilterShortCodes().stream()

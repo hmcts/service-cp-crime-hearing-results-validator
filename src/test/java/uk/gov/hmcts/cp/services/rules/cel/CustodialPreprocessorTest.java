@@ -12,6 +12,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Unit tests for {@link CustodialPreprocessor} and the derived {@link DefendantContext}.
+ */
 class CustodialPreprocessorTest {
 
     private final CustodialPreprocessor preprocessor = new CustodialPreprocessor();
@@ -23,6 +26,9 @@ class CustodialPreprocessorTest {
             .skipWhenGroupCount(1)
             .build();
 
+    /**
+     * Verifies the preprocessor skips requests that contain no custodial result lines.
+     */
     @Test
     void should_return_empty_for_no_custodial_lines() {
         DraftValidationRequest request = buildRequest(
@@ -35,6 +41,10 @@ class CustodialPreprocessorTest {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * Verifies a single custodial offence is skipped because there is no concurrency ambiguity to
+     * analyse.
+     */
     @Test
     void should_return_empty_for_single_offence() {
         DraftValidationRequest request = buildRequest(
@@ -46,6 +56,10 @@ class CustodialPreprocessorTest {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * Verifies offences without relationship data are classified into the no-info bucket after the
+     * primary sentence has been claimed.
+     */
     @Test
     void should_classify_no_info_offences() {
         DraftValidationRequest request = buildRequest(
@@ -66,6 +80,10 @@ class CustodialPreprocessorTest {
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
+    /**
+     * Verifies offences marked both concurrent and consecutive are classified into the has-both
+     * bucket.
+     */
     @Test
     void should_classify_has_both_offences() {
         DraftValidationRequest request = buildRequest(
@@ -84,6 +102,10 @@ class CustodialPreprocessorTest {
         assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
     }
 
+    /**
+     * Verifies result lines are grouped independently per defendant when no master defendant id is
+     * present.
+     */
     @Test
     void should_group_by_defendant() {
         DraftValidationRequest request = buildRequest(
@@ -104,6 +126,9 @@ class CustodialPreprocessorTest {
         assertThat(result.get("d2").hasPrimaryCount()).isEqualTo(1);
     }
 
+    /**
+     * Verifies non-custodial short codes are filtered out before offence grouping is calculated.
+     */
     @Test
     void should_filter_by_short_codes() {
         DraftValidationRequest request = buildRequest(
@@ -120,6 +145,10 @@ class CustodialPreprocessorTest {
         assertThat(ctx.allOffenceIds()).containsExactly("off1", "off3");
     }
 
+    /**
+     * Verifies the preprocessor populates the defendant display name from the supplied defendant
+     * record.
+     */
     @Test
     void should_populate_defendant_name() {
         DraftValidationRequest request = buildRequest(
@@ -134,6 +163,10 @@ class CustodialPreprocessorTest {
         assertThat(result.get("d1").defendantName()).isEqualTo("John Smith");
     }
 
+    /**
+     * Verifies grouped defendants inherit the display name from the first member of the master
+     * defendant group.
+     */
     @Test
     void should_populate_defendant_name_from_first_defendant_in_group() {
         DraftValidationRequest request = buildRequest(
@@ -148,6 +181,10 @@ class CustodialPreprocessorTest {
         assertThat(result.get("master-1").defendantName()).isEqualTo("John Smith");
     }
 
+    /**
+     * Verifies {@link DefendantContext#toCelContext()} exposes the derived count values expected by
+     * CEL expressions.
+     */
     @Test
     void toCelContext_should_return_count_map() {
         DefendantContext ctx = new DefendantContext(
@@ -162,6 +199,9 @@ class CustodialPreprocessorTest {
         assertThat(celCtx).containsEntry("totalOffences", 3L);
     }
 
+    /**
+     * Verifies each named offence-id set can be retrieved from the derived defendant context.
+     */
     @Test
     void getOffenceIdSet_should_return_correct_list() {
         DefendantContext ctx = new DefendantContext(
@@ -174,6 +214,9 @@ class CustodialPreprocessorTest {
         assertThat(ctx.getOffenceIdSet("allOffenceIds")).containsExactly("a", "b", "c");
     }
 
+    /**
+     * Verifies requesting an unknown offence-id set name fails fast.
+     */
     @Test
     void getOffenceIdSet_should_throw_for_unknown_set_name() {
         DefendantContext ctx = new DefendantContext(
@@ -185,6 +228,9 @@ class CustodialPreprocessorTest {
                 .hasMessageContaining("Unknown offence set: bogus");
     }
 
+    /**
+     * Verifies an empty consecutive-to-offence value is treated the same as missing information.
+     */
     @Test
     void should_treat_empty_consecutiveToOffence_as_no_info() {
         DraftValidationRequest request = buildRequest(
@@ -201,6 +247,9 @@ class CustodialPreprocessorTest {
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
+    /**
+     * Verifies a blank consecutive-to-offence value is treated the same as missing information.
+     */
     @Test
     void should_treat_blank_consecutiveToOffence_as_no_info() {
         DraftValidationRequest request = buildRequest(
@@ -217,6 +266,9 @@ class CustodialPreprocessorTest {
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
+    /**
+     * Verifies result lines are grouped under the master defendant id when one is present.
+     */
     @Test
     void should_group_by_masterDefendantId_when_present() {
         DraftValidationRequest request = buildRequest(
@@ -237,6 +289,10 @@ class CustodialPreprocessorTest {
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
+    /**
+     * Verifies the raw defendant id is used as the grouping key when no master defendant id is
+     * supplied.
+     */
     @Test
     void should_fall_back_to_defendantId_when_masterDefendantId_absent() {
         DraftValidationRequest request = buildRequest(
@@ -253,6 +309,9 @@ class CustodialPreprocessorTest {
         assertThat(result.get("d1").totalOffences()).isEqualTo(2);
     }
 
+    /**
+     * Verifies different master defendant ids are not merged into a single derived context.
+     */
     @Test
     void should_not_group_different_masterDefendantIds_together() {
         DraftValidationRequest request = buildRequest(
@@ -304,4 +363,3 @@ class CustodialPreprocessorTest {
                 .build();
     }
 }
-

@@ -13,10 +13,21 @@ import uk.gov.hmcts.cp.services.ValidationService;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+/**
+ * Exposes the draft validation endpoint defined by the generated OpenAPI contract.
+ */
 public class ValidationController implements ValidationApi {
 
     private final ValidationService validationService;
 
+    /**
+     * Validates the supplied draft results payload and returns the aggregated validation outcome.
+     *
+     * @param CJSCPPUID authenticated user identifier from the request header
+     * @param draftValidationRequest draft result payload to validate
+     * @param CPPCLIENTCORRELATIONID optional correlation identifier supplied by the client
+     * @return HTTP 200 response containing the validation result
+     */
     @Override
     public ResponseEntity<DraftValidationResponse> validateDraftResults(
             String CJSCPPUID,

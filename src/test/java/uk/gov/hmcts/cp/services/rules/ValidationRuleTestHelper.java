@@ -10,6 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Shared test-data builders for validation rule unit and scenario tests.
+ */
 public final class ValidationRuleTestHelper {
 
     public static final String DEFAULT_DEFENDANT_FIRST_NAME = "John";

@@ -14,6 +14,9 @@ import java.time.Instant;
 
 @RestControllerAdvice
 @Slf4j
+/**
+ * Converts controller-layer exceptions into the structured error model exposed by the API.
+ */
 public class GlobalExceptionHandler {
 
     private final Tracer tracer;
@@ -22,6 +25,12 @@ public class GlobalExceptionHandler {
         this.tracer = tracer;
     }
 
+    /**
+     * Builds an error response from a {@link ResponseStatusException}, preserving the status code.
+     *
+     * @param responseStatusException exception raised by the controller or service layer
+     * @return structured error response with the same HTTP status
+     */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatusException(
             final ResponseStatusException responseStatusException) {
@@ -40,6 +49,12 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
+    /**
+     * Returns a standard bad-request response when the request body cannot be parsed.
+     *
+     * @param exception JSON or message conversion failure
+     * @return structured HTTP 400 error response
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
             final HttpMessageNotReadableException exception) {
@@ -56,6 +71,12 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
+    /**
+     * Returns a generic internal-server-error response for uncaught exceptions.
+     *
+     * @param exception unhandled exception from request processing
+     * @return structured HTTP 500 error response
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(final Exception exception) {
         log.error("Unhandled exception", exception);

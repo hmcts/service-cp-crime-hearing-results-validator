@@ -18,6 +18,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+/**
+ * Integration test for the application JSON logging configuration in a Spring Boot test context.
+ */
 class SpringLoggingIntegrationTest extends IntegrationTestBase {
     private PrintStream originalStdOut = System.out;
 
@@ -26,6 +29,10 @@ class SpringLoggingIntegrationTest extends IntegrationTestBase {
         System.setOut(originalStdOut);
     }
 
+    /**
+     * Verifies a Spring-managed log event with MDC data and an exception is emitted as structured
+     * JSON containing the expected core fields and stack trace text.
+     */
     @Test
     void springboot_test_should_log_correct_fields_including_exception() throws IOException {
         MDC.put("any-mdc-field", "1234-1234");

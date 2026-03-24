@@ -13,8 +13,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Unit tests for {@link DefaultValidationRulesService}.
+ */
 class DefaultValidationRulesServiceTest {
 
+    /**
+     * Verifies the list endpoint scenario where enabled and disabled rules are both returned and
+     * the enabled count is derived from the rule metadata.
+     */
     @Test
     void listRules_should_return_all_rules() {
         ValidationRule rule1 = stubRule("RULE-001", true);
@@ -28,6 +35,9 @@ class DefaultValidationRulesServiceTest {
         assertThat(response.getRules()).hasSize(2);
     }
 
+    /**
+     * Verifies a known rule id is resolved to the corresponding rule detail.
+     */
     @Test
     void getRuleById_should_return_matching_rule() {
         ValidationRule rule = stubRule("DR-SENT-002", true);
@@ -39,6 +49,9 @@ class DefaultValidationRulesServiceTest {
         assertThat(response.getEnabled()).isTrue();
     }
 
+    /**
+     * Verifies an unknown rule id is translated into the not-found exception used by the API.
+     */
     @Test
     void getRuleById_should_throw_404_when_not_found() {
         DefaultValidationRulesService service = new DefaultValidationRulesService(List.of());

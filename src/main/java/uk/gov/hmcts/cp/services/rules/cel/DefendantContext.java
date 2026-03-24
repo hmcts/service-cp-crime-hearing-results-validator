@@ -3,6 +3,9 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Derived custodial-sentencing summary for a single defendant or defendant group.
+ */
 public record DefendantContext(
         String defendantName,
         long noInfoCount,
@@ -16,6 +19,11 @@ public record DefendantContext(
         List<String> allOffenceIds
 ) {
 
+    /**
+     * Converts the summary counts into the numeric context consumed by CEL expressions.
+     *
+     * @return CEL variable map for this defendant context
+     */
     public Map<String, Long> toCelContext() {
         return Map.of(
                 "noInfoCount", noInfoCount,
@@ -26,6 +34,12 @@ public record DefendantContext(
         );
     }
 
+    /**
+     * Returns the named offence-id set referenced by a condition's {@code affectedOffenceSet}.
+     *
+     * @param setName configured offence-id set name
+     * @return matching offence-id list
+     */
     public List<String> getOffenceIdSet(String setName) {
         return switch (setName) {
             case "noInfoOffenceIds" -> noInfoOffenceIds;

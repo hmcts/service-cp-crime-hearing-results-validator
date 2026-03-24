@@ -7,8 +7,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for actuator endpoints exposed by the application.
+ */
 class ActuatorIntegrationTest extends IntegrationTestBase {
 
+    /**
+     * Verifies the info endpoint exposes build metadata from the packaged artifact.
+     */
     @Test
     void actuator_info_should_have_build_fields() throws Exception {
         String name = "service-cp-crime-hearing-results-validator";
@@ -21,6 +27,9 @@ class ActuatorIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.build.version").exists());
     }
 
+    /**
+     * Verifies the info endpoint exposes git metadata populated by the build plugin.
+     */
     @Test
     void actuator_info_should_have_gorylenko_git_fields() throws Exception {
         mockMvc.perform(get("/actuator/info"))
@@ -31,6 +40,9 @@ class ActuatorIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.git.commit.time").exists());
     }
 
+    /**
+     * Verifies the health endpoint returns the expected status and health group information.
+     */
     @Test
     void actuator_health_should_have_correct_fields() throws Exception {
         mockMvc.perform(get("/actuator/health"))

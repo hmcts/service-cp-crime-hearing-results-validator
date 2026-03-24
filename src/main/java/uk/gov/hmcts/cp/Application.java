@@ -14,9 +14,16 @@ import org.springframework.context.annotation.FilterType;
         )
 )
 @SuppressWarnings("HideUtilityClassConstructor")
-
+/**
+ * Spring Boot entry point for the crime hearing results validator service.
+ */
 public class Application {
 
+    /**
+     * Boots the Spring application using the configured auto-configuration and component scan.
+     *
+     * @param args startup arguments passed to the JVM entry point
+     */
     public static void main(final String[] args) {
         SpringApplication.run(Application.class, args);
     }

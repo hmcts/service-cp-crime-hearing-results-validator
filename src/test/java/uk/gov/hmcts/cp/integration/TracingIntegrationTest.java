@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for request tracing, MDC population and trace-header passthrough.
+ */
 class TracingIntegrationTest extends IntegrationTestBase {
 
     // Constants for tracing field names
@@ -51,6 +54,10 @@ class TracingIntegrationTest extends IntegrationTestBase {
         MDC.clear();
     }
 
+    /**
+     * Verifies a request without incoming trace headers still produces tracing fields and
+     * application metadata in controller logs.
+     */
     @Test
     void incoming_request_should_add_new_tracing() throws Exception {
         final MvcResultHelper result = performRequestAndCaptureLogs("/api/validation/rules", null, null);
@@ -64,6 +71,10 @@ class TracingIntegrationTest extends IntegrationTestBase {
         assertCommonLogFields(controllerLog);
     }
 
+    /**
+     * Verifies incoming trace and span headers are preserved in logs and echoed back on the
+     * response.
+     */
     @Test
     void incoming_request_with_traceId_should_pass_through() throws Exception {
         // Override the MDC with the header values that would be set by TracingFilter

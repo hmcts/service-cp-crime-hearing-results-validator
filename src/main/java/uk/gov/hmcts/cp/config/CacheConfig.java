@@ -12,8 +12,17 @@ import java.time.Duration;
 
 @Configuration
 @EnableCaching
+/**
+ * Configures application caches used for runtime rule override lookups.
+ */
 public class CacheConfig {
 
+    /**
+     * Creates the cache manager used to hold database-backed rule override values.
+     *
+     * @param ttlSeconds time-to-live for override cache entries in seconds
+     * @return cache manager backed by Caffeine
+     */
     @Bean
     public CacheManager cacheManager(
             @Value("${validation.cache.override-ttl-seconds:30}") long ttlSeconds) {

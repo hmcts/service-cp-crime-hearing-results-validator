@@ -15,6 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for {@link ValidationController}.
+ */
 class ValidationControllerTest {
 
     @Mock
@@ -23,6 +26,10 @@ class ValidationControllerTest {
     @InjectMocks
     ValidationController validationController;
 
+    /**
+     * Verifies the happy-path controller scenario where the request is delegated to the validation
+     * service and the returned payload is wrapped in an HTTP 200 response.
+     */
     @Test
     void validate_should_delegate_to_service_and_return_ok() {
         DraftValidationRequest request = DraftValidationRequest.builder()

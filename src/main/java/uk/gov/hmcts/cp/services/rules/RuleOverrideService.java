@@ -12,10 +12,21 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+/**
+ * Loads optional runtime overrides for validation rules from the database.
+ */
 public class RuleOverrideService {
 
     private final ValidationRuleRepository ruleRepository;
 
+    /**
+     * Returns the persisted override for a rule when one exists.
+     *
+     * <p>Failures are treated as non-fatal so validation can continue with the YAML definition.</p>
+     *
+     * @param ruleId identifier of the rule being evaluated
+     * @return optional override row for the rule
+     */
     @Cacheable(value = "ruleOverrides", key = "#ruleId")
     public Optional<ValidationRuleEntity> findOverride(String ruleId) {
         try {

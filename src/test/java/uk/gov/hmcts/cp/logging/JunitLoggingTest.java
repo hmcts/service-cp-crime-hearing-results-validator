@@ -15,8 +15,15 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+/**
+ * Verifies the JSON logging configuration used during plain JUnit execution.
+ */
 class JunitLoggingTest {
 
+    /**
+     * Covers the scenario where a standard JUnit log line is emitted with MDC data and should be
+     * rendered as structured JSON with the expected core fields.
+     */
     @Test
     void junit_should_log_correct_fields() throws JsonProcessingException {
         MDC.put("traceId", "1234-1234");

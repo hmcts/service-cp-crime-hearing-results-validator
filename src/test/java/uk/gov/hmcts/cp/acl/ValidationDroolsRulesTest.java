@@ -7,10 +7,16 @@ import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Smoke tests for the Drools ACL rules file packaged with the service.
+ */
 class ValidationDroolsRulesTest {
 
     private static final String DRL_PATH = "/acl/validation-rules.drl";
 
+    /**
+     * Verifies the ACL rules file is packaged on the classpath and can be opened by tests.
+     */
     @Test
     void drl_file_should_be_loadable_from_classpath() {
         try (InputStream stream = getClass().getResourceAsStream(DRL_PATH)) {
@@ -20,6 +26,9 @@ class ValidationDroolsRulesTest {
         }
     }
 
+    /**
+     * Verifies the ACL rules reference each application action name exposed by the HTTP layer.
+     */
     @Test
     void drl_file_should_contain_expected_action_names() throws Exception {
         String content;
@@ -33,6 +42,9 @@ class ValidationDroolsRulesTest {
         assertThat(content).contains("validation-service.rules-detail");
     }
 
+    /**
+     * Verifies the ACL rules mention the expected allowed identity groups.
+     */
     @Test
     void drl_file_should_reference_expected_groups() throws Exception {
         String content;
@@ -46,6 +58,9 @@ class ValidationDroolsRulesTest {
         assertThat(content).contains("System Users");
     }
 
+    /**
+     * Verifies the ACL rules import the Drools types and globals required at runtime.
+     */
     @Test
     void drl_file_should_import_required_drools_types() throws Exception {
         String content;

@@ -13,12 +13,19 @@ import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Live HTTP coverage for the draft validation endpoint against a running service instance.
+ */
 class ValidationApiHttpLiveTest {
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Covers the empty-hearing scenario where no result lines exist and validation should return a
+     * clean advisory response with no issues.
+     */
     @Test
     void validate_empty_arrays_should_return_valid() throws Exception {
         String body = """
@@ -44,6 +51,10 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("rulesEvaluated").get(0).asText()).isEqualTo("DR-SENT-002");
     }
 
+    /**
+     * Covers AC1 for a single primary custodial offence plus a second offence marked concurrent, so
+     * the request should remain valid with no warnings or errors.
+     */
     @Test
     void ac1_single_offence_without_info_should_be_valid() throws Exception {
         String body = """
@@ -70,6 +81,10 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("warnings")).isEmpty();
     }
 
+    /**
+     * Covers AC2 where more than one non-primary custodial offence omits concurrent or consecutive
+     * information, producing a blocking error.
+     */
     @Test
     void ac2_multiple_offences_missing_info_should_produce_error() throws Exception {
         String body = """
@@ -102,6 +117,10 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("errors").get(0).get("message").asText()).startsWith("Offence/counts [2, 3]");
     }
 
+    /**
+     * Covers AC3 where a custodial offence is marked both concurrent and consecutive, producing a
+     * warning but not invalidating the payload.
+     */
     @Test
     void ac3_offence_with_both_concurrent_and_consecutive_should_produce_warning() throws Exception {
         String body = """
@@ -131,6 +150,10 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("Offence/counts [2]");
     }
 
+    /**
+     * Covers AC4 where every custodial offence has relationship data and no primary sentence can be
+     * identified, producing a warning only.
+     */
     @Test
     void ac4_all_offences_have_info_no_primary_should_produce_warning() throws Exception {
         String body = """

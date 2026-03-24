@@ -14,6 +14,9 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+/**
+ * Focused unit tests for the DR-SENT-002 CEL validation rule implementation.
+ */
 class CelValidationRuleTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
@@ -25,6 +28,9 @@ class CelValidationRuleTest {
             offenceDisplayHelper,
             mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
 
+    /**
+     * Verifies the rule exposes the expected metadata loaded from DR-SENT-002.
+     */
     @Test
     void getRuleDetail_should_return_DR_SENT_002() {
         RuleDetailResponse detail = rule.getRuleDetail();
@@ -35,6 +41,10 @@ class CelValidationRuleTest {
         assertThat(detail.getEnabled()).isTrue();
     }
 
+    /**
+     * Covers the AC1 pass scenario where there is exactly one primary custodial offence and a
+     * second offence already marked concurrent, so no issue is produced.
+     */
     @Test
     void ac1_single_offence_no_concurrent_consecutive_should_have_no_issues() {
         DraftValidationRequest request = buildRequest(
@@ -54,6 +64,10 @@ class CelValidationRuleTest {
         assertThat(issues).isEmpty();
     }
 
+    /**
+     * Covers AC2 where two non-primary custodial offences omit relationship data, so the rule
+     * returns a single blocking error pointing at both affected offences.
+     */
     @Test
     void ac2_multiple_offences_missing_info_should_produce_error() {
         DraftValidationRequest request = buildRequest(
@@ -85,6 +99,10 @@ class CelValidationRuleTest {
         assertThat(error.getAffectedOffences()).hasSize(2);
     }
 
+    /**
+     * Covers AC3 where an offence is marked both concurrent and consecutive, producing a warning
+     * against the offending count.
+     */
     @Test
     void ac3_offence_with_both_concurrent_and_consecutive_should_produce_warning() {
         DraftValidationRequest request = buildRequest(
@@ -110,6 +128,10 @@ class CelValidationRuleTest {
         assertThat(warning.getMessage()).contains("Offence 2 (URN:32AH9105826)");
     }
 
+    /**
+     * Covers AC4 where all custodial offences carry relationship data and no primary sentence can
+     * be inferred, resulting in a warning.
+     */
     @Test
     void ac4_all_offences_have_info_no_primary_should_produce_warning() {
         DraftValidationRequest request = buildRequest(
@@ -133,6 +155,9 @@ class CelValidationRuleTest {
         assertThat(warning.getMessage()).contains("no primary sentence");
     }
 
+    /**
+     * Verifies non-custodial result lines are ignored entirely by the rule.
+     */
     @Test
     void no_custodial_sentences_should_produce_no_issues() {
         DraftValidationRequest request = buildRequest(
@@ -151,6 +176,10 @@ class CelValidationRuleTest {
         assertThat(issues).isEmpty();
     }
 
+    /**
+     * Verifies defendant grouping works independently so one defendant can fail AC2 without
+     * creating issues for another defendant in the same hearing.
+     */
     @Test
     void multiple_defendants_should_be_validated_independently() {
         // d1: off1=primary, off2+off3=noInfo (2), off4=concurrent -> AC2 error
@@ -182,6 +211,10 @@ class CelValidationRuleTest {
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
     }
 
+    /**
+     * Verifies only configured custodial short codes participate when mixed with non-custodial
+     * result lines.
+     */
     @Test
     void non_custodial_short_codes_should_be_ignored() {
         DraftValidationRequest request = buildRequest(
@@ -203,6 +236,10 @@ class CelValidationRuleTest {
         assertThat(issues).isEmpty();
     }
 
+    /**
+     * Verifies a single custodial offence is skipped because there is no relationship ambiguity to
+     * validate.
+     */
     @Test
     void single_offence_with_custodial_sentence_should_produce_no_issues() {
         DraftValidationRequest request = buildRequest(
@@ -215,6 +252,9 @@ class CelValidationRuleTest {
         assertThat(issues).isEmpty();
     }
 
+    /**
+     * Verifies an empty hearing payload produces no validation issues.
+     */
     @Test
     void empty_result_lines_should_produce_no_issues() {
         DraftValidationRequest request = buildRequest(List.of(), List.of());
@@ -224,6 +264,10 @@ class CelValidationRuleTest {
         assertThat(issues).isEmpty();
     }
 
+    /**
+     * Verifies multiple warning conditions can fire together for the same defendant when the data
+     * simultaneously matches AC3 and AC4.
+     */
     @Test
     void ac3_and_ac4_can_both_fire_for_same_defendant() {
         DraftValidationRequest request = buildRequest(

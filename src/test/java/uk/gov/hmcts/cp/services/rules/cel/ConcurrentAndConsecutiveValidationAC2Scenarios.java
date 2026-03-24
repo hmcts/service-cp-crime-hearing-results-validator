@@ -21,7 +21,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @DisplayName("AC2 – Error scenarios")
 @TestMethodOrder(MethodOrderer.MethodName.class)
-
+/**
+ * Expanded AC2 scenario coverage for the custodial concurrent or consecutive validation rule.
+ */
 public class ConcurrentAndConsecutiveValidationAC2Scenarios {
 
     /*
@@ -45,6 +47,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
             offenceDisplayHelper,
             mock(RuleOverrideService.class));
 
+    /**
+     * Verifies a single custodial offence is treated as the lone primary sentence and does not
+     * raise AC2.
+     */
     @Test
     @DisplayName("AC2-S1: 1 custodial offence – 1 primary (primary missing info)- No Error")
     void AC2_s1_one_primary_no_info() {
@@ -58,6 +64,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
     }
 
 
+    /**
+     * Verifies non-custodial offences do not influence AC2 when there is still only one custodial
+     * primary offence without relationship information.
+     */
     @Test
     @DisplayName("AC2-S2: 1 custodial offence – 1 and 1 non custodial primary (only 1 primary missing info)- No Error")
     void ac2_s2_one_primary1_plus_1_non_custodial_both_with_no_info() {
@@ -74,6 +84,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
     }
 
 
+    /**
+     * Verifies adding a second custodial offence with no relationship data triggers AC2 even when a
+     * non-custodial offence is also present.
+     */
     @Test
     @DisplayName("AC2-S3: 2 custodial offence – 1 and 1 non custodial primary (1 non-primary missing info)- Error")
     void aC2_s3_one_primary1_plus_1_custodial_plus_1_non_custodial_both_with_no_info() {
@@ -94,6 +108,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
     }
 
 
+    /**
+     * Verifies three custodial offences with no relationship data produce one AC2 error affecting
+     * the two non-primary offences.
+     */
     @Test
     @DisplayName("AC2-S4: 3 offences – 1 primary, 1 no-info, 1 with info (only 1 non-primary missing info)")
     void ac2_s4_one_primary_2_no_info() {
@@ -113,6 +131,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
     }
 
+    /**
+     * Verifies AC2 still fires when there is exactly one additional no-info offence beyond the
+     * primary and the remaining offence is concurrent.
+     */
     @Test
     @DisplayName("AC2-S5: 3 offences – 1 primary, 1 info and 1  no-info, → Pass (only 1 non-primary missing info)")
     void ac2_s5_one_primary_one_no_info_one_concurrent() {
@@ -133,6 +155,9 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
     }
 
+    /**
+     * Verifies AC2 does not fire once all non-primary custodial offences have relationship data.
+     */
     @Test
     @DisplayName("AC2-S6: 3 offences – 1 primary, 2 with info, → Pass (only 1 non-primary missing info)")
     void ac2_s6_one_primary_two_with_info_one_concurrent() {
@@ -151,6 +176,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues).hasSize(0);
     }
 
+    /**
+     * Verifies the all-no-info custodial scenario produces a single AC2 error affecting both
+     * non-primary offences.
+     */
     @Test
     @DisplayName("AC2-S7: 3 offences – all no-info → Error")
     void ac2_sc7_all_no_info() {
@@ -171,6 +200,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
     }
 
+    /**
+     * Verifies non-custodial offences are ignored when calculating the affected offences for an
+     * AC2 breach.
+     */
     @Test
     @DisplayName("AC2_S8: 2 custodial and 1 non custodial offences – all no-info → Error")
     void ac2_s8_all_no_info1() {
@@ -191,6 +224,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
     }
 
+    /**
+     * Verifies AC2 does not fire when there is only one custodial offence and the remaining
+     * offences are non-custodial.
+     */
     @Test
     @DisplayName("AC2_S9: 1 custodial and 2 non custodial offences – all no-info → Error")
     void ac2_s9_all_no_info1() {
@@ -209,6 +246,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues).hasSize(0);
     }
 
+    /**
+     * Verifies null concurrent and consecutive fields are treated as absent data for custodial
+     * offences and still trigger AC2.
+     */
     @Test
     @DisplayName("AC2-S10: 6 offences – 2 Custodial and 4 non custodial, consecutive and Concurrent not set for all -no-info → Error ")
     void ac2_s10_all_no_infon_nullfields_are_ignored() {
@@ -242,6 +283,10 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
     }
 
+    /**
+     * Verifies null relationship fields on purely non-custodial offences are ignored completely by
+     * the rule.
+     */
     @Test
     @DisplayName("AC2-S11: 6 offences – 0 Custodial and 6 non custodial, consecutive and Concurrent not set for all -no-info → Error ")
     void ac2_s11_all_no_infon_nullfields_are_ignored() {

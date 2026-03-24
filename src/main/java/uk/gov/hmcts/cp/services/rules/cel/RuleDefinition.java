@@ -11,6 +11,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * YAML-backed definition of a validation rule and its CEL conditions.
+ */
 public class RuleDefinition {
 
     private String id;

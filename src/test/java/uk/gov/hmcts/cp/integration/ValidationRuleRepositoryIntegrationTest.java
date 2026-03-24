@@ -10,11 +10,17 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Integration tests for the rule override JPA repository against the test database.
+ */
 class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
 
     @Resource
     private ValidationRuleRepository repository;
 
+    /**
+     * Verifies the Flyway seed data can be read back for the bundled DR-SENT-002 override row.
+     */
     @Test
     void findById_should_return_seeded_rule() {
         Optional<ValidationRuleEntity> result = repository.findById("DR-SENT-002");
@@ -24,6 +30,9 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
         assertThat(result.get().getSeverity()).isEqualTo("ERROR");
     }
 
+    /**
+     * Verifies unknown identifiers are returned as empty optionals rather than errors.
+     */
     @Test
     void findById_should_return_empty_for_unknown_id() {
         Optional<ValidationRuleEntity> result = repository.findById("UNKNOWN-RULE");
@@ -31,6 +40,9 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * Verifies a new override row can be saved and read back with all persisted fields intact.
+     */
     @Test
     void save_and_retrieve_should_roundtrip() {
         ValidationRuleEntity entity = ValidationRuleEntity.builder()

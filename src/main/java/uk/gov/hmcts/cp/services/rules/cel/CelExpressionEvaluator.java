@@ -12,11 +12,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
+/**
+ * Evaluates CEL expressions used by YAML-defined validation rule conditions.
+ */
 public class CelExpressionEvaluator {
 
     private final ScriptHost host = ScriptHost.newBuilder().build();
     private final Map<String, Script> cache = new ConcurrentHashMap<>();
 
+    /**
+     * Evaluates a boolean CEL expression against the supplied numeric context.
+     *
+     * @param expression CEL expression to evaluate
+     * @param context variable values exposed to the expression
+     * @return evaluation result
+     */
     public boolean evaluate(String expression, Map<String, Long> context) {
         try {
             String cacheKey = expression + "|" + context.keySet().stream()
@@ -32,6 +42,13 @@ public class CelExpressionEvaluator {
         }
     }
 
+    /**
+     * Compiles an expression for the given variable shape so it can be cached and reused.
+     *
+     * @param expression CEL expression to compile
+     * @param context variable names that must be declared for the expression
+     * @return compiled CEL script
+     */
     private Script compile(String expression, Map<String, Long> context) {
         try {
             ScriptHost.ScriptBuilder builder = host.buildScript(expression);
