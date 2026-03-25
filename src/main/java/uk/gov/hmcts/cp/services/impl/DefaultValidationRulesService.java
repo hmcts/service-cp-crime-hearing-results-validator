@@ -21,7 +21,7 @@ public class DefaultValidationRulesService implements ValidationRulesService {
 
     private final List<ValidationRule> rules;
 
-    public DefaultValidationRulesService(@Qualifier("validationRules") List<ValidationRule> rules) {
+    public DefaultValidationRulesService(@Qualifier("validationRules") final List<ValidationRule> rules) {
         this.rules = rules;
     }
 
@@ -33,11 +33,11 @@ public class DefaultValidationRulesService implements ValidationRulesService {
     @Override
     public RuleListResponse listRules() {
         log.info("Listing {} validation rules", rules.size());
-        List<RuleDetailResponse> ruleDetails = rules.stream()
+        final List<RuleDetailResponse> ruleDetails = rules.stream()
                 .map(ValidationRule::getRuleDetail)
                 .toList();
 
-        long enabledCount = ruleDetails.stream()
+        final long enabledCount = ruleDetails.stream()
                 .filter(r -> Boolean.TRUE.equals(r.getEnabled()))
                 .count();
 
@@ -55,7 +55,7 @@ public class DefaultValidationRulesService implements ValidationRulesService {
      * @return matching rule detail
      */
     @Override
-    public RuleDetailResponse getRuleById(String ruleId) {
+    public RuleDetailResponse getRuleById(final String ruleId) {
         log.info("Getting validation rule detail for ruleId={}", ruleId);
         return rules.stream()
                 .map(ValidationRule::getRuleDetail)

@@ -12,6 +12,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,12 +30,12 @@ public class CelValidationRule implements ValidationRule {
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
-    public CelValidationRule(String rulePath,
-                             CustodialPreprocessor preprocessor,
-                             CelExpressionEvaluator evaluator,
-                             MessageTemplateResolver messageResolver,
-                             OffenceDisplayHelper offenceDisplayHelper,
-                             RuleOverrideService ruleOverrideService) {
+    public CelValidationRule(final String rulePath,
+                             final CustodialPreprocessor preprocessor,
+                             final CelExpressionEvaluator evaluator,
+                             final MessageTemplateResolver messageResolver,
+                             final OffenceDisplayHelper offenceDisplayHelper,
+                             final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
         this.preprocessor = preprocessor;
         this.evaluator = evaluator;
@@ -45,18 +46,18 @@ public class CelValidationRule implements ValidationRule {
 
     @Override
     public RuleDetailResponse getRuleDetail() {
-        Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
+        final Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
 
-        boolean enabled = override.map(ValidationRuleEntity::isEnabled)
+        final boolean enabled = override.map(ValidationRuleEntity::isEnabled)
                 .orElse(ruleDefinition.isEnabled());
-        String rawSeverity = override.map(ValidationRuleEntity::getSeverity)
+        final String rawSeverity = override.map(ValidationRuleEntity::getSeverity)
                 .orElse("ERROR");
-        String severity = normalizeSeverity(rawSeverity);
-        if (severity == null) {
+        final String normalized = normalizeSeverity(rawSeverity);
+        if (normalized == null) {
             log.warn("Invalid severity override '{}' for rule {}, falling back to ERROR",
                     rawSeverity, ruleDefinition.getId());
-            severity = "ERROR";
         }
+        final String severity = Optional.ofNullable(normalized).orElse("ERROR");
 
         return RuleDetailResponse.builder()
                 .ruleId(ruleDefinition.getId())
@@ -69,49 +70,49 @@ public class CelValidationRule implements ValidationRule {
     }
 
     @Override
-    public List<ValidationIssue> evaluate(DraftValidationRequest request) {
-        Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
+    public List<ValidationIssue> evaluate(final DraftValidationRequest request) {
+        final Optional<ValidationRuleEntity> override = ruleOverrideService.findOverride(ruleDefinition.getId());
 
-        boolean enabled = override.map(ValidationRuleEntity::isEnabled)
+        final boolean enabled = override.map(ValidationRuleEntity::isEnabled)
                 .orElse(ruleDefinition.isEnabled());
-        if (!enabled) {
-            log.debug("Rule {} is disabled via database override", ruleDefinition.getId());
-            return List.of();
-        }
 
-        List<ValidationIssue> issues = new ArrayList<>();
+        final List<ValidationIssue> issues = new ArrayList<>();
 
-        Map<String, OffenceDto> offenceMap = request.getOffences().stream()
-                .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
+        if (enabled) {
+            final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
+                    .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
 
-        Map<String, DefendantContext> defendantContexts =
-                preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
+            final Map<String, DefendantContext> defendantContexts =
+                    preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
-        for (DefendantContext context : defendantContexts.values()) {
-            Map<String, Long> celContext = context.toCelContext();
+            for (final DefendantContext context : defendantContexts.values()) {
+                final Map<String, Long> celContext = context.toCelContext();
 
-            for (ConditionDefinition condition : ruleDefinition.getConditions()) {
-                if (evaluator.evaluate(condition.getExpression(), celContext)) {
-                    List<String> affectedIds = context.getOffenceIdSet(
-                            condition.getAffectedOffenceSet());
+                for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
+                    if (evaluator.evaluate(condition.getExpression(), celContext)) {
+                        final List<String> affectedIds = context.getOffenceIdSet(
+                                condition.getAffectedOffenceSet());
 
-                    String message = messageResolver.resolve(
-                            condition.getMessageTemplate(),
-                            context.defendantName(),
-                            affectedIds,
-                            offenceMap,
-                            context.allOffenceIds());
+                        final String message = messageResolver.resolve(
+                                condition.getMessageTemplate(),
+                                context.defendantName(),
+                                affectedIds,
+                                offenceMap,
+                                context.allOffenceIds());
 
-                    String effectiveSeverity = resolveEffectiveSeverity(
-                            condition.getSeverity(), override);
-                    issues.add(ValidationIssue.builder()
-                            .ruleId(ruleDefinition.getId())
-                            .severity(mapSeverity(effectiveSeverity))
-                            .message(message)
-                            .affectedOffences(offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap))
-                            .build());
+                        final String effectiveSeverity = resolveEffectiveSeverity(
+                                condition.getSeverity(), override);
+                        issues.add(ValidationIssue.builder()
+                                .ruleId(ruleDefinition.getId())
+                                .severity(mapSeverity(effectiveSeverity))
+                                .message(message)
+                                .affectedOffences(offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap))
+                                .build());
+                    }
                 }
             }
+        } else {
+            log.debug("Rule {} is disabled via database override", ruleDefinition.getId());
         }
 
         return issues;
@@ -121,39 +122,39 @@ public class CelValidationRule implements ValidationRule {
      * Resolves the effective severity using the DB override as a ceiling.
      * WARNING &lt; ERROR, so a DB override of WARNING caps any ERROR condition down to WARNING.
      */
-    private String resolveEffectiveSeverity(String yamlSeverity,
-                                            Optional<ValidationRuleEntity> override) {
-        String dbSeverity = override.map(ValidationRuleEntity::getSeverity).orElse(null);
+    private String resolveEffectiveSeverity(final String yamlSeverity,
+                                            final Optional<ValidationRuleEntity> override) {
+        final String dbSeverity = override.map(ValidationRuleEntity::getSeverity).orElse(null);
+        final String result;
         if (dbSeverity == null) {
-            return yamlSeverity;
+            result = yamlSeverity;
+        } else {
+            final String normalizedDb = normalizeSeverity(dbSeverity);
+            if (normalizedDb == null) {
+                log.warn("Invalid severity override '{}' for rule {}, falling back to YAML severity",
+                        dbSeverity, ruleDefinition.getId());
+                result = yamlSeverity;
+            } else {
+                final int yamlOrdinal = severityOrdinal(yamlSeverity);
+                final int dbOrdinal = severityOrdinal(normalizedDb);
+                result = yamlOrdinal <= dbOrdinal ? yamlSeverity : normalizedDb;
+            }
         }
-        String normalizedDb = normalizeSeverity(dbSeverity);
-        if (normalizedDb == null) {
-            log.warn("Invalid severity override '{}' for rule {}, falling back to YAML severity",
-                    dbSeverity, ruleDefinition.getId());
-            return yamlSeverity;
-        }
-        int yamlOrdinal = severityOrdinal(yamlSeverity);
-        int dbOrdinal = severityOrdinal(normalizedDb);
-        return yamlOrdinal <= dbOrdinal ? yamlSeverity : normalizedDb;
+        return result;
     }
 
-    private String normalizeSeverity(String severity) {
-        if (severity == null) {
-            return null;
-        }
-        String upper = severity.trim().toUpperCase();
-        if ("ERROR".equals(upper) || "WARNING".equals(upper)) {
-            return upper;
-        }
-        return null;
+    private String normalizeSeverity(final String severity) {
+        return Optional.ofNullable(severity)
+                .map(s -> s.trim().toUpperCase(Locale.ROOT))
+                .filter(upper -> "ERROR".equals(upper) || "WARNING".equals(upper))
+                .orElse(null);
     }
 
-    private int severityOrdinal(String severity) {
+    private int severityOrdinal(final String severity) {
         return "WARNING".equalsIgnoreCase(severity) ? 0 : 1;
     }
 
-    private ValidationIssue.SeverityEnum mapSeverity(String severity) {
+    private ValidationIssue.SeverityEnum mapSeverity(final String severity) {
         return ValidationIssue.SeverityEnum.valueOf(normalizeSeverity(severity));
     }
 }

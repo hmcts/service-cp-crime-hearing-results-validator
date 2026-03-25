@@ -21,13 +21,13 @@ public class RuleDefinitionLoader {
      * @param classpathLocation location of the YAML file relative to the classpath root
      * @return parsed rule definition
      */
-    public static RuleDefinition load(String classpathLocation) {
+    public static RuleDefinition load(final String classpathLocation) {
         try (InputStream is = new ClassPathResource(classpathLocation).getInputStream()) {
-            Map<String, RuleDefinition> wrapper = YAML_MAPPER.readValue(
+            final Map<String, RuleDefinition> wrapper = YAML_MAPPER.readValue(
                     is,
                     YAML_MAPPER.getTypeFactory().constructMapType(
                             Map.class, String.class, RuleDefinition.class));
-            RuleDefinition rule = wrapper.get("rule");
+            final RuleDefinition rule = wrapper.get("rule");
             if (rule == null) {
                 throw new IllegalArgumentException(
                         "YAML file must contain a top-level 'rule' key: " + classpathLocation);

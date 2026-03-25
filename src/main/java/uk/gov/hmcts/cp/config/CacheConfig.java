@@ -25,8 +25,8 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager cacheManager(
-            @Value("${validation.cache.override-ttl-seconds:30}") long ttlSeconds) {
-        CaffeineCacheManager manager = new CaffeineCacheManager("ruleOverrides");
+            @Value("${validation.cache.override-ttl-seconds:30}") final long ttlSeconds) {
+        final CaffeineCacheManager manager = new CaffeineCacheManager("ruleOverrides");
         manager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofSeconds(ttlSeconds)));
         return manager;

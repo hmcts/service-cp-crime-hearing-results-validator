@@ -28,12 +28,14 @@ public class RuleOverrideService {
      * @return optional override row for the rule
      */
     @Cacheable(value = "ruleOverrides", key = "#ruleId")
-    public Optional<ValidationRuleEntity> findOverride(String ruleId) {
+    public Optional<ValidationRuleEntity> findOverride(final String ruleId) {
+        Optional<ValidationRuleEntity> result;
         try {
-            return ruleRepository.findById(ruleId);
+            result = ruleRepository.findById(ruleId);
         } catch (Exception e) {
             log.warn("Failed to load rule override for {}: {}", ruleId, e.getMessage());
-            return Optional.empty();
+            result = Optional.empty();
         }
+        return result;
     }
 }

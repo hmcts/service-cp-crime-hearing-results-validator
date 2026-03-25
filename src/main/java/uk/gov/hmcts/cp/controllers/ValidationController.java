@@ -23,18 +23,18 @@ public class ValidationController implements ValidationApi {
     /**
      * Validates the supplied draft results payload and returns the aggregated validation outcome.
      *
-     * @param CJSCPPUID authenticated user identifier from the request header
+     * @param cjsCppUid authenticated user identifier from the request header
      * @param draftValidationRequest draft result payload to validate
-     * @param CPPCLIENTCORRELATIONID optional correlation identifier supplied by the client
+     * @param cppClientCorrelationId optional correlation identifier supplied by the client
      * @return HTTP 200 response containing the validation result
      */
     @Override
     public ResponseEntity<DraftValidationResponse> validateDraftResults(
-            String CJSCPPUID,
-            DraftValidationRequest draftValidationRequest,
-            @Nullable String CPPCLIENTCORRELATIONID) {
+            final String cjsCppUid,
+            final DraftValidationRequest draftValidationRequest,
+            @Nullable final String cppClientCorrelationId) {
 
-        log.info("Validate draft results for user={}", CJSCPPUID);
+        log.info("Validate draft results for user={}", cjsCppUid);
         return ResponseEntity.ok(validationService.validate(draftValidationRequest));
     }
 }

@@ -25,27 +25,27 @@ public class DefaultValidationService implements ValidationService {
 
     private final List<ValidationRule> rules;
 
-    public DefaultValidationService(@Qualifier("validationRules") List<ValidationRule> rules) {
+    public DefaultValidationService(@Qualifier("validationRules") final List<ValidationRule> rules) {
         this.rules = rules;
     }
 
     @Override
     @Observed(name = "validation.request")
-    public DraftValidationResponse validate(DraftValidationRequest request) {
+    public DraftValidationResponse validate(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
-        long startNanos = System.nanoTime();
+        final long startNanos = System.nanoTime();
 
-        List<String> rulesEvaluated = new ArrayList<>();
-        List<ValidationIssue> errors = new ArrayList<>();
-        List<ValidationIssue> warnings = new ArrayList<>();
+        final List<String> rulesEvaluated = new ArrayList<>();
+        final List<ValidationIssue> errors = new ArrayList<>();
+        final List<ValidationIssue> warnings = new ArrayList<>();
 
-        for (ValidationRule rule : rules) {
+        for (final ValidationRule rule : rules) {
             String ruleId = "unknown";
             try {
                 ruleId = rule.getRuleDetail().getRuleId();
 
-                List<ValidationIssue> issues = rule.evaluate(request);
-                for (ValidationIssue issue : issues) {
+                final List<ValidationIssue> issues = rule.evaluate(request);
+                for (final ValidationIssue issue : issues) {
                     if (issue.getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
                         errors.add(issue);
                     } else {
@@ -60,7 +60,7 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
-        long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+        final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
 
         return DraftValidationResponse.builder()
                 .validationId("val-" + UUID.randomUUID())

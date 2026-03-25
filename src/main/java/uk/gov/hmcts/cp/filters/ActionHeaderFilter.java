@@ -35,61 +35,64 @@ public class ActionHeaderFilter extends OncePerRequestFilter {
     private static final String RULES_DETAIL_PREFIX = "/api/validation/rules/";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
+                                    final FilterChain filterChain) throws ServletException, IOException {
 
-        if (request.getHeader(ACTION_HEADER) != null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        String action = resolveAction(request.getServletPath());
-        if (action != null) {
+        final String action = resolveAction(request.getServletPath());
+        if (request.getHeader(ACTION_HEADER) == null && action != null) {
             filterChain.doFilter(new ActionHeaderRequestWrapper(request, action), response);
         } else {
             filterChain.doFilter(request, response);
         }
     }
 
-    private String resolveAction(String uri) {
-        String action = PATH_TO_ACTION.get(uri);
-        if (action != null) {
-            return action;
+    private String resolveAction(final String uri) {
+        final String mapped = PATH_TO_ACTION.get(uri);
+        final String action;
+        if (mapped != null) {
+            action = mapped;
+        } else if (uri.startsWith(RULES_DETAIL_PREFIX)) {
+            action = "validation-service.rules-detail";
+        } else {
+            action = null;
         }
-        if (uri.startsWith(RULES_DETAIL_PREFIX)) {
-            return "validation-service.rules-detail";
-        }
-        return null;
+        return action;
     }
 
     private static class ActionHeaderRequestWrapper extends HttpServletRequestWrapper {
 
         private final String action;
 
-        ActionHeaderRequestWrapper(HttpServletRequest request, String action) {
+        /* default */ ActionHeaderRequestWrapper(final HttpServletRequest request, final String action) {
             super(request);
             this.action = action;
         }
 
         @Override
-        public String getHeader(String name) {
+        public String getHeader(final String name) {
+            final String result;
             if (ACTION_HEADER.equalsIgnoreCase(name)) {
-                return action;
+                result = action;
+            } else {
+                result = super.getHeader(name);
             }
-            return super.getHeader(name);
+            return result;
         }
 
         @Override
-        public Enumeration<String> getHeaders(String name) {
+        public Enumeration<String> getHeaders(final String name) {
+            final Enumeration<String> result;
             if (ACTION_HEADER.equalsIgnoreCase(name)) {
-                return Collections.enumeration(List.of(action));
+                result = Collections.enumeration(List.of(action));
+            } else {
+                result = super.getHeaders(name);
             }
-            return super.getHeaders(name);
+            return result;
         }
 
         @Override
         public Enumeration<String> getHeaderNames() {
-            List<String> names = Collections.list(super.getHeaderNames());
+            final List<String> names = Collections.list(super.getHeaderNames());
             if (!names.stream().anyMatch(ACTION_HEADER::equalsIgnoreCase)) {
                 names.add(ACTION_HEADER);
             }

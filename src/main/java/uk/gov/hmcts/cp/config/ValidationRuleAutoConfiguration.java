@@ -26,23 +26,23 @@ import java.util.List;
 public class ValidationRuleAutoConfiguration {
 
     @Bean("validationRules")
-    List<ValidationRule> validationRules(
-            CustodialPreprocessor preprocessor,
-            CelExpressionEvaluator evaluator,
-            MessageTemplateResolver messageResolver,
-            OffenceDisplayHelper offenceDisplayHelper,
-            RuleOverrideService ruleOverrideService) throws IOException {
+    public List<ValidationRule> validationRules(
+            final CustodialPreprocessor preprocessor,
+            final CelExpressionEvaluator evaluator,
+            final MessageTemplateResolver messageResolver,
+            final OffenceDisplayHelper offenceDisplayHelper,
+            final RuleOverrideService ruleOverrideService) throws IOException {
 
-        Resource[] resources = new PathMatchingResourcePatternResolver()
+        final Resource[] resources = new PathMatchingResourcePatternResolver()
                 .getResources("classpath*:rules/*.yaml");
 
-        List<ValidationRule> rules = new ArrayList<>();
-        for (Resource resource : resources) {
-            String filename = resource.getFilename();
+        final List<ValidationRule> rules = new ArrayList<>();
+        for (final Resource resource : resources) {
+            final String filename = resource.getFilename();
             if (filename == null || !filename.startsWith("DR-")) {
                 continue;
             }
-            String path = "rules/" + filename;
+            final String path = "rules/" + filename;
             rules.add(new CelValidationRule(path, preprocessor, evaluator,
                     messageResolver, offenceDisplayHelper, ruleOverrideService));
         }

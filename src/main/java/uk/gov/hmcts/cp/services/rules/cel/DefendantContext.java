@@ -40,7 +40,7 @@ public record DefendantContext(
      * @param setName configured offence-id set name
      * @return matching offence-id list
      */
-    public List<String> getOffenceIdSet(String setName) {
+    public List<String> getOffenceIdSet(final String setName) {
         return switch (setName) {
             case "noInfoOffenceIds" -> noInfoOffenceIds;
             case "hasInfoOffenceIds" -> hasInfoOffenceIds;

@@ -22,16 +22,16 @@ public class ValidationRulesController implements ValidationRulesApi {
     /**
      * Returns the currently registered validation rules and their runtime status.
      *
-     * @param CJSCPPUID authenticated user identifier from the request header
-     * @param CPPCLIENTCORRELATIONID client-supplied correlation identifier
+     * @param cjsCppUid authenticated user identifier from the request header
+     * @param cppClientCorrelationId client-supplied correlation identifier
      * @return HTTP 200 response containing the rule list
      */
     @Override
     public ResponseEntity<RuleListResponse> listValidationRules(
-            String CJSCPPUID,
-            String CPPCLIENTCORRELATIONID) {
+            final String cjsCppUid,
+            final String cppClientCorrelationId) {
 
-        log.info("List validation rules for user={}", CJSCPPUID);
+        log.info("List validation rules for user={}", cjsCppUid);
         return ResponseEntity.ok(validationRulesService.listRules());
     }
 
@@ -39,17 +39,17 @@ public class ValidationRulesController implements ValidationRulesApi {
      * Returns the detail for a single validation rule.
      *
      * @param ruleId identifier of the rule to fetch
-     * @param CJSCPPUID authenticated user identifier from the request header
-     * @param CPPCLIENTCORRELATIONID client-supplied correlation identifier
+     * @param cjsCppUid authenticated user identifier from the request header
+     * @param cppClientCorrelationId client-supplied correlation identifier
      * @return HTTP 200 response containing the rule detail
      */
     @Override
     public ResponseEntity<RuleDetailResponse> getValidationRuleById(
-            String ruleId,
-            String CJSCPPUID,
-            String CPPCLIENTCORRELATIONID) {
+            final String ruleId,
+            final String cjsCppUid,
+            final String cppClientCorrelationId) {
 
-        log.info("Get validation rule {} for user={}", ruleId, CJSCPPUID);
+        log.info("Get validation rule {} for user={}", ruleId, cjsCppUid);
         return ResponseEntity.ok(validationRulesService.getRuleById(ruleId));
     }
 }

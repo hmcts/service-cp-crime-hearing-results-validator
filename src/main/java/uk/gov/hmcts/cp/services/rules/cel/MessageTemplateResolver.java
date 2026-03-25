@@ -14,18 +14,21 @@ import java.util.Map;
 @Component
 public class MessageTemplateResolver {
 
+    private static final int SINGLE_ELEMENT = 1;
+    private static final int TWO_ELEMENTS = 2;
+
     private final OffenceDisplayHelper offenceDisplayHelper;
 
-    public MessageTemplateResolver(OffenceDisplayHelper offenceDisplayHelper) {
+    public MessageTemplateResolver(final OffenceDisplayHelper offenceDisplayHelper) {
         this.offenceDisplayHelper = offenceDisplayHelper;
     }
 
-    public String resolve(String template,
-                          String defendantName,
-                          List<String> affectedOffenceIds,
-                          Map<String, OffenceDto> offenceMap,
-                          List<String> allOffenceIds) {
-        String formatted = formatOffenceNumbers(affectedOffenceIds, offenceMap, allOffenceIds);
+    public String resolve(final String template,
+                          final String defendantName,
+                          final List<String> affectedOffenceIds,
+                          final Map<String, OffenceDto> offenceMap,
+                          final List<String> allOffenceIds) {
+        final String formatted = formatOffenceNumbers(affectedOffenceIds, offenceMap, allOffenceIds);
         String result = template.replace("${offenceNumbers}", formatted);
         if (defendantName != null) {
             result = result.replace("${defendantName}", defendantName);
@@ -33,22 +36,24 @@ public class MessageTemplateResolver {
         return result;
     }
 
-    private String formatOffenceNumbers(List<String> offenceIds,
-                                        Map<String, OffenceDto> offenceMap,
-                                        List<String> allOffenceIds) {
-        List<String> formatted = offenceIds.stream()
+    private String formatOffenceNumbers(final List<String> offenceIds,
+                                        final Map<String, OffenceDto> offenceMap,
+                                        final List<String> allOffenceIds) {
+        final List<String> formatted = offenceIds.stream()
                 .sorted(Comparator.comparingInt(
                         id -> offenceDisplayHelper.resolveOrderIndex(id, offenceMap, allOffenceIds)))
                 .map(id -> offenceDisplayHelper.resolveDisplayNumber(id, offenceMap, allOffenceIds))
                 .toList();
 
-        if (formatted.size() == 1) {
-            return formatted.getFirst();
+        final String result;
+        if (formatted.size() == SINGLE_ELEMENT) {
+            result = formatted.getFirst();
+        } else if (formatted.size() == TWO_ELEMENTS) {
+            result = formatted.get(0) + " and " + formatted.get(1);
+        } else {
+            result = String.join(", ", formatted.subList(0, formatted.size() - 1))
+                    + " and " + formatted.getLast();
         }
-        if (formatted.size() == 2) {
-            return formatted.get(0) + " and " + formatted.get(1);
-        }
-        return String.join(", ", formatted.subList(0, formatted.size() - 1))
-                + " and " + formatted.getLast();
+        return result;
     }
 }

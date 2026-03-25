@@ -13,40 +13,46 @@ import java.util.Map;
 @Component
 public class OffenceDisplayHelper {
 
-    public String resolveDisplayNumber(String id,
-                                       Map<String, OffenceDto> offenceMap,
-                                       List<String> allOffenceIds) {
-        OffenceDto offence = offenceMap.get(id);
-        String countNumber;
+    public String resolveDisplayNumber(final String id,
+                                       final Map<String, OffenceDto> offenceMap,
+                                       final List<String> allOffenceIds) {
+        final OffenceDto offence = offenceMap.get(id);
+        final String countNumber;
         if (offence != null && offence.getOrderIndex() != null) {
             countNumber = String.valueOf(offence.getOrderIndex());
         } else {
-            int index = allOffenceIds.indexOf(id);
+            final int index = allOffenceIds.indexOf(id);
             countNumber = index >= 0 ? String.valueOf(index + 1) : id;
         }
 
+        final String display;
         if (offence != null && offence.getCaseUrn() != null && !offence.getCaseUrn().isBlank()) {
-            return "Offence " + countNumber + " (URN:" + offence.getCaseUrn() + ")";
+            display = "Offence " + countNumber + " (URN:" + offence.getCaseUrn() + ")";
+        } else {
+            display = "Offence " + countNumber;
         }
-        return "Offence " + countNumber;
+        return display;
     }
 
-    public int resolveOrderIndex(String id,
-                                  Map<String, OffenceDto> offenceMap,
-                                  List<String> allOffenceIds) {
-        OffenceDto offence = offenceMap.get(id);
+    public int resolveOrderIndex(final String id,
+                                  final Map<String, OffenceDto> offenceMap,
+                                  final List<String> allOffenceIds) {
+        final OffenceDto offence = offenceMap.get(id);
+        final int result;
         if (offence != null && offence.getOrderIndex() != null) {
-            return offence.getOrderIndex();
+            result = offence.getOrderIndex();
+        } else {
+            final int index = allOffenceIds.indexOf(id);
+            result = index >= 0 ? index + 1 : Integer.MAX_VALUE;
         }
-        int index = allOffenceIds.indexOf(id);
-        return index >= 0 ? index + 1 : Integer.MAX_VALUE;
+        return result;
     }
 
-    public List<AffectedOffence> buildAffectedOffences(List<String> offenceIds,
-                                                        Map<String, OffenceDto> offenceMap) {
+    public List<AffectedOffence> buildAffectedOffences(final List<String> offenceIds,
+                                                        final Map<String, OffenceDto> offenceMap) {
         return offenceIds.stream()
                 .map(id -> {
-                    OffenceDto offence = offenceMap.get(id);
+                    final OffenceDto offence = offenceMap.get(id);
                     return AffectedOffence.builder()
                             .offenceId(id)
                             .offenceTitle(offence != null ? offence.getOffenceTitle() : null)

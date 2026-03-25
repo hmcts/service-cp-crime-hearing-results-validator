@@ -27,15 +27,15 @@ public class CelExpressionEvaluator {
      * @param context variable values exposed to the expression
      * @return evaluation result
      */
-    public boolean evaluate(String expression, Map<String, Long> context) {
+    public boolean evaluate(final String expression, final Map<String, Long> context) {
         try {
-            String cacheKey = expression + "|" + context.keySet().stream()
+            final String cacheKey = expression + "|" + context.keySet().stream()
                     .sorted()
                     .collect(Collectors.joining(","));
-            Script script = cache.computeIfAbsent(
+            final Script script = cache.computeIfAbsent(
                     cacheKey,
                     k -> compile(expression, context));
-            Map<String, Object> objectContext = new HashMap<>(context);
+            final Map<String, Object> objectContext = new HashMap<>(context);
             return script.execute(Boolean.class, objectContext);
         } catch (ScriptException e) {
             throw new IllegalArgumentException("CEL evaluation failed for: " + expression, e);
@@ -49,10 +49,10 @@ public class CelExpressionEvaluator {
      * @param context variable names that must be declared for the expression
      * @return compiled CEL script
      */
-    private Script compile(String expression, Map<String, Long> context) {
+    private Script compile(final String expression, final Map<String, Long> context) {
         try {
-            ScriptHost.ScriptBuilder builder = host.buildScript(expression);
-            for (String varName : context.keySet()) {
+            final ScriptHost.ScriptBuilder builder = host.buildScript(expression);
+            for (final String varName : context.keySet()) {
                 builder.withDeclarations(Decls.newVar(varName, Decls.Int));
             }
             return builder.build();
