@@ -31,7 +31,7 @@ public class ValidationRulesController implements ValidationRulesApi {
             final String cjsCppUid,
             final String cppClientCorrelationId) {
 
-        log.info("List validation rules for user={}", cjsCppUid);
+        log.info("List validation rules for user={}", sanitize(cjsCppUid));
         return ResponseEntity.ok(validationRulesService.listRules());
     }
 
@@ -49,7 +49,11 @@ public class ValidationRulesController implements ValidationRulesApi {
             final String cjsCppUid,
             final String cppClientCorrelationId) {
 
-        log.info("Get validation rule {} for user={}", ruleId, cjsCppUid);
+        log.info("Get validation rule {} for user={}", sanitize(ruleId), sanitize(cjsCppUid));
         return ResponseEntity.ok(validationRulesService.getRuleById(ruleId));
+    }
+
+    private static String sanitize(final String value) {
+        return value == null ? "" : value.replaceAll("[\r\n]", "");
     }
 }

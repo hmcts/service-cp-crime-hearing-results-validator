@@ -56,12 +56,16 @@ public class DefaultValidationRulesService implements ValidationRulesService {
      */
     @Override
     public RuleDetailResponse getRuleById(final String ruleId) {
-        log.info("Getting validation rule detail for ruleId={}", ruleId);
+        log.info("Getting validation rule detail for ruleId={}", sanitize(ruleId));
         return rules.stream()
                 .map(ValidationRule::getRuleDetail)
                 .filter(r -> ruleId.equals(r.getRuleId()))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Rule not found: " + ruleId));
+    }
+
+    private static String sanitize(final String value) {
+        return value == null ? "" : value.replaceAll("[\r\n]", "");
     }
 }
