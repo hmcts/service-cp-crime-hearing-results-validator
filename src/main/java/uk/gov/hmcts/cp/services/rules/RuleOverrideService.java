@@ -28,6 +28,7 @@ public class RuleOverrideService {
      * @return optional override row for the rule
      */
     @Cacheable(value = "ruleOverrides", key = "#ruleId")
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // DB failures must not break validation
     public Optional<ValidationRuleEntity> findOverride(final String ruleId) {
         Optional<ValidationRuleEntity> result;
         try {

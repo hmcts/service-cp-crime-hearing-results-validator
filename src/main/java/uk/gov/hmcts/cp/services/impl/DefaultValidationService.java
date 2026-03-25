@@ -31,6 +31,7 @@ public class DefaultValidationService implements ValidationService {
 
     @Override
     @Observed(name = "validation.request")
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
     public DraftValidationResponse validate(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
