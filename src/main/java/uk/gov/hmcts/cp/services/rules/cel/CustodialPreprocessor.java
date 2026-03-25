@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component
 /**
  * Preprocesses custodial result lines into per-defendant summaries consumed by CEL conditions.
  */
+@Component
 public class CustodialPreprocessor {
 
     /**

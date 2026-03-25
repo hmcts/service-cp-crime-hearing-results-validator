@@ -17,10 +17,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
 /**
  * Integration test for the application JSON logging configuration in a Spring Boot test context.
  */
+@Slf4j
 class SpringLoggingIntegrationTest extends IntegrationTestBase {
     private PrintStream originalStdOut = System.out;
 

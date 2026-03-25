@@ -22,10 +22,10 @@ import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.APPLICATION_NAME;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.SPAN_ID;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.TRACE_ID;
 
-@ExtendWith(MockitoExtension.class)
 /**
  * Unit tests for {@link TracingFilter}.
  */
+@ExtendWith(MockitoExtension.class)
 class TracingFilterTest {
     @Mock
     private HttpServletRequest request;

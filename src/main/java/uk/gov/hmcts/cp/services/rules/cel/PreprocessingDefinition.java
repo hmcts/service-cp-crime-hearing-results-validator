@@ -7,13 +7,13 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * YAML-backed preprocessing configuration for a CEL validation rule.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * YAML-backed preprocessing configuration for a CEL validation rule.
- */
 public class PreprocessingDefinition {
 
     private String type;

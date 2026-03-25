@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Component
 /**
  * Evaluates CEL expressions used by YAML-defined validation rule conditions.
  */
+@Component
 public class CelExpressionEvaluator {
 
     private final ScriptHost host = ScriptHost.newBuilder().build();

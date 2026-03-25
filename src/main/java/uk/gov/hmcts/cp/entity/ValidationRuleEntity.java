@@ -11,15 +11,15 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
+/**
+ * Persistence model for runtime rule overrides loaded from the validation_rule table.
+ */
 @Entity
 @Table(name = "validation_rule")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Persistence model for runtime rule overrides loaded from the validation_rule table.
- */
 public class ValidationRuleEntity {
 
     @Id

@@ -33,12 +33,12 @@ class CelValidationRuleScenarioTest {
             offenceDisplayHelper,
             mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
 
-    @Nested
-    @DisplayName("AC1 – Pass scenarios")
     /**
      * Scenarios that should not raise any issues because the custodial sentence relationships are
      * complete enough to infer a single primary sentence.
      */
+    @Nested
+    @DisplayName("AC1 – Pass scenarios")
     class Ac1Pass {
 
         /**
@@ -80,12 +80,12 @@ class CelValidationRuleScenarioTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC2 – Error scenarios")
     /**
      * Scenarios that should raise blocking AC2 errors because too many custodial offences omit
      * concurrent or consecutive information.
      */
+    @Nested
+    @DisplayName("AC2 – Error scenarios")
     class Ac2Error {
 
         /**
@@ -137,12 +137,12 @@ class CelValidationRuleScenarioTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC3 – Warning (both concurrent and consecutive)")
     /**
      * Scenarios that should raise AC3 warnings because one or more offences are marked both
      * concurrent and consecutive.
      */
+    @Nested
+    @DisplayName("AC3 – Warning (both concurrent and consecutive)")
     class Ac3Warning {
 
         /**
@@ -198,12 +198,12 @@ class CelValidationRuleScenarioTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC4 – Warning (no primary sentence)")
     /**
      * Scenarios that should raise AC4 warnings because every custodial offence already has
      * relationship data and no primary sentence can be identified.
      */
+    @Nested
+    @DisplayName("AC4 – Warning (no primary sentence)")
     class Ac4Warning {
 
         /**
@@ -281,11 +281,11 @@ class CelValidationRuleScenarioTest {
         }
     }
 
-    @Nested
-    @DisplayName("Error resolution and mixed types")
     /**
      * Scenarios covering error resolution and mixed custodial or non-custodial input combinations.
      */
+    @Nested
+    @DisplayName("Error resolution and mixed types")
     class ErrorResolutionAndMixedTypes {
 
         /**
@@ -370,12 +370,12 @@ class CelValidationRuleScenarioTest {
         }
     }
 
-    @Nested
-    @DisplayName("Cross-case scenarios (S13–S18)")
     /**
      * Scenarios that prove offence numbering and validation continue to work across multiple cases
      * for the same defendant.
      */
+    @Nested
+    @DisplayName("Cross-case scenarios (S13–S18)")
     class CrossCase {
 
         /**

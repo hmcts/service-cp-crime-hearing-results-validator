@@ -9,12 +9,12 @@ import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
 /**
  * Loads optional runtime overrides for validation rules from the database.
  */
+@Service
+@RequiredArgsConstructor
+@Slf4j
 public class RuleOverrideService {
 
     private final ValidationRuleRepository ruleRepository;

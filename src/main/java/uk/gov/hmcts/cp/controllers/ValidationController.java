@@ -10,12 +10,12 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.services.ValidationService;
 
-@RestController
-@RequiredArgsConstructor
-@Slf4j
 /**
  * Exposes the draft validation endpoint defined by the generated OpenAPI contract.
  */
+@RestController
+@RequiredArgsConstructor
+@Slf4j
 public class ValidationController implements ValidationApi {
 
     private final ValidationService validationService;

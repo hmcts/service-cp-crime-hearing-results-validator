@@ -19,11 +19,11 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@DisplayName("AC2 – Error scenarios")
-@TestMethodOrder(MethodOrderer.MethodName.class)
 /**
  * Expanded AC2 scenario coverage for the custodial concurrent or consecutive validation rule.
  */
+@DisplayName("AC2 – Error scenarios")
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class ConcurrentAndConsecutiveValidationAC2Scenarios {
 
     /*

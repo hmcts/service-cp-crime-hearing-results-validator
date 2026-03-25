@@ -12,11 +12,11 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.List;
 
-@Service
-@Slf4j
 /**
  * Default in-memory implementation backed by the discovered validation rule beans.
  */
+@Service
+@Slf4j
 public class DefaultValidationRulesService implements ValidationRulesService {
 
     private final List<ValidationRule> rules;

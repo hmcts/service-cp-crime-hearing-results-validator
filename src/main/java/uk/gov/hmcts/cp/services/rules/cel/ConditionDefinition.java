@@ -5,13 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * YAML-backed definition of a single condition within a validation rule.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * YAML-backed definition of a single condition within a validation rule.
- */
 public class ConditionDefinition {
 
     private String id;

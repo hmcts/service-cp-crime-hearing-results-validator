@@ -10,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
-@Configuration
-@EnableCaching
 /**
  * Configures application caches used for runtime rule override lookups.
  */
+@Configuration
+@EnableCaching
 public class CacheConfig {
 
     /**

@@ -16,10 +16,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 /**
  * Unit tests for {@link ValidationRulesController}.
  */
+@ExtendWith(MockitoExtension.class)
 class ValidationRulesControllerTest {
 
     @Mock

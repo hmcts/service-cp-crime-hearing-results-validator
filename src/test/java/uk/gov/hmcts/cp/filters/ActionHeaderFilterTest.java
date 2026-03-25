@@ -15,10 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith(MockitoExtension.class)
 /**
  * Unit tests for {@link ActionHeaderFilter}.
  */
+@ExtendWith(MockitoExtension.class)
 class ActionHeaderFilterTest {
 
     private final ActionHeaderFilter filter = new ActionHeaderFilter();

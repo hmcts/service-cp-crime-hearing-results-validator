@@ -7,13 +7,13 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * YAML-backed definition of a validation rule and its CEL conditions.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * YAML-backed definition of a validation rule and its CEL conditions.
- */
 public class RuleDefinition {
 
     private String id;

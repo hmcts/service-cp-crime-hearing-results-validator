@@ -5,6 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
+/**
+ * Spring Boot entry point for the crime hearing results validator service.
+ */
 @SpringBootApplication
 @ComponentScan(
         basePackages = "uk.gov.hmcts.cp",
@@ -14,9 +17,6 @@ import org.springframework.context.annotation.FilterType;
         )
 )
 @SuppressWarnings("HideUtilityClassConstructor")
-/**
- * Spring Boot entry point for the crime hearing results validator service.
- */
 public class Application {
 
     /**

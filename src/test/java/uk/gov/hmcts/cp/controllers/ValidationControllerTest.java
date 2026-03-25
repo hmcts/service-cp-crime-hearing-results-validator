@@ -14,10 +14,10 @@ import uk.gov.hmcts.cp.services.ValidationService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 /**
  * Unit tests for {@link ValidationController}.
  */
+@ExtendWith(MockitoExtension.class)
 class ValidationControllerTest {
 
     @Mock

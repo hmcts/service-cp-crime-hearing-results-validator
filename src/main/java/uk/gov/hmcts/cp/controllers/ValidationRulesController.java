@@ -9,12 +9,12 @@ import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
 
-@RestController
-@RequiredArgsConstructor
-@Slf4j
 /**
  * Exposes read-only endpoints for listing validation rules and retrieving rule details.
  */
+@RestController
+@RequiredArgsConstructor
+@Slf4j
 public class ValidationRulesController implements ValidationRulesApi {
 
     private final ValidationRulesService validationRulesService;

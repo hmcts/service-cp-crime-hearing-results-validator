@@ -13,11 +13,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Component
-@Slf4j
 /**
  * Copies inbound tracing headers into the MDC and echoes them back on the response.
  */
+@Component
+@Slf4j
 public class TracingFilter extends OncePerRequestFilter {
 
     public static final String TRACE_ID = "traceId";

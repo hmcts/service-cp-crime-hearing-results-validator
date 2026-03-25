@@ -12,11 +12,11 @@ import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import java.time.Instant;
 
-@RestControllerAdvice
-@Slf4j
 /**
  * Converts controller-layer exceptions into the structured error model exposed by the API.
  */
+@RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     private final Tracer tracer;

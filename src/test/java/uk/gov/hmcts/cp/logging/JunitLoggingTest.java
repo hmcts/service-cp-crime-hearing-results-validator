@@ -14,10 +14,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
 /**
  * Verifies the JSON logging configuration used during plain JUnit execution.
  */
+@Slf4j
 class JunitLoggingTest {
 
     /**
