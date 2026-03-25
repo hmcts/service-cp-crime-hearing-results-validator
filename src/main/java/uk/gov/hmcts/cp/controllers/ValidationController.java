@@ -34,11 +34,7 @@ public class ValidationController implements ValidationApi {
             final DraftValidationRequest draftValidationRequest,
             @Nullable final String cppClientCorrelationId) {
 
-        log.info("Validate draft results for user={}", sanitize(cjsCppUid));
+        log.info("Validate draft results request received");
         return ResponseEntity.ok(validationService.validate(draftValidationRequest));
-    }
-
-    private static String sanitize(final String value) {
-        return value == null ? "" : value.replaceAll("[\r\n]", "");
     }
 }
