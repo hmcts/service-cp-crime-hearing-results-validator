@@ -18,6 +18,7 @@ services:
       APP_NAME_DATASOURCE_URL: jdbc:postgresql://db:5432/results-validator-db
       APP_NAME_DATASOURCE_USERNAME: postgres
       APP_NAME_DATASOURCE_PASSWORD: postgres
+      AUTHZ_ENABLED: "false"
     ports:
-      - "8082:8082"
+      - "4550:4550"
 

@@ -114,7 +114,8 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("errors")).hasSize(1);
         assertThat(json.get("errors").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
         assertThat(json.get("errors").get(0).get("severity").asText()).isEqualTo("ERROR");
-        assertThat(json.get("errors").get(0).get("message").asText()).startsWith("Offence/counts [2, 3]");
+        assertThat(json.get("errors").get(0).get("message").asText()).startsWith("John Doe")
+                .contains("Offence 2").contains("Offence 3").contains("do not include details");
     }
 
     /**
@@ -147,7 +148,8 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("warnings")).hasSize(1);
         assertThat(json.get("warnings").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
         assertThat(json.get("warnings").get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("Offence/counts [2]");
+        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("John Doe")
+                .contains("Offence 2").contains("concurrent").contains("consecutive");
     }
 
     /**
@@ -179,7 +181,8 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get("errors")).isEmpty();
         assertThat(json.get("warnings")).hasSize(1);
         assertThat(json.get("warnings").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
-        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("All offences include details");
+        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("John Doe")
+                .contains("all offences include details").contains("no primary sentence");
     }
 
     private JsonNode postValidate(String body) throws Exception {
