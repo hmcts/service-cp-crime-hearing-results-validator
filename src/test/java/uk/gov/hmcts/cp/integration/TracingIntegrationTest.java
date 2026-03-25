@@ -143,7 +143,7 @@ class TracingIntegrationTest extends IntegrationTestBase {
 
     private void assertCommonLogFields(final Map<String, Object> log) {
         assertEquals("uk.gov.hmcts.cp.controllers.ValidationRulesController", log.get("logger_name"));
-        assertEquals(log.get("message"), "List validation rules for user=test-user\n");
+        assertEquals(log.get("message"), "List validation rules request received\n");
     }
 
     private void assertResponseHeaders(final MvcResult result, final String expectedTraceId, final String expectedSpanId) {
