@@ -19,6 +19,16 @@ public interface ValidationRule {
     RuleDetailResponse getRuleDetail();
 
     /**
+     * Returns the rule's priority for startup ordering. Implementations should override this to
+     * return the value from their static definition without incurring a database call.
+     *
+     * @return priority value (lower runs first)
+     */
+    default int getPriority() {
+        return getRuleDetail().getPriority();
+    }
+
+    /**
      * Evaluates the rule against the supplied draft request.
      *
      * @param request draft results payload under validation

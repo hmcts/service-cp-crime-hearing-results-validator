@@ -5,9 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CelValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
@@ -47,7 +47,7 @@ public class ValidationRuleAutoConfiguration {
                     messageResolver, offenceDisplayHelper, ruleOverrideService));
         }
 
-        rules.sort(Comparator.comparingInt(r -> r.getRuleDetail().getPriority()));
+        rules.sort(Comparator.comparingInt(ValidationRule::getPriority));
 
         log.info("Auto-discovered {} validation rule(s) from classpath:rules/", rules.size());
         return rules;

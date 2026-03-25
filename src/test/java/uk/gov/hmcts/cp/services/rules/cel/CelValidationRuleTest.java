@@ -9,7 +9,10 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
@@ -250,6 +253,27 @@ class CelValidationRuleTest {
         List<ValidationIssue> issues = rule.evaluate(request);
 
         assertThat(issues).isEmpty();
+    }
+
+    /**
+     * Verifies that getPriority reads directly from the YAML definition without consulting
+     * the override service, so startup sorting does not trigger database calls.
+     */
+    @Test
+    void getPriority_should_not_call_override_service() {
+        uk.gov.hmcts.cp.services.rules.RuleOverrideService mockOverrideService =
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class);
+        CelValidationRule localRule = new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
+                new CustodialPreprocessor(),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mockOverrideService);
+
+        localRule.getPriority();
+
+        verify(mockOverrideService, never()).findOverride(anyString());
     }
 
     /**
