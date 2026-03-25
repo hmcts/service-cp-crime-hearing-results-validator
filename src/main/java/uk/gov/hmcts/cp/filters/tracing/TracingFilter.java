@@ -13,6 +13,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Copies inbound tracing headers into the MDC and echoes them back on the response.
+ */
 @Component
 @Slf4j
 public class TracingFilter extends OncePerRequestFilter {
@@ -27,6 +30,16 @@ public class TracingFilter extends OncePerRequestFilter {
         this.applicationName = applicationName;
     }
 
+    /**
+     * Wraps request processing so tracing context is available for the full request lifecycle and
+     * then cleared to avoid leaking MDC state between requests.
+     *
+     * @param request incoming HTTP request
+     * @param response outgoing HTTP response
+     * @param filterChain remaining servlet filter chain
+     * @throws ServletException if request processing fails
+     * @throws IOException if request processing fails
+     */
     @Override
     protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws ServletException, IOException {
         try {
@@ -36,8 +49,8 @@ public class TracingFilter extends OncePerRequestFilter {
         }
     }
 
-    public void populateMDC(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws IOException, ServletException {
-        log.info("TracingFilter for uri:{}", Encode.forJava(request.getRequestURI()));
+    private void populateMDC(final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain) throws IOException, ServletException {
+        log.debug("TracingFilter for uri:{}", Encode.forJava(request.getRequestURI()));
         MDC.put(APPLICATION_NAME, applicationName);
         if (request.getHeader(TRACE_ID) != null) {
             MDC.put(TRACE_ID, request.getHeader(TRACE_ID));

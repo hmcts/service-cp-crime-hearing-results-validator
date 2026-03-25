@@ -1,63 +1,124 @@
-# HMCTS Crime Service Spring Boot Template
+# Crime Hearing Results Validator
 
-This repository provides a template for building Spring Boot applications. While the initial use case was for the HMCTS API Marketplace, the template is designed to be reusable across jurisdictions and is intended as a base paved path for wider adoption.
+A Spring Boot service that validates draft hearing results before they are shared. The service applies configurable validation rules to detect issues such as missing concurrent/consecutive sentencing information, and returns structured error and warning responses.
 
-It includes essential configurations, dependencies, and recommended practices to help teams get started quickly.
+## Validation Rules Engine
 
-**Note:** This template is not a framework, nor is it intended to evolve into one. It simply leverages the Spring ecosystem and proven libraries from the wider engineering community.
+Rules are defined in YAML files using [CEL (Common Expression Language)](https://cel.dev/) for condition expressions. This makes rules readable and reviewable by non-technical stakeholders such as Business Analysts, without requiring Java knowledge.
 
-As HMCTS services are hosted on Azure, the included dependencies reflect this. Our aim is to stay as close to the cloud as possible in order to maximise alignment with the Shared Responsibility Model and achieve optimal security and operability.
+### Example Rule (YAML)
 
-## Want to Build Your Own Path?
+```yaml
+rule:
+  id: "DR-SENT-002"
+  title: "Custodial sentence concurrent/consecutive check"
+  conditions:
+    - id: "AC2"
+      name: "Multiple offences missing info"
+      expression: "noInfoCount > 1"
+      severity: ERROR
+      messageTemplate: >-
+        Offence/counts ${offenceNumbers} do not include details of whether
+        they are concurrent or consecutive.
+```
 
-That’s absolutely fine — but if you do, make sure your approach meets the following baseline requirements:
+Rule files are located in `src/main/resources/rules/`.
 
-* Security – All services must meet HMCTS security standards, including vulnerability scanning and least privilege access.
-* Observability – Logs, metrics, and traces must be integrated into HMCTS observability stack (e.g. Azure Monitoring).
-* Audit – Systems must produce audit trails that meet legal and operational requirements.
-* CI/CD Integration – Pipelines must include automated testing, deployments to multiple environments, and use approved tooling (e.g. GitHub Actions or Azure DevOps).
-* Compliance & Policy Alignment – Services must align with HMCTS/MoJ policies (e.g. Coding in the Open, mandatory security practices).
-* Ownership & Support – Domain teams must clearly own the service, maintain a support model, and define escalation paths.
+### Current Rules
 
-## Documentation
+| Rule ID | Description |
+|---------|-------------|
+| DR-SENT-002 | Custodial sentence concurrent/consecutive check |
 
-Further documentation can be found in the [docs](docs) directory.
+### Adding a New Rule
 
-### Key Documentation
-- [Spring Boot v4 Upgrade Guide](docs/SpringUpgradev4.md) - Details on the Spring Boot v4 upgrade, tracing test fixes, and code refactoring improvements
-- [Environment Variables Guide](docs/EnvironmentVariables.md) - Complete guide to managing environment variables with `.env` and `.envrc` files
-- [JWT Filter Documentation](docs/JWTFilter.md) - JWT authentication filter configuration and usage
-- [Logging Documentation](docs/Logging.md) - Logging configuration and best practices
-- [Pipeline Documentation](docs/PIPELINE.md) - CI/CD pipeline configuration and deployment processes
+1. Create a YAML rule file named `DR-<category>-<number>.yaml` in `src/main/resources/rules/`
+2. Define the preprocessing configuration, CEL conditions, and message templates
+3. The rule is auto-discovered at startup by `ValidationRuleAutoConfiguration` (no Java code needed)
 
-### Prerequisites
+### Runtime Rule Overrides
 
-- ☕️ **Java 25 or later**: Ensure Java is installed and available on your `PATH`.
-- ⚙️ **Gradle**: [Install Gradle](https://gradle.org/install/). The project itself defines which Gradle version to use (gradle/wraper/gradle-wrapper.properties).
+Rules can be toggled or have their severity adjusted at runtime via the `validation_rule` database table, without redeployment.
 
-You can verify installation with:
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | VARCHAR(20) | Rule ID, must match the YAML file (e.g. `DR-SENT-002`) |
+| `enabled` | BOOLEAN | `false` disables the rule entirely |
+| `severity` | VARCHAR(20) | Maximum severity ceiling (see below) |
+| `updated_at` | TIMESTAMP | Last modification time |
+| `updated_by` | VARCHAR(100) | User who made the change |
+
+#### Severity Ceiling Model
+
+A single rule can contain multiple conditions with different severities. For example, DR-SENT-002 has:
+
+- **AC2** (missing concurrent/consecutive info) — `ERROR` (blocks sharing)
+- **AC3** (both concurrent and consecutive) — `WARNING` (advisory)
+- **AC4** (no primary sentence) — `WARNING` (advisory)
+
+The database `severity` column acts as a **ceiling**, not a blanket replacement. It caps condition severities downward but never upgrades them:
+
+| Condition | YAML severity | DB override = `WARNING` | DB override = `ERROR` | No override |
+|-----------|--------------|------------------------|----------------------|-------------|
+| AC2 | ERROR | WARNING (capped) | ERROR | ERROR |
+| AC3 | WARNING | WARNING | WARNING | WARNING |
+| AC4 | WARNING | WARNING | WARNING | WARNING |
+
+This means setting a rule's severity to `WARNING` in the database effectively says "stop this rule from blocking shares" — all conditions become non-blocking while still surfacing as warnings. Setting it to `ERROR` (or having no override) leaves each condition at its YAML-defined severity.
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/validation/validate` | Validate draft hearing results |
+| GET | `/api/validation/rules` | List all validation rules |
+| GET | `/api/validation/rules/{ruleId}` | Get rule detail by ID |
+
+## Prerequisites
+
+- **Java 25 or later**
+- **Gradle** (the project defines which version to use via `gradle/wrapper/gradle-wrapper.properties`)
+
+Verify installation:
 ```bash
 java -version
 gradle -v
 ```
 
-## Installation
+## Build
 
-### Build
 ```bash
 gradle build
 ```
 
-`build` will run all tests.
+## Adding HMCTS Library Dependencies
 
-### Tests
-- `gradle test` for running unit and integration tests
-- `gradle api` for running api tests
+This service's base package is `uk.gov.hmcts.cp`, which means Spring Boot component scanning picks up `@Component` classes from any library JAR under that same package. For example, `cp-audit-filter-springboot` has beans in `uk.gov.hmcts.cp.filter.audit` that get scanned directly, bypassing the library's autoconfiguration conditionals.
 
+When adding a new `uk.gov.hmcts.cp.*` library, check whether it has `@Component`-annotated classes. If so, add an exclude filter in `Application.java`:
 
-### Environment Setup for Local Builds
+```java
+@ComponentScan(
+    basePackages = "uk.gov.hmcts.cp",
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "uk\\.gov\\.hmcts\\.cp\\.filter\\.audit\\..*"
+    )
+)
+```
 
-This project uses a two-file approach for environment variable management with `.env` and `.envrc` files. 
+Libraries under different base packages (e.g. `uk.gov.moj.cpp.authz` for `cp-auth-rules-filter`) are not affected.
+
+## Tests
+
+```bash
+gradle test       # unit and integration tests
+gradle api        # API tests
+```
+
+## Environment Setup
+
+This project uses `.env` and `.envrc` files for environment variable management.
 
 **Quick Setup:**
 1. Install `direnv`: `brew install direnv`
@@ -65,41 +126,24 @@ This project uses a two-file approach for environment variable management with `
 3. Allow direnv: `direnv allow`
 4. Create `.env` file with your local configuration
 
-**Server Port:** The application uses port `8082` by default. Override with:
-- Environment variable: `export SERVER_PORT=8080`
-- Gradle property: `./gradlew test -Pserver.port=8080`
-- System property: `./gradlew test -Dserver.port=8080`
+**Server Port:** Default `8082`. Override with `export SERVER_PORT=8080`.
 
-📖 **For complete setup instructions, troubleshooting, and best practices, see the [Environment Variables Guide](docs/EnvironmentVariables.md).**
+See the [Environment Variables Guide](docs/EnvironmentVariables.md) for full details.
 
-## Static code analysis
+## Documentation
 
-Install PMD
+- [Environment Variables Guide](docs/EnvironmentVariables.md)
+- [JWT Filter Documentation](docs/JWTFilter.md)
+- [Logging Documentation](docs/Logging.md)
+- [Pipeline Documentation](docs/PIPELINE.md)
+- [Spring Boot v4 Upgrade Guide](docs/SpringUpgradev4.md)
+
+## Static Code Analysis
 
 ```bash
-brew install pmd
-```
-```bash
-pmd check \
-    --dir src/main/java \
-    --rulesets \
-    .github/pmd-ruleset.xml \
-    --format html \
-    -r build/reports/pmd/pmd-report.html
-```
-
-Run PMD from Gradle
-
-```
 gradle pmdTest
 ```
 
-### Contribute to This Repository
-
-Contributions are welcome! Please see the [CONTRIBUTING.md](.github/CONTRIBUTING.md) file for guidelines.
-
-See also: [JWTFilter documentation](docs/JWTFilter.md)
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

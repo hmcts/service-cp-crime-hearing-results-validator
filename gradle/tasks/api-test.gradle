@@ -11,6 +11,11 @@ tasks.register('api', Test) {
   dependsOn tasks.composeUp
   finalizedBy tasks.composeDown
 
+  doFirst {
+    def appInfo = dockerCompose.servicesInfos.app.firstContainer
+    systemProperty 'app.baseUrl', "http://${appInfo.host}:${appInfo.tcpPorts[4550]}"
+  }
+
   jvmArgs = ['-Xshare:off']
   testLogging {
     events "passed", "skipped", "failed"

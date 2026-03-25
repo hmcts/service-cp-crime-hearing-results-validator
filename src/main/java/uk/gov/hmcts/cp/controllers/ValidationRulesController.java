@@ -9,6 +9,9 @@ import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
 
+/**
+ * Exposes read-only endpoints for listing validation rules and retrieving rule details.
+ */
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -16,22 +19,37 @@ public class ValidationRulesController implements ValidationRulesApi {
 
     private final ValidationRulesService validationRulesService;
 
+    /**
+     * Returns the currently registered validation rules and their runtime status.
+     *
+     * @param cjsCppUid authenticated user identifier from the request header
+     * @param cppClientCorrelationId client-supplied correlation identifier
+     * @return HTTP 200 response containing the rule list
+     */
     @Override
     public ResponseEntity<RuleListResponse> listValidationRules(
-            String CJSCPPUID,
-            String CPPCLIENTCORRELATIONID) {
+            final String cjsCppUid,
+            final String cppClientCorrelationId) {
 
-        log.info("List validation rules for user={}", CJSCPPUID);
+        log.info("List validation rules request received");
         return ResponseEntity.ok(validationRulesService.listRules());
     }
 
+    /**
+     * Returns the detail for a single validation rule.
+     *
+     * @param ruleId identifier of the rule to fetch
+     * @param cjsCppUid authenticated user identifier from the request header
+     * @param cppClientCorrelationId client-supplied correlation identifier
+     * @return HTTP 200 response containing the rule detail
+     */
     @Override
     public ResponseEntity<RuleDetailResponse> getValidationRuleById(
-            String ruleId,
-            String CJSCPPUID,
-            String CPPCLIENTCORRELATIONID) {
+            final String ruleId,
+            final String cjsCppUid,
+            final String cppClientCorrelationId) {
 
-        log.info("Get validation rule {} for user={}", ruleId, CJSCPPUID);
+        log.info("Get validation rule by id request received");
         return ResponseEntity.ok(validationRulesService.getRuleById(ruleId));
     }
 }

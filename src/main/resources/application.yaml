@@ -1,20 +1,22 @@
 spring:
   application:
     name: service-cp-crime-hearing-results-validator
+  config:
+    import:
+      - optional:classpath:application-artemis-jms.yaml
   datasource:
-    url: ${APP_NAME_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
-    username: ${APP_NAME_DATASOURCE_USERNAME:postgres}
-    password: ${APP_NAME_DATASOURCE_PASSWORD:postgres}
+    url: ${APP_NAME_DATASOURCE_URL:jdbc:postgresql://localhost:5433/results-validator-db}
+    username: ${APP_NAME_DATASOURCE_USERNAME:cpp_user}
+    password: ${APP_NAME_DATASOURCE_PASSWORD:password123}
   jpa:
     open-in-view: false
-
-flyway:
-  enabled: true
-  locations: classpath:db/migration
-  baseline-on-migrate: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
 server:
-  port: ${SERVER_PORT:8082}
+  port: ${SERVER_PORT:4550}
   shutdown: graceful
   http2:
     enabled: true
@@ -27,7 +29,7 @@ server:
 management:
   server:
     # Keep actuator on same port by default; override if you want a separate port
-    port: ${MANAGEMENT_SERVER_PORT:${SERVER_PORT:8082}}
+    port: ${MANAGEMENT_SERVER_PORT:${SERVER_PORT:4550}}
   endpoints:
     web:
       base-path: /actuator
@@ -37,6 +39,9 @@ management:
     health:
       probes:
         enabled: true                  # liveness/readiness groups
+  health:
+    jms:
+      enabled: ${JMS_HEALTH_ENABLED:false}
   metrics:
     tags:
       service: service-cp-crime-hearing-results-validator
@@ -57,11 +62,24 @@ azure:
   application-insights:
     instrumentation-key: ${rpe.AppInsightsInstrumentationKey:00000000-0000-0000-0000-000000000000}
 
-jwt:
-  # Expose upwards to allow env var override: export JWT_SECRET_KEY=... (base64, 256-bit min)
-  secretKey: ${JWT_SECRET_KEY:it-must-be-a-string-secret-at-least-256-bits-long}
-  filter:
-    enabled: false
+authz:
+  http:
+    enabled: ${AUTHZ_ENABLED:true}
+    identity-url-template: ${CP_BASE_URL:http://localhost:8080}/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions
+    user-id-header: "CJSCPPUID"
+    action-header: "CPP-ACTION"
+    accept-header: "application/vnd.usersgroups.get-logged-in-user-permissions+json"
+    drools-classpath-pattern: "classpath:/acl/**/*.drl"
+    reload-on-each-request: ${AUTHZ_RELOAD_RULES:false}
+    action-required: false
+    deny-when-no-rules: true
+    exclude-path-prefixes:
+      - "/actuator"
+      - "/error"
+
+validation:
+  cache:
+    override-ttl-seconds: ${RULE_OVERRIDE_CACHE_TTL:30}
 
 logging:
   level:

@@ -43,10 +43,17 @@ dependencies {
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
+  implementation libs.spring.boot.starter.cache
+  implementation libs.caffeine
   implementation libs.hibernate.validator
   implementation libs.spring.boot.starter.opentelemetry
-  implementation libs.jjwt
+  implementation libs.cp.auth.rules.filter
+  implementation libs.cp.audit.filter.springboot
+  testImplementation libs.wiremock.standalone
   testRuntimeOnly libs.junit.platform.launcher
+
+  // --- CEL (Common Expression Language) for YAML-driven validation rules ---
+  implementation libs.cel.tools
 
   // Should come in with the api
   implementation libs.swagger.core

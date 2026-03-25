@@ -1,26 +1,32 @@
 [versions]
-api-hearing-results-validator = "0.0.0-48f9a61"
+api-hearing-results-validator = "0.1.1"
 spring-boot = "4.0.4"
 spring-dependency-management = "1.1.7"
 ben-manes-versions = "0.53.0"
 cyclonedx-bom = "3.2.2"
 gradle-git-properties = "2.5.7"
 avast-docker-compose = "0.17.21"
-jjwt = "0.13.0"
+cp-auth-rules-filter = "1.0.7"
+cp-audit-filter-springboot = "1.0.5"
 swagger-core = "2.2.45"
 junit-bom = "6.0.3"
 logstash-logback-encoder = "9.0"
 owasp-encoder = "1.4.0"
 lombok = "1.18.44"
 mapstruct = "1.6.3"
+cel-tools = "0.5.1"
 testcontainers = "1.21.4"
+wiremock = "3.13.0"
+caffeine = "3.2.0"
 
 [libraries]
 api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
 hibernate-validator = { module = "org.hibernate.validator:hibernate-validator" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
-jjwt = { module = "io.jsonwebtoken:jjwt", version.ref = "jjwt" }
+cp-auth-rules-filter = { module = "uk.gov.hmcts.cp:cp-auth-rules-filter", version.ref = "cp-auth-rules-filter" }
+cp-audit-filter-springboot = { module = "uk.gov.hmcts.cp:cp-audit-filter-springboot", version.ref = "cp-audit-filter-springboot" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 swagger-core = { module = "io.swagger.core.v3:swagger-core", version.ref = "swagger-core" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit-bom" }
@@ -43,8 +49,11 @@ spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-st
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers", version.ref = "spring-boot" }
+cel-tools = { module = "org.projectnessie.cel:cel-tools", version.ref = "cel-tools" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

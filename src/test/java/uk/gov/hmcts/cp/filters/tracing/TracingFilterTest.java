@@ -11,14 +11,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.APPLICATION_NAME;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.SPAN_ID;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.TRACE_ID;
 
+/**
+ * Unit tests for {@link TracingFilter}.
+ */
 @ExtendWith(MockitoExtension.class)
 class TracingFilterTest {
     @Mock
@@ -30,17 +36,30 @@ class TracingFilterTest {
 
     private final TracingFilter tracingFilter = new TracingFilter("myAppName");
 
+    /**
+     * Verifies the filter copies inbound trace headers into the MDC and echoes them on the
+     * response for downstream consumers.
+     */
     @Test
     void filter_should_use_incoming_traceId() throws ServletException, IOException {
         when(request.getHeader(TRACE_ID)).thenReturn("incoming-traceId");
         when(request.getHeader(SPAN_ID)).thenReturn("incoming-spanId");
+        when(request.getRequestURI()).thenReturn("/test");
 
-        tracingFilter.populateMDC(request, response, filterChain);
+        Map<String, String> capturedMdc = new HashMap<>();
+        doAnswer(invocation -> {
+            capturedMdc.put(APPLICATION_NAME, MDC.get(APPLICATION_NAME));
+            capturedMdc.put(TRACE_ID, MDC.get(TRACE_ID));
+            capturedMdc.put(SPAN_ID, MDC.get(SPAN_ID));
+            return null;
+        }).when(filterChain).doFilter(request, response);
 
-        assertThat(MDC.get(APPLICATION_NAME)).isEqualTo("myAppName");
+        tracingFilter.doFilterInternal(request, response, filterChain);
+
+        assertThat(capturedMdc.get(APPLICATION_NAME)).isEqualTo("myAppName");
+        assertThat(capturedMdc.get(TRACE_ID)).isEqualTo("incoming-traceId");
+        assertThat(capturedMdc.get(SPAN_ID)).isEqualTo("incoming-spanId");
         verify(response).setHeader(TRACE_ID, "incoming-traceId");
-        assertThat(MDC.get(TRACE_ID)).isEqualTo("incoming-traceId");
         verify(response).setHeader(SPAN_ID, "incoming-spanId");
-        assertThat(MDC.get(SPAN_ID)).isEqualTo("incoming-spanId");
     }
 }
