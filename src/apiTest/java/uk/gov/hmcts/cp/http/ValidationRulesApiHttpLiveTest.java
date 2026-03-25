@@ -28,10 +28,10 @@ class ValidationRulesApiHttpLiveTest {
      */
     @Test
     void list_rules_should_return_ok_with_rules() throws Exception {
-        HttpHeaders headers = new HttpHeaders();
+        final HttpHeaders headers = new HttpHeaders();
         headers.set("CJSCPPUID", "test-user");
 
-        ResponseEntity<String> response = http.exchange(
+        final ResponseEntity<String> response = http.exchange(
                 baseUrl + "/api/validation/rules",
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
@@ -40,7 +40,7 @@ class ValidationRulesApiHttpLiveTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        JsonNode json = mapper.readTree(response.getBody());
+        final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("count").asInt()).isEqualTo(1);
         assertThat(json.get("enabledCount").asInt()).isEqualTo(1);
         assertThat(json.get("rules")).hasSize(1);
@@ -52,10 +52,10 @@ class ValidationRulesApiHttpLiveTest {
      */
     @Test
     void get_rule_by_id_should_return_ok_with_rule_detail() throws Exception {
-        HttpHeaders headers = new HttpHeaders();
+        final HttpHeaders headers = new HttpHeaders();
         headers.set("CJSCPPUID", "test-user");
 
-        ResponseEntity<String> response = http.exchange(
+        final ResponseEntity<String> response = http.exchange(
                 baseUrl + "/api/validation/rules/DR-SENT-002",
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
@@ -64,7 +64,7 @@ class ValidationRulesApiHttpLiveTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        JsonNode json = mapper.readTree(response.getBody());
+        final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("ruleId").asText()).isEqualTo("DR-SENT-002");
         assertThat(json.get("enabled").asBoolean()).isTrue();
         assertThat(json.get("title").asText()).isNotBlank();
@@ -75,7 +75,7 @@ class ValidationRulesApiHttpLiveTest {
      */
     @Test
     void get_rule_by_id_should_return_404_for_unknown_rule() {
-        HttpHeaders headers = new HttpHeaders();
+        final HttpHeaders headers = new HttpHeaders();
         headers.set("CJSCPPUID", "test-user");
 
         assertThatThrownBy(() -> http.exchange(

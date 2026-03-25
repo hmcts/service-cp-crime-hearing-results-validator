@@ -18,6 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ValidationApiHttpLiveTest {
 
+    private static final String IS_VALID = "isValid";
+    private static final String ERRORS = "errors";
+    private static final String WARNINGS = "warnings";
+    private static final String RULES_EVALUATED = "rulesEvaluated";
+    private static final String RULE_ID = "DR-SENT-002";
+
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -28,7 +34,7 @@ class ValidationApiHttpLiveTest {
      */
     @Test
     void validate_empty_arrays_should_return_valid() throws Exception {
-        String body = """
+        final String body = """
                 {
                   "hearingId": "h1",
                   "caseId": "c1",
@@ -40,15 +46,15 @@ class ValidationApiHttpLiveTest {
                 }
                 """;
 
-        JsonNode json = postValidate(body);
+        final JsonNode json = postValidate(body);
 
-        assertThat(json.get("isValid").asBoolean()).isTrue();
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get("validationId").asText()).startsWith("val-");
         assertThat(json.has("timestamp")).isTrue();
         assertThat(json.get("mode").asText()).isEqualTo("advisory");
-        assertThat(json.get("errors")).isEmpty();
-        assertThat(json.get("warnings")).isEmpty();
-        assertThat(json.get("rulesEvaluated").get(0).asText()).isEqualTo("DR-SENT-002");
+        assertThat(json.get(ERRORS)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+        assertThat(json.get(RULES_EVALUATED).get(0).asText()).isEqualTo(RULE_ID);
     }
 
     /**
@@ -57,7 +63,7 @@ class ValidationApiHttpLiveTest {
      */
     @Test
     void ac1_single_offence_without_info_should_be_valid() throws Exception {
-        String body = """
+        final String body = """
                 {
                   "hearingId": "h1",
                   "hearingDay": "2026-03-11",
@@ -74,11 +80,11 @@ class ValidationApiHttpLiveTest {
                 }
                 """;
 
-        JsonNode json = postValidate(body);
+        final JsonNode json = postValidate(body);
 
-        assertThat(json.get("isValid").asBoolean()).isTrue();
-        assertThat(json.get("errors")).isEmpty();
-        assertThat(json.get("warnings")).isEmpty();
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
     }
 
     /**
@@ -87,7 +93,7 @@ class ValidationApiHttpLiveTest {
      */
     @Test
     void ac2_multiple_offences_missing_info_should_produce_error() throws Exception {
-        String body = """
+        final String body = """
                 {
                   "hearingId": "h1",
                   "hearingDay": "2026-03-11",
@@ -108,13 +114,13 @@ class ValidationApiHttpLiveTest {
                 }
                 """;
 
-        JsonNode json = postValidate(body);
+        final JsonNode json = postValidate(body);
 
-        assertThat(json.get("isValid").asBoolean()).isFalse();
-        assertThat(json.get("errors")).hasSize(1);
-        assertThat(json.get("errors").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
-        assertThat(json.get("errors").get(0).get("severity").asText()).isEqualTo("ERROR");
-        assertThat(json.get("errors").get(0).get("message").asText()).startsWith("John Doe")
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(ERRORS)).hasSize(1);
+        assertThat(json.get(ERRORS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(0).get("severity").asText()).isEqualTo("ERROR");
+        assertThat(json.get(ERRORS).get(0).get("message").asText()).startsWith("John Doe")
                 .contains("Offence 2").contains("Offence 3").contains("do not include details");
     }
 
@@ -124,7 +130,7 @@ class ValidationApiHttpLiveTest {
      */
     @Test
     void ac3_offence_with_both_concurrent_and_consecutive_should_produce_warning() throws Exception {
-        String body = """
+        final String body = """
                 {
                   "hearingId": "h1",
                   "hearingDay": "2026-03-11",
@@ -141,14 +147,14 @@ class ValidationApiHttpLiveTest {
                 }
                 """;
 
-        JsonNode json = postValidate(body);
+        final JsonNode json = postValidate(body);
 
-        assertThat(json.get("isValid").asBoolean()).isTrue();
-        assertThat(json.get("errors")).isEmpty();
-        assertThat(json.get("warnings")).hasSize(1);
-        assertThat(json.get("warnings").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
-        assertThat(json.get("warnings").get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("John Doe")
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS)).isEmpty();
+        assertThat(json.get(WARNINGS)).hasSize(1);
+        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
+        assertThat(json.get(WARNINGS).get(0).get("message").asText()).startsWith("John Doe")
                 .contains("Offence 2").contains("concurrent").contains("consecutive");
     }
 
@@ -158,7 +164,7 @@ class ValidationApiHttpLiveTest {
      */
     @Test
     void ac4_all_offences_have_info_no_primary_should_produce_warning() throws Exception {
-        String body = """
+        final String body = """
                 {
                   "hearingId": "h1",
                   "hearingDay": "2026-03-11",
@@ -175,22 +181,22 @@ class ValidationApiHttpLiveTest {
                 }
                 """;
 
-        JsonNode json = postValidate(body);
+        final JsonNode json = postValidate(body);
 
-        assertThat(json.get("isValid").asBoolean()).isTrue();
-        assertThat(json.get("errors")).isEmpty();
-        assertThat(json.get("warnings")).hasSize(1);
-        assertThat(json.get("warnings").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
-        assertThat(json.get("warnings").get(0).get("message").asText()).startsWith("John Doe")
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS)).isEmpty();
+        assertThat(json.get(WARNINGS)).hasSize(1);
+        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(WARNINGS).get(0).get("message").asText()).startsWith("John Doe")
                 .contains("all offences include details").contains("no primary sentence");
     }
 
-    private JsonNode postValidate(String body) throws Exception {
-        HttpHeaders headers = new HttpHeaders();
+    private JsonNode postValidate(final String body) throws Exception {
+        final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("CJSCPPUID", "test-user");
 
-        ResponseEntity<String> response = http.exchange(
+        final ResponseEntity<String> response = http.exchange(
                 baseUrl + "/api/validation/validate",
                 HttpMethod.POST,
                 new HttpEntity<>(body, headers),
