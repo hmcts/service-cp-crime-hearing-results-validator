@@ -98,8 +98,8 @@ class CelValidationRuleTest {
         assertThat(error.getRuleId()).isEqualTo("DR-SENT-002");
         assertThat(error.getMessage()).contains("John Smith");
         assertThat(error.getMessage()).contains("do not include details");
-        assertThat(error.getMessage()).contains("Offence 2 (URN:32AH9105826) and Offence 3 (URN:32AH9105826)");
-        assertThat(error.getAffectedOffences()).hasSize(2);
+        assertThat(error.getMessage()).contains("Offence 1 (URN:32AH9105826), Offence 2 (URN:32AH9105826) and Offence 3 (URN:32AH9105826)");
+        assertThat(error.getAffectedOffences()).hasSize(3);
     }
 
     /**

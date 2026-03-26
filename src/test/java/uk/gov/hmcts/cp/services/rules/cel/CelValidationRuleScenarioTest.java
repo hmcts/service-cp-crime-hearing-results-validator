@@ -93,7 +93,7 @@ class CelValidationRuleScenarioTest {
          * omits relationship data.
          */
         @Test
-        @DisplayName("S3: 3 offences – 1 primary, 1 no-info, 1 concurrent → Error AC2 (1 non-primary missing info)")
+        @DisplayName("S3: 3 offences – 1 primary, 1 no-info, 1 concurrent → Error AC2 (2 offences missing info)")
         void s3_one_primary_one_no_info_one_concurrent() {
             List<ResultLineDto> lines = List.of(
                     resultLine("rl1", "IMP", "d1", "off1"),
@@ -109,7 +109,7 @@ class CelValidationRuleScenarioTest {
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-            assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
+            assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
         }
 
         /**
@@ -117,7 +117,7 @@ class CelValidationRuleScenarioTest {
          * two non-primary offences are flagged.
          */
         @Test
-        @DisplayName("S4: 3 offences – all no-info → Error")
+        @DisplayName("S4: 3 offences – all no-info → Error (all 3 offences missing info)")
         void s4_all_no_info() {
             DraftValidationRequest request = buildRequest(
                     List.of(
@@ -133,7 +133,7 @@ class CelValidationRuleScenarioTest {
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-            assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+            assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
         }
     }
 
@@ -423,7 +423,7 @@ class CelValidationRuleScenarioTest {
          * three offences all omit relationship data.
          */
         @Test
-        @DisplayName("S14b: 3 cases – all no-info (same defendant) → Error AC2 (2 non-primary missing info)")
+        @DisplayName("S14b: 3 cases – all no-info (same defendant) → Error AC2 (all 3 offences missing info)")
         void s14b_cross_case_three_no_info() {
             List<ResultLineDto> lines = List.of(
                     resultLine("rl1", "IMP", "d1", "off1"),
@@ -438,7 +438,7 @@ class CelValidationRuleScenarioTest {
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-            assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+            assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
         }
 
         /**

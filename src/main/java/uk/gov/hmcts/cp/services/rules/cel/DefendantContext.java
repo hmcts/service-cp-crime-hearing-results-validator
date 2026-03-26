@@ -16,7 +16,8 @@ public record DefendantContext(
         List<String> noInfoOffenceIds,
         List<String> hasInfoOffenceIds,
         List<String> hasBothOffenceIds,
-        List<String> allOffenceIds
+        List<String> allOffenceIds,
+        List<String> allNoInfoOffenceIds
 ) {
 
     /**
@@ -46,6 +47,7 @@ public record DefendantContext(
             case "hasInfoOffenceIds" -> hasInfoOffenceIds;
             case "hasBothOffenceIds" -> hasBothOffenceIds;
             case "allOffenceIds" -> allOffenceIds;
+            case "allNoInfoOffenceIds" -> allNoInfoOffenceIds;
             default -> throw new IllegalArgumentException("Unknown offence set: " + setName);
         };
     }

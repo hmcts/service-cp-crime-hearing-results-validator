@@ -104,13 +104,13 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         List<ValidationIssue> issues = rule.evaluate(request);
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
     }
 
 
     /**
      * Verifies three custodial offences with no relationship data produce one AC2 error affecting
-     * the two non-primary offences.
+     * all three offences without info.
      */
     @Test
     @DisplayName("AC2-S4: 3 offences – 1 primary, 1 no-info, 1 with info (only 1 non-primary missing info)")
@@ -127,7 +127,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         List<ValidationIssue> issues = rule.evaluate(request);
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
 
     }
 
@@ -151,7 +151,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         List<ValidationIssue> issues = rule.evaluate(request);
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
 
     }
 
@@ -177,8 +177,8 @@ And I have to resolve the error before I can share the result (i.e sharing is no
     }
 
     /**
-     * Verifies the all-no-info custodial scenario produces a single AC2 error affecting both
-     * non-primary offences.
+     * Verifies the all-no-info custodial scenario produces a single AC2 error affecting all three
+     * offences without info.
      */
     @Test
     @DisplayName("AC2-S7: 3 offences – all no-info → Error")
@@ -197,7 +197,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
     }
 
     /**
@@ -221,7 +221,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
     }
 
     /**
@@ -280,7 +280,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(issues.getFirst().getAffectedOffences()).hasSize(1);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
     }
 
     /**
