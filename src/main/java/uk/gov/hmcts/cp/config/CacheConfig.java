@@ -18,17 +18,25 @@ import java.time.Duration;
 public class CacheConfig {
 
     /**
-     * Creates the cache manager used to hold database-backed rule override values.
+     * Creates the cache manager with per-cache TTL configuration.
      *
-     * @param ttlSeconds time-to-live for override cache entries in seconds
+     * @param overrideTtlSeconds time-to-live for rule override cache entries in seconds
+     * @param featureTtlSeconds time-to-live for feature flag cache entries in seconds
      * @return cache manager backed by Caffeine
      */
     @Bean
     public CacheManager cacheManager(
-            @Value("${validation.cache.override-ttl-seconds:30}") final long ttlSeconds) {
-        final CaffeineCacheManager manager = new CaffeineCacheManager("ruleOverrides");
-        manager.setCaffeine(Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofSeconds(ttlSeconds)));
+            @Value("${validation.cache.override-ttl-seconds:30}") final long overrideTtlSeconds,
+            @Value("${feature.cache.ttl-seconds:600}") final long featureTtlSeconds) {
+        final CaffeineCacheManager manager = new CaffeineCacheManager();
+        manager.registerCustomCache("ruleOverrides",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(Duration.ofSeconds(overrideTtlSeconds))
+                        .build());
+        manager.registerCustomCache("featureFlags",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(Duration.ofSeconds(featureTtlSeconds))
+                        .build());
         return manager;
     }
 }
