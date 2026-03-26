@@ -28,8 +28,8 @@ public class TracingFilter extends OncePerRequestFilter {
     public static final String USER_ID = "userId";
     public static final String CLIENT_CORRELATION_ID = "clientCorrelationId";
 
-    static final String CJSCPPUID_HEADER = "CJSCPPUID";
-    static final String CORRELATION_HEADER = "CPPCLIENTCORRELATIONID";
+    /* default */ static final String CJSCPPUID_HEADER = "CJSCPPUID";
+    /* default */ static final String CORRELATION_HEADER = "CPPCLIENTCORRELATIONID";
 
     private final String applicationName;
 
