@@ -48,7 +48,7 @@ public class AzureAppConfigFetcher {
             try {
                 parsed = AzureConnectionInfo.parse(connectionString);
             } catch (Exception e) {
-                log.warn("Invalid feature connection string, feature toggle disabled: {}", e.getMessage());
+                log.warn("Invalid feature connection string, feature toggle will default to enabled: {}", e.getMessage());
             }
         }
         this.connectionInfo = parsed;
