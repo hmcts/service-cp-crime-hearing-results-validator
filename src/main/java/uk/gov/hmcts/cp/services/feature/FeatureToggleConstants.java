@@ -1,13 +1,16 @@
 package uk.gov.hmcts.cp.services.feature;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
- * Feature flag name constants used across the validation service.
+ * Feature flag names that map to entries in Azure App Configuration.
  */
-public final class FeatureToggleConstants {
+@Getter
+@RequiredArgsConstructor
+public enum FeatureToggleConstants {
 
-    public static final String FEATURE_RESULTS_VALIDATION = "ResultsValidation";
+    RESULTS_VALIDATION("ResultsValidation");
 
-    private FeatureToggleConstants() {
-        // utility class
-    }
+    private final String featureName;
 }

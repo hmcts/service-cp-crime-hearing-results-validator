@@ -98,7 +98,8 @@ public class DefaultValidationService implements ValidationService {
     private boolean isFeatureActive() {
         boolean active = true;
         try {
-            active = featureToggleService.isFeatureEnabled(FeatureToggleConstants.FEATURE_RESULTS_VALIDATION);
+            active = featureToggleService.isFeatureEnabled(
+                    FeatureToggleConstants.RESULTS_VALIDATION.getFeatureName());
         } catch (Exception e) {
             log.warn("Feature toggle check failed, proceeding with validation: {}", e.getMessage());
         }
