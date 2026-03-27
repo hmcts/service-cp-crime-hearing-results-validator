@@ -46,7 +46,9 @@ public class MessageTemplateResolver {
                 .toList();
 
         final String result;
-        if (formatted.size() == SINGLE_ELEMENT) {
+        if (formatted.isEmpty()) {
+            result = "";
+        } else if (formatted.size() == SINGLE_ELEMENT) {
             result = formatted.getFirst();
         } else if (formatted.size() == TWO_ELEMENTS) {
             result = formatted.get(0) + " and " + formatted.get(1);

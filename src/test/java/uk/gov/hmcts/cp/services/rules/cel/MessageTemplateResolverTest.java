@@ -200,6 +200,21 @@ class MessageTemplateResolverTest {
                 "Offence 2 (URN:32AH9105826) and Offence 10 (URN:32AH9105826) have issues");
     }
 
+    /**
+     * Verifies that an empty offence list produces an empty string rather than throwing.
+     */
+    @Test
+    void resolve_should_handle_empty_offence_list() {
+        String result = resolver.resolve(
+                "${offenceNumbers} have issues",
+                "John Smith",
+                List.of(),
+                Map.of(),
+                ALL_OFFENCE_IDS);
+
+        assertThat(result).isEqualTo(" have issues");
+    }
+
     private static OffenceDto offence(String id, int orderIndex) {
         return OffenceDto.builder()
                 .id(id)
