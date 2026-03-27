@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -39,9 +40,18 @@ public class AzureAppConfigFetcher {
     private final AzureConnectionInfo connectionInfo;
     private final HttpClient httpClient;
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public AzureAppConfigFetcher(
             @Value("${feature.connection-string:}") final String connectionString) {
-        this.connectionInfo = connectionString.isBlank() ? null : AzureConnectionInfo.parse(connectionString);
+        AzureConnectionInfo parsed = null;
+        if (!connectionString.isBlank()) {
+            try {
+                parsed = AzureConnectionInfo.parse(connectionString);
+            } catch (Exception e) {
+                log.warn("Invalid feature connection string, feature toggle disabled: {}", e.getMessage());
+            }
+        }
+        this.connectionInfo = parsed;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(TIMEOUT_SECONDS))
                 .build();
@@ -53,6 +63,7 @@ public class AzureAppConfigFetcher {
      * @param label the environment label (e.g. "STE86")
      * @return map of feature name to enabled status, or empty map on failure
      */
+    @Cacheable(value = "featureFlags", key = "#label")
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public Map<String, Boolean> fetchFeatures(final String label) {
         Map<String, Boolean> result = Collections.emptyMap();

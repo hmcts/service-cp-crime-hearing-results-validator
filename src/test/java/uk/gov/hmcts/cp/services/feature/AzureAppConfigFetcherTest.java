@@ -91,4 +91,13 @@ class AzureAppConfigFetcherTest {
 
         assertThat(features).isEmpty();
     }
+
+    @Test
+    void malformed_connection_string_should_not_crash_and_returns_empty_map() {
+        AzureAppConfigFetcher fetcher = new AzureAppConfigFetcher("garbage-value");
+
+        Map<String, Boolean> features = fetcher.fetchFeatures("STE86");
+
+        assertThat(features).isEmpty();
+    }
 }
