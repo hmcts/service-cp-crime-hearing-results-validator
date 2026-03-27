@@ -63,6 +63,7 @@ class RuleDefinitionTest {
         assertThat(ac2.getId()).isEqualTo("AC2");
         assertThat(ac2.getExpression()).isEqualTo("noInfoCount > 0");
         assertThat(ac2.getSeverity()).isEqualTo("ERROR");
+        assertThat(ac2.getAffectedOffenceSet()).isEqualTo("allNoInfoOffenceIds");
 
         ConditionDefinition ac4 = rule.getConditions().get(2);
         assertThat(ac4.getId()).isEqualTo("AC4");

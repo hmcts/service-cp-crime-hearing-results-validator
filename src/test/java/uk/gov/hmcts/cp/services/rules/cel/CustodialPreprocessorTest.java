@@ -182,6 +182,26 @@ class CustodialPreprocessorTest {
     }
 
     /**
+     * Verifies the preprocessor includes the primary offence in allNoInfoOffenceIds alongside the
+     * remaining no-info offences, while noInfoOffenceIds still excludes it.
+     */
+    @Test
+    void should_include_primary_in_allNoInfoOffenceIds() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2"),
+                        resultLine("rl3", "IMP", "d1", "off3")),
+                List.of());
+        request.getResultLines().get(2).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        DefendantContext ctx = result.get("d1");
+        assertThat(ctx.allNoInfoOffenceIds()).containsExactly("off1", "off2");
+        assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
+    }
+
+    /**
      * Verifies {@link DefendantContext#toCelContext()} exposes the derived count values expected by
      * CEL expressions.
      */
@@ -189,7 +209,7 @@ class CustodialPreprocessorTest {
     void toCelContext_should_return_count_map() {
         DefendantContext ctx = new DefendantContext(
                 "John", 2, 1, 0, 0, 3,
-                List.of(), List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), List.of());
 
         Map<String, Long> celCtx = ctx.toCelContext();
 
@@ -206,12 +226,13 @@ class CustodialPreprocessorTest {
     void getOffenceIdSet_should_return_correct_list() {
         DefendantContext ctx = new DefendantContext(
                 "John", 0, 0, 0, 0, 0,
-                List.of("a"), List.of("b"), List.of("c"), List.of("a", "b", "c"));
+                List.of("a"), List.of("b"), List.of("c"), List.of("a", "b", "c"), List.of("a"));
 
         assertThat(ctx.getOffenceIdSet("noInfoOffenceIds")).containsExactly("a");
         assertThat(ctx.getOffenceIdSet("hasInfoOffenceIds")).containsExactly("b");
         assertThat(ctx.getOffenceIdSet("hasBothOffenceIds")).containsExactly("c");
         assertThat(ctx.getOffenceIdSet("allOffenceIds")).containsExactly("a", "b", "c");
+        assertThat(ctx.getOffenceIdSet("allNoInfoOffenceIds")).containsExactly("a");
     }
 
     /**
@@ -221,7 +242,7 @@ class CustodialPreprocessorTest {
     void getOffenceIdSet_should_throw_for_unknown_set_name() {
         DefendantContext ctx = new DefendantContext(
                 "John", 0, 0, 0, 0, 0,
-                List.of(), List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), List.of());
 
         assertThatThrownBy(() -> ctx.getOffenceIdSet("bogus"))
                 .isInstanceOf(IllegalArgumentException.class)

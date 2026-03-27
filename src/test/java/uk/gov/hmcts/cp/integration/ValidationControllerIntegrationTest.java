@@ -124,7 +124,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors", hasSize(1)))
                 .andExpect(jsonPath("$.errors[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.errors[0].severity", is("ERROR")))
-                .andExpect(jsonPath("$.errors[0].message", startsWith("John Doe Offence 2 and Offence 3")));
+                .andExpect(jsonPath("$.errors[0].message", startsWith("John Doe Offence 1, Offence 2 and Offence 3")));
     }
 
     /**

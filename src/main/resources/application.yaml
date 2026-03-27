@@ -81,6 +81,12 @@ validation:
   cache:
     override-ttl-seconds: ${RULE_OVERRIDE_CACHE_TTL:30}
 
+feature:
+  connection-string: ${FEATURE_MANAGER_CONNECTION_STRING:}
+  label: ${FEATURE_LABEL:}
+  cache:
+    ttl-seconds: ${FEATURE_CACHE_TTL_SECONDS:600}
+
 logging:
   level:
     root: INFO

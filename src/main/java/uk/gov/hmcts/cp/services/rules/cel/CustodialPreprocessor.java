@@ -72,7 +72,7 @@ public class CustodialPreprocessor {
             final List<String> noInfoOffenceIds = new ArrayList<>();
             final List<String> offencesWithInfo = new ArrayList<>();
             final List<String> offencesWithBoth = new ArrayList<>();
-            boolean primaryFound = false;
+            String primaryOffenceId = null;
             boolean primaryClaimed = false;
 
             for (final Map.Entry<String, List<ResultLineDto>> entry : byOffence.entrySet()) {
@@ -93,21 +93,28 @@ public class CustodialPreprocessor {
                     noInfoOffenceIds.add(offenceId);
                 } else {
                     primaryClaimed = true;
-                    primaryFound = true;
+                    primaryOffenceId = offenceId;
                 }
             }
+
+            final List<String> allNoInfoOffenceIds = new ArrayList<>();
+            if (primaryOffenceId != null) {
+                allNoInfoOffenceIds.add(primaryOffenceId);
+            }
+            allNoInfoOffenceIds.addAll(noInfoOffenceIds);
 
             result.put(groupKey, new DefendantContext(
                     defendantNames.getOrDefault(groupKey, "Unknown"),
                     noInfoOffenceIds.size(),
                     offencesWithInfo.size(),
                     offencesWithBoth.size(),
-                    primaryFound ? 1 : 0,
+                    primaryOffenceId != null ? 1 : 0,
                     byOffence.size(),
                     noInfoOffenceIds,
                     offencesWithInfo,
                     offencesWithBoth,
-                    new ArrayList<>(byOffence.keySet())));
+                    new ArrayList<>(byOffence.keySet()),
+                    allNoInfoOffenceIds));
         }
 
         return result;

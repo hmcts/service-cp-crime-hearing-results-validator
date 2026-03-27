@@ -8,6 +8,8 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.ValidationService;
+import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
+import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.time.Instant;
@@ -24,15 +26,32 @@ import java.util.concurrent.TimeUnit;
 public class DefaultValidationService implements ValidationService {
 
     private final List<ValidationRule> rules;
+    private final FeatureToggleService featureToggleService;
 
-    public DefaultValidationService(@Qualifier("validationRules") final List<ValidationRule> rules) {
+    public DefaultValidationService(
+            @Qualifier("validationRules") final List<ValidationRule> rules,
+            final FeatureToggleService featureToggleService) {
         this.rules = rules;
+        this.featureToggleService = featureToggleService;
     }
 
     @Override
     @Observed(name = "validation.request")
-    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
     public DraftValidationResponse validate(final DraftValidationRequest request) {
+        final DraftValidationResponse response;
+
+        if (isFeatureActive()) {
+            response = evaluateRules(request);
+        } else {
+            log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
+            response = buildDisabledResponse();
+        }
+
+        return response;
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
+    private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
 
@@ -72,6 +91,31 @@ public class DefaultValidationService implements ValidationService {
                 .errors(errors)
                 .warnings(warnings)
                 .processingTimeMs((int) processingTimeMs)
+                .build();
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private boolean isFeatureActive() {
+        boolean active = true;
+        try {
+            active = featureToggleService.isFeatureEnabled(
+                    FeatureToggleConstants.RESULTS_VALIDATION.getFeatureName());
+        } catch (Exception e) {
+            log.warn("Feature toggle check failed, proceeding with validation: {}", e.getMessage());
+        }
+        return active;
+    }
+
+    private DraftValidationResponse buildDisabledResponse() {
+        return DraftValidationResponse.builder()
+                .validationId("val-" + UUID.randomUUID())
+                .timestamp(Instant.now())
+                .mode("disabled")
+                .rulesEvaluated(List.of())
+                .isValid(true)
+                .errors(List.of())
+                .warnings(List.of())
+                .processingTimeMs(0)
                 .build();
     }
 }

@@ -42,7 +42,7 @@ rule:
         they are concurrent or consecutive. There should be only one primary
         sentence, therefore one result without concurrent or consecutive
         information
-      affectedOffenceSet: "noInfoOffenceIds"
+      affectedOffenceSet: "allNoInfoOffenceIds"
 
     - id: "AC4"
       name: "No primary sentence"

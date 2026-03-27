@@ -5,6 +5,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.ArrayList;
@@ -17,13 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DefaultValidationServiceTest {
 
+    private static final FeatureToggleService ALWAYS_ENABLED = featureName -> true;
+
     /**
      * Verifies the baseline response when no rules are configured: the request is valid, no issues
      * are returned, and the response metadata is still populated.
      */
     @Test
     void no_rules_should_return_valid_response() {
-        DefaultValidationService service = new DefaultValidationService(List.of());
+        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -51,7 +54,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.ERROR)
                         .message("Test error")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(errorRule));
+        DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -76,7 +79,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.WARNING)
                         .message("Test warning")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(warningRule));
+        DefaultValidationService service = new DefaultValidationService(List.of(warningRule), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -107,7 +110,7 @@ class DefaultValidationServiceTest {
                         .severity(ValidationIssue.SeverityEnum.WARNING)
                         .message("Warning from rule 2")
                         .build()));
-        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2));
+        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -126,7 +129,7 @@ class DefaultValidationServiceTest {
      */
     @Test
     void validate_should_generate_unique_validation_ids() {
-        DefaultValidationService service = new DefaultValidationService(List.of());
+        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -156,7 +159,7 @@ class DefaultValidationServiceTest {
                         .message("Error from rule 3")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(
-                List.of(rule1, throwingRule, rule3));
+                List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -199,7 +202,7 @@ class DefaultValidationServiceTest {
         List<ValidationRule> sorted = new ArrayList<>(List.of(lowPriority, highPriority, medPriority));
         sorted.sort(java.util.Comparator.comparingInt(r -> r.getRuleDetail().getPriority()));
 
-        DefaultValidationService service = new DefaultValidationService(sorted);
+        DefaultValidationService service = new DefaultValidationService(sorted, ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -208,6 +211,61 @@ class DefaultValidationServiceTest {
 
         assertThat(response.getRulesEvaluated())
                 .containsExactly("RULE-HIGH", "RULE-MED", "RULE-LOW");
+    }
+
+    /**
+     * Verifies that when the feature toggle returns disabled, the service returns an immediate
+     * success response without evaluating any rules.
+     */
+    @Test
+    void validate_returns_disabled_response_when_feature_disabled() {
+        FeatureToggleService disabled = featureName -> false;
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssue.builder()
+                        .ruleId("RULE-001")
+                        .severity(ValidationIssue.SeverityEnum.ERROR)
+                        .message("Should not appear")
+                        .build()));
+        DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled);
+        DraftValidationRequest request = DraftValidationRequest.builder()
+                .hearingId("h1")
+                .build();
+
+        DraftValidationResponse response = service.validate(request);
+
+        assertThat(response.getIsValid()).isTrue();
+        assertThat(response.getMode()).isEqualTo("disabled");
+        assertThat(response.getValidationId()).startsWith("val-");
+        assertThat(response.getTimestamp()).isNotNull();
+        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getWarnings()).isEmpty();
+        assertThat(response.getRulesEvaluated()).isEmpty();
+        assertThat(response.getProcessingTimeMs()).isZero();
+    }
+
+    /**
+     * Verifies that when the feature toggle throws an exception, the service proceeds with
+     * normal validation (fail-open defence-in-depth).
+     */
+    @Test
+    void validate_runs_rules_when_toggle_check_throws() {
+        FeatureToggleService broken = featureName -> { throw new RuntimeException("Toggle broken"); };
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssue.builder()
+                        .ruleId("RULE-001")
+                        .severity(ValidationIssue.SeverityEnum.ERROR)
+                        .message("Error found")
+                        .build()));
+        DefaultValidationService service = new DefaultValidationService(List.of(rule), broken);
+        DraftValidationRequest request = DraftValidationRequest.builder()
+                .hearingId("h1")
+                .build();
+
+        DraftValidationResponse response = service.validate(request);
+
+        assertThat(response.getMode()).isEqualTo("advisory");
+        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
     }
 
     private static ValidationRule stubRule(String ruleId, List<ValidationIssue> issues) {
