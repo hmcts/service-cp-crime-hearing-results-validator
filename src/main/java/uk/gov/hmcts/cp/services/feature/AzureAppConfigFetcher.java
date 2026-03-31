@@ -3,7 +3,6 @@ package uk.gov.hmcts.cp.services.feature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -109,14 +108,12 @@ public class AzureAppConfigFetcher {
                 for (final JsonNode item : items) {
                     final String contentType = item.has("content_type")
                             ? item.get("content_type").asText() : "";
-                    if (StringUtils.isNotEmpty(contentType)) {
-                        if (item != null && item.get("key") != null && item.get("value") != null) {
-                            final String key = item.get("key").asText().replace(FEATURE_PREFIX, "");
-                            final JsonNode valueNode = OBJECT_MAPPER.readTree(item.get("value").asText());
-                            final boolean enabled = valueNode.has("enabled")
-                                    && valueNode.get("enabled").asBoolean();
-                            features.put(key, enabled);
-                        }
+                    if (!contentType.isEmpty()) {
+                        final String key = item.get("key").asText().replace(FEATURE_PREFIX, "");
+                        final JsonNode valueNode = OBJECT_MAPPER.readTree(item.get("value").asText());
+                        final boolean enabled = valueNode.has("enabled")
+                                && valueNode.get("enabled").asBoolean();
+                        features.put(key, enabled);
                     }
                 }
             }

@@ -111,7 +111,7 @@ public class CustodialPreprocessor {
                     noInfoOffenceIds.size(),
                     offencesWithInfo.size(),
                     offencesWithBoth.size(),
-                    isNotBlank(primaryOffenceId) ? 1 : 0,
+                    primaryOffenceId != null ? 1 : 0,
                     byOffence.size(),
                     noInfoOffenceIds,
                     offencesWithInfo,
