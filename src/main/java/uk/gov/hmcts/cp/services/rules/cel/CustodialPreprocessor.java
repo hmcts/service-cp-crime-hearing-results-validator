@@ -1,5 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -108,7 +111,7 @@ public class CustodialPreprocessor {
                     noInfoOffenceIds.size(),
                     offencesWithInfo.size(),
                     offencesWithBoth.size(),
-                    primaryOffenceId != null ? 1 : 0,
+                    isNotBlank(primaryOffenceId) ? 1 : 0,
                     byOffence.size(),
                     noInfoOffenceIds,
                     offencesWithInfo,
