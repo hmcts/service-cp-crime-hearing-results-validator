@@ -27,6 +27,12 @@ apply {
   from("$rootDir/gradle/github/jar.gradle")
 
   from("$rootDir/gradle/tasks/api-test.gradle")
+  from("$rootDir/gradle/apispec-validation.gradle")
+}
+
+configurations {
+  apiSpec
+  implementation.extendsFrom apiSpec
 }
 
 springBoot {
@@ -39,7 +45,7 @@ springBoot {
 }
 
 dependencies {
-  implementation libs.api.hearing.results.validator
+  apiSpec libs.api.hearing.results.validator
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
