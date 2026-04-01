@@ -48,9 +48,9 @@ public class MessageTemplateResolver {
         final String result;
         if (formatted.isEmpty()) {
             result = "";
-        } else if (formatted.size() == SINGLE_ELEMENT) {
+        } else if (SINGLE_ELEMENT == formatted.size()) {
             result = formatted.getFirst();
-        } else if (formatted.size() == TWO_ELEMENTS) {
+        } else if (TWO_ELEMENTS == formatted.size()) {
             result = formatted.get(0) + " and " + formatted.get(1);
         } else {
             result = String.join(", ", formatted.subList(0, formatted.size() - 1))
