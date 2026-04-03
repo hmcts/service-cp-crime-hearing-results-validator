@@ -32,6 +32,7 @@ applicationinsights-agent-*.jar
 .env
 
 .claude/
+.codex
 .codex/
 .gemini/
 

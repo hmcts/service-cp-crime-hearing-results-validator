@@ -122,10 +122,10 @@ public class CapacitySimulation extends Simulation {
             )
         ).protocols(httpProtocol)
          .assertions(
-             // Assertions scoped to "Capacity" scenario only — warm-up excluded
-             details("Capacity", "Validate").responseTime().percentile(95).lt(500),
-             details("Capacity", "Validate").responseTime().percentile(99).lt(1000),
-             details("Capacity", "Validate").successfulRequests().percent().gt(99.9)
+             // Assertions on "Validate" request only — excludes "Validate (warm-up)" from Warm-up scenario
+             details("Validate").responseTime().percentile(95).lt(500),
+             details("Validate").responseTime().percentile(99).lt(1000),
+             details("Validate").successfulRequests().percent().gt(99.9)
          );
     }
 }
