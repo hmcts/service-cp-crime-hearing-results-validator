@@ -3,7 +3,7 @@ package uk.gov.hmcts.cp.controllers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.hmcts.cp.openapi.api.ValidationApi;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
