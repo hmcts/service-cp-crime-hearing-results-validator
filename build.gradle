@@ -72,9 +72,11 @@ dependencies {
 }
 
 gatling {
-  // Allow baseUrl to be passed via -Dgatling.baseUrl=http://...
   jvmArgs = [
-    "-Dgatling.baseUrl=${System.getProperty('gatling.baseUrl', 'http://localhost:4550')}"
+    "-Dgatling.baseUrl=${System.getProperty('gatling.baseUrl', 'http://localhost:4550')}",
+    "-Dlogback.configurationFile=${projectDir}/src/gatling/resources/logback-gatling.xml",
+    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+    "--add-opens", "java.base/java.util=ALL-UNNAMED"
   ]
 }
 
