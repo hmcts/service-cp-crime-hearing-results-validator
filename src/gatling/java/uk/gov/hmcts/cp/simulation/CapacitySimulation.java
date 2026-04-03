@@ -39,15 +39,24 @@ import static io.gatling.javaapi.http.HttpDsl.status;
 public class CapacitySimulation extends Simulation {
 
     private static final String BASE_URL = System.getProperty("gatling.baseUrl", "http://localhost:4550");
+    private static final String HOST_HEADER = System.getProperty("gatling.hostHeader", "");
 
     private static final double PRODUCTION_PEAK_RPS = 0.31;
     private static final double HEADROOM_MULTIPLIER = 10.0;
     private static final double TARGET_RPS = PRODUCTION_PEAK_RPS * HEADROOM_MULTIPLIER;
 
-    private final HttpProtocolBuilder httpProtocol = http
-        .baseUrl(BASE_URL)
-        .header("Content-Type", "application/json")
-        .header("CJSCPPUID", "nft-capacity-user");
+    private final HttpProtocolBuilder httpProtocol = buildHttpProtocol();
+
+    private static HttpProtocolBuilder buildHttpProtocol() {
+        HttpProtocolBuilder builder = http
+            .baseUrl(BASE_URL)
+            .header("Content-Type", "application/json")
+            .header("CJSCPPUID", "nft-capacity-user");
+        if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+            builder = builder.header("Host", HOST_HEADER);
+        }
+        return builder;
+    }
 
     // Separate scenario for warm-up — runs first, completes before measured traffic starts
     private final ScenarioBuilder warmUpScenario = scenario("Warm-up")
@@ -76,10 +85,14 @@ public class CapacitySimulation extends Simulation {
         // This would give a false-green NFT result with near-zero latency.
         System.out.println("Sanity check: verifying validation rules are enabled at " + BASE_URL);
         try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/api/validation/validate"))
                 .header("Content-Type", "application/json")
-                .header("CJSCPPUID", "nft-sanity-check")
+                .header("CJSCPPUID", "nft-sanity-check");
+            if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+                reqBuilder = reqBuilder.header("Host", HOST_HEADER);
+            }
+            HttpRequest request = reqBuilder
                 .POST(HttpRequest.BodyPublishers.ofString(PayloadBuilder.ac2Error()))
                 .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

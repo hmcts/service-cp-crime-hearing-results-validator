@@ -31,11 +31,20 @@ import static io.gatling.javaapi.http.HttpDsl.status;
 public class StressSimulation extends Simulation {
 
     private static final String BASE_URL = System.getProperty("gatling.baseUrl", "http://localhost:4550");
+    private static final String HOST_HEADER = System.getProperty("gatling.hostHeader", "");
 
-    private final HttpProtocolBuilder httpProtocol = http
-        .baseUrl(BASE_URL)
-        .header("Content-Type", "application/json")
-        .header("CJSCPPUID", "nft-stress-user");
+    private final HttpProtocolBuilder httpProtocol = buildHttpProtocol();
+
+    private static HttpProtocolBuilder buildHttpProtocol() {
+        HttpProtocolBuilder builder = http
+            .baseUrl(BASE_URL)
+            .header("Content-Type", "application/json")
+            .header("CJSCPPUID", "nft-stress-user");
+        if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+            builder = builder.header("Host", HOST_HEADER);
+        }
+        return builder;
+    }
 
     private final ScenarioBuilder rampScenario = scenario("Stress Ramp")
         .exec(session -> session.set("payload", PayloadBuilder.randomWeighted()))

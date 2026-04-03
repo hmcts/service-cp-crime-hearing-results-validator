@@ -74,6 +74,7 @@ dependencies {
 gatling {
   jvmArgs = [
     "-Dgatling.baseUrl=${System.getProperty('gatling.baseUrl', 'http://localhost:4550')}",
+    "-Dgatling.hostHeader=${System.getProperty('gatling.hostHeader', '')}",
     "-Dlogback.configurationFile=${projectDir}/src/gatling/resources/logback-gatling.xml",
     "--add-opens", "java.base/java.lang=ALL-UNNAMED",
     "--add-opens", "java.base/java.util=ALL-UNNAMED"
