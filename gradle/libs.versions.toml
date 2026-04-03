@@ -18,8 +18,10 @@ cel-tools = "0.6.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.2.3"
+gatling = "3.13.5.3"
 
 [libraries]
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-cache = { module = "org.springframework.boot:spring-boot-starter-cache" }
@@ -56,6 +58,7 @@ wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 
 [plugins]
+gatling = { id = "io.gatling.gradle", version.ref = "gatling" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }

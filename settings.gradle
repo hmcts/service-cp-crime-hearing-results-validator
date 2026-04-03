@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'service-cp-crime-hearing-results-validator'
+
+// CycloneDX SBOM plugin needs plexus-xml on the build classpath when resolving
+// Gatling's Scala/Maven-based dependency metadata.
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.codehaus.plexus:plexus-xml:4.0.4'
+    }
+}
