@@ -14,6 +14,7 @@ import static io.gatling.javaapi.core.CoreDsl.scenario;
 import static io.gatling.javaapi.core.CoreDsl.stressPeakUsers;
 import static io.gatling.javaapi.http.HttpDsl.http;
 import static io.gatling.javaapi.http.HttpDsl.status;
+import static jodd.util.StringUtil.isNotEmpty;
 
 /**
  * Exploratory stress/spike simulation — no assertions, report-only.
@@ -40,7 +41,7 @@ public class StressSimulation extends Simulation {
             .baseUrl(BASE_URL)
             .header("Content-Type", "application/json")
             .header("CJSCPPUID", "nft-stress-user");
-        if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+        if (HOST_HEADER != null && isNotEmpty(HOST_HEADER)) {
             builder = builder.header("Host", HOST_HEADER);
         }
         return builder;

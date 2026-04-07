@@ -18,6 +18,7 @@ import static io.gatling.javaapi.core.CoreDsl.rampUsersPerSec;
 import static io.gatling.javaapi.core.CoreDsl.scenario;
 import static io.gatling.javaapi.http.HttpDsl.http;
 import static io.gatling.javaapi.http.HttpDsl.status;
+import static jodd.util.StringUtil.isNotEmpty;
 
 /**
  * Production-capacity validation simulation (pipeline gate — assertions fail the build).
@@ -52,7 +53,7 @@ public class CapacitySimulation extends Simulation {
             .baseUrl(BASE_URL)
             .header("Content-Type", "application/json")
             .header("CJSCPPUID", "nft-capacity-user");
-        if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+        if (HOST_HEADER != null && isNotEmpty(HOST_HEADER)) {
             builder = builder.header("Host", HOST_HEADER);
         }
         return builder;
@@ -89,7 +90,7 @@ public class CapacitySimulation extends Simulation {
                 .uri(URI.create(BASE_URL + "/api/validation/validate"))
                 .header("Content-Type", "application/json")
                 .header("CJSCPPUID", "nft-sanity-check");
-            if (HOST_HEADER != null && !HOST_HEADER.isEmpty()) {
+            if (HOST_HEADER != null && isNotEmpty(HOST_HEADER)) {
                 reqBuilder = reqBuilder.header("Host", HOST_HEADER);
             }
             HttpRequest request = reqBuilder
