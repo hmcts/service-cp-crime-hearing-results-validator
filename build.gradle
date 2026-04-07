@@ -77,7 +77,8 @@ gatling {
     "-Dgatling.hostHeader=${System.getProperty('gatling.hostHeader', '')}",
     "-Dlogback.configurationFile=${projectDir}/src/gatling/resources/logback-gatling.xml",
     "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-    "--add-opens", "java.base/java.util=ALL-UNNAMED"
+    "--add-opens", "java.base/java.util=ALL-UNNAMED",
+    "-Djdk.httpclient.allowRestrictedHeaders=host"
   ]
 }
 
