@@ -1,6 +1,5 @@
 package uk.gov.hmcts.cp.http;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -37,7 +36,6 @@ class  ActuatorHttpLiveTest {
     /**
      * Verifies the Prometheus scrape endpoint is exposed when that monitoring path is enabled.
      */
-    @Disabled // Lets revisit this during our monitoring spike
     @Test
     void prometheus_is_exposed() {
         final HttpHeaders httpHeaders = new HttpHeaders();

@@ -6,9 +6,11 @@ plugins {
   id 'jacoco'
   id 'maven-publish'
   alias(libs.plugins.ben.manes.versions)
+
   alias(libs.plugins.cyclonedx.bom)
   alias(libs.plugins.gradle.git.properties)
   alias(libs.plugins.avast.docker.compose)
+  alias(libs.plugins.gatling)
 }
 
 group = 'uk.gov.hmcts.cp'
@@ -49,6 +51,7 @@ dependencies {
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
+  implementation libs.micrometer.registry.prometheus
   implementation libs.spring.boot.starter.cache
   implementation libs.caffeine
   implementation libs.hibernate.validator
@@ -66,4 +69,19 @@ dependencies {
 
   testImplementation(platform(libs.junit.bom))
   testRuntimeOnly libs.junit.jupiter.engine
+}
+
+gatling {
+  jvmArgs = [
+    "-Dgatling.baseUrl=${System.getProperty('gatling.baseUrl', 'http://localhost:4550')}",
+    "-Dgatling.hostHeader=${System.getProperty('gatling.hostHeader', '')}",
+    "-Dlogback.configurationFile=${projectDir}/src/gatling/resources/logback-gatling.xml",
+    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+    "--add-opens", "java.base/java.util=ALL-UNNAMED"
+  ]
+}
+
+// PMD is for production code — skip it on Gatling performance test sources
+tasks.matching { it.name == 'pmdGatling' }.configureEach {
+  enabled = false
 }
