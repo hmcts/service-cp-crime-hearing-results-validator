@@ -13,6 +13,11 @@ plugins {
   alias(libs.plugins.gatling)
 }
 
+// Disable CycloneDX when running Gatling (incompatible with Scala-based configs on Gradle 9)
+if (gradle.startParameter.taskNames.any { it.contains('gatling') }) {
+  cyclonedxBom.enabled = false
+}
+
 group = 'uk.gov.hmcts.cp'
 version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
 
