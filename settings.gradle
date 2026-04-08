@@ -14,6 +14,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.codehaus.plexus:plexus-xml:4.0.4'
+        classpath 'org.codehaus.plexus:plexus-xml:4.1.1'
     }
 }
