@@ -7,15 +7,17 @@ plugins {
   id 'maven-publish'
   alias(libs.plugins.ben.manes.versions)
 
-  alias(libs.plugins.cyclonedx.bom)
+  alias(libs.plugins.cyclonedx.bom).apply(false)
   alias(libs.plugins.gradle.git.properties)
   alias(libs.plugins.avast.docker.compose)
   alias(libs.plugins.gatling)
 }
 
-// Disable CycloneDX when running Gatling (incompatible with Scala-based configs on Gradle 9)
-if (gradle.startParameter.taskNames.any { it.contains('gatling') }) {
-  cyclonedxBom.enabled = false
+// Apply CycloneDX only when explicitly requested (e.g. CodeQL workflow: ./gradlew build cyclonedxBom).
+// The plugin's plexus-xml dependency is fetched from Maven Central at configuration time, which
+// ADO agents can't always reach. Keeping it opt-in avoids crashing normal builds and Gatling runs.
+if (gradle.startParameter.taskNames.any { it.contains('cyclonedxBom') }) {
+  apply plugin: 'org.cyclonedx.bom'
 }
 
 group = 'uk.gov.hmcts.cp'
