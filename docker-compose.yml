@@ -8,17 +8,24 @@ services:
     ports:
       - "5432:5432"
 
+  wiremock:
+    image: wiremock/wiremock:3.13.0
+    ports:
+      - "8082:8080"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - db
+      - wiremock
     environment:
       APP_NAME_DATASOURCE_URL: jdbc:postgresql://db:5432/results-validator-db
       APP_NAME_DATASOURCE_USERNAME: postgres
       APP_NAME_DATASOURCE_PASSWORD: postgres
-      AUTHZ_ENABLED: "false"
+      AUTHZ_ENABLED: "true"
+      CP_BASE_URL: "http://wiremock:8080"
     ports:
       - "4550:4550"
 
