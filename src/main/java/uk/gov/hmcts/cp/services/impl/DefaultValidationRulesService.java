@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.services.impl;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -10,8 +11,6 @@ import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
-import java.util.List;
-
 /**
  * Default in-memory implementation backed by the discovered validation rule beans.
  */
@@ -21,6 +20,7 @@ public class DefaultValidationRulesService implements ValidationRulesService {
 
     private final List<ValidationRule> rules;
 
+    /** Creates the service with the given list of discovered validation rules. */
     public DefaultValidationRulesService(@Qualifier("validationRules") final List<ValidationRule> rules) {
         this.rules = rules;
     }

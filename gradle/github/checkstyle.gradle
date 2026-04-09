@@ -1,0 +1,24 @@
+apply plugin: 'checkstyle'
+
+checkstyle {
+    toolVersion = '10.25.0'
+    configFile = rootProject.file('config/checkstyle/google_checks.xml')
+    ignoreFailures = false
+    maxWarnings = 0
+}
+
+// Run on demand only (like PMD) — enable as a required check once violations are resolved
+tasks.named('checkstyleMain').configure {
+    onlyIf { gradle.startParameter.taskNames.contains(name) }
+}
+
+tasks.named('checkstyleTest').configure {
+    enabled = false
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}

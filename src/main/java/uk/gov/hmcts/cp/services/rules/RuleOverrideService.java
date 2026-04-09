@@ -1,13 +1,12 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
-
-import java.util.Optional;
 
 /**
  * Loads optional runtime overrides for validation rules from the database.

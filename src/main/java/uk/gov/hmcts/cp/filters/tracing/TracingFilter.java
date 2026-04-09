@@ -4,14 +4,13 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
 
 /**
  * Copies inbound tracing and identity headers into the MDC and echoes tracing headers
@@ -33,6 +32,7 @@ public class TracingFilter extends OncePerRequestFilter {
 
     private final String applicationName;
 
+    /** Constructs the tracing filter with the configured application name. */
     public TracingFilter(@Value("${spring.application.name}") final String applicationName) {
         this.applicationName = applicationName;
     }

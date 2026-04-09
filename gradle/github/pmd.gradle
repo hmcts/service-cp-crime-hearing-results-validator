@@ -22,9 +22,3 @@ tasks.withType(Pmd) {
   }
 }
 
-tasks.withType(Checkstyle).configureEach {
-  def generatedDir = file("${layout.buildDirectory.get().asFile.absolutePath}/generated/src/main/java").canonicalPath
-  source = source.filter { file ->
-    !file.canonicalPath.startsWith(generatedDir)
-  }
-}

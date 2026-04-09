@@ -2,11 +2,10 @@ package uk.gov.hmcts.cp.services.rules.cel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.springframework.core.io.ClassPathResource;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Loads YAML rule definitions from the classpath.

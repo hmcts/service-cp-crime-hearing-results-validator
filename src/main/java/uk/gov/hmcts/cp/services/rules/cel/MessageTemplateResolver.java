@@ -1,12 +1,11 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.springframework.stereotype.Component;
-import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
-
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.springframework.stereotype.Component;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 
 /**
  * Expands rule message templates with defendant names and formatted offence references.
@@ -19,10 +18,12 @@ public class MessageTemplateResolver {
 
     private final OffenceDisplayHelper offenceDisplayHelper;
 
+    /** Constructs the resolver with the given offence display helper. */
     public MessageTemplateResolver(final OffenceDisplayHelper offenceDisplayHelper) {
         this.offenceDisplayHelper = offenceDisplayHelper;
     }
 
+    /** Resolves placeholders in the message template with defendant and offence details. */
     public String resolve(final String template,
                           final String defendantName,
                           final List<String> affectedOffenceIds,

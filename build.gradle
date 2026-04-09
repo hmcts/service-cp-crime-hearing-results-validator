@@ -32,6 +32,7 @@ apply {
   from("$rootDir/gradle/github/java.gradle")
   from("$rootDir/gradle/github/dependency.gradle")
   from("$rootDir/gradle/github/pmd.gradle")
+  from("$rootDir/gradle/github/checkstyle.gradle")
   from("$rootDir/gradle/github/test.gradle")
   from("$rootDir/gradle/github/jar.gradle")
 

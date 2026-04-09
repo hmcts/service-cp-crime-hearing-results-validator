@@ -1,5 +1,9 @@
 package uk.gov.hmcts.cp.config;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,11 +17,6 @@ import uk.gov.hmcts.cp.services.rules.cel.CelValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
 /**
  * Discovers YAML-backed validation rules on the classpath and exposes them as application beans.
  */
@@ -25,6 +24,7 @@ import java.util.List;
 @Slf4j
 public class ValidationRuleAutoConfiguration {
 
+    /** Discovers and registers YAML-backed validation rules from the classpath. */
     @Bean("validationRules")
     public List<ValidationRule> validationRules(
             final CustodialPreprocessor preprocessor,

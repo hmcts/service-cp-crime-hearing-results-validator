@@ -52,8 +52,9 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules-detail"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", is("404")))
-                .andExpect(jsonPath("$.message", containsString("Rule not found")))
+                .andExpect(jsonPath("$.status", is(404)))
+                .andExpect(jsonPath("$.title", is("Not Found")))
+                .andExpect(jsonPath("$.detail", containsString("Rule not found")))
                 .andExpect(jsonPath("$.timestamp", notNullValue()))
                 .andExpect(jsonPath("$.traceId", notNullValue()));
     }

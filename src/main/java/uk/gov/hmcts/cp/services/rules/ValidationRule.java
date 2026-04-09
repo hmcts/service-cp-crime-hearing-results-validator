@@ -1,10 +1,9 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import java.util.List;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-
-import java.util.List;
 
 /**
  * Contract implemented by every validation rule participating in draft result evaluation.
