@@ -3,6 +3,8 @@ package uk.gov.hmcts.cp.simulation;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -38,6 +40,8 @@ import static jodd.util.StringUtil.isNotEmpty;
  *     -Dgatling.baseUrl=http://service-route/results-validator
  */
 public class CapacitySimulation extends Simulation {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CapacitySimulation.class);
 
     private static final String BASE_URL = System.getProperty("gatling.baseUrl", "http://localhost:4550");
     private static final String HOST_HEADER = System.getProperty("gatling.hostHeader", "");
@@ -84,7 +88,7 @@ public class CapacitySimulation extends Simulation {
         // Sanity check: send an AC2 payload and verify validation rules are active.
         // When disabled, the service returns mode="disabled" with no rules evaluated.
         // This would give a false-green NFT result with near-zero latency.
-        System.out.println("Sanity check: verifying validation rules are enabled at " + BASE_URL);
+        LOG.info("Sanity check: verifying validation rules are enabled at {}", BASE_URL);
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/api/validation/validate"))
@@ -109,7 +113,7 @@ public class CapacitySimulation extends Simulation {
                     "ABORTING: AC2 payload did not produce errors. "
                     + "Rules may not be evaluating correctly. Response: " + body);
             }
-            System.out.println("Sanity check passed: validation rules are active, AC2 produces errors.");
+            LOG.info("Sanity check passed: validation rules are active, AC2 produces errors.");
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
