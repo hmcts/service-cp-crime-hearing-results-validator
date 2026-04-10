@@ -1,5 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -10,12 +15,6 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.SeverityCeiling;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Validation rule implementation backed by a YAML rule definition and CEL expressions.
@@ -30,6 +29,7 @@ public class CelValidationRule implements ValidationRule {
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
+    /** Constructs the rule from a YAML path and the required collaborators. */
     public CelValidationRule(final String rulePath,
                              final CustodialPreprocessor preprocessor,
                              final CelExpressionEvaluator evaluator,

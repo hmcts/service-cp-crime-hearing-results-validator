@@ -1,6 +1,11 @@
 package uk.gov.hmcts.cp.services.impl;
 
 import io.micrometer.observation.annotation.Observed;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -12,12 +17,6 @@ import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
 /**
  * Runs every configured validation rule and aggregates their issues into the API response.
  */
@@ -28,6 +27,7 @@ public class DefaultValidationService implements ValidationService {
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
 
+    /** Creates the service with the given rules and feature toggle. */
     public DefaultValidationService(
             @Qualifier("validationRules") final List<ValidationRule> rules,
             final FeatureToggleService featureToggleService) {

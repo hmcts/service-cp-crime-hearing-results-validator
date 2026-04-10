@@ -1,10 +1,9 @@
 package uk.gov.hmcts.cp.services.feature;
 
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 /**
  * Feature toggle backed by Azure App Configuration. Fail-open: returns {@code true}
@@ -17,6 +16,7 @@ public class AzureFeatureToggleService implements FeatureToggleService {
     private final AzureAppConfigFetcher fetcher;
     private final String label;
 
+    /** Creates the service with the given config fetcher and environment label. */
     public AzureFeatureToggleService(
             final AzureAppConfigFetcher fetcher,
             @Value("${feature.label:}") final String label) {

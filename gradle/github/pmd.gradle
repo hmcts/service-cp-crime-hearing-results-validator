@@ -7,10 +7,6 @@ pmd {
   toolVersion = "7.22.0"
 }
 
-tasks.named("pmdMain").configure {
-  onlyIf { gradle.startParameter.taskNames.contains(name) }
-}
-
 tasks.named("pmdTest").configure {
   enabled = false
 }
@@ -22,9 +18,3 @@ tasks.withType(Pmd) {
   }
 }
 
-tasks.withType(Checkstyle).configureEach {
-  def generatedDir = file("${layout.buildDirectory.get().asFile.absolutePath}/generated/src/main/java").canonicalPath
-  source = source.filter { file ->
-    !file.canonicalPath.startsWith(generatedDir)
-  }
-}

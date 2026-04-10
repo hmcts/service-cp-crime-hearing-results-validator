@@ -1,5 +1,8 @@
 package uk.gov.hmcts.cp.http;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -10,9 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Live HTTP coverage for the rule metadata endpoints against a running service instance.
@@ -74,7 +74,7 @@ class ValidationRulesApiHttpLiveTest {
      * Verifies an unknown rule id is surfaced as an HTTP 404 response.
      */
     @Test
-    void get_rule_by_id_should_return_404_for_unknown_rule() {
+    void get_rule_by_id_should_return_not_found_for_unknown_rule() {
         final HttpHeaders headers = new HttpHeaders();
         headers.set("CJSCPPUID", "test-user");
 

@@ -10,6 +10,8 @@ services:
 
   wiremock:
     image: wiremock/wiremock:3.13.0
+    volumes:
+      - ./wiremock:/home/wiremock
     ports:
       - "8082:8080"
 

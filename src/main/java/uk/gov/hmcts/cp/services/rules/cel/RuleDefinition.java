@@ -1,11 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * YAML-backed definition of a validation rule and its CEL conditions.

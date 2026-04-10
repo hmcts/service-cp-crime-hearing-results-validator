@@ -5,9 +5,9 @@ import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.TraceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
-import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import java.time.Instant;
 
@@ -25,10 +25,10 @@ class GlobalExceptionHandlerTest {
 
     /**
      * Verifies that a {@link ResponseStatusException} with an explicit reason is mapped to the same
-     * HTTP status and a structured error body that includes the current trace id.
+     * HTTP status and an RFC 7807 Problem Detail body that includes the current trace id.
      */
     @Test
-    void handle_response_status_exception_should_return_error_response_with_correct_fields() {
+    void handle_response_status_exception_should_return_problem_detail_with_correct_fields() {
         // Arrange
         final Tracer tracer = mock(Tracer.class);
         final Span span = mock(Span.class);
@@ -47,7 +47,7 @@ class GlobalExceptionHandlerTest {
         final Instant beforeCall = Instant.now();
 
         // Act
-        final ResponseEntity<ErrorResponse> response =
+        final ResponseEntity<ProblemDetail> response =
                 handler.handleResponseStatusException(exception);
 
         final Instant afterCall = Instant.now();
@@ -55,17 +55,18 @@ class GlobalExceptionHandlerTest {
         // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
 
-        final ErrorResponse error = response.getBody();
-        assertNotNull(error);
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
 
-        assertEquals("404", error.getError());
-        assertEquals(reason, error.getMessage());
-        assertEquals("test-trace-id", error.getTraceId());
+        assertEquals(404, problem.getStatus());
+        assertEquals("Not Found", problem.getTitle());
+        assertEquals(reason, problem.getDetail());
+        assertEquals("test-trace-id", problem.getProperties().get("traceId"));
 
-        assertNotNull(error.getTimestamp());
+        final Instant timestamp = (Instant) problem.getProperties().get("timestamp");
+        assertNotNull(timestamp);
         assertTrue(
-                !error.getTimestamp().isBefore(beforeCall)
-                        && !error.getTimestamp().isAfter(afterCall),
+                !timestamp.isBefore(beforeCall) && !timestamp.isAfter(afterCall),
                 "Timestamp should be between beforeCall and afterCall"
         );
     }
@@ -91,17 +92,17 @@ class GlobalExceptionHandlerTest {
                 new ResponseStatusException(HttpStatus.BAD_REQUEST);
 
         // Act
-        final ResponseEntity<ErrorResponse> response =
+        final ResponseEntity<ProblemDetail> response =
                 handler.handleResponseStatusException(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
-        final ErrorResponse error = response.getBody();
-        assertNotNull(error);
-        assertEquals("400", error.getError());
-        assertNotNull(error.getMessage());
-        assertThat(error.getMessage()).isNotBlank();
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(400, problem.getStatus());
+        assertNotNull(problem.getDetail());
+        assertThat(problem.getDetail()).isNotBlank();
     }
 
     /**
@@ -120,17 +121,17 @@ class GlobalExceptionHandlerTest {
                 new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server error");
 
         // Act
-        final ResponseEntity<ErrorResponse> response =
+        final ResponseEntity<ProblemDetail> response =
                 handler.handleResponseStatusException(exception);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 
-        final ErrorResponse error = response.getBody();
-        assertNotNull(error);
-        assertEquals("no-trace", error.getTraceId());
-        assertEquals("500", error.getError());
-        assertEquals("Server error", error.getMessage());
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals("no-trace", problem.getProperties().get("traceId"));
+        assertEquals(500, problem.getStatus());
+        assertEquals("Server error", problem.getDetail());
     }
 
     /**
@@ -152,18 +153,18 @@ class GlobalExceptionHandlerTest {
         final Exception exception = new RuntimeException("Something went wrong");
 
         // Act
-        final ResponseEntity<ErrorResponse> response =
+        final ResponseEntity<ProblemDetail> response =
                 handler.handleGenericException(exception);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 
-        final ErrorResponse error = response.getBody();
-        assertNotNull(error);
-        assertEquals("500", error.getError());
-        assertEquals("Internal server error", error.getMessage());
-        assertEquals("test-trace-id", error.getTraceId());
-        assertNotNull(error.getTimestamp());
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(500, problem.getStatus());
+        assertEquals("Internal server error", problem.getDetail());
+        assertEquals("test-trace-id", problem.getProperties().get("traceId"));
+        assertNotNull(problem.getProperties().get("timestamp"));
     }
 
     /**
@@ -180,14 +181,14 @@ class GlobalExceptionHandlerTest {
         final Exception exception = new RuntimeException("Something went wrong");
 
         // Act
-        final ResponseEntity<ErrorResponse> response =
+        final ResponseEntity<ProblemDetail> response =
                 handler.handleGenericException(exception);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 
-        final ErrorResponse error = response.getBody();
-        assertNotNull(error);
-        assertEquals("no-trace", error.getTraceId());
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals("no-trace", problem.getProperties().get("traceId"));
     }
 }

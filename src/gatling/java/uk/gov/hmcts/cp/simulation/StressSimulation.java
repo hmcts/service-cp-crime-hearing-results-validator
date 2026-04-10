@@ -1,11 +1,5 @@
 package uk.gov.hmcts.cp.simulation;
 
-import io.gatling.javaapi.core.ScenarioBuilder;
-import io.gatling.javaapi.core.Simulation;
-import io.gatling.javaapi.http.HttpProtocolBuilder;
-
-import java.time.Duration;
-
 import static io.gatling.javaapi.core.CoreDsl.StringBody;
 import static io.gatling.javaapi.core.CoreDsl.constantUsersPerSec;
 import static io.gatling.javaapi.core.CoreDsl.nothingFor;
@@ -16,16 +10,21 @@ import static io.gatling.javaapi.http.HttpDsl.http;
 import static io.gatling.javaapi.http.HttpDsl.status;
 import static jodd.util.StringUtil.isNotEmpty;
 
+import io.gatling.javaapi.core.ScenarioBuilder;
+import io.gatling.javaapi.core.Simulation;
+import io.gatling.javaapi.http.HttpProtocolBuilder;
+import java.time.Duration;
+
 /**
  * Exploratory stress/spike simulation — no assertions, report-only.
  *
- * Use this to find the breaking point. Results are informational;
+ * <p>Use this to find the breaking point. Results are informational;
  * this simulation does NOT gate the pipeline.
  *
- * Run locally:
+ * <p>Run locally:
  *   gradle gatlingRun-uk.gov.hmcts.cp.simulation.StressSimulation
  *
- * Run against AKS:
+ * <p>Run against AKS:
  *   gradle gatlingRun-uk.gov.hmcts.cp.simulation.StressSimulation \
  *     -Dgatling.baseUrl=http://service-route/results-validator
  */
@@ -38,9 +37,9 @@ public class StressSimulation extends Simulation {
 
     private static HttpProtocolBuilder buildHttpProtocol() {
         HttpProtocolBuilder builder = http
-            .baseUrl(BASE_URL)
-            .header("Content-Type", "application/json")
-            .header("CJSCPPUID", "nft-stress-user");
+                .baseUrl(BASE_URL)
+                .header("Content-Type", "application/json")
+                .header("CJSCPPUID", "nft-stress-user");
         if (HOST_HEADER != null && isNotEmpty(HOST_HEADER)) {
             builder = builder.header("Host", HOST_HEADER);
         }
@@ -48,22 +47,22 @@ public class StressSimulation extends Simulation {
     }
 
     private final ScenarioBuilder rampScenario = scenario("Stress Ramp")
-        .exec(session -> session.set("payload", PayloadBuilder.randomWeighted()))
-        .exec(
-            http("Validate")
-                .post("/api/validation/validate")
-                .body(StringBody("#{payload}"))
-                .check(status().saveAs("httpStatus"))
-        );
+            .exec(session -> session.set("payload", PayloadBuilder.randomWeighted()))
+            .exec(
+                    http("Validate")
+                            .post("/api/validation/validate")
+                            .body(StringBody("#{payload}"))
+                            .check(status().saveAs("httpStatus"))
+            );
 
     private final ScenarioBuilder spikeScenario = scenario("Spike Burst")
-        .exec(session -> session.set("payload", PayloadBuilder.randomWeighted()))
-        .exec(
-            http("Validate (spike)")
-                .post("/api/validation/validate")
-                .body(StringBody("#{payload}"))
-                .check(status().saveAs("httpStatus"))
-        );
+            .exec(session -> session.set("payload", PayloadBuilder.randomWeighted()))
+            .exec(
+                    http("Validate (spike)")
+                            .post("/api/validation/validate")
+                            .body(StringBody("#{payload}"))
+                            .check(status().saveAs("httpStatus"))
+            );
 
     {
         setUp(

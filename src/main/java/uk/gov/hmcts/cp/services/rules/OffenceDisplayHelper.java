@@ -1,11 +1,10 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Builds user-facing offence references for validation messages and affected offence payloads.
@@ -13,6 +12,7 @@ import java.util.Map;
 @Component
 public class OffenceDisplayHelper {
 
+    /** Resolves a human-readable display number for the given offence. */
     public String resolveDisplayNumber(final String id,
                                        final Map<String, OffenceDto> offenceMap,
                                        final List<String> allOffenceIds) {
@@ -34,6 +34,7 @@ public class OffenceDisplayHelper {
         return display;
     }
 
+    /** Resolves the numeric order index for the given offence. */
     public int resolveOrderIndex(final String id,
                                   final Map<String, OffenceDto> offenceMap,
                                   final List<String> allOffenceIds) {
@@ -48,6 +49,7 @@ public class OffenceDisplayHelper {
         return result;
     }
 
+    /** Builds affected-offence payload entries for the supplied offence identifiers. */
     public List<AffectedOffence> buildAffectedOffences(final List<String> offenceIds,
                                                         final Map<String, OffenceDto> offenceMap) {
         return offenceIds.stream()

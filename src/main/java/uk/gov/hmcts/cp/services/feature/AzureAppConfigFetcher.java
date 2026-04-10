@@ -2,13 +2,6 @@ package uk.gov.hmcts.cp.services.feature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,6 +15,12 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 /**
  * Fetches feature flags from Azure App Configuration using HMAC-SHA256 signed REST calls.
@@ -40,6 +39,7 @@ public class AzureAppConfigFetcher {
     private final AzureConnectionInfo connectionInfo;
     private final HttpClient httpClient;
 
+    /** Creates the fetcher by parsing the Azure App Configuration connection string. */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public AzureAppConfigFetcher(
             @Value("${feature.connection-string:}") final String connectionString) {

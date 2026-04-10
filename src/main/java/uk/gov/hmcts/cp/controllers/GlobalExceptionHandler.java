@@ -1,19 +1,19 @@
 package uk.gov.hmcts.cp.controllers;
 
 import io.micrometer.tracing.Tracer;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
-import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
-
-import java.time.Instant;
 
 /**
- * Converts controller-layer exceptions into the structured error model exposed by the API.
+ * Converts controller-layer exceptions into RFC 7807 Problem Detail responses.
  */
 @RestControllerAdvice
 @Slf4j
@@ -21,75 +21,65 @@ public class GlobalExceptionHandler {
 
     private final Tracer tracer;
 
+    /** Constructs the exception handler with the given tracer for trace-id propagation. */
     public GlobalExceptionHandler(final Tracer tracer) {
         this.tracer = tracer;
     }
 
-    /**
-     * Builds an error response from a {@link ResponseStatusException}, preserving the status code.
-     *
-     * @param responseStatusException exception raised by the controller or service layer
-     * @return structured error response with the same HTTP status
-     */
+    /** Handles ResponseStatusException and returns a Problem Detail response. */
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ErrorResponse> handleResponseStatusException(
+    public ResponseEntity<ProblemDetail> handleResponseStatusException(
             final ResponseStatusException responseStatusException) {
 
-        final ErrorResponse error = ErrorResponse.builder()
-                .error(String.valueOf(responseStatusException.getStatusCode().value()))
-                .message(responseStatusException.getReason() != null
-                        ? responseStatusException.getReason()
-                        : responseStatusException.getMessage())
-                .timestamp(Instant.now())
-                .traceId(tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace")
-                .build();
+        final HttpStatus status = HttpStatus.valueOf(responseStatusException.getStatusCode().value());
+        final ProblemDetail problem = ProblemDetail.forStatus(status);
+        problem.setTitle(status.getReasonPhrase());
+        problem.setDetail(responseStatusException.getReason() != null
+                ? responseStatusException.getReason()
+                : responseStatusException.getMessage());
+        addTraceProperties(problem);
 
         return ResponseEntity
-                .status(responseStatusException.getStatusCode())
-                .body(error);
+                .status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
     }
 
-    /**
-     * Returns a standard bad-request response when the request body cannot be parsed.
-     *
-     * @param exception JSON or message conversion failure
-     * @return structured HTTP 400 error response
-     */
+    /** Handles malformed request bodies and returns a 400 Problem Detail response. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+    public ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(
             final HttpMessageNotReadableException exception) {
 
-        final ErrorResponse error = ErrorResponse.builder()
-                .error(String.valueOf(HttpStatus.BAD_REQUEST.value()))
-                .message("Malformed request body")
-                .timestamp(Instant.now())
-                .traceId(tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace")
-                .build();
+        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Malformed request body");
+        problem.setTitle("Bad Request");
+        addTraceProperties(problem);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(error);
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
     }
 
-    /**
-     * Returns a generic internal-server-error response for uncaught exceptions.
-     *
-     * @param exception unhandled exception from request processing
-     * @return structured HTTP 500 error response
-     */
+    /** Catches all unhandled exceptions and returns a 500 Problem Detail response. */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(final Exception exception) {
+    public ResponseEntity<ProblemDetail> handleGenericException(final Exception exception) {
         log.error("Unhandled exception", exception);
 
-        final ErrorResponse error = ErrorResponse.builder()
-                .error(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()))
-                .message("Internal server error")
-                .timestamp(Instant.now())
-                .traceId(tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace")
-                .build();
+        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+        problem.setTitle("Internal Server Error");
+        addTraceProperties(problem);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    private void addTraceProperties(final ProblemDetail problem) {
+        problem.setProperty("traceId",
+                tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace");
+        problem.setProperty("timestamp", Instant.now());
     }
 }

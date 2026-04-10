@@ -230,6 +230,6 @@ public final class PayloadBuilder {
 
     private static String randomUrn() {
         return ThreadLocalRandom.current().nextInt(10, 99) + "SB"
-            + ThreadLocalRandom.current().nextInt(100000, 999999);
+                + ThreadLocalRandom.current().nextInt(100000, 999999);
     }
 }

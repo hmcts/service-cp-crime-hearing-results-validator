@@ -1,10 +1,5 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.springframework.stereotype.Component;
-import uk.gov.hmcts.cp.openapi.model.DefendantDto;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
-import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,6 +8,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Component;
+import uk.gov.hmcts.cp.openapi.model.DefendantDto;
+import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Preprocesses custodial result lines into per-defendant summaries consumed by CEL conditions.

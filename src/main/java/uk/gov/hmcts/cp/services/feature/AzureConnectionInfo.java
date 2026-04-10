@@ -1,8 +1,7 @@
 package uk.gov.hmcts.cp.services.feature;
 
-import lombok.Getter;
-
 import java.net.URI;
+import lombok.Getter;
 
 /**
  * Immutable value object that parses an Azure App Configuration connection string
@@ -24,7 +23,7 @@ public final class AzureConnectionInfo {
     }
 
     /**
-     * Parses an Azure App Configuration connection string of the form:
+     * Parses an Azure App Configuration connection string.
      * {@code Endpoint=https://...;Id=...;Secret=...}
      *
      * @param connectionString the raw connection string

@@ -1,15 +1,14 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.projectnessie.cel.checker.Decls;
-import org.springframework.stereotype.Component;
-import org.projectnessie.cel.tools.Script;
-import org.projectnessie.cel.tools.ScriptException;
-import org.projectnessie.cel.tools.ScriptHost;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.projectnessie.cel.checker.Decls;
+import org.projectnessie.cel.tools.Script;
+import org.projectnessie.cel.tools.ScriptException;
+import org.projectnessie.cel.tools.ScriptHost;
+import org.springframework.stereotype.Component;
 
 /**
  * Evaluates CEL expressions used by YAML-defined validation rule conditions.
