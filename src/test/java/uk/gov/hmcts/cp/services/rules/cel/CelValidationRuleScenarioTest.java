@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
 
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 
@@ -51,7 +52,7 @@ class CelValidationRuleScenarioTest {
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
                     List.of(offence("off1", 1, "Theft")));
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -74,7 +75,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setIsConcurrent(true);
             request.getResultLines().get(2).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -105,7 +106,7 @@ class CelValidationRuleScenarioTest {
                     offence("off3", 3, "Burglary")));
             request.getResultLines().get(2).setIsConcurrent(true);
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -129,7 +130,7 @@ class CelValidationRuleScenarioTest {
                             offence("off2", 2, "Assault"),
                             offence("off3", 3, "Burglary")));
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -161,7 +162,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setIsConcurrent(true);
             request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -189,7 +190,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(2).setIsConcurrent(true);
             request.getResultLines().get(2).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -224,7 +225,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setIsConcurrent(true);
             request.getResultLines().get(2).setIsConcurrent(true);
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -250,7 +251,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setConsecutiveToOffence("off1");
             request.getResultLines().get(2).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -273,7 +274,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(0).setIsConcurrent(true);
             request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -309,7 +310,7 @@ class CelValidationRuleScenarioTest {
                     resultLine("rl4", "IMP", "d1", "off4")), offences);
             requestBefore.getResultLines().get(3).setIsConcurrent(true);
 
-            List<ValidationIssue> issuesBefore = rule.evaluate(requestBefore);
+            List<ValidationIssue> issuesBefore = rule.evaluate(wrap(requestBefore));
             assertThat(issuesBefore).hasSize(1);
             assertThat(issuesBefore.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
 
@@ -323,7 +324,7 @@ class CelValidationRuleScenarioTest {
             requestAfter.getResultLines().get(2).setIsConcurrent(true);
             requestAfter.getResultLines().get(3).setIsConcurrent(true);
 
-            List<ValidationIssue> issuesAfter = rule.evaluate(requestAfter);
+            List<ValidationIssue> issuesAfter = rule.evaluate(wrap(requestAfter));
             assertThat(issuesAfter).isEmpty();
         }
 
@@ -342,7 +343,7 @@ class CelValidationRuleScenarioTest {
                     offence("off2", 2, "Assault")));
             request.getResultLines().get(1).setIsConcurrent(true);
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -364,7 +365,7 @@ class CelValidationRuleScenarioTest {
                             offence("off2", 2, "Tax evasion"),
                             offence("off3", 3, "Possession")));
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -393,7 +394,7 @@ class CelValidationRuleScenarioTest {
                     offence("off2", 501, "Assault")));
             request.getResultLines().get(1).setIsConcurrent(true);
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -412,7 +413,7 @@ class CelValidationRuleScenarioTest {
                     offence("off1", 1, "Theft"),
                     offence("off2", 501, "Assault")));
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -434,7 +435,7 @@ class CelValidationRuleScenarioTest {
                     offence("off2", 501, "Assault"),
                     offence("off3", 1001, "Burglary")));
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -457,7 +458,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setIsConcurrent(true);
             request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -480,7 +481,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(0).setIsConcurrent(true);
             request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).hasSize(1);
             assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
@@ -502,7 +503,7 @@ class CelValidationRuleScenarioTest {
                     offence("off2", 501, "Assault")));
             request.getResultLines().get(0).setIsConcurrent(true);
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }
@@ -525,7 +526,7 @@ class CelValidationRuleScenarioTest {
             request.getResultLines().get(1).setIsConcurrent(true);
             request.getResultLines().get(2).setConsecutiveToOffence("off1");
 
-            List<ValidationIssue> issues = rule.evaluate(request);
+            List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
             assertThat(issues).isEmpty();
         }

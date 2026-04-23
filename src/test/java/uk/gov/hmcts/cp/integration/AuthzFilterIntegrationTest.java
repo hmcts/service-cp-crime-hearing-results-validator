@@ -17,13 +17,16 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
 
     private static final String EMPTY_REQUEST = """
             {
-              "hearingId": "h1",
-              "caseId": "c1",
-              "hearingDay": "2026-03-11",
-              "courtType": "MAGISTRATES",
-              "resultLines": [],
-              "defendants": [],
-              "offences": []
+              "validationRequest": {
+                "hearingId": "h1",
+                "caseId": "c1",
+                "hearingDay": "2026-03-11",
+                "courtType": "MAGISTRATES",
+                "resultLines": [],
+                "defendants": [],
+                "offences": []
+              },
+              "offenceConvictions": []
             }
             """;
 

@@ -1,7 +1,7 @@
 package uk.gov.hmcts.cp.services;
 
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 
 /**
  * Performs validation over a draft hearing results payload.
@@ -14,5 +14,5 @@ public interface ValidationService {
      * @param request draft results payload to validate
      * @return aggregated validation response
      */
-    DraftValidationResponse validate(DraftValidationRequest request);
+    DraftValidationResponse validate(ValidationRequestWithConvictions request);
 }

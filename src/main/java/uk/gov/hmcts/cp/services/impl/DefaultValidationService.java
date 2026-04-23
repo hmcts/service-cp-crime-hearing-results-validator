@@ -9,9 +9,9 @@ import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 import uk.gov.hmcts.cp.services.ValidationService;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
@@ -37,13 +37,14 @@ public class DefaultValidationService implements ValidationService {
 
     @Override
     @Observed(name = "validation.request")
-    public DraftValidationResponse validate(final DraftValidationRequest request) {
+    public DraftValidationResponse validate(final ValidationRequestWithConvictions request) {
         final DraftValidationResponse response;
 
         if (isFeatureActive()) {
             response = evaluateRules(request);
         } else {
-            log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
+            log.info("Validation feature disabled, returning success for hearingId={}",
+                    request.getValidationRequest().getHearingId());
             response = buildDisabledResponse();
         }
 
@@ -51,8 +52,9 @@ public class DefaultValidationService implements ValidationService {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
-    private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
-        log.info("Validating draft results for hearingId={}", request.getHearingId());
+    private DraftValidationResponse evaluateRules(final ValidationRequestWithConvictions request) {
+        log.info("Validating draft results for hearingId={}",
+                request.getValidationRequest().getHearingId());
         final long startNanos = System.nanoTime();
 
         final List<String> rulesEvaluated = new ArrayList<>();
@@ -76,7 +78,7 @@ public class DefaultValidationService implements ValidationService {
                 rulesEvaluated.add(ruleId);
             } catch (Exception e) {
                 log.error("Rule {} skipped due to evaluation failure for hearingId={}: {}",
-                        ruleId, request.getHearingId(), e.getMessage(), e);
+                        ruleId, request.getValidationRequest().getHearingId(), e.getMessage(), e);
             }
         }
 

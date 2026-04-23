@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
 
 /**
  * Focused unit tests for the DR-SENT-002 CEL validation rule implementation.
@@ -62,7 +63,7 @@ class CelValidationRuleTest {
         );
         request.getResultLines().get(1).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -90,7 +91,7 @@ class CelValidationRuleTest {
         // off1=primary (first no-info), off2+off3=noInfo (2 non-primary missing), off4=concurrent
         request.getResultLines().get(3).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         ValidationIssue error = issues.getFirst();
@@ -121,7 +122,7 @@ class CelValidationRuleTest {
         request.getResultLines().get(1).setIsConcurrent(true);
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         ValidationIssue warning = issues.getFirst();
@@ -150,7 +151,7 @@ class CelValidationRuleTest {
         request.getResultLines().get(0).setIsConcurrent(true);
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         ValidationIssue warning = issues.getFirst();
@@ -174,7 +175,7 @@ class CelValidationRuleTest {
                 )
         );
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -208,7 +209,7 @@ class CelValidationRuleTest {
         request.getResultLines().get(3).setIsConcurrent(true);
         request.getResultLines().get(5).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -234,7 +235,7 @@ class CelValidationRuleTest {
         );
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -250,7 +251,7 @@ class CelValidationRuleTest {
                 List.of(offence("off1", 1, "Theft"))
         );
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -283,7 +284,7 @@ class CelValidationRuleTest {
     void empty_result_lines_should_produce_no_issues() {
         DraftValidationRequest request = buildRequest(List.of(), List.of());
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -308,7 +309,7 @@ class CelValidationRuleTest {
         request.getResultLines().get(0).setConsecutiveToOffence("off2");
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(2);
         assertThat(issues).extracting(ValidationIssue::getSeverity)

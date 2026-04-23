@@ -5,6 +5,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
@@ -20,6 +21,12 @@ class DefaultValidationServiceTest {
 
     private static final FeatureToggleService ALWAYS_ENABLED = featureName -> true;
 
+    private static ValidationRequestWithConvictions wrap(String hearingId) {
+        return ValidationRequestWithConvictions.builder()
+                .validationRequest(DraftValidationRequest.builder().hearingId(hearingId).build())
+                .build();
+    }
+
     /**
      * Verifies the baseline response when no rules are configured: the request is valid, no issues
      * are returned, and the response metadata is still populated.
@@ -27,11 +34,8 @@ class DefaultValidationServiceTest {
     @Test
     void no_rules_should_return_valid_response() {
         DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getIsValid()).isTrue();
         assertThat(response.getValidationId()).startsWith("val-");
@@ -55,11 +59,8 @@ class DefaultValidationServiceTest {
                         .message("Test error")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getIsValid()).isFalse();
         assertThat(response.getErrors()).hasSize(1);
@@ -80,11 +81,8 @@ class DefaultValidationServiceTest {
                         .message("Test warning")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(List.of(warningRule), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getIsValid()).isTrue();
         assertThat(response.getErrors()).isEmpty();
@@ -111,11 +109,8 @@ class DefaultValidationServiceTest {
                         .message("Warning from rule 2")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getIsValid()).isFalse();
         assertThat(response.getErrors()).hasSize(1);
@@ -130,12 +125,9 @@ class DefaultValidationServiceTest {
     @Test
     void validate_should_generate_unique_validation_ids() {
         DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        String id1 = service.validate(request).getValidationId();
-        String id2 = service.validate(request).getValidationId();
+        String id1 = service.validate(wrap("h1")).getValidationId();
+        String id2 = service.validate(wrap("h1")).getValidationId();
 
         assertThat(id1).isNotEqualTo(id2);
     }
@@ -160,11 +152,8 @@ class DefaultValidationServiceTest {
                         .build()));
         DefaultValidationService service = new DefaultValidationService(
                 List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getErrors()).hasSize(1);
         assertThat(response.getWarnings()).hasSize(1);
@@ -203,11 +192,8 @@ class DefaultValidationServiceTest {
         sorted.sort(java.util.Comparator.comparingInt(r -> r.getRuleDetail().getPriority()));
 
         DefaultValidationService service = new DefaultValidationService(sorted, ALWAYS_ENABLED);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getRulesEvaluated())
                 .containsExactly("RULE-HIGH", "RULE-MED", "RULE-LOW");
@@ -227,11 +213,8 @@ class DefaultValidationServiceTest {
                         .message("Should not appear")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getIsValid()).isTrue();
         assertThat(response.getMode()).isEqualTo("disabled");
@@ -257,11 +240,8 @@ class DefaultValidationServiceTest {
                         .message("Error found")
                         .build()));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), broken);
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
-                .build();
 
-        DraftValidationResponse response = service.validate(request);
+        DraftValidationResponse response = service.validate(wrap("h1"));
 
         assertThat(response.getMode()).isEqualTo("advisory");
         assertThat(response.getErrors()).hasSize(1);
@@ -287,7 +267,7 @@ class DefaultValidationServiceTest {
             }
 
             @Override
-            public List<ValidationIssue> evaluate(DraftValidationRequest request) {
+            public List<ValidationIssue> evaluate(ValidationRequestWithConvictions request) {
                 if (issues == null) {
                     throw new RuntimeException("Simulated rule failure");
                 }

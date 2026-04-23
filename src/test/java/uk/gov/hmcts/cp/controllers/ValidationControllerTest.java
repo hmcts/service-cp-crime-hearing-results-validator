@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 import uk.gov.hmcts.cp.services.ValidationService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +33,8 @@ class ValidationControllerTest {
      */
     @Test
     void validate_should_delegate_to_service_and_return_ok() {
-        DraftValidationRequest request = DraftValidationRequest.builder()
-                .hearingId("h1")
+        ValidationRequestWithConvictions request = ValidationRequestWithConvictions.builder()
+                .validationRequest(DraftValidationRequest.builder().hearingId("h1").build())
                 .build();
         DraftValidationResponse expected = DraftValidationResponse.builder()
                 .isValid(true)

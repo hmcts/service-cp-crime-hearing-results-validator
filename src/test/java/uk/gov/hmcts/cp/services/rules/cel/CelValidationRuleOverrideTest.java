@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
 
 /**
  * Unit tests for database-backed overrides applied to {@link CelValidationRule}.
@@ -116,7 +117,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isEmpty();
     }
@@ -147,7 +148,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -180,7 +181,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -219,7 +220,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isNotEmpty();
         assertThat(issues).allSatisfy(issue ->
@@ -257,7 +258,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -295,7 +296,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(wrap(request));
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);

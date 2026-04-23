@@ -4,6 +4,7 @@ import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -19,6 +20,12 @@ public final class ValidationRuleTestHelper {
     public static final String DEFAULT_DEFENDANT_LAST_NAME = "Smith";
 
     private ValidationRuleTestHelper() {
+    }
+
+    public static ValidationRequestWithConvictions wrap(DraftValidationRequest request) {
+        return ValidationRequestWithConvictions.builder()
+                .validationRequest(request)
+                .build();
     }
 
     public static ResultLineDto resultLine(String id, String shortCode,

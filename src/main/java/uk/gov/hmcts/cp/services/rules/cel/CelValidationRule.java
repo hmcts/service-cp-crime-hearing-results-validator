@@ -11,6 +11,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.SeverityCeiling;
@@ -65,7 +66,8 @@ public class CelValidationRule implements ValidationRule {
     }
 
     @Override
-    public List<ValidationIssue> evaluate(final DraftValidationRequest request) {
+    public List<ValidationIssue> evaluate(final ValidationRequestWithConvictions requestWithConvictions) {
+        final DraftValidationRequest request = requestWithConvictions.getValidationRequest();
         final ResolvedOverride override = resolveOverride();
 
         final List<ValidationIssue> issues = new ArrayList<>();

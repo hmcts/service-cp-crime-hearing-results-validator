@@ -6,8 +6,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.hmcts.cp.openapi.api.ValidationApi;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 import uk.gov.hmcts.cp.services.ValidationService;
 
 /**
@@ -24,17 +24,17 @@ public class ValidationController implements ValidationApi {
      * Validates the supplied draft results payload and returns the aggregated validation outcome.
      *
      * @param cjsCppUid authenticated user identifier from the request header
-     * @param draftValidationRequest draft result payload to validate
+     * @param validationRequestWithConvictions draft result payload and conviction data to validate
      * @param cppClientCorrelationId optional correlation identifier supplied by the client
      * @return HTTP 200 response containing the validation result
      */
     @Override
     public ResponseEntity<DraftValidationResponse> validateDraftResults(
             final String cjsCppUid,
-            final DraftValidationRequest draftValidationRequest,
+            final ValidationRequestWithConvictions validationRequestWithConvictions,
             @Nullable final String cppClientCorrelationId) {
 
         log.info("Validate draft results request received");
-        return ResponseEntity.ok(validationService.validate(draftValidationRequest));
+        return ResponseEntity.ok(validationService.validate(validationRequestWithConvictions));
     }
 }

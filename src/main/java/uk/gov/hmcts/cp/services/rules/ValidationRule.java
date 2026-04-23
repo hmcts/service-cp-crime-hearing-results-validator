@@ -1,9 +1,9 @@
 package uk.gov.hmcts.cp.services.rules;
 
 import java.util.List;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 
 /**
  * Contract implemented by every validation rule participating in draft result evaluation.
@@ -33,5 +33,5 @@ public interface ValidationRule {
      * @param request draft results payload under validation
      * @return zero or more issues produced by the rule
      */
-    List<ValidationIssue> evaluate(DraftValidationRequest request);
+    List<ValidationIssue> evaluate(ValidationRequestWithConvictions request);
 }
