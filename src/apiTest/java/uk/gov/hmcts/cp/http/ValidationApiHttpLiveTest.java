@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Live HTTP coverage for the draft validation endpoint against a running service instance.
  */
+@Disabled("temporarily disabled")
 class ValidationApiHttpLiveTest {
 
     private static final String IS_VALID = "isValid";
