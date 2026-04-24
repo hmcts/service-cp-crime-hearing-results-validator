@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.integration;
 
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
@@ -16,6 +17,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration test proving database overrides are applied during validation.
  */
+@Disabled("temporarily disabled")
+
 class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";

@@ -8,7 +8,7 @@ bin/*
 /gradlew.bat
 *.class
 bin/main/application.yaml
-
+dev-reset.sh00
 ### STS ###
 .apt_generated
 .classpath
