@@ -12,24 +12,27 @@ import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
 
 /**
  * Preprocesses custodial result lines into per-defendant summaries consumed by CEL conditions.
  */
 @Component
-public class CustodialPreprocessor {
+public class CustodialPreprocessor implements RulePreprocessor {
 
     /**
      * Groups custodial result lines by defendant (or master defendant) and derives the offence
      * counts and offence-id sets needed by the validation rule conditions.
      *
-     * @param request draft validation request being evaluated
+     * @param requestWithConvictions full validation request
      * @param config preprocessing configuration loaded from YAML
      * @return map of defendant grouping key to derived context
      */
+    @Override
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    public Map<String, DefendantContext> preprocess(final DraftValidationRequest request,
-                                                     final PreprocessingDefinition config) {
+    public Map<String, RuleContext> preprocess(final ValidationRequestWithConvictions requestWithConvictions,
+                                                final PreprocessingDefinition config) {
+        final DraftValidationRequest request = requestWithConvictions.getValidationRequest();
         final Set<String> shortCodes = config.getFilterShortCodes().stream()
                 .map(s -> s.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
@@ -43,7 +46,7 @@ public class CustodialPreprocessor {
             linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(rl);
         }
 
-        final Map<String, DefendantContext> result = new LinkedHashMap<>();
+        final Map<String, RuleContext> result = new LinkedHashMap<>();
 
         for (final Map.Entry<String, List<ResultLineDto>> groupEntry : linesByGroup.entrySet()) {
             final String groupKey = groupEntry.getKey();

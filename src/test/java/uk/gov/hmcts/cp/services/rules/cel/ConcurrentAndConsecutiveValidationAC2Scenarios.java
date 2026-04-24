@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.custodialPreprocessors;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
@@ -42,7 +43,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
      */
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule("rules/DR-SENT-002.yaml",
-            new CustodialPreprocessor(),
+            custodialPreprocessors(),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,

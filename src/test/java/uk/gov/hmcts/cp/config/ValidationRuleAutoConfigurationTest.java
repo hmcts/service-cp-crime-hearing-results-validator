@@ -5,6 +5,7 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
+import uk.gov.hmcts.cp.services.rules.cel.CtlPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
@@ -30,13 +31,29 @@ class ValidationRuleAutoConfigurationTest {
     void should_discover_DR_SENT_002_rule() throws IOException {
         List<ValidationRule> rules = config.validationRules(
                 new CustodialPreprocessor(),
+                new CtlPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class));
 
-        assertThat(rules).isNotEmpty();
         assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
+    }
+
+    /**
+     * Verifies the configuration discovers the bundled DR-CTL-001 YAML rule.
+     */
+    @Test
+    void should_discover_DR_CTL_001_rule() throws IOException {
+        List<ValidationRule> rules = config.validationRules(
+                new CustodialPreprocessor(),
+                new CtlPreprocessor(),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(RuleOverrideService.class));
+
+        assertThat(rules).anyMatch(r -> "DR-CTL-001".equals(r.getRuleDetail().getRuleId()));
     }
 
     /**
@@ -46,11 +63,12 @@ class ValidationRuleAutoConfigurationTest {
     void should_create_one_rule_per_yaml_file() throws IOException {
         List<ValidationRule> rules = config.validationRules(
                 new CustodialPreprocessor(),
+                new CtlPreprocessor(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class));
 
-        assertThat(rules).hasSize(1);
+        assertThat(rules).hasSize(2);
     }
 }

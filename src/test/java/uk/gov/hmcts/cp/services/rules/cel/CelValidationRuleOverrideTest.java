@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.custodialPreprocessors;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
@@ -50,7 +51,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -76,7 +77,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -101,7 +102,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -132,7 +133,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -165,7 +166,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -203,7 +204,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -242,7 +243,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -280,7 +281,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -317,7 +318,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -335,7 +336,7 @@ class CelValidationRuleOverrideTest {
     void getRuleDetail_should_fallback_to_yaml_when_no_override() {
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                custodialPreprocessors(),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,

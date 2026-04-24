@@ -3,7 +3,7 @@ package uk.gov.hmcts.cp.integration;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +53,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.mode", is("advisory")))
                 .andExpect(jsonPath("$.errors", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
-                .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002")));
+                .andExpect(jsonPath("$.rulesEvaluated", containsInAnyOrder("DR-SENT-002", "DR-CTL-001")));
     }
 
     /**

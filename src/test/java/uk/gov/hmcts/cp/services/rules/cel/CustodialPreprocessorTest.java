@@ -11,6 +11,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.wrap;
 
 /**
  * Unit tests for {@link CustodialPreprocessor} and the derived {@link DefendantContext}.
@@ -36,7 +37,7 @@ class CustodialPreprocessorTest {
                         resultLine("rl2", "EMONE", "d1", "off2")),
                 List.of());
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).isEmpty();
     }
@@ -51,7 +52,7 @@ class CustodialPreprocessorTest {
                 List.of(resultLine("rl1", "IMP", "d1", "off1")),
                 List.of());
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).isEmpty();
     }
@@ -69,10 +70,10 @@ class CustodialPreprocessorTest {
                 List.of());
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).containsKey("d1");
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.noInfoCount()).isEqualTo(1);
         assertThat(ctx.hasInfoCount()).isEqualTo(1);
         assertThat(ctx.hasBothCount()).isEqualTo(0);
@@ -93,9 +94,9 @@ class CustodialPreprocessorTest {
         request.getResultLines().get(1).setIsConcurrent(true);
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.hasBothCount()).isEqualTo(1);
         assertThat(ctx.hasBothOffenceIds()).containsExactly("off2");
         assertThat(ctx.noInfoCount()).isEqualTo(0);
@@ -117,13 +118,13 @@ class CustodialPreprocessorTest {
         request.getResultLines().get(1).setIsConcurrent(true);
         request.getResultLines().get(3).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).hasSize(2);
-        assertThat(result.get("d1").noInfoCount()).isEqualTo(0);
-        assertThat(result.get("d1").hasPrimaryCount()).isEqualTo(1);
-        assertThat(result.get("d2").noInfoCount()).isEqualTo(0);
-        assertThat(result.get("d2").hasPrimaryCount()).isEqualTo(1);
+        assertThat(((DefendantContext) result.get("d1")).noInfoCount()).isEqualTo(0);
+        assertThat(((DefendantContext) result.get("d1")).hasPrimaryCount()).isEqualTo(1);
+        assertThat(((DefendantContext) result.get("d2")).noInfoCount()).isEqualTo(0);
+        assertThat(((DefendantContext) result.get("d2")).hasPrimaryCount()).isEqualTo(1);
     }
 
     /**
@@ -138,9 +139,9 @@ class CustodialPreprocessorTest {
                 List.of());
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.totalOffences()).isEqualTo(2);
         assertThat(ctx.allOffenceIds()).containsExactly("off1", "off3");
     }
@@ -158,9 +159,9 @@ class CustodialPreprocessorTest {
                 List.of(defendant("d1", "John Smith", null)));
         request.getResultLines().get(1).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        assertThat(result.get("d1").defendantName()).isEqualTo("John Smith");
+        assertThat(((DefendantContext) result.get("d1")).defendantName()).isEqualTo("John Smith");
     }
 
     /**
@@ -176,9 +177,9 @@ class CustodialPreprocessorTest {
                 List.of(defendant("d1", "John Smith", "master-1"),
                         defendant("d2", "John Smith", "master-1")));
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        assertThat(result.get("master-1").defendantName()).isEqualTo("John Smith");
+        assertThat(((DefendantContext) result.get("master-1")).defendantName()).isEqualTo("John Smith");
     }
 
     /**
@@ -194,9 +195,9 @@ class CustodialPreprocessorTest {
                 List.of());
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.allNoInfoOffenceIds()).containsExactly("off1", "off2");
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
@@ -260,9 +261,9 @@ class CustodialPreprocessorTest {
                 List.of());
         request.getResultLines().get(1).setConsecutiveToOffence("");
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.noInfoCount()).isEqualTo(1);
         assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
@@ -279,9 +280,9 @@ class CustodialPreprocessorTest {
                 List.of());
         request.getResultLines().get(1).setConsecutiveToOffence("   ");
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
-        DefendantContext ctx = result.get("d1");
+        DefendantContext ctx = (DefendantContext) result.get("d1");
         assertThat(ctx.noInfoCount()).isEqualTo(1);
         assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
         assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
@@ -299,11 +300,11 @@ class CustodialPreprocessorTest {
                 List.of(defendant("d1", "John", "master-1"),
                         defendant("d2", "John", "master-1")));
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).hasSize(1);
         assertThat(result).containsKey("master-1");
-        DefendantContext ctx = result.get("master-1");
+        DefendantContext ctx = (DefendantContext) result.get("master-1");
         assertThat(ctx.totalOffences()).isEqualTo(2);
         assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
         assertThat(ctx.noInfoCount()).isEqualTo(1);
@@ -323,11 +324,11 @@ class CustodialPreprocessorTest {
                 List.of(defendant("d1", "John", null)));
         request.getResultLines().get(1).setIsConcurrent(true);
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).hasSize(1);
         assertThat(result).containsKey("d1");
-        assertThat(result.get("d1").totalOffences()).isEqualTo(2);
+        assertThat(((DefendantContext) result.get("d1")).totalOffences()).isEqualTo(2);
     }
 
     /**
@@ -342,7 +343,7 @@ class CustodialPreprocessorTest {
                 List.of(defendant("d1", "John", "master-1"),
                         defendant("d2", "Jane", "master-2")));
 
-        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+        Map<String, RuleContext> result = preprocessor.preprocess(wrap(request), config);
 
         assertThat(result).isEmpty();
     }

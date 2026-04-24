@@ -1,0 +1,29 @@
+rule:
+  id: "DR-CTL-001"
+  title: "Missing CTL for remanded offence"
+  description: >-
+    Warns when a relevant remand result has been entered against an offence that has
+    no Custody Time Limit (CTL) result and the offence is not convicted.
+  priority: 2000
+  enabled: true
+
+  preprocessing:
+    type: "ctl-offence"
+    filterShortCodes:
+      - RI
+      - RIYDA
+      - RIH
+      - RIB
+      - RILA
+      - RILAB
+      - REMYD
+    requiredLabel:
+      REMYD: "Remitted for trial"
+
+  conditions:
+    - id: "AC1"
+      name: "No CTL when relevant remand result present and offence not convicted"
+      expression: "hasRelevantResult == 1 && hasCtlResult == 0 && isConvicted == 0"
+      severity: WARNING
+      messageTemplate: "This offence does not have a CTL. If the trial has started a CTL is not needed. It is your responsibility to check and confirm."
+      affectedOffenceSet: "offenceIds"

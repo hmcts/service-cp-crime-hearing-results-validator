@@ -2,14 +2,19 @@ package uk.gov.hmcts.cp.services.rules;
 
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.OffenceConviction;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import uk.gov.hmcts.cp.openapi.model.ValidationRequestWithConvictions;
+import uk.gov.hmcts.cp.services.rules.cel.CtlPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.RulePreprocessor;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Shared test-data builders for validation rule unit and scenario tests.
@@ -26,6 +31,28 @@ public final class ValidationRuleTestHelper {
         return ValidationRequestWithConvictions.builder()
                 .validationRequest(request)
                 .build();
+    }
+
+    public static ValidationRequestWithConvictions wrapWithConvictions(
+            DraftValidationRequest request, Set<OffenceConviction> convictions) {
+        return ValidationRequestWithConvictions.builder()
+                .validationRequest(request)
+                .offenceConvictions(convictions)
+                .build();
+    }
+
+    public static Map<String, RulePreprocessor> custodialPreprocessors() {
+        return Map.of("custodial-concurrent-consecutive", new CustodialPreprocessor());
+    }
+
+    public static Map<String, RulePreprocessor> ctlPreprocessors() {
+        return Map.of("ctl-offence", new CtlPreprocessor());
+    }
+
+    public static Map<String, RulePreprocessor> allPreprocessors() {
+        return Map.of(
+                "custodial-concurrent-consecutive", new CustodialPreprocessor(),
+                "ctl-offence", new CtlPreprocessor());
     }
 
     public static ResultLineDto resultLine(String id, String shortCode,
