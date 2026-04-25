@@ -31,7 +31,11 @@ applicationinsights-agent-*.jar
 
 .env
 
-.claude/
+.claude/settings.local.json
+.claude/projects/
+.claude/todos/
+.claude/shell-snapshots/
+.claude/worktrees/
 .codex
 .codex/
 .gemini/

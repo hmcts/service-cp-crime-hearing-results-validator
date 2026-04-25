@@ -78,3 +78,8 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 - Test naming: `{action}_{scenario}_should_{expectation}` for methods; `@Nested` classes with `@DisplayName` for grouped scenarios
 - Docker health checks use `bash /dev/tcp` (JRE image lacks curl)
 - Default server port: `4550` (override via `SERVER_PORT` env var)
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
