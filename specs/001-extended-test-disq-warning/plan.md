@@ -51,7 +51,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 | **V. HMCTS Standards Compliance** | PASS | Gradle (no Maven). Spring Boot 4 / Java 25. Root package `uk.gov.hmcts.cp`. SLF4J + Logback. No new external dependencies. The `validation_rule` table row is added by the existing migration mechanism (Liquibase) — not a new migration, just data. |
 | **VI. Severity Ceiling, Never Promote** | PASS | The single condition has `severity: WARNING` in the YAML — already at the lower end of the scale. The DB ceiling never promotes WARNING to ERROR; the existing `SeverityCeiling.resolve()` is reused unchanged. |
 | **VII. No `System.out` / `System.err` — SLF4J Only** | PASS | New code uses `@Slf4j` (Lombok). Tests use SLF4J too. No print statements. |
-| **VIII. Test-Driven Development** | PASS | The build-loop step orders failing tests before production code. The `qa` reviewer agent gates on this. Test list includes a failing `RT88026 + COEW + no DDOTE → WARNING` unit test for the preprocessor, a `DDOTE present → no warning` test, an excluded-final-result test, a multi-offence test, and a controller-level integration test, all written before the corresponding production code. |
+| **VIII. Test-Driven Development** | PASS for US1, WAIVED for US2/US3 — see Complexity Tracking | US1's failing tests precede the US1 production code (T021). US2 and US3 ship test coverage *over* the gates already present in T021, so their "failing tests" pass on first run. This is an explicit, narrow waiver — see the Complexity Tracking row below for the engineering rationale. |
 
 **Gate result**: PASS. The Principle III refactor is **part of this plan**, not a deviation requiring a Complexity Tracking entry — Principle III itself states the refactor must happen at the moment a second preprocessor is introduced. Treating it as a complexity violation would be wrong; treating it as a prerequisite phase is right.
 
@@ -107,4 +107,8 @@ src/
 
 ## Complexity Tracking
 
-> No Constitution Check violations require justification. The Principle III refactor of preprocessor dispatch is mandated by the principle itself, not a deviation, so it is not a complexity violation. This section is intentionally empty.
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|--------------------------------------|
+| **Principle VIII (TDD), narrow waiver for US2/US3** — the four-gate logic (relevance, final-result presence, excluded codes, DDOTE/DDOTEL absence) ships in a single preprocessor in T021 (US1). US2 (T024–T028) and US3 (T030–T033) add *test coverage* of the excluded-codes and DDOTE gates respectively; those tests pass on first run rather than failing red, because the gates already exist in production. | Shipping the gates incrementally would mean shipping a knowingly noisy MVP — US1 alone would warn on every relevant offence regardless of result code, until US2 lands suppression for excluded codes (wdrn, dism, etc.), then US3 lands DDOTE/DDOTEL suppression. That's a worse user experience than holding the MVP back until all four gates are live. | (b) Splitting T021 across user-story phases so each gate adds production code in its own phase would restore strict TDD ordering for US2/US3 but ship a knowingly-noisy MVP for hours/days between phases. The product cost outweighs the process purity. (a) Picked. |
+
+The Principle III refactor of preprocessor dispatch is mandated by the principle itself, not a deviation, so it is not a complexity violation and is not listed here.
