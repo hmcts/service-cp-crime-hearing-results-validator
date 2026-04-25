@@ -31,6 +31,16 @@ _find_project_root() {
 REPO_ROOT=$(_find_project_root "$SCRIPT_DIR") || REPO_ROOT="$(pwd)"
 cd "$REPO_ROOT"
 
+_has_changes_in_paths() {
+    if git diff --quiet HEAD -- "$@" 2>/dev/null \
+        && git diff --cached --quiet -- "$@" 2>/dev/null \
+        && [ -z "$(git ls-files --others --exclude-standard -- "$@" 2>/dev/null)" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
 # Check if git is available
 if ! command -v git >/dev/null 2>&1; then
     echo "[specify] Warning: Git not found; skipped auto-commit" >&2
@@ -117,8 +127,55 @@ if [ "$_enabled" != "true" ]; then
     exit 0
 fi
 
+_stage_all_changes=true
+_commit_paths=()
+
+# SPECKIT-LOCAL-PATCH: after_specify should only commit the artefacts that
+# /speckit-specify writes, not unrelated working tree changes. The three
+# artefacts are: the generated spec.md, the requirements checklist, and
+# .specify/feature.json (the per-branch pointer that downstream speckit
+# scripts read to locate the feature directory in clean clones — see
+# common.sh::get_feature_paths). The feature directory is resolved via the
+# same helper used by downstream speckit scripts.
+if [ "$EVENT_NAME" = "after_specify" ]; then
+    _common_sh="$REPO_ROOT/.specify/scripts/bash/common.sh"
+    if [ ! -f "$_common_sh" ]; then
+        echo "[specify] Error: common.sh not found; cannot resolve feature paths" >&2
+        exit 1
+    fi
+
+    # shellcheck disable=SC1090
+    source "$_common_sh"
+    _paths_output=$(get_feature_paths) || { echo "[specify] Error: Failed to resolve feature paths" >&2; exit 1; }
+    eval "$_paths_output"
+    unset _paths_output
+
+    if [ ! -e "$FEATURE_SPEC" ] && ! git ls-files --error-unmatch -- "$FEATURE_SPEC" >/dev/null 2>&1; then
+        echo "[specify] No generated specification file found to commit after $EVENT_NAME" >&2
+        exit 0
+    fi
+
+    _candidate_paths=(
+        "$FEATURE_SPEC"
+        "$FEATURE_DIR/checklists/requirements.md"
+        "$REPO_ROOT/.specify/feature.json"
+    )
+    for _path in "${_candidate_paths[@]}"; do
+        if [ -e "$_path" ] || git ls-files --error-unmatch -- "$_path" >/dev/null 2>&1; then
+            _commit_paths+=("$_path")
+        fi
+    done
+
+    _stage_all_changes=false
+fi
+
 # Check if there are changes to commit
-if git diff --quiet HEAD 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+if [ "$_stage_all_changes" = "true" ]; then
+    if git diff --quiet HEAD 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+        echo "[specify] No changes to commit after $EVENT_NAME" >&2
+        exit 0
+    fi
+elif ! _has_changes_in_paths "${_commit_paths[@]}"; then
     echo "[specify] No changes to commit after $EVENT_NAME" >&2
     exit 0
 fi
@@ -134,7 +191,11 @@ if [ -z "$_commit_msg" ]; then
 fi
 
 # Stage and commit
-_git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
+if [ "$_stage_all_changes" = "true" ]; then
+    _git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
+else
+    _git_out=$(git add -- "${_commit_paths[@]}" 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
+fi
 _git_out=$(git commit -q -m "$_commit_msg" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
 
 echo "[OK] Changes committed ${_phase} ${_command_name}" >&2

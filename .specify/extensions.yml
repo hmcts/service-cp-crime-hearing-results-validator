@@ -100,10 +100,10 @@ hooks:
   after_specify:
   - extension: git
     command: speckit.git.commit
-    enabled: false
+    enabled: true
     optional: true
     prompt: Commit specification changes?
-    description: Auto-commit after specification
+    description: Auto-commit after specification (writes "docs(spec): add feature specification")
     condition: null
   after_clarify:
   - extension: git
