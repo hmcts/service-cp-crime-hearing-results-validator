@@ -38,11 +38,9 @@ A user with access to "Enter results" is recording the outcome of a hearing that
 
 **Why this priority**: This is the entire feature. It directly addresses the business problem (legal/operational errors caused by missing extended test disqualification), and it is the only behaviour that produces user-visible output. Without it, no other story has anything to suppress or interact with.
 
-**Independent Test**: Submit a hearing payload containing one defendant, one offence with Home Office code `RT88026`, and a recorded result line with short code `COEW` and `category = 'F'`, and no `DDOTE` / `DDOTEL` result line linked to that offence. The validation response must contain exactly one warning issue, linked to that offence id, with the exact message text below, and the response must not be a blocking error.
 
 **Acceptance Scenarios**:
 
-1. **Given** a hearing containing one offence with Home Office code `RT88026` (dangerous driving), and a result line with short code `COEW` and `category = 'F'` against that offence, and no `DDOTE` or `DDOTEL` result against that offence, **When** the validation request is submitted, **Then** the system returns one warning issue linked to that offence id with severity `WARNING`.
 2. **Given** the warning is raised, **When** the warning message is read, **Then** it reads exactly: `Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)`.
 3. **Given** a warning is raised on a relevant offence, **When** the user proceeds to share the results, **Then** the warning does not block the share action.
 4. **Given** a hearing containing **two** relevant offences (e.g. `RT88026` and `RT88046`) each with a qualifying final result and neither carrying `DDOTE`/`DDOTEL`, **When** validation runs, **Then** the system returns two warnings, each linked to its respective offence id.
