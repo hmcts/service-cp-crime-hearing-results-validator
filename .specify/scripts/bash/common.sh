@@ -144,9 +144,20 @@ check_feature_branch() {
     if [[ "$branch" =~ ^[0-9]{3,}- ]] && [[ ! "$branch" =~ ^[0-9]{7}-[0-9]{6}- ]] && [[ ! "$branch" =~ ^[0-9]{7,8}-[0-9]{6}$ ]]; then
         is_sequential=true
     fi
-    if [[ "$is_sequential" != "true" ]] && [[ ! "$branch" =~ ^[0-9]{8}-[0-9]{6}- ]]; then
+    # SPECKIT-LOCAL-PATCH: also accept Jira-style ticket-id prefixed branches
+    # (e.g. DD-41656-foo, CCT-1222-bar, PROJ_X-9-baz). Pattern matches the
+    # same Jira-id grammar used elsewhere in this codebase: see
+    # .specify/extensions/git/scripts/bash/create-new-feature.sh _jira_pattern.
+    # Without this, a clean clone of a Jira-named branch can't run
+    # /speckit-plan or /speckit-tasks unless the developer also has local
+    # state (SPECIFY_FEATURE_DIRECTORY env var or .specify/feature.json).
+    local is_jira=false
+    if [[ "$branch" =~ ^[A-Z][A-Z0-9_]*-[0-9]+- ]]; then
+        is_jira=true
+    fi
+    if [[ "$is_sequential" != "true" ]] && [[ "$is_jira" != "true" ]] && [[ ! "$branch" =~ ^[0-9]{8}-[0-9]{6}- ]]; then
         echo "ERROR: Not on a feature branch. Current branch: $raw" >&2
-        echo "Feature branches should be named like: 001-feature-name, 1234-feature-name, or 20260319-143022-feature-name" >&2
+        echo "Feature branches should be named like: 001-feature-name, 1234-feature-name, DD-41656-feature-name, or 20260319-143022-feature-name" >&2
         return 1
     fi
 
