@@ -66,6 +66,28 @@ The database `severity` column acts as a **ceiling**, not a blanket replacement.
 
 This means setting a rule's severity to `WARNING` in the database effectively says "stop this rule from blocking shares" — all conditions become non-blocking while still surfacing as warnings. Setting it to `ERROR` (or having no override) leaves each condition at its YAML-defined severity.
 
+## Adding a New Feature (spec-kit workflow)
+
+This project uses [GitHub Spec Kit](https://github.com/github/spec-kit) for spec-driven feature development. New features flow through four sequential commands:
+
+```
+/speckit-specify  →  /speckit-plan  →  /speckit-tasks  →  /speckit-implement
+```
+
+**Branch convention.** Features live on Jira-id-prefixed branches (e.g. `DD-41656-extended-test-disqualification`). The `before_specify` hook auto-creates the branch when you start a spec; if your feature description doesn't already start with a Jira id, the hook prompts for one (or use `--no-jira-id` to fall back to sequential `001-...` numbering for non-Jira work).
+
+**Spec artefacts** live under `specs/<NNN-slug>/`:
+
+- `spec.md` — what the feature is and why (user stories, acceptance criteria)
+- `plan.md` — technical design and constitution-check gates
+- `tasks.md` — ordered, dependency-aware task list ready for implementation
+- `checklists/requirements.md` — spec quality checklist
+- sibling `data-model.md`, `research.md`, `contracts/`, `quickstart.md` as needed
+
+**Auto-commit.** When `/speckit-specify` finishes, the `after_specify` hook offers to auto-commit the new spec, requirements checklist, and `.specify/feature.json` pointer with the message `docs(spec): add feature specification`. Plan / tasks / implement phases commit manually with conventional-commits messages.
+
+**Principles.** The team's non-negotiable principles — YAML/CEL Rule-First, Constructor Injection, Layered Architecture with data-driven preprocessor dispatch, Spec-Driven Build Loop, HMCTS Standards, Severity-Ceiling-Never-Promote, SLF4J-only (no `System.out`), TDD — live in [.specify/memory/constitution.md](.specify/memory/constitution.md). Reviewers cite this in PR feedback.
+
 ## API Endpoints
 
 | Method | Path | Description |
@@ -126,7 +148,7 @@ This project uses `.env` and `.envrc` files for environment variable management.
 3. Allow direnv: `direnv allow`
 4. Create `.env` file with your local configuration
 
-**Server Port:** Default `8082`. Override with `export SERVER_PORT=8080`.
+**Server Port:** Default `4550`. Override with `export SERVER_PORT=8080`.
 
 See the [Environment Variables Guide](docs/EnvironmentVariables.md) for full details.
 
