@@ -109,8 +109,8 @@ Single-module Spring Boot service:
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Run all US2 tests (`T024`–`T027`). They are expected to pass against the preprocessor implementation from `T021`. If any fail, fix the preprocessor — most likely cause is a missing `toUpperCase(Locale.ROOT)` somewhere in the excluded-code comparison.
-- [ ] T029 [US2] Run `gradle test` to confirm the full unit + integration test suite is green.
+- [X] T028 [US2] Run all US2 tests (`T024`–`T027`). They are expected to pass against the preprocessor implementation from `T021`. If any fail, fix the preprocessor — most likely cause is a missing `toUpperCase(Locale.ROOT)` somewhere in the excluded-code comparison.
+- [X] T029 [US2] Run `gradle test` to confirm the full unit + integration test suite is green.
 
 **Checkpoint**: User Story 2 is verifiably suppressed. The rule correctly treats withdrawn / dismissed / discharged / discontinued / count-on-file / indictment-on-file outcomes as non-warnings.
 
@@ -124,14 +124,14 @@ Single-module Spring Boot service:
 
 ### Tests for User Story 3 (TDD — write failing first) ⚠️
 
-- [ ] T030 [P] [US3] Failing unit test: in `DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested` class `ExtendedTestSuppression` covering: (a) `RT88026 + COEW + DDOTE` → `qualifyingCount == 0` and `disqExtTestCount == 1`; (b) `RT88026 + COEW + DDOTEL` → `qualifyingCount == 0`; (c) DDOTE recorded against a *different* offence in the same hearing → does NOT suppress the warning on the first offence (regression for the spec's "different offence" edge case).
-- [ ] T031 [US3] Failing unit test: in the same `@Nested` class, add `mixedCaseDdoteSuppresses` covering `ddote`, `DdOtE`, `ddotel`, `DDoTeL` → `qualifyingCount == 0`.
-- [ ] T032 [P] [US3] Failing integration test: in `DisqualificationExtendedTestRuleIT.java`, add `@Nested` class `SuppressedByDdote` with two scenarios: (a) single offence with `COEW + DDOTE` → zero issues; (b) two offences, one with `DDOTE` and one without → exactly one `DR-DISQ-001` issue, linked to the offence missing `DDOTE`.
+- [X] T030 [P] [US3] Failing unit test: in `DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested` class `ExtendedTestSuppression` covering: (a) `RT88026 + COEW + DDOTE` → `qualifyingCount == 0` and `disqExtTestCount == 1`; (b) `RT88026 + COEW + DDOTEL` → `qualifyingCount == 0`; (c) DDOTE recorded against a *different* offence in the same hearing → does NOT suppress the warning on the first offence (regression for the spec's "different offence" edge case).
+- [X] T031 [US3] Failing unit test: in the same `@Nested` class, add `mixedCaseDdoteSuppresses` covering `ddote`, `DdOtE`, `ddotel`, `DDoTeL` → `qualifyingCount == 0`.
+- [X] T032 [P] [US3] Failing integration test: in `DisqualificationExtendedTestRuleIT.java`, add `@Nested` class `SuppressedByDdote` with two scenarios: (a) single offence with `COEW + DDOTE` → zero issues; (b) two offences, one with `DDOTE` and one without → exactly one `DR-DISQ-001` issue, linked to the offence missing `DDOTE`.
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Run all US3 tests (`T030`–`T032`). They are expected to pass against the preprocessor from `T021`. If any fail, fix the preprocessor.
-- [ ] T034 [US3] Run `gradle test` to confirm the full unit + integration test suite is green.
+- [X] T033 [US3] Run all US3 tests (`T030`–`T032`). They are expected to pass against the preprocessor from `T021`. If any fail, fix the preprocessor.
+- [X] T034 [US3] Run `gradle test` to confirm the full unit + integration test suite is green.
 
 **Checkpoint**: All three user stories are independently verified. The rule fires on qualifying offences and is correctly suppressed by both excluded final results and existing extended-test disqualifications.
 
@@ -141,19 +141,19 @@ Single-module Spring Boot service:
 
 **Purpose**: Cross-rule regression coverage, static analysis, performance, docs, manual smoke test.
 
-- [ ] T034a [P] Framework-level (not per-rule) tightening of `ValidationRuleOverrideIntegrationTest.java`. The existing IT covers only the happy path — seeded `DR-SENT-002` row with `enabled=true, severity=ERROR` produces an ERROR. Extend it with three additional `@Test` methods exercising the **mechanism**, against the existing `DR-SENT-002` rule (NOT against DR-DISQ-001):
+- [X] T034a [P] Framework-level (not per-rule) tightening of `ValidationRuleOverrideIntegrationTest.java`. The existing IT covers only the happy path — seeded `DR-SENT-002` row with `enabled=true, severity=ERROR` produces an ERROR. Extend it with three additional `@Test` methods exercising the **mechanism**, against the existing `DR-SENT-002` rule (NOT against DR-DISQ-001):
 
     1. `validate_with_disabled_rule_should_emit_no_issues_for_that_rule` — set `enabled=false` for `DR-SENT-002`, POST a payload that would otherwise produce an ERROR, assert zero `DR-SENT-002` issues, then restore `enabled=true` (or rely on `@DirtiesContext`).
     2. `validate_with_db_severity_lower_than_yaml_should_cap_downward` — set `severity='WARNING'` for `DR-SENT-002`, POST the same payload, assert the issue is still emitted but at `WARNING`, not `ERROR`.
     3. `validate_with_db_severity_higher_than_yaml_should_be_no_op` — set `severity='ERROR'` against a YAML-level WARNING condition, assert severity stays at `WARNING` (Constitution Principle VI — never promote).
 
     Once these three exist, severity-ceiling and runtime-toggle behaviour is proven once at the framework level. New rules (DR-DISQ-001 and any future rule) inherit this coverage without per-rule duplication. This task addresses the analyze-report finding C1 (and the user's policy decision: framework-once, not rule-by-rule).
-- [ ] T035 [P] Cross-rule regression test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/CrossRuleRegressionIT.java` (or add a `@Nested` class to `DisqualificationExtendedTestRuleIT.java`) covering the scenario from `research.md` R10 — a hearing that triggers both `DR-SENT-002` ERROR and `DR-DISQ-001` WARNING. Assert both issues are present, with correct `ruleId`, `severity`, and `affectedOffences`. Proves the rules evaluate independently per Constitution Principle III and FR-011.
-- [ ] T036 Update `README.md` "Current Rules" table to add a row: `DR-DISQ-001 | Extended test disqualification check`. (Markdown-only edit — exempt from the build loop per Constitution Principle IV.)
-- [ ] T037 [P] Run `gradle checkstyleMain pmdMain` and confirm zero warnings / zero violations across all modified files.
-- [ ] T038 [P] Run `gradle jacocoTestReport` and inspect coverage for `DisqualificationExtendedTestPreprocessor.java` and the new context record — target ≥85% line coverage on production code added in this feature (project default).
-- [ ] T039 Run `gradle build` for the canonical green-build gate (Checkstyle Google `maxWarnings=0` + PMD `ignoreFailures=false` + unit + integration tests). Required before any PR.
-- [ ] T040 Run `gradle api` to execute live API tests against the docker-compose stack — confirms the rule is discovered and reachable end-to-end.
+- [X] T035 [P] Cross-rule regression test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/CrossRuleRegressionIT.java` (or add a `@Nested` class to `DisqualificationExtendedTestRuleIT.java`) covering the scenario from `research.md` R10 — a hearing that triggers both `DR-SENT-002` ERROR and `DR-DISQ-001` WARNING. Assert both issues are present, with correct `ruleId`, `severity`, and `affectedOffences`. Proves the rules evaluate independently per Constitution Principle III and FR-011.
+- [X] T036 Update `README.md` "Current Rules" table to add a row: `DR-DISQ-001 | Extended test disqualification check`. (Markdown-only edit — exempt from the build loop per Constitution Principle IV.)
+- [X] T037 [P] Run `gradle checkstyleMain pmdMain` and confirm zero warnings / zero violations across all modified files.
+- [X] T038 [P] Run `gradle jacocoTestReport` and inspect coverage for `DisqualificationExtendedTestPreprocessor.java` and the new context record — target ≥85% line coverage on production code added in this feature (project default).
+- [X] T039 Run `gradle build` for the canonical green-build gate (Checkstyle Google `maxWarnings=0` + PMD `ignoreFailures=false` + unit + integration tests). Required before any PR.
+- [X] T040 Run `gradle api` to execute live API tests against the docker-compose stack — confirms the rule is discovered and reachable end-to-end.
 - [ ] T041 Manually walk through `quickstart.md` against a locally running service (`gradle bootRun`): hit each of the four curl scenarios (warns / excluded suppresses / DDOTE suppresses / two qualifying offences) and the DB-override scenario; confirm responses match the expected outputs.
 - [ ] T042 [P] Run `gradle gatlingRun-uk.gov.hmcts.cp.simulation.CapacitySimulation -Dgatling.baseUrl=http://localhost:4550` and compare the latency report to a recent baseline. Per `SC-005`, no regression.
 - [ ] T043 Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (per Workflow's Spec → Code Review → QA → Spec-Validate loop). Expected: COMPLIANT.

@@ -10,6 +10,8 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 
 /**
@@ -204,6 +206,130 @@ class DisqualificationExtendedTestPreprocessorTest {
             assertThat(result).containsOnlyKeys("off1", "off2");
             assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
             assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
+        }
+    }
+
+    @Nested
+    @DisplayName("ExcludedFinalSuppression — Phase 4 / US2")
+    class ExcludedFinalSuppression {
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "wdrn", "WDRNOFF", "dism", "dine", "dini",
+                "disch", "disc", "ctrof", "iremfile"
+        })
+        void each_excluded_short_code_should_suppress(final String excludedCode) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", excludedCode, "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount())
+                    .as("excluded short code %s should suppress", excludedCode)
+                    .isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"WDRN", "Wdrn", "WdRn", "WDRNOff", "IREMFILE", "Disch"})
+        void mixed_case_excluded_short_codes_should_suppress(final String mixedCase) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", mixedCase, "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount())
+                    .as("mixed-case excluded code %s should suppress", mixedCase)
+                    .isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+        }
+
+        @Test
+        void non_excluded_final_code_imp_should_still_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "IMP", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void excluded_short_code_on_non_relevant_offence_should_not_qualify_or_count_as_relevant() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "wdrn", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Theft", "TH68001")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.relevantCount()).isEqualTo(0L);
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("ExtendedTestSuppression — Phase 5 / US3")
+    class ExtendedTestSuppression {
+
+        @ParameterizedTest
+        @ValueSource(strings = {"DDOTE", "DDOTEL"})
+        void extended_test_disqualification_codes_should_suppress(final String code) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1"),
+                            resultLine("rl2", code, "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount())
+                    .as("extended-test code %s should suppress", code)
+                    .isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"ddote", "DdOtE", "ddotel", "DDoTeL"})
+        void mixed_case_extended_test_codes_should_suppress(final String mixedCase) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1"),
+                            resultLine("rl2", mixedCase, "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount())
+                    .as("mixed-case extended-test code %s should suppress", mixedCase)
+                    .isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
+        }
+
+        @Test
+        void ddote_on_a_different_offence_should_not_suppress_first_offence() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1"),
+                            resultLine("rl2", "COEW", "d1", "off2"),
+                            resultLine("rl3", "DDOTE", "d1", "off2")),
+                    List.of(
+                            offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
+                            offenceWithCode("off2", 2, "Causing death by dangerous driving",
+                                    "RT88046")));
+
+            Map<String, DisqualificationContext> result = preprocess(request);
+
+            assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off1").disqExtTestCount()).isEqualTo(0L);
+            assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
+            assertThat(result.get("off2").disqExtTestCount()).isEqualTo(1L);
         }
     }
 
