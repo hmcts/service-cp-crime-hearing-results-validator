@@ -141,13 +141,13 @@ Single-module Spring Boot service:
 
 **Purpose**: Cross-rule regression coverage, static analysis, performance, docs, manual smoke test.
 
-- [ ] T034a [P] FR-010 wiring test (covers analyze-report finding C1): add a `@Nested` class `RuntimeOverride` to `DisqualificationExtendedTestRuleIT.java` exercising the rule's `validation_rule` row end-to-end:
-    - (a) insert a `validation_rule` row `(id='DR-DISQ-001', enabled=false, severity=NULL)`;
-    - (b) POST a qualifying payload (RT88026 offence + `COEW` result + no DDOTE) → response contains zero `DR-DISQ-001` issues;
-    - (c) delete the row (or update to `enabled=true`);
-    - (d) repeat the same POST → response contains exactly one `DR-DISQ-001` warning, ruleId/severity/affectedOffences as in T018.
+- [ ] T034a [P] Framework-level (not per-rule) tightening of `ValidationRuleOverrideIntegrationTest.java`. The existing IT covers only the happy path — seeded `DR-SENT-002` row with `enabled=true, severity=ERROR` produces an ERROR. Extend it with three additional `@Test` methods exercising the **mechanism**, against the existing `DR-SENT-002` rule (NOT against DR-DISQ-001):
 
-    This proves the rule honours runtime overrides via `RuleOverrideService` (per Constitution Principle VI's ceiling semantics) for **this specific rule**. Existing `RuleOverrideService` and `SeverityCeiling` unit tests prove the mechanism in general; this test proves DR-DISQ-001 is correctly wired into it.
+    1. `validate_with_disabled_rule_should_emit_no_issues_for_that_rule` — set `enabled=false` for `DR-SENT-002`, POST a payload that would otherwise produce an ERROR, assert zero `DR-SENT-002` issues, then restore `enabled=true` (or rely on `@DirtiesContext`).
+    2. `validate_with_db_severity_lower_than_yaml_should_cap_downward` — set `severity='WARNING'` for `DR-SENT-002`, POST the same payload, assert the issue is still emitted but at `WARNING`, not `ERROR`.
+    3. `validate_with_db_severity_higher_than_yaml_should_be_no_op` — set `severity='ERROR'` against a YAML-level WARNING condition, assert severity stays at `WARNING` (Constitution Principle VI — never promote).
+
+    Once these three exist, severity-ceiling and runtime-toggle behaviour is proven once at the framework level. New rules (DR-DISQ-001 and any future rule) inherit this coverage without per-rule duplication. This task addresses the analyze-report finding C1 (and the user's policy decision: framework-once, not rule-by-rule).
 - [ ] T035 [P] Cross-rule regression test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/CrossRuleRegressionIT.java` (or add a `@Nested` class to `DisqualificationExtendedTestRuleIT.java`) covering the scenario from `research.md` R10 — a hearing that triggers both `DR-SENT-002` ERROR and `DR-DISQ-001` WARNING. Assert both issues are present, with correct `ruleId`, `severity`, and `affectedOffences`. Proves the rules evaluate independently per Constitution Principle III and FR-011.
 - [ ] T036 Update `README.md` "Current Rules" table to add a row: `DR-DISQ-001 | Extended test disqualification check`. (Markdown-only edit — exempt from the build loop per Constitution Principle IV.)
 - [ ] T037 [P] Run `gradle checkstyleMain pmdMain` and confirm zero warnings / zero violations across all modified files.
