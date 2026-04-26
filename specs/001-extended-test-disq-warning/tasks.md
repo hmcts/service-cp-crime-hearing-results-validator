@@ -156,9 +156,9 @@ Single-module Spring Boot service:
 - [X] T040 Run `gradle api` to execute live API tests against the docker-compose stack — confirms the rule is discovered and reachable end-to-end.
 - [X] T041 Manually walk through `quickstart.md` against a locally running service (`gradle bootRun`): hit each of the four curl scenarios (warns / excluded suppresses / DDOTE suppresses / two qualifying offences) and the DB-override scenario; confirm responses match the expected outputs.
 - [ ] T042 [P] Run `gradle gatlingRun-uk.gov.hmcts.cp.simulation.CapacitySimulation -Dgatling.baseUrl=http://localhost:4550` and compare the latency report to a recent baseline. Per `SC-005`, no regression.
-- [ ] T043 Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (per Workflow's Spec → Code Review → QA → Spec-Validate loop). Expected: COMPLIANT.
-- [ ] T044 Run the `code-reviewer` reviewer agent against the diff. Expected: PASS.
-- [ ] T045 Run the `qa` reviewer agent against the diff. Expected: PASS (verifies failing-test-before-prod-code commit ordering per Constitution VIII).
+- [X] T043 Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (per Workflow's Spec → Code Review → QA → Spec-Validate loop). Expected: COMPLIANT.
+- [X] T044 Run the `code-reviewer` reviewer agent against the diff. Expected: PASS.
+- [X] T045 Run the `qa` reviewer agent against the diff. Expected: PASS (verifies failing-test-before-prod-code commit ordering per Constitution VIII).
 - [ ] T046 Open the PR. Description MUST cite Constitution Principles I, III, VI, VIII (the principles this change touches) per Workflow / Governance.
 
 **Checkpoint**: Feature is complete, reviewed, and ready to merge.
