@@ -100,7 +100,10 @@ class ValidationRuleAutoConfigurationTest {
      * Verifies the bean factory propagates a missing-preprocessor failure so application
      * boot fails fast. The constructor-level check in {@code CelValidationRule} is exercised
      * by {@code CelValidationRuleTest}; this test pins the discovery path that Spring walks
-     * when wiring the rule list bean.
+     * when wiring the rule list bean. The specific qualifier in the message is not asserted —
+     * which YAML rule is loaded first is not API-guaranteed by
+     * {@code PathMatchingResourcePatternResolver}, so the qualifier in the message could be
+     * either of the bundled rules' preprocessing.type values.
      */
     @Test
     void validationRules_should_throw_when_preprocessor_qualifier_unknown() {
@@ -113,7 +116,6 @@ class ValidationRuleAutoConfigurationTest {
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class)))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("No preprocessor registered for type:")
-                .hasMessageContaining("custodial-concurrent-consecutive");
+                .hasMessageContaining("No preprocessor registered for type:");
     }
 }
