@@ -20,12 +20,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * smoke tests for the two negative branches and the multi-defendant per-offence-grouping
  * property.
  *
- * <p>Each scenario asserts both a filter-based count
- * ({@code $.warnings[?(@.ruleId=='DR-DISQ-001')]}) AND the total warnings count, so a
- * future rule firing on the same payload cannot make these tests pass or fail
- * accidentally — they're scoped to the rule id of this feature while also guarding
- * against unrelated warnings sneaking in. Element-shape assertions then use the regular
- * index path knowing the total count is pinned.
+ * <p>Every scenario pins three response slices:
+ * <ul>
+ *   <li>{@code $.errors} is empty (no other rule produced an error on the payload).</li>
+ *   <li>{@code $.warnings[?(@.ruleId=='DR-DISQ-001')]} is the expected size for this rule.</li>
+ *   <li>{@code $.warnings} (the total warnings list) is the expected size, so a future
+ *       unrelated rule emitting a warning on the same payload cannot make these tests pass
+ *       silently.</li>
+ * </ul>
+ * Element-shape assertions then use the regular index path on the pinned-size warnings
+ * list. Negative scenarios assert all three are empty.
  */
 class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBase {
 
@@ -66,6 +70,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -106,6 +111,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -138,7 +144,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()));
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
         }
     }
 
@@ -171,7 +179,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()));
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
         }
 
         @Test
@@ -201,7 +211,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()));
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
         }
     }
 }
