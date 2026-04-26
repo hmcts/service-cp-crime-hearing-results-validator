@@ -29,7 +29,12 @@ public class CelValidationRule implements ValidationRule {
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
-    /** Constructs the rule from a YAML path and the required collaborators. */
+    /**
+     * Constructs the rule from a YAML path and the required collaborators. Fails fast at
+     * construction time if the YAML's {@code preprocessing.type} qualifier does not resolve in
+     * the registry, surfacing the misconfiguration at application boot rather than on the first
+     * validation request.
+     */
     public CelValidationRule(final String rulePath,
                              final PreprocessorRegistry preprocessorRegistry,
                              final CelExpressionEvaluator evaluator,
@@ -42,6 +47,7 @@ public class CelValidationRule implements ValidationRule {
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
+        preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
     @Override
