@@ -7,8 +7,13 @@ import java.util.Map;
  * Polymorphic context produced by a {@link ValidationPreprocessor} and consumed by
  * {@link CelValidationRule}. Each implementation exposes a CEL variable map and a set of
  * named offence-id lists referenced by rule conditions.
+ *
+ * <p>This is intentionally an open extension point — every new {@code ValidationPreprocessor}
+ * brings its own context shape, and consumers only ever invoke interface methods on it (no
+ * pattern matching). If exhaustive case analysis on context types is later introduced, sealing
+ * the interface should be reconsidered then.
  */
-public sealed interface RuleEvaluationContext permits DefendantContext {
+public interface RuleEvaluationContext {
 
     /**
      * Returns the variable map consumed by CEL expressions. Keys are the variable names
