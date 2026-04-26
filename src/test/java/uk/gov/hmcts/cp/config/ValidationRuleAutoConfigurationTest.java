@@ -95,4 +95,25 @@ class ValidationRuleAutoConfigurationTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No preprocessor registered for type:");
     }
+
+    /**
+     * Verifies the bean factory propagates a missing-preprocessor failure so application
+     * boot fails fast. The constructor-level check in {@code CelValidationRule} is exercised
+     * by {@code CelValidationRuleTest}; this test pins the discovery path that Spring walks
+     * when wiring the rule list bean.
+     */
+    @Test
+    void validationRules_should_throw_when_preprocessor_qualifier_unknown() {
+        PreprocessorRegistry emptyRegistry = new PreprocessorRegistry(List.of());
+
+        assertThatThrownBy(() -> config.validationRules(
+                emptyRegistry,
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(RuleOverrideService.class)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No preprocessor registered for type:")
+                .hasMessageContaining("custodial-concurrent-consecutive");
+    }
 }
