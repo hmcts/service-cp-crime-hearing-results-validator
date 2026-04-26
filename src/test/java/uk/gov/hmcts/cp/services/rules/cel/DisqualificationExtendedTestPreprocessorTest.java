@@ -2,7 +2,6 @@ package uk.gov.hmcts.cp.services.rules.cel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.defendant;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offenceWithCode;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
@@ -84,20 +83,52 @@ class DisqualificationExtendedTestPreprocessorTest {
         }
 
         @Test
-        void two_defendants_on_one_relevant_offence_should_produce_one_qualifying_context() {
+        void two_defendants_charged_with_same_relevant_offence_should_produce_one_context() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "COEW", "d1", "off1")),
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1"),
+                            resultLine("rl2", "COEW", "d2", "off1")),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
-            request.setDefendants(List.of(
-                    defendant("d1", "Alex", "Driver"),
-                    defendant("d2", "Sam", "Passenger")));
 
             Map<String, DisqualificationContext> result = preprocess(request);
 
             assertThat(result).containsOnlyKeys("off1");
             DisqualificationContext ctx = result.get("off1");
             assertThat(ctx.qualifyingCount()).isEqualTo(1L);
-            assertThat(ctx.qualifyingOffenceIds()).hasSize(1).containsExactly("off1");
+            assertThat(ctx.qualifyingOffenceIds()).containsExactly("off1");
+        }
+    }
+
+    @Nested
+    @DisplayName("SuppressionSmoke")
+    class SuppressionSmoke {
+
+        @Test
+        void wdrn_on_relevant_offence_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "wdrn", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void ddote_on_relevant_offence_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1"),
+                            resultLine("rl2", "DDOTE", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
         }
     }
 

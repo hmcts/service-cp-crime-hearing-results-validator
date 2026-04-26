@@ -64,7 +64,7 @@ When the user has already added a `DDOTE` or `DDOTEL` result line against the re
 - **No final result yet** — the offence is still active (no result that would make it inactive). The rule does not fire because precondition AC1 ("the relevant offence has a final result recorded") is not met.
 - **Final result short code is unknown / not in any list** — treated as a non-excluded final result, so the warning fires (matches the literal reading of AC1: "the final result is not any of the following [excluded list]").
 - **DDOTE / DDOTEL recorded against a different offence in the same hearing** — does not suppress the warning; the linkage must be to the same relevant offence id.
-- **Multiple defendants on the same offence** — each defendant's offence instance is evaluated independently; one warning per qualifying defendant–offence pair.
+- **Multiple defendants on the same offence** — the rule produces exactly **one** warning for the offence regardless of how many defendants are charged with it. The warning is offence-anchored (linked to the offence id, not to a defendant–offence pair). See the **Per-offence evaluation** assumption below for the rationale and how this contrasts with `DR-SENT-002`.
 - **Hearing contains no offence with a relevant Home Office code** — the rule produces no output.
 - **Same hearing already failed an unrelated rule (e.g. DR-SENT-002 ERROR)** — this rule's `WARNING` does not become an error and does not affect other rules' decisions; rules evaluate independently.
 - **Operator has set the database `validation_rule` row for this rule to `enabled = false`** — the rule produces no output.
