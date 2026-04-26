@@ -61,6 +61,15 @@ class PreprocessorRegistryTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("dup");
         }
+
+        @Test
+        void constructor_should_accept_empty_list() {
+            final PreprocessorRegistry registry = new PreprocessorRegistry(List.of());
+
+            assertThatThrownBy(() -> registry.require("anything"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("anything");
+        }
     }
 
     private record TypedStub(String type) implements ValidationPreprocessor {

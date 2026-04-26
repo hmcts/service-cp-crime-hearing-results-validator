@@ -25,6 +25,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
+    private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
@@ -47,6 +48,7 @@ public class CelValidationRule implements ValidationRule {
                              final RuleOverrideService ruleOverrideService,
                              final ValidationIssueRecorder issueRecorder) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
+        this.preprocessorRegistry = preprocessorRegistry;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
@@ -85,6 +87,8 @@ public class CelValidationRule implements ValidationRule {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
                     .collect(Collectors.toMap(OffenceDto::getOffenceId, o -> o, (a, b) -> a));
 
+            final ValidationPreprocessor preprocessor = preprocessorRegistry.require(
+                    ruleDefinition.getPreprocessing().getType());
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
