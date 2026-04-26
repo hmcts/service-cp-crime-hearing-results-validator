@@ -6,6 +6,7 @@ import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
 import java.io.IOException;
@@ -51,6 +52,9 @@ class ValidationRuleAutoConfigurationTest {
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class));
 
-        assertThat(rules).hasSize(1);
+        assertThat(rules).hasSize(2);
+        assertThat(rules)
+                .extracting(r -> r.getRuleDetail().getRuleId())
+                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001");
     }
 }

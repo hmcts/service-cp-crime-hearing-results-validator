@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -41,10 +43,12 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(1);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(1);
-        assertThat(json.get("rules")).hasSize(1);
-        assertThat(json.get("rules").get(0).get("ruleId").asText()).isEqualTo("DR-SENT-002");
+        assertThat(json.get("count").asInt()).isEqualTo(2);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(2);
+        assertThat(json.get("rules")).hasSize(2);
+        final List<String> ruleIds = new ArrayList<>();
+        json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
+        assertThat(ruleIds).containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001");
     }
 
     /**
