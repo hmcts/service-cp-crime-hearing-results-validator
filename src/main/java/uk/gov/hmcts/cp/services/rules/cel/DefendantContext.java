@@ -18,13 +18,14 @@ public record DefendantContext(
         List<String> hasBothOffenceIds,
         List<String> allOffenceIds,
         List<String> allNoInfoOffenceIds
-) {
+) implements RuleEvaluationContext {
 
     /**
      * Converts the summary counts into the numeric context consumed by CEL expressions.
      *
      * @return CEL variable map for this defendant context
      */
+    @Override
     public Map<String, Long> toCelContext() {
         return Map.of(
                 "noInfoCount", noInfoCount,
@@ -41,6 +42,7 @@ public record DefendantContext(
      * @param setName configured offence-id set name
      * @return matching offence-id list
      */
+    @Override
     public List<String> getOffenceIdSet(final String setName) {
         return switch (setName) {
             case "noInfoOffenceIds" -> noInfoOffenceIds;

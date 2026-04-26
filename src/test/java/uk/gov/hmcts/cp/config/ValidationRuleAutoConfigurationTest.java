@@ -7,6 +7,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
+import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,13 +24,16 @@ class ValidationRuleAutoConfigurationTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
 
+    private final PreprocessorRegistry preprocessorRegistry =
+            new PreprocessorRegistry(List.of(new CustodialPreprocessor()));
+
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
      */
     @Test
     void should_discover_DR_SENT_002_rule() throws IOException {
         List<ValidationRule> rules = config.validationRules(
-                new CustodialPreprocessor(),
+                preprocessorRegistry,
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -45,7 +49,7 @@ class ValidationRuleAutoConfigurationTest {
     @Test
     void should_create_one_rule_per_yaml_file() throws IOException {
         List<ValidationRule> rules = config.validationRules(
-                new CustodialPreprocessor(),
+                preprocessorRegistry,
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
