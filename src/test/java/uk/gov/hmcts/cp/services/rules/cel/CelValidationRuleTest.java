@@ -25,7 +25,7 @@ class CelValidationRuleTest {
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule(
             "rules/DR-SENT-002.yaml",
-            new CustodialPreprocessor(),
+            new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
@@ -265,7 +265,7 @@ class CelValidationRuleTest {
                 mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class);
         CelValidationRule localRule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,

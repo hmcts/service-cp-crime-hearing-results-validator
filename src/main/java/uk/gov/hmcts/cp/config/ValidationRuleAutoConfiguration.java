@@ -14,8 +14,8 @@ import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CelValidationRule;
-import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
+import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 
 /**
  * Discovers YAML-backed validation rules on the classpath and exposes them as application beans.
@@ -27,7 +27,7 @@ public class ValidationRuleAutoConfiguration {
     /** Discovers and registers YAML-backed validation rules from the classpath. */
     @Bean("validationRules")
     public List<ValidationRule> validationRules(
-            final CustodialPreprocessor preprocessor,
+            final PreprocessorRegistry preprocessorRegistry,
             final CelExpressionEvaluator evaluator,
             final MessageTemplateResolver messageResolver,
             final OffenceDisplayHelper offenceDisplayHelper,
@@ -43,7 +43,7 @@ public class ValidationRuleAutoConfiguration {
                 continue;
             }
             final String path = "rules/" + filename;
-            rules.add(new CelValidationRule(path, preprocessor, evaluator,
+            rules.add(new CelValidationRule(path, preprocessorRegistry, evaluator,
                     messageResolver, offenceDisplayHelper, ruleOverrideService));
         }
 

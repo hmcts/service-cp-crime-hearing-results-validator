@@ -49,7 +49,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -75,7 +75,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -100,7 +100,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -131,7 +131,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -164,7 +164,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -202,7 +202,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -241,7 +241,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -279,7 +279,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -316,7 +316,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -334,7 +334,7 @@ class CelValidationRuleOverrideTest {
     void getRuleDetail_should_fallback_to_yaml_when_no_override() {
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,

@@ -23,7 +23,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
-    private final CustodialPreprocessor preprocessor;
+    private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
@@ -31,13 +31,13 @@ public class CelValidationRule implements ValidationRule {
 
     /** Constructs the rule from a YAML path and the required collaborators. */
     public CelValidationRule(final String rulePath,
-                             final CustodialPreprocessor preprocessor,
+                             final PreprocessorRegistry preprocessorRegistry,
                              final CelExpressionEvaluator evaluator,
                              final MessageTemplateResolver messageResolver,
                              final OffenceDisplayHelper offenceDisplayHelper,
                              final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
-        this.preprocessor = preprocessor;
+        this.preprocessorRegistry = preprocessorRegistry;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
@@ -74,10 +74,12 @@ public class CelValidationRule implements ValidationRule {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
                     .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
 
-            final Map<String, DefendantContext> defendantContexts =
+            final ValidationPreprocessor preprocessor = preprocessorRegistry.require(
+                    ruleDefinition.getPreprocessing().getType());
+            final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
-            for (final DefendantContext context : defendantContexts.values()) {
+            for (final RuleEvaluationContext context : contexts.values()) {
                 final Map<String, Long> celContext = context.toCelContext();
 
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
