@@ -34,6 +34,8 @@ This document records the design decisions taken during planning, why each one w
 
 ## R3. How is "the offence's final result" identified, given the upstream DTO has no explicit flag?
 
+> **Status: SUPERSEDED 2026-04-28** — see [R3-revised](#r3-revised-refinement-gate-on-categoryf-from-the-result-line-2026-04-28) below. The short-code-set inference described here produces a false positive on adjournments of relevant offences (BA scenarios doc, scenario 5). The refinement gates on the existing `category` enum on the result line instead, and is delivered as a four-repo contract change under DD-41656.
+
 **Context**: `ResultLineDto` (from `libs.api.hearing.results.validator`) has `id`, `shortCode`, `label`, `defendantId`, `offenceId`, `isConcurrent`, `consecutiveToOffence`. There is no `isFinalResult` boolean and no `makesOffenceInactive` flag. AC1 asks us to detect an offence whose *final result* is not in the excluded list and that has no DDOTE/DDOTEL.
 
 **Decision**: Treat the question on a per-offence basis as a property of the *set of result lines* on that offence, without needing to single one out as "the" final result:
@@ -62,6 +64,50 @@ offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
 - *Treat the most recently added result line as final.* Rejected — `ResultLineDto` has no creation timestamp and the API spec gives no ordering guarantee.
 
 **Open follow-up** (not blocking): if a future rule legitimately needs the canonical "final result" for an offence, that should be a single, explicit upstream DTO change rather than rule-by-rule heuristics.
+
+> **Postscript (2026-04-28)**: the "open follow-up" above became unblocked sooner than expected. R3-revised is exactly the explicit upstream DTO change anticipated here — see below.
+
+---
+
+## R3-revised. Refinement: gate on `category='F'` from the result line (2026-04-28)
+
+**Decision**: The rule gates on the existing `category` attribute already present on the upstream domain models (`ResolvedDraftResultLine` in cpp-ui-hearing, `SharedResultsCommandResultLineV2` in cpp-context-hearing). The validator's published contract `ResultLineDto` is extended to carry `category` as a closed enum `{A, I, F}`. The rule treats a result line as the offence's final result if and only if its `category` equals `'F'` (case-insensitive).
+
+The qualifying gate becomes:
+
+```
+offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
+  AND ∃ line ∈ offence.lines  : line.category = 'F'
+                                  AND line.shortCode ∉ excludedFinalShortCodes
+  AND ∄ line ∈ offence.lines  : line.shortCode ∈ { DDOTE, DDOTEL }
+```
+
+**Rationale for superseding R3**:
+- The original heuristic (any non-excluded line counts as final) produces a false positive whenever a relevant offence has only an adjournment recorded — the BA's defining negative case (scenarios doc, scenario 5). This is high-volume in production: every dangerous-driving offence that gets adjourned would trigger the warning before any final outcome is recorded.
+- The data we needed all along already exists. `category` is on cpp-ui-hearing's `ResolvedDraftResultLine` (results.interfaces.ts) and on cpp-context-hearing's `SharedResultsCommandResultLineV2`. Both call sites of the validator currently drop it before posting; the cost of threading it through is small and one-off, vastly preferable to a permanent rule-level heuristic.
+- The original concern that motivated R3 — "no upstream cross-repo coordination" — was only valid as long as DD-41656 was a single-repo feature. As the work expanded into a coordinated four-repo change anyway, the marginal cost of also adding `category` to the OpenAPI contract is negligible.
+- BA-readability: the new YAML reads "the F line whose shortCode isn't in the excluded set" — closer to how a BA describes the rule than "any line whose shortCode isn't in the excluded set".
+
+**Cross-repo plumbing (delivered under DD-41656, no separate Jira)**:
+
+| Repo | Change |
+|------|--------|
+| `api-cp-crime-hearing-results-validator` | Add `category: enum [A, I, F]` to `ResultLineDto` in `src/main/resources/openapi/openapi-spec.yml`. Bump library version. |
+| `cpp-ui-hearing` | Extend `buildResultLines` (`src/app/results/core/helpers/results-validation.ts`) to map `line.category` onto the request body. |
+| `cpp-context-hearing` | Add `private String category` + `withCategory(...)` builder to the locally hand-written `ResultLineDto` (parallel mirror, **not** regenerated from the contract — must be maintained alongside it). Populate `.category(line.getCategory())` in `ValidationRequestMapper.toValidationRequest`. Add unit-test coverage on the mapper. |
+| `service-cp-crime-hearing-results-validator` | Pull the new lib version. Update `DR-DISQ-001.yaml` and `DisqualificationExtendedTestPreprocessor.java` to read `category`. Retire the "any non-excluded line counts as final" inference. Add a positive integration test for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. |
+
+**Branch coordination**: each repo carries its own `DD-41656`-prefixed branch off whatever its current integration base is. This repo stays on `DD-41656-results-validation-warning` (001 is unmerged; rebasing onto a new branch would lose the existing implementation). For `cpp-context-hearing`, the open `DD-41715-custodial-concurrent-consecutive-check` branch raises a question: piggyback on it, or open a fresh DD-41656 branch off integration? A fresh branch is the safer default unless DD-41715 is about to merge.
+
+**Effect on R6 (CEL variables)**: the preprocessor now uses `category` to identify the F line, so the diagnostic count `excludedFinalCount` becomes "count of `'F'` lines whose shortCode is in the excluded set" rather than "any line whose shortCode is in the excluded set". A fresh count `finalNonExcludedCount` (= 1 if a qualifying F line exists, else 0) may be useful as the primary CEL variable. R6 should be re-derived during /speckit-plan re-run.
+
+**Out of scope** (carried forward from the user description):
+- Introducing a separate `isFinalResult: boolean` alongside `category` — the enum already encodes the signal.
+- Calling the result-definitions reference-data service from the validator at runtime — `category` already crosses the wire via the share command.
+
+**Alternatives considered (afresh, post-supersession)**:
+- *Stick with the short-code-set inference and add adjournment short codes to the excluded list.* Rejected — the excluded list is for "did not proceed" outcomes, not for "no outcome yet". Conflating them would muddy BA-readability and require the excluded list to be re-curated every time a new ancillary short code is introduced upstream.
+- *Add a single `isFinalResult: boolean` to the contract.* Rejected — the upstream domain models already carry the richer 3-value enum (`A`/`I`/`F`); collapsing to a boolean discards information that future rules might need (e.g. an "intermediary plea recorded but no final" rule).
 
 ---
 
@@ -172,7 +218,8 @@ messageTemplate: >-
 |---|----------|----------|
 | R1 | Reuse or new preprocessor? | New `DisqualificationExtendedTestPreprocessor` |
 | R2 | Refactor preprocessor dispatch? | Yes, before the new preprocessor ships (Constitution III) |
-| R3 | "Final result" detection | Per-offence rule over the result-line set; no upstream DTO change |
+| R3 | "Final result" detection (original) | ~~Per-offence rule over the result-line set; no upstream DTO change~~ **SUPERSEDED 2026-04-28 — see R3-revised** |
+| R3-revised | "Final result" detection (refined) | Read `category = 'F'` from the result line; four-repo contract change under DD-41656 |
 | R4 | Rule id | `DR-DISQ-001` |
 | R5 | Offence-level linkage | One context (and one `ValidationIssue`) per qualifying offence |
 | R6 | CEL variables | `qualifyingCount`, `relevantCount`, `excludedFinalCount`, `disqExtTestCount` |
