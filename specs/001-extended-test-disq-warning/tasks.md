@@ -8,6 +8,16 @@ description: "Tasks for DD-41656 — Extended Test Disqualification Warning"
 **Input**: Design documents from `/specs/001-extended-test-disq-warning/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
+## Revision — 2026-04-28
+
+The original 001 implementation (Phases 1–6, T001–T046) is complete and shipped to the DD-41656 branch. The 2026-04-28 spec revision (gate on `category = 'F'` rather than the short-code-set inference) introduces a coordinated four-repo change. Those tasks live in **Phase 7** below.
+
+The Phase 6 checkpoint *"Feature is complete, reviewed, and ready to merge"* is **superseded** — the feature is not ready to merge until Phase 7 lands. Specifically:
+
+- Phase 7 supersedes the test fixtures from T014–T032 in two narrow ways: (a) all relevant-offence test payloads must add `category` to result lines, and (b) the unit tests asserting the "any non-excluded line counts as final" behaviour are either deleted or rewritten to reflect the new gate.
+- Phase 7 adds a new headline **US4** (adjournment / no F line → no warning) per the spec's 2026-04-28 revision.
+- Phase 7 spans four repositories. Branch creation in the three external repos is an explicit task in this list, executed during implementation.
+
 **Tests**: TDD is mandatory per Constitution Principle VIII (NON-NEGOTIABLE). Every implementation task is preceded by a failing test task.
 
 **Organization**: Tasks are grouped by user story so each story is independently implementable, testable, and deployable. Phase 2 contains the Constitution-Principle-III prerequisite refactor that all user stories depend on.
@@ -161,7 +171,114 @@ Single-module Spring Boot service:
 - [X] T045 Run the `qa` reviewer agent against the diff. Expected: PASS (verifies failing-test-before-prod-code commit ordering per Constitution VIII).
 - [ ] T046 Open the PR. Description MUST cite Constitution Principles I, III, VI, VIII (the principles this change touches) per Workflow / Governance.
 
-**Checkpoint**: Feature is complete, reviewed, and ready to merge.
+**Checkpoint**: ~~Feature is complete, reviewed, and ready to merge.~~ **SUPERSEDED 2026-04-28** — original 001 implementation merged-able as a refactor + initial rule shape, but production behaviour requires Phase 7's `category = 'F'` gate to land before share is fit for purpose. See Phase 7 below.
+
+---
+
+## Phase 7: Revision (2026-04-28) — `category = 'F'` Cross-Repo Gate
+
+**Purpose**: Replace the rule's short-code-set inference of "is this a final result?" with a direct read of `ResultLineDto.category === 'F'`. Spans four repositories under DD-41656 (no separate Jira). Adds positive coverage of BA scenario 5 (adjournment `'A'` on a relevant offence → no warning) as the headline new behaviour (US4).
+
+**⚠️ CRITICAL ordering**:
+
+1. The api repo's lib publish (T7-API-*) **must complete first** — without it, the validator service and cpp-context-hearing have no `category` field on `ResultLineDto` to read.
+2. cpp-ui-hearing's TypeScript change has no Java-lib dependency and can run in parallel with the api lib publish.
+3. The validator service (this repo) and cpp-context-hearing both pull the new lib version once published, then continue independently.
+
+### Sub-phase 7.0: Branch creation (run during implementation)
+
+**Purpose**: Create the per-repo working branches before any code change. All branches are off the integration base specified in [plan.md "Cross-Repo Coordination"](./plan.md#cross-repo-coordination-2026-04-28).
+
+- [ ] T100 [BR] Confirm this repo (`service-cp-crime-hearing-results-validator`) is on `DD-41656-results-validation-warning`. Run `git status` and `git rev-parse --abbrev-ref HEAD` from `/home/sachin/moj/service-cp-crime-hearing-results-validator`. No new branch needed (already open from original 001 work).
+- [ ] T101 [BR] In `/home/sachin/moj/cpp-context-hearing`: `git fetch origin && git switch -c DD-41656-results-validation-warning origin/team/DD-41715-results-validator && git push -u origin DD-41656-results-validation-warning`. Branches off `team/DD-41715-results-validator` to inherit the in-flight `ShareResultsCommandHandler` HTTP-call wiring (project memory `project_hearing_validator_integration.md`).
+- [ ] T102 [BR] In `/home/sachin/moj/cpp-ui-hearing`: `git fetch origin && git switch -c DD-41656-results-validation-warning origin/team/result-validation && git push -u origin DD-41656-results-validation-warning`. Branches off `team/result-validation` to inherit the pre-share validation wiring.
+- [ ] T103 [BR] In `/home/sachin/moj/api-cp-crime-hearing-results-validator`: confirm working from `main` (no feature branch — the ACR publish pipeline only runs on `main`). If a short-lived PR is preferred for review, create a feature branch and prepare to fast-merge after green CI.
+
+**Checkpoint**: All four repos are on the correct branch. Phase 7 work begins.
+
+### Sub-phase 7.A: api-cp-crime-hearing-results-validator — OpenAPI extension + lib publish
+
+**Purpose**: Add `category: enum [A, I, F]` to `ResultLineDto` in the OpenAPI spec, bump lib version, publish to ACR.
+
+- [ ] T104 [API] In `/home/sachin/moj/api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml`, add `category` to `ResultLineDto.properties` per `contracts/rule-DR-DISQ-001.md` "Upstream contract delta": `type: string`, `enum: [A, I, F]`, optional, with the BA-readable description. Validate the file parses cleanly with the project's OpenAPI generator.
+- [ ] T105 [API] Bump the lib version in the api repo's build file (`build.gradle` or equivalent — confirm by inspection) per the repo's existing semver convention. Commit message: `feat(contract): add category enum to ResultLineDto for DD-41656`.
+- [ ] T106 [API] Merge / push to `main` and confirm the ACR publish pipeline runs cleanly. Wait for the new lib version to appear in ACR.
+- [ ] T107 [API] [P] Capture the published lib version (e.g. `libs.api.hearing.results.validator:1.X.Y`) in this spec's plan.md "Cross-Repo Coordination" table footnote, so downstream tasks know the exact version to pin.
+
+**Checkpoint**: New lib version is published. Downstream repos can now bump their dependency.
+
+### Sub-phase 7.B: cpp-context-hearing — parallel-mirror DTO + mapper + tests
+
+**Purpose**: Add `category` to the locally hand-written `ResultLineDto` (parallel mirror), populate it from `SharedResultsCommandResultLineV2` in `ValidationRequestMapper`, and prove it via mapper unit tests. **Depends on T106.**
+
+- [ ] T108 [CCH] [P] Failing unit test: in cpp-context-hearing, locate the existing `ValidationRequestMapperTest` (or create one if missing). Add a test asserting that `toValidationRequest` copies `category` from `SharedResultsCommandResultLineV2` onto each output `ResultLineDto`, for each of the three category values (`A`, `I`, `F`) and the null case. Test must fail until T109 + T110 are done.
+- [ ] T109 [CCH] In cpp-context-hearing, edit `hearing-command/hearing-command-handler/src/main/java/uk/gov/moj/cpp/hearing/command/handler/service/validation/ResultLineDto.java` (the hand-written parallel mirror — **not** generated). Add `private String category` and a `withCategory(String)` builder method matching the existing fluent-builder style. Add a brief class-level Javadoc reminding future authors this DTO is a manual mirror of the OpenAPI contract at `api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml`.
+- [ ] T110 [CCH] In cpp-context-hearing, edit `ValidationRequestMapper.toValidationRequest` to invoke `.withCategory(line.getCategory())` for each result line. Compile error if `SharedResultsCommandResultLineV2.getCategory()` is unavailable — confirm it exists at line 48 per the spec; if it doesn't, surface as a blocker before continuing.
+- [ ] T111 [CCH] Bump cpp-context-hearing's `libs.api.hearing.results.validator` dependency version to the one published in T106 (only if cpp-context-hearing consumes the lib for its outbound call — confirm by searching for the dependency in the repo's build files). If the local hand-written DTO is the *only* consumer, no lib bump is needed in this repo.
+- [ ] T112 [CCH] Run the cpp-context-hearing module build (`mvn -pl hearing-command/hearing-command-handler verify` or `gradle test` per the repo's tooling) and confirm T108 is green.
+
+**Checkpoint**: cpp-context-hearing now ships `category` over the wire to the validator at share time.
+
+### Sub-phase 7.C: cpp-ui-hearing — `buildResultLines` extension
+
+**Purpose**: Map `category` from the resolved draft line onto the validation request body in the pre-share path. **Independent of T106 (pure TypeScript, no Java lib dep).**
+
+- [ ] T113 [UI] [P] Failing unit test: in cpp-ui-hearing, locate or create a unit test for `buildResultLines` (`src/app/results/core/helpers/results-validation.ts`). Add a case asserting that `buildResultLines` includes `category` on each output line, sourced from `ResolvedDraftResultLine.category` (line 71 of `src/app/results/results.interfaces.ts`), for each of `A`, `I`, `F`, and the undefined case. Test must fail until T114.
+- [ ] T114 [UI] In cpp-ui-hearing, extend `buildResultLines` in `src/app/results/core/helpers/results-validation.ts` to map `line.category` onto the request body. Preserve the existing line-shape; the new field should be additive.
+- [ ] T115 [UI] Run the cpp-ui-hearing unit-test suite (`npm test` or per the repo's tooling), TypeScript compile, and lint. Confirm T113 is green and no other tests regress.
+
+**Checkpoint**: cpp-ui-hearing now ships `category` over the wire to the validator at pre-share validation time.
+
+### Sub-phase 7.D: service-cp-crime-hearing-results-validator (this repo) — preprocessor tightening + US4 + regression updates
+
+**Purpose**: Bump the lib version, update `DisqualificationContext` and `DisqualificationExtendedTestPreprocessor` to gate on `category = 'F'`, add the US4 BA-scenario-5 IT, and update existing US1/US2/US3 test fixtures to include `category` on F lines. **Depends on T106.**
+
+#### Lib version bump
+
+- [ ] T116 [VAL] In this repo's `build.gradle`, bump `libs.api.hearing.results.validator` to the version from T107. Run `gradle dependencies | grep validator` to confirm the new version resolves and `gradle compileJava` to confirm the new `category` getter is on `ResultLineDto`.
+
+#### Tests for User Story 4 (TDD — write failing first) ⚠️
+
+**US4 (P1)**: Suppress the warning when no final result is recorded yet (BA scenarios doc, scenario 5). The headline behaviour change of the 2026-04-28 revision.
+
+**Independent Test**: `POST /api/validation/validate` with a payload containing one defendant, one offence with `offenceCode: "RT88026"`, and one result line with `category: "A"` (e.g. `shortCode: "ADJN"`) against that offence. The response must contain zero `DR-DISQ-001` issues.
+
+- [ ] T117 [P] [US4] Failing unit test: in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested class NoFinalLine` covering: (a) relevant offence + only `category='A'` line (`ADJN`) → `qualifyingCount == 0` and `finalCategoryCount == 0`; (b) relevant offence + only `category='I'` line → `qualifyingCount == 0` and `finalCategoryCount == 0`; (c) relevant offence + multiple lines, all `category` ∈ `{A, I}` → `qualifyingCount == 0`; (d) relevant offence + line with `category=null` → `qualifyingCount == 0` (FR-015 fail-safe); (e) relevant offence + line with `category="X"` (unrecognised) → `qualifyingCount == 0`. Test must fail until T120 + T121 land.
+- [ ] T118 [P] [US4] Failing IT: in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/DisqualificationExtendedTestRuleIT.java`, add `@Nested class AdjournmentDoesNotWarn` performing the BA-scenario-5 Independent Test (POST with `RT88026 + ADJN/category=A`). Assert response contains zero `DR-DISQ-001` issues. This is the canonical regression test for SC-002.
+- [ ] T119 [P] [US4] Failing unit test: in `DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested class CategoryF_GateBoundary` covering: (a) offence with two F lines, both `excluded shortCode` → `qualifyingCount == 0`, `finalCategoryCount == 2`, `excludedFinalCount == 2`; (b) offence with two F lines, one excluded one not → `qualifyingCount == 1` (at-least-one-non-excluded-F-line wins); (c) offence with `category='F'` line + `DDOTE` line on `category='I'` → `qualifyingCount == 0` (DDOTE on I-line still suppresses).
+
+#### Update existing US1/US2/US3 test fixtures (regression)
+
+- [ ] T120 [VAL] In `DisqualificationExtendedTestPreprocessorTest.java`, walk through every test method that constructs a `ResultLineDto` and add `category` to the fixture: `'F'` for any line representing a final outcome (`COEW`, `IMP`, `wdrn`, etc.); `'I'` for `DDOTE`/`DDOTEL` lines (per the contract — disqualifications are intermediary, not final-status-determining); `'A'` for any newly-added adjournment line. Existing assertions on `qualifyingCount`, `excludedFinalCount`, `disqExtTestCount` must still hold given the new gate semantics.
+- [ ] T121 [VAL] [P] In `DisqualificationExtendedTestRuleIT.java`, do the same fixture update — every payload's `resultLines[].category` is set to `F`/`I`/`A` per the contract.
+- [ ] T122 [VAL] [P] **Supersede** any existing test that asserted "non-excluded line on the offence counts as final" (the old inference). Identify these by grep — likely candidates: tests for "novel short code warns" or any test asserting `excludedFinalCount > 0` on a non-F line. Either delete the test (if its only purpose was to assert the inference) or rewrite it to use `category='F'` correctly. Add a one-line `// Was: <old assertion>; revised 2026-04-28 per spec.md US4 / FR-015` comment **only** where the supersession is non-obvious; otherwise just rewrite cleanly.
+
+#### Production code changes
+
+- [ ] T123 [VAL] [US4] Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/DisqualificationContext.java` per data-model.md: add `long finalCategoryCount` field (between `relevantCount` and `excludedFinalCount`); update `toCelContext()` to include `"finalCategoryCount"`; record constructor signature changes accordingly. Update any test factories that build `DisqualificationContext` instances directly (likely none — tests build via the preprocessor).
+- [ ] T124 [VAL] [US4] Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/DisqualificationExtendedTestPreprocessor.java` per data-model.md "Algorithm (revised 2026-04-28)": replace the `hasNonExcludedFinal` derivation with `finalLines = lines where category equals 'F' (case-insensitive, fail-safe on missing/malformed)`; compute `finalCategoryCount`; tighten `excludedFinalCount` to count only F lines with excluded shortCode; rewrite `qualifying = relevant && finalNonExcluded && !disqExtTest`. Add an INFO log line via `@Slf4j` once per request when an unrecognised non-A/I/F category value is observed (mention the value, the offence id, but NOT any PII or freeform label content). Constitution VII — SLF4J only.
+- [ ] T125 [VAL] Run `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessorTest" --tests "uk.gov.hmcts.cp.services.rules.cel.integration.DisqualificationExtendedTestRuleIT"`. Confirm all unit + integration tests are green, including T117–T119 (new) and T120–T122 (regression).
+- [ ] T126 [VAL] Run `gradle build` for the canonical green-build gate (Checkstyle Google `maxWarnings=0` + PMD + full test suite). Required before opening a PR.
+- [ ] T127 [VAL] Run `gradle api` to execute the live API tests against the docker-compose stack. New `category` field must round-trip cleanly through the deserialised request shape end-to-end.
+
+#### Quickstart smoke + reviewer agents
+
+- [ ] T128 [VAL] [P] Manually walk through the updated `quickstart.md` against `gradle bootRun` locally: hit the warns / excluded suppresses / DDOTE suppresses / **adjournment suppresses** / two qualifying offences / DB-override scenarios. Confirm responses match the expected outputs per quickstart.md.
+- [ ] T129 [VAL] [P] Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (no schema change — still expected COMPLIANT) plus any updated YAML.
+- [ ] T130 [VAL] [P] Run the `code-reviewer` reviewer agent against the diff. Expected: PASS. Watch for: `category` parsing being robust (case-insensitive, fail-safe on missing); INFO log not leaking PII; no orphaned references to the old inference logic.
+- [ ] T131 [VAL] [P] Run the `qa` reviewer agent against the diff. Expected: PASS — verifies failing-test-before-prod-code commit ordering on T117/T118/T119 → T123/T124 (Constitution VIII).
+
+### Sub-phase 7.E: PRs and integration
+
+**Purpose**: Open four PRs (one per repo) with cross-references in each description so reviewers can traverse the change set.
+
+- [ ] T132 [PR] Open PR in `api-cp-crime-hearing-results-validator` (or merge to `main` directly per repo policy). PR title: `feat(contract): add category enum to ResultLineDto for DD-41656`. Description cites the four-repo coordination plan and links to this `specs/001-extended-test-disq-warning/` directory.
+- [ ] T133 [PR] Open PR in `cpp-context-hearing` (`DD-41656-results-validation-warning` → `team/DD-41715-results-validator`). PR title: `feat(validation): thread category through to validator request for DD-41656`. Description references T132 and the parallel-mirror DTO.
+- [ ] T134 [PR] Open PR in `cpp-ui-hearing` (`DD-41656-results-validation-warning` → `team/result-validation`). PR title: `feat(results): include category on pre-share validation request for DD-41656`. Description references T132.
+- [ ] T135 [PR] Open PR in this repo (`DD-41656-results-validation-warning` → `main`). PR title: `feat(rules): tighten DR-DISQ-001 to gate on category='F' for DD-41656`. Description cites Constitution Principles I, III, VI, VIII (per Workflow / Governance) and references the original 001 work plus T132/T133/T134.
+- [ ] T136 [PR] [P] After all four PRs are open and green, run `/speckit-analyze` against this spec dir for cross-artifact consistency before merging. Expected: clean (or surfaced findings approved one at a time per project memory `feedback_speckit_analyze_review.md`).
+
+**Checkpoint**: All four PRs are open, green, cross-referenced, and reviewer-approved. Merge order: T132 (api lib publish on `main`) → T133 + T134 + T135 (in any order, after each pulls the new lib version where applicable). Coordinate with the team to merge in a window where the four-way drift risk is minimised.
 
 ---
 
@@ -175,12 +292,14 @@ Single-module Spring Boot service:
 - **User Story 2 (Phase 4 / P2)**: requires US1 green. T024–T027 (failing tests) → T028–T029 (verify pass).
 - **User Story 3 (Phase 5 / P2)**: requires US1 green. Independent of US2. T030–T032 (failing tests) → T033–T034 (verify pass).
 - **Polish (Phase 6)**: requires US1 + US2 + US3 green.
+- **Revision Phase 7 (2026-04-28)**: requires Phase 6 green (or at least US1 green; the registry refactor and rule scaffolding from Phase 2/3 are prerequisites). Internal order: 7.0 (branch creation) → 7.A (api lib publish, T104–T107) → **fan-out**: 7.B (cpp-context-hearing) and 7.D (this repo) both depend on T106; 7.C (cpp-ui-hearing) is independent of 7.A and can run in parallel; → 7.E (PRs and integration).
 
 ### User Story Dependencies
 
 - **US1 (P1)**: depends on Phase 2 only. Can ship as MVP.
 - **US2 (P2)**: depends on US1. (Tests added to US1's test files; the gates suppression logic ships in US1 already, but until the US2 test coverage exists, the suppression is unverified.)
 - **US3 (P2)**: depends on US1. Independent of US2.
+- **US4 (P1, NEW 2026-04-28)**: depends on US1 + Phase 7.A (lib publish). The new headline behaviour change. Tasks live in Phase 7.D (T117–T119 failing tests, T123/T124 production). The US1/US2/US3 fixture-update tasks (T120–T122) are technically regression upkeep, not US4 per se, but ship in the same Phase 7.D PR.
 
 ### Within Each User Story
 
@@ -194,6 +313,12 @@ Single-module Spring Boot service:
 - **Phase 3**: T014, T015, T016, T018 are [P] — T014–T016 are in the same file but no, wait, T014/T015/T016 add new `@Nested` classes to the same file (`DisqualificationExtendedTestPreprocessorTest.java`), so they are NOT [P] across each other. T018 is in a different file, so it IS [P] vs T014–T017. The marks above reflect this. Within T019/T020/T021 production work, T019 (new file `DisqualificationContext.java`) is [P] vs T020 (modify `PreprocessingDefinition.java`), but T021 reads the `PreprocessingDefinition` shape so it cannot run before T020 — sequential.
 - **Phase 4 / Phase 5**: US2 and US3 can be developed in parallel by different developers (different `@Nested` classes within the same test files; merge resolved by the test runner).
 - **Phase 6**: T035 ([P], new file), T037 ([P], read-only checks), T038 ([P], read-only), T042 ([P], external) are independent.
+- **Phase 7.0 (branches)**: T101 + T102 + T103 are [P] — three different repos, no inter-dependencies.
+- **Phase 7.A vs 7.C**: api repo publish (T104–T107) and cpp-ui-hearing buildResultLines work (T113–T115) are fully parallel — UI has no Java-lib dependency.
+- **Phase 7.B vs 7.D**: cpp-context-hearing (T108–T112) and this repo (T116–T127) both pull the new lib version after T106 lands, then run in parallel against each other.
+- **Phase 7.D internal**: T117 + T118 + T119 are [P] — different test fixtures across two test files. T120 + T121 + T122 are [P] (regression updates to existing tests, two files). T123 + T124 are sequential (T124 reads the new field added in T123).
+- **Phase 7.D reviewer agents**: T128 + T129 + T130 + T131 are all [P] — each agent reads independently.
+- **Phase 7.E PRs**: T132 unblocks T133/T134/T135. After all four PRs are open, T136 (analyze) runs once.
 
 ---
 
@@ -221,6 +346,29 @@ Task: "DisqualificationContext record in src/main/java/uk/gov/hmcts/cp/services/
 Task: "PreprocessingDefinition: add three optional list fields"                                                          # T020 (sequential before T021)
 ```
 
+## Parallel Example: Phase 7 Sub-phases
+
+```bash
+# After T101–T103 (branches) are done, the four-repo work fans out:
+
+# Sub-phase 7.A (api repo): sequential — must publish before consumers can pull.
+# T104 → T105 → T106 → T107.
+
+# Sub-phase 7.C (cpp-ui-hearing): can start immediately (no Java lib dep).
+Task: "T113 [UI] Failing buildResultLines test"
+Task: "T114 [UI] Extend buildResultLines"
+Task: "T115 [UI] Run UI test suite"
+
+# After T106 lands, sub-phases 7.B and 7.D fan out in parallel:
+Task: "T108–T112 [CCH] cpp-context-hearing parallel-mirror DTO + mapper + tests"
+Task: "T116–T127 [VAL] this repo: lib bump + preprocessor tightening + US4 + regression"
+
+# Within 7.D, the failing tests fan out:
+Task: "T117 [P] [US4] NoFinalLine @Nested in PreprocessorTest"
+Task: "T118 [P] [US4] AdjournmentDoesNotWarn @Nested in IT"
+Task: "T119 [P] [US4] CategoryF_GateBoundary @Nested in PreprocessorTest"
+```
+
 ---
 
 ## Implementation Strategy
@@ -234,18 +382,35 @@ Task: "PreprocessingDefinition: add three optional list fields"                 
 
 ### Incremental Delivery
 
-The recommended PR breakdown is two PRs:
+The recommended PR breakdown for the original 001 work was two PRs:
 
 - **PR 1**: Phase 1 + Phase 2 (registry refactor only). Title: `refactor(rules): dispatch preprocessors via PreprocessorRegistry`. Description cites Constitution III. No behaviour change; review focuses on the no-regression contract.
 - **PR 2**: Phase 3 + Phase 4 + Phase 5 + Phase 6 (the new rule and its full test coverage). Title: `feat(rules): add DR-DISQ-001 extended test disqualification warning`. Description cites Constitution I (YAML-first), VI (severity ceiling), VIII (TDD).
 
+For Phase 7 (2026-04-28 revision), the PR shape is **four PRs across four repos** (one per repo), per Phase 7.E:
+
+- **PR 7.A** (`api-cp-crime-hearing-results-validator`, on `main`): contract-only, ships first.
+- **PR 7.B** (`cpp-context-hearing`): consumes new lib + parallel-mirror DTO + mapper.
+- **PR 7.C** (`cpp-ui-hearing`): TypeScript-only, independent of the lib publish, can ship in parallel with PR 7.A.
+- **PR 7.D** (this repo, `service-cp-crime-hearing-results-validator`): consumes new lib + tightens preprocessor + adds US4 IT.
+
 ### Parallel Team Strategy
 
-With two developers:
+With two developers (original 001):
 
 1. Both pair on Phase 2 (small, high-risk). Land PR 1.
 2. Once PR 1 is merged: Developer A picks up US1 (T014–T023). Developer B starts US2 + US3 test scaffolding (T024–T032) on top of US1's branch via stacked PRs.
 3. Polish (Phase 6) runs as a final pass once all three user stories are green.
+
+For Phase 7 (2026-04-28 revision) with four developers (one per repo, ideal):
+
+1. All four pair on T100–T103 (branch creation) and align on the published lib version target.
+2. Developer A (api repo): drives 7.A end-to-end. This is the long pole — others wait for T106 before they can pull the new lib.
+3. Developer C (cpp-ui-hearing): runs 7.C in parallel — TypeScript-only, no lib dep.
+4. After T106 lands: Developer B (cpp-context-hearing) and Developer D (this repo) run 7.B and 7.D in parallel.
+5. All four converge on 7.E (open and merge PRs in dependency order).
+
+With one developer doing all four repos (realistic), execute strictly in order: 7.0 → 7.A → 7.C → 7.B → 7.D → 7.E. Total cost: two non-trivial Java-lib bumps and a TS update; each repo's CI runs are the limiting factor.
 
 ---
 

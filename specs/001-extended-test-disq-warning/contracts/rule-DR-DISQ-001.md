@@ -1,6 +1,44 @@
 # Contract — `DR-DISQ-001` Extended Test Disqualification Warning
 
-This is the contract for the new validation rule. The HTTP API contract (`POST /api/validation/validate`) and the request/response DTOs (`DraftValidationRequest`, `OffenceDto`, `ResultLineDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`) are owned upstream by `libs.api.hearing.results.validator` and are unchanged by this feature.
+This is the contract for the new validation rule. The HTTP API contract (`POST /api/validation/validate`) is owned upstream by `libs.api.hearing.results.validator`. **As of the 2026-04-28 revision, `ResultLineDto` is being extended** to add `category: enum [A, I, F]` (Ancillary / Intermediary / Final). All other DTOs (`DraftValidationRequest`, `OffenceDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`) are unchanged.
+
+The original "unchanged by this feature" assertion is **superseded** — see the [Upstream contract delta](#upstream-contract-delta-2026-04-28) section below.
+
+---
+
+## Upstream contract delta (2026-04-28)
+
+The OpenAPI source-of-truth at `/home/sachin/moj/api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml` is extended. Added field on `ResultLineDto`:
+
+```yaml
+ResultLineDto:
+  type: object
+  required:
+    - id
+    - shortCode
+    # ... existing required fields
+  properties:
+    # ... existing properties (id, shortCode, label, defendantId, offenceId, isConcurrent, consecutiveToOffence)
+    category:
+      type: string
+      enum: [A, I, F]
+      description: >-
+        Closed enum identifying the role of this result line on the offence:
+        A = Ancillary (e.g. adjournment, listing); I = Intermediary
+        (e.g. plea, hearing-internal); F = Final (the line that makes
+        the offence inactive).
+```
+
+Notes:
+
+- `category` is **optional** at the schema level for transitional compatibility — older callers that have not yet been upgraded will still produce valid payloads. The validator's `DisqualificationExtendedTestPreprocessor` falls back to FR-015 fail-safe behaviour (treat as non-final → no warning) when `category` is absent.
+- Library version is bumped per semantic versioning. The lib publishes to ACR on merge to `main` of the API repo (CI/CD-shaped constraint — see plan.md "Cross-Repo Coordination").
+- Consumers that need to *write* `category` upstream (i.e. `cpp-ui-hearing` and `cpp-context-hearing`) need to: (a) pull the new lib version once published; (b) populate the field from their local domain models (`ResolvedDraftResultLine.category` / `SharedResultsCommandResultLineV2.category`); (c) confirm there is no client-side code path that strips unknown fields.
+- `cpp-context-hearing` carries a hand-written parallel-mirror `ResultLineDto` (not regenerated from this contract). That file is updated in lockstep — see plan.md "Cross-Repo Coordination" row 2.
+
+### Rule-engine consumption
+
+`DisqualificationExtendedTestPreprocessor` reads `category` once per result line during preprocessing. Comparison is case-insensitive against the literal `'F'` (and against the validation set `{A, I, F}` for the FR-015 logging branch). No CEL expression references `category` directly — the preprocessor distils it into the existing `qualifyingCount > 0` boolean and the new `finalCategoryCount` diagnostic counter (see data-model.md).
 
 ---
 
@@ -70,7 +108,7 @@ Notes:
 | One context per | offence in the request |
 | Context size | exactly `request.getOffences().size()` |
 
-Each `DisqualificationContext` exposes the CEL variables documented in `data-model.md` §`DisqualificationContext`. The condition `qualifyingCount > 0` fires for any offence that meets all four gates (relevant, has non-excluded result, no excluded result, no DDOTE/DDOTEL).
+Each `DisqualificationContext` exposes the CEL variables documented in `data-model.md` §`DisqualificationContext`. The condition `qualifyingCount > 0` fires for any offence that meets all three gates (revised 2026-04-28): **relevant offence code** AND **at least one F-category line whose shortCode is non-excluded** AND **no DDOTE/DDOTEL line on the offence**. The previous "no excluded result on the offence" gate is folded into the F-line check (an offence whose only F line carries an excluded shortCode has no non-excluded F line, so the rule does not fire).
 
 ---
 
@@ -112,6 +150,7 @@ When the Azure App Configuration `RESULTS_VALIDATION` feature flag is OFF, `Defa
 
 ## Backward compatibility
 
-- The HTTP API contract is unchanged. Consumers get one extra `ValidationIssue` element under qualifying conditions; otherwise no change.
-- Existing rule `DR-SENT-002` is unchanged in behaviour. Its preprocessor wiring moves from "constructor parameter" to "registry lookup" but its YAML, its `CustodialPreprocessor` algorithm, and its emitted issues are byte-identical.
-- The `GET /api/validation/rules` endpoint will return both rules. The `GET /api/validation/rules/{ruleId}` endpoint will work for `DR-DISQ-001`.
+- **HTTP API contract** (revised 2026-04-28) — `ResultLineDto.category` is added as an **optional** field. Existing callers that omit it produce valid payloads; the validator treats them under FR-015 fail-safe (no recognised F line → no warning). This ensures the lib bump can be rolled out before all callers populate `category`.
+- **Older payloads transitional behaviour** — for the period between the lib publish and all callers being upgraded, the rule will be silent on relevant offences (because no F line is identifiable). This is preferable to a noisy false-positive period; ops can monitor `finalCategoryCount = 0` rates to track caller-upgrade progress.
+- **Existing rule `DR-SENT-002` is unchanged in behaviour.** Its preprocessor wiring moves from "constructor parameter" to "registry lookup" but its YAML, its `CustodialPreprocessor` algorithm, and its emitted issues are byte-identical. `DR-SENT-002` does not consume `category`.
+- **Validator `/api/validation/rules` endpoint** — returns both rules. The `GET /api/validation/rules/{ruleId}` endpoint will work for `DR-DISQ-001`.

@@ -1,6 +1,14 @@
 # Phase 1 Data Model — DD-41656
 
-This document captures the in-process value types introduced or modified by this feature. Request/response DTOs are owned upstream by `libs.api.hearing.results.validator` and are unchanged — see `contracts/rule-DR-DISQ-001.md` for how this rule consumes them.
+This document captures the in-process value types introduced or modified by this feature. Request/response DTOs are owned upstream by `libs.api.hearing.results.validator` — **the contract is being extended in this revision** to add `category: enum [A, I, F]` to `ResultLineDto`. See `contracts/rule-DR-DISQ-001.md` for the full contract change and how this rule consumes it.
+
+## Revision — 2026-04-28
+
+Original line "Request/response DTOs are owned upstream … and are unchanged" is **superseded**. The companion change to `libs.api.hearing.results.validator` adds `category: enum [A, I, F]` to `ResultLineDto`; this rule now reads it directly. Internal type changes:
+
+- `DisqualificationContext` field `excludedFinalCount` keeps its name but its **semantics tighten**: was "any line on offence with shortCode in excluded set"; now "F-category line on offence with shortCode in excluded set". This change is invisible to the YAML — the field's role as a diagnostic counter is unchanged — but rule authors composing future conditions on `excludedFinalCount` should be aware.
+- The preprocessor's algorithm step 4 (`hasNonExcludedFinal` derivation) is rewritten to gate on `category = 'F'`. The diagnostic counter `finalCategoryCount` is added alongside `excludedFinalCount` so authors can distinguish "no final result yet" (`finalCategoryCount = 0`) from "final result is excluded" (`finalCategoryCount > 0 && excludedFinalCount > 0`).
+- A fail-safe branch is added for missing or malformed `category` values (per FR-015): only lines with `category` matching `'F'` (case-insensitive) count as final. Any other value (`A`, `I`, null, empty, anything unrecognised) is treated as non-final, so a relevant offence with no recognised F line silently produces no warning. Logged at INFO if a non-A/I/F category is observed, to surface upstream contract violations during integration.
 
 ---
 
@@ -41,7 +49,8 @@ public record DisqualificationContext(
         String offenceId,
         long qualifyingCount,
         long relevantCount,
-        long excludedFinalCount,
+        long finalCategoryCount,    // NEW (2026-04-28): count of F-category lines on offence
+        long excludedFinalCount,    // semantics tightened to F-category lines only
         long disqExtTestCount,
         List<String> qualifyingOffenceIds,
         List<String> allOffenceIds
@@ -53,6 +62,7 @@ public record DisqualificationContext(
         return Map.of(
             "qualifyingCount",     qualifyingCount,
             "relevantCount",       relevantCount,
+            "finalCategoryCount",  finalCategoryCount,
             "excludedFinalCount",  excludedFinalCount,
             "disqExtTestCount",    disqExtTestCount
         );
@@ -68,15 +78,16 @@ public record DisqualificationContext(
 }
 ```
 
-Field semantics (per offence — see R6):
+Field semantics (per offence — see R6, refined by R3-revised 2026-04-28):
 
 | Field | Value |
 |-------|-------|
 | `offenceId` | The offence id this context represents (also the singleton in `qualifyingOffenceIds` when qualifying). |
-| `qualifyingCount` | `1` if relevant + non-excluded final result + no DDOTE/DDOTEL, else `0`. |
+| `qualifyingCount` | `1` if relevant **AND** at least one F-category line on the offence has a non-excluded short code **AND** no line on the offence has shortCode `DDOTE`/`DDOTEL`, else `0`. |
 | `relevantCount` | `1` if `OffenceDto.offenceCode` ∈ relevant set, else `0`. |
-| `excludedFinalCount` | `1` if any result line on this offence has shortCode ∈ excluded set, else `0`. |
-| `disqExtTestCount` | `1` if any result line on this offence has shortCode `DDOTE` or `DDOTEL`, else `0`. |
+| `finalCategoryCount` | Count of result lines on this offence whose `category` equals `'F'` (case-insensitive). `0` means no final result has been recorded yet — the rule cannot fire. |
+| `excludedFinalCount` | Count of **F-category** result lines on this offence whose shortCode is in the excluded list. (Semantics tightened 2026-04-28 — previously counted any line on the offence regardless of category.) |
+| `disqExtTestCount` | `1` if any result line on this offence has shortCode `DDOTE` or `DDOTEL` (regardless of category), else `0`. |
 | `qualifyingOffenceIds` | Singleton `[offenceId]` when qualifying, empty otherwise. |
 | `allOffenceIds` | Singleton `[offenceId]` (used for ordering by `OffenceDisplayHelper`). |
 
@@ -124,7 +135,7 @@ public class PreprocessorRegistry {
 
 Implements `ValidationPreprocessor` with `type() = "disqualification-extended-test"`.
 
-Algorithm:
+Algorithm (revised 2026-04-28 — gate on `category = 'F'`):
 
 1. Build `Map<String, OffenceDto> offenceById` from `request.getOffences()`.
 2. Build `Map<String, List<ResultLineDto>> resultsByOffence` by grouping `request.getResultLines()` on `offenceId`.
@@ -132,17 +143,20 @@ Algorithm:
    - `relevantOffenceCodes: List<String>` (the five Home Office codes; matched case-insensitively against `OffenceDto.offenceCode`).
    - `excludedFinalShortCodes: List<String>` (the nine excluded codes).
    - `extendedTestShortCodes: List<String>` (`DDOTE`, `DDOTEL`).
-4. For each offence (iterating `offenceById.entrySet()`):
-   - Compute `relevant = offenceCode ∈ relevantOffenceCodes` (case-insensitive).
-   - Compute `excludedFinal = ∃ result on this offence with shortCode ∈ excludedFinalShortCodes` (case-insensitive).
-   - Compute `disqExtTest = ∃ result on this offence with shortCode ∈ extendedTestShortCodes` (case-insensitive).
-   - Compute `hasNonExcludedFinal = ∃ result on this offence whose shortCode is **neither** excluded **nor** an extended-test code` (case-insensitive).
-   - `qualifying = relevant && hasNonExcludedFinal && !excludedFinal && !disqExtTest`.
+4. For each offence (iterating `offenceById.entrySet()`), iterate the result lines on that offence and compute:
+   - `relevant = offenceCode ∈ relevantOffenceCodes` (case-insensitive).
+   - `finalLines = result lines on this offence where category equals 'F'` (case-insensitive). Lines with `category` missing, null, or any value other than `'A'`, `'I'`, `'F'` are **not** treated as final (FR-015 fail-safe). Non-A/I/F values are logged at INFO once per request to surface upstream contract violations during integration.
+   - `finalCategoryCount = |finalLines|`.
+   - `finalNonExcluded = ∃ line ∈ finalLines : line.shortCode ∉ excludedFinalShortCodes` (case-insensitive). This is the rule's **positive gate**.
+   - `excludedFinalCount = count of lines in finalLines whose shortCode ∈ excludedFinalShortCodes`. (Diagnostic only — does **not** drive `qualifying` directly; if every F line is excluded then `finalNonExcluded` is false anyway.)
+   - `disqExtTest = ∃ result on this offence (regardless of category) with shortCode ∈ extendedTestShortCodes` (case-insensitive). DDOTE/DDOTEL on an `A`/`I` line still suppresses — the rule's purpose is satisfied wherever the disqualification line sits.
+   - `qualifying = relevant && finalNonExcluded && !disqExtTest`.
 5. Emit one `DisqualificationContext` per offence (keyed on offenceId in the returned map). Non-relevant offences produce a context with all counts `0` and an empty `qualifyingOffenceIds` — the CEL condition `qualifyingCount > 0` then fails for them, producing no issue.
 
 Notes:
 - Returning a context for every offence (including non-relevant ones) is simpler than filtering and matches the existing `CustodialPreprocessor` pattern of "let CEL decide".
-- All short-code comparisons are upper-cased once at the start (matching `CustodialPreprocessor`'s style).
+- All short-code and `category` comparisons are upper-cased once at the start (matching `CustodialPreprocessor`'s style). For `category`, valid values after normalisation are `A`, `I`, `F`; any other value falls into the FR-015 fail-safe path and is treated as non-final.
+- The previous "anything-not-excluded counts as final" inference is **retired**. Result lines with `category` ∈ `{A, I}` are no longer evidence of finality; an offence with only such lines correctly produces no warning (BA scenarios doc, scenario 5).
 
 ### `PreprocessingDefinition` (record, Java) — modified
 

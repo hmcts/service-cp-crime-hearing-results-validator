@@ -1,11 +1,33 @@
 # Implementation Plan: Extended Test Disqualification Warning (DD-41656)
 
-**Branch**: `DD-41656-results-validation-warning` | **Date**: 2026-04-25 | **Spec**: [spec.md](./spec.md)
+**Branch**: `DD-41656-results-validation-warning` | **Date**: 2026-04-25 | **Revised**: 2026-04-28 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-extended-test-disq-warning/spec.md`
+
+## Revision — 2026-04-28
+
+This plan was originally drafted assuming "no upstream contract change is required" (research.md R3, original). That assumption is **superseded** — see [research.md R3-revised](./research.md#r3-revised-refinement-gate-on-categoryf-from-the-result-line-2026-04-28) and the spec's 2026-04-28 Revision section. The rule's "is this a final result?" gate now reads `category === 'F'` directly off the result line, and the change ships as a coordinated four-repo delivery under DD-41656 (no separate Jira).
+
+**What changed in this plan**:
+
+- **Summary** — gate condition rewritten; the four-gate logic (relevance / non-excluded final / no DDOTE / no DDOTEL) now reads from `category` rather than inferring final-result status from short-code-set membership. Adjournments (`category = 'A'`) on relevant offences correctly produce no warning (BA scenarios doc, scenario 5).
+- **Technical Context** — `External DTOs` line updated: the upstream contract is being extended to add `category: enum [A, I, F]` to `ResultLineDto`. The upstream lib version is bumped; this service pulls the new version once the lib is published.
+- **New section: Cross-Repo Coordination** — the four-repo delivery, branching strategy per repo, dependency ordering between repos, and the API-publish-via-`main` constraint are documented below.
+- **Project Structure** — no new files in *this* repo beyond the original plan; one preprocessor field-rename (`hasNonExcludedFinal` → `hasFinalNonExcluded`) and a tighter check on `category` in the preprocessor.
+- **Constitution Check** — Principle I's "DTO changes belong upstream" clause is now actively in play; PASS is preserved because the upstream change is in scope and ships in the same Jira.
+- **Complexity Tracking** — no new violations. The TDD waiver for US2/US3 is unchanged.
+
+The companion artifacts in this directory have parallel revision blocks at the top:
+
+- [research.md](./research.md) — R3 marked superseded, R3-revised added with the new gate, branch coordination, and OOS reaffirmed.
+- [data-model.md](./data-model.md) — `DisqualificationContext` algorithm switches to `category = 'F'`; CEL variable `finalNonExcludedCount` replaces the old `hasNonExcludedFinal` derivation; no PreprocessingDefinition schema change.
+- [contracts/rule-DR-DISQ-001.md](./contracts/rule-DR-DISQ-001.md) — upstream `ResultLineDto` extended with `category`; YAML rule definition unchanged; preprocessor contract updated.
+- [quickstart.md](./quickstart.md) — `curl` examples updated to include `category` on each result line; new adjournment-`'A'` smoke scenario added.
+
+`tasks.md` is now stale relative to this plan and must be regenerated via `/speckit-tasks` after `/speckit-plan` completes.
 
 ## Summary
 
-Add a new YAML+CEL validation rule that raises a non-blocking `WARNING` when a hearing contains an offence with one of five Road Traffic Act 1988 Home Office codes (`RT88046`, `RT88526`, `RT88026`, `RT88530`, `RT88531`) that has a final result not in the excluded list (`wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`) and no `DDOTE` / `DDOTEL` disqualification result line linked to that offence. The warning text is fixed and the rule is per-offence (one warning per qualifying offence).
+Add a new YAML+CEL validation rule that raises a non-blocking `WARNING` when a hearing contains an offence with one of five Road Traffic Act 1988 Home Office codes (`RT88046`, `RT88526`, `RT88026`, `RT88530`, `RT88531`) that has at least one **`category = 'F'`** result line whose short code is not in the excluded list (`wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`) and where no result line on that offence has `shortCode` in `{DDOTE, DDOTEL}`. The warning text is fixed and the rule is per-offence (one warning per qualifying offence). The `category` attribute (enum `A` Ancillary / `I` Intermediary / `F` Final) is added to `ResultLineDto` upstream as part of this delivery — see [Cross-Repo Coordination](#cross-repo-coordination-2026-04-28) below.
 
 The rule cannot reuse `CustodialPreprocessor` — its outputs (`noInfoCount`, `hasBothCount`, etc.) are concurrent/consecutive-specific and group by defendant, whereas this rule is per-offence and needs different counts and offence-id sets. A new `ValidationPreprocessor` is therefore required, which under **Constitution Principle III** means the hard-wired `CustodialPreprocessor` field in `CelValidationRule` and `ValidationRuleAutoConfiguration` MUST first be replaced with a registry-based dispatch driven by the YAML `preprocessing.type` field. The plan therefore has two ordered parts:
 
@@ -18,7 +40,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 
 **Language/Version**: Java 25
 **Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Caffeine cache, Logback + LogstashEncoder, SnakeYAML, Lombok, Spring Data JPA + PostgreSQL driver
-**External DTOs**: `libs.api.hearing.results.validator` (root package `uk.gov.hmcts.cp.openapi.model`) — `DraftValidationRequest`, `OffenceDto`, `ResultLineDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`. Spec source: `/home/sachin/moj/api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml`. **No upstream change is required** for this feature — `OffenceDto.offenceCode`, `ResultLineDto.shortCode`, and `ResultLineDto.offenceId` are already present.
+**External DTOs**: `libs.api.hearing.results.validator` (root package `uk.gov.hmcts.cp.openapi.model`) — `DraftValidationRequest`, `OffenceDto`, `ResultLineDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`. Spec source: `/home/sachin/moj/api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml`. **Upstream contract change is required** (2026-04-28 revision — supersedes the original "no upstream change" line): `ResultLineDto` is extended to add `category: enum [A, I, F]`. The lib version is bumped and published from the API repo's `main` branch (ACR publish pipeline runs only on `main`). This service pulls the new lib version once published; until then this service builds against the previous lib and the new field is unavailable.
 **Storage**: PostgreSQL 15.3 (TestContainers in tests, real instance in non-prod). Only the existing `validation_rule` table is touched — a new row keyed by the rule's id (e.g. `DR-DISQ-001`) controls runtime enable/severity.
 **Testing**: JUnit 5 + Mockito + AssertJ for unit tests; MockMvc for controller tests; WireMock for external-service stubs; TestContainers for `*IT` integration tests (extend `IntegrationTestBase`); `gradle api` for live API tests via docker-compose; Gatling for performance.
 **Target Platform**: Linux server, AKS (Azure Kubernetes Service), behind the CPP STE gateway. Default port 4550.
@@ -104,6 +126,49 @@ src/
 ```
 
 **Structure Decision**: This is a single-module Spring Boot service. All Java production code lives under `src/main/java/uk/gov/hmcts/cp/`. YAML rule files live under `src/main/resources/rules/`. Tests live under `src/test/java/uk/gov/hmcts/cp/` mirroring the production package layout, with integration tests in a `.integration.` sub-package. No new top-level modules or directories are introduced.
+
+## Cross-Repo Coordination (2026-04-28)
+
+The `category = 'F'` refinement requires a coordinated change across **four repositories**, all under DD-41656 (no separate Jira). The dependency ordering is one-way: the published lib version from `api-cp-crime-hearing-results-validator` must land first; the other three repos consume it.
+
+### Repos, branches, and per-repo scope
+
+| Order | Repo | Branch (off) | Why this branch | Scope of change |
+|-------|------|--------------|-----------------|-----------------|
+| 1 | `api-cp-crime-hearing-results-validator` | `main` (no feature branch) | The ACR-publish pipeline runs **only on `main`**. To make a new lib version available to consumers, the OpenAPI edit + version bump must land directly on `main` (or via a short-lived PR that merges to `main`). | Add `category: enum [A, I, F]` to `ResultLineDto` in `src/main/resources/openapi/openapi-spec.yml`. Bump `version` in `build.gradle` / `pom.xml`. Trigger the publish-to-ACR job. |
+| 2 | `cpp-context-hearing` | `DD-41656-results-validation-warning` (off `team/DD-41715-results-validator`) | The DD-41715 branch already wires `ShareResultsCommandHandler` to call the validator HTTP endpoint with the four new pre-share ops (only one of which is the validator call — see project memory `project_hearing_validator_integration.md`). DD-41656 builds on that wiring; rebasing onto a fresh branch off integration would lose the HTTP wiring and force re-implementation. | Add `private String category` + `withCategory(...)` builder to the locally hand-written `ResultLineDto` at `hearing-command/.../service/validation/ResultLineDto.java` (parallel mirror — **not** regenerated from the OpenAPI contract; must be maintained alongside it). Populate `.category(line.getCategory())` in `ValidationRequestMapper.toValidationRequest`. Add unit-test coverage on the mapper. |
+| 3 | `cpp-ui-hearing` | `DD-41656-results-validation-warning` (off `team/result-validation`) | The team integration branch for the validator-call work in the UI; branching off it preserves the in-flight pre-share validation wiring. | Extend `buildResultLines` (`src/app/results/core/helpers/results-validation.ts`) to map `line.category` from the resolved draft line onto the validation request body. Add unit-test coverage on `buildResultLines`. |
+| 4 | `service-cp-crime-hearing-results-validator` (this repo) | `DD-41656-results-validation-warning` (already open, off main) | Continues from the original 001 implementation; staying here preserves the existing Phase A registry refactor commits and the in-flight DR-DISQ-001 implementation. | Pull the new lib version once published. Tighten `DisqualificationExtendedTestPreprocessor` to gate on `category = 'F'`. Add positive IT for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. No YAML schema change. |
+
+### Dependency ordering
+
+```
+[api repo: publish v_new lib]  →  [validator service: pull v_new + tighten preprocessor]
+                                ↘
+                                  [cpp-context-hearing: pull v_new + mirror DTO + mapper update]
+                                ↘
+                                  [cpp-ui-hearing: extend buildResultLines (no lib dep — TypeScript-side)]
+```
+
+The UI repo's task can run in parallel with the API publish, since the UI does not depend on the OpenAPI lib version. The validator service's task technically can also begin in parallel — the `category` field can be added to the preprocessor and tests against synthetic payloads without waiting for the lib bump — but the integration test that exercises the full deserialised request shape needs the new lib to be on the classpath.
+
+### Branch coordination — open question (carried from spec.md Assumptions)
+
+`cpp-context-hearing` carries an active `team/DD-41715-results-validator` branch that adds four new pre-share operations (only one of which is the validator HTTP call). The DD-41656 branching question — piggyback on DD-41715 vs. open a fresh branch off integration — is resolved by the user input on this `/speckit-plan` invocation: **branch off `team/DD-41715-results-validator`**. Rationale: DD-41715's wiring is the carrier for DD-41656's data plumbing; rebasing onto integration would orphan the HTTP-call work that DD-41656 needs.
+
+If DD-41715 merges to `team/result-validation` (or to integration) before DD-41656 lands, DD-41656's branch will need a rebase. That is acceptable churn — strictly preferable to losing the wiring.
+
+### CI/CD-shaped constraints
+
+- **API repo lib publish only on `main`**: this is the reason the API change has no feature branch. If review needs a non-`main` workflow (e.g. PR with checks), a short-lived PR to `main` that auto-merges on green is acceptable, but the lib will not appear in ACR until something lands on `main`.
+- **Validator service Lib version**: pulled via `libs.api.hearing.results.validator` in `build.gradle`; bumping the version is a one-line dependency change committed alongside the preprocessor tightening.
+- **cpp-context-hearing parallel-mirror DTO**: the locally hand-written `ResultLineDto` is **not** regenerated from the OpenAPI contract. It is a deliberate, manually-maintained mirror, kept in lockstep with the upstream contract by hand. Future authors editing this DTO must remember the mirror exists; a comment at the top of the local DTO referencing the OpenAPI source-of-truth is recommended (and is part of the cpp-context-hearing scope).
+
+### Out-of-scope
+
+Carried forward from the spec's Out-of-Scope section:
+- `isFinalResult: boolean` on the contract — `category` already encodes the signal.
+- Runtime call from the validator to the result-definitions reference-data service — `category` already crosses the wire via the share command, no extra service-to-service hop is needed.
 
 ## Complexity Tracking
 
