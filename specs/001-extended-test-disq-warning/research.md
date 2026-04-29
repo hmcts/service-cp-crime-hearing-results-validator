@@ -99,7 +99,7 @@ offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
 
 **Branch coordination**: each repo carries its own `DD-41656`-prefixed branch off whatever its current integration base is. This repo stays on `DD-41656-results-validation-warning` (001 is unmerged; rebasing onto a new branch would lose the existing implementation). For `cpp-context-hearing`, the open `DD-41715-custodial-concurrent-consecutive-check` branch raises a question: piggyback on it, or open a fresh DD-41656 branch off integration? A fresh branch is the safer default unless DD-41715 is about to merge.
 
-**Effect on R6 (CEL variables)**: the preprocessor now uses `category` to identify the F line, so the diagnostic count `excludedFinalCount` becomes "count of `'F'` lines whose shortCode is in the excluded set" rather than "any line whose shortCode is in the excluded set". A fresh count `finalNonExcludedCount` (= 1 if a qualifying F line exists, else 0) may be useful as the primary CEL variable. R6 should be re-derived during /speckit-plan re-run.
+**Effect on R6 (CEL variables)**: the preprocessor now uses `category` to identify the F line, so the diagnostic count `excludedFinalCount` is tightened to "count of `'F'` lines whose shortCode is in the excluded set" rather than "any line whose shortCode is in the excluded set". A fresh count `finalCategoryCount` (count of F-category lines on the offence — `0` means "no final result yet") is added alongside, useful for distinguishing "not yet final" from "final but excluded". See R6-revised below for the full updated CEL-variable list.
 
 **Out of scope** (carried forward from the user description):
 - Introducing a separate `isFinalResult: boolean` alongside `category` — the enum already encodes the signal.
@@ -168,6 +168,32 @@ The condition's `affectedOffenceSet` field references a list-name that the conte
 
 ---
 
+## R6-revised. CEL variables exposed by the new preprocessor (2026-04-28)
+
+**Decision**: `DisqualificationContext.toCelContext()` exposes five variables, all `Long`-valued:
+
+| Variable | Type | Meaning |
+|----------|------|---------|
+| `qualifyingCount` | Long | `1` if relevant + ≥1 F-category line with non-excluded shortCode + no DDOTE/DDOTEL on the offence; else `0`. The CEL condition fires on `qualifyingCount > 0`. |
+| `relevantCount` | Long | `1` if `OffenceDto.offenceCode` ∈ relevant set; else `0`. Diagnostic. |
+| `finalCategoryCount` | Long | Count of result lines on this offence whose `category` equals `'F'` (case-insensitive). `0` means no final result has been recorded yet — the rule cannot fire. New in 2026-04-28; supersedes R6's original 4-variable list. |
+| `excludedFinalCount` | Long | Count of F-category lines on this offence whose shortCode is in the excluded list. **Tightened semantics** (2026-04-28): pre-revision this counted any line on the offence regardless of category. |
+| `disqExtTestCount` | Long | `1` if any result on this offence has shortCode `DDOTE` or `DDOTEL` (regardless of category); else `0`. Unchanged from R6. |
+
+**Rationale for the change**: R6's original four variables couldn't distinguish "this offence has no final result yet" from "this offence's final result was excluded". Both states have `qualifyingCount = 0` but mean very different things to a downstream rule author or operator investigating false negatives. The pair `(finalCategoryCount, excludedFinalCount)` lets future conditions and dashboards split the two:
+
+- `finalCategoryCount = 0` → no F line yet (US4 territory; adjournment, intermediary-only, or unrecognised category).
+- `finalCategoryCount > 0 && excludedFinalCount > 0` → F line is excluded ("did not proceed").
+- `finalCategoryCount > 0 && excludedFinalCount = 0 && disqExtTestCount = 0` → qualifying state; `qualifyingCount = 1`.
+
+R6's original `hasNonExcludedFinal` boolean derivation is retired — it was implicit in the old gate and is now subsumed by the `finalCategoryCount` + `excludedFinalCount` pair.
+
+**Alternatives considered**:
+- *Expose a single new boolean `hasFinalLine` instead of a count.* Rejected for the same reason R6 originally rejected booleans — diverges from the existing `Long`-valued convention with no benefit.
+- *Drop `excludedFinalCount` entirely (since `qualifyingCount` already encodes the answer).* Rejected — diagnostics are nearly free, and a future "warn that DDOTE was added but the offence is excluded" rule could compose `excludedFinalCount > 0 && disqExtTestCount > 0`.
+
+---
+
 ## R7. Affected-offence-set name in the YAML condition
 
 **Decision**: `affectedOffenceSet: "qualifyingOffenceIds"` returning the singleton list `[offenceId]` for that context. `DisqualificationContext.getOffenceIdSet("qualifyingOffenceIds")` returns the list; any other set name throws `IllegalArgumentException`, matching the `DefendantContext` pattern.
@@ -222,7 +248,8 @@ messageTemplate: >-
 | R3-revised | "Final result" detection (refined) | Read `category = 'F'` from the result line; four-repo contract change under DD-41656 |
 | R4 | Rule id | `DR-DISQ-001` |
 | R5 | Offence-level linkage | One context (and one `ValidationIssue`) per qualifying offence |
-| R6 | CEL variables | `qualifyingCount`, `relevantCount`, `excludedFinalCount`, `disqExtTestCount` |
+| R6 | CEL variables (original) | `qualifyingCount`, `relevantCount`, `excludedFinalCount`, `disqExtTestCount` |
+| R6-revised | CEL variables (refined) | Adds `finalCategoryCount`; tightens `excludedFinalCount` semantics to F-category lines only |
 | R7 | Affected set name | `qualifyingOffenceIds` |
 | R8 | Message template | Literal AC1A text, no placeholders |
 | R9 | Severity | `WARNING` (non-blocking) |

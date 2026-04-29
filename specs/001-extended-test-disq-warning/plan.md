@@ -5,21 +5,21 @@
 
 ## Revision — 2026-04-28
 
-This plan was originally drafted assuming "no upstream contract change is required" (research.md R3, original). That assumption is **superseded** — see [research.md R3-revised](./research.md#r3-revised-refinement-gate-on-categoryf-from-the-result-line-2026-04-28) and the spec's 2026-04-28 Revision section. The rule's "is this a final result?" gate now reads `category === 'F'` directly off the result line, and the change ships as a coordinated four-repo delivery under DD-41656 (no separate Jira).
+This plan was originally drafted assuming "no upstream contract change is required" (research.md R3, original). That assumption is **superseded** — see [research.md R3-revised](./research.md#r3-revised-refinement-gate-on-categoryf-from-the-result-line-2026-04-28) and the spec's 2026-04-28 Revision section. The rule's "is this a final result?" gate now reads `category = 'F'` directly off the result line, and the change ships as a coordinated four-repo delivery under DD-41656 (no separate Jira).
 
 **What changed in this plan**:
 
 - **Summary** — gate condition rewritten; the four-gate logic (relevance / non-excluded final / no DDOTE / no DDOTEL) now reads from `category` rather than inferring final-result status from short-code-set membership. Adjournments (`category = 'A'`) on relevant offences correctly produce no warning (BA scenarios doc, scenario 5).
 - **Technical Context** — `External DTOs` line updated: the upstream contract is being extended to add `category: enum [A, I, F]` to `ResultLineDto`. The upstream lib version is bumped; this service pulls the new version once the lib is published.
 - **New section: Cross-Repo Coordination** — the four-repo delivery, branching strategy per repo, dependency ordering between repos, and the API-publish-via-`main` constraint are documented below.
-- **Project Structure** — no new files in *this* repo beyond the original plan; one preprocessor field-rename (`hasNonExcludedFinal` → `hasFinalNonExcluded`) and a tighter check on `category` in the preprocessor.
+- **Project Structure** — no new files in *this* repo beyond the original plan; one new field on `DisqualificationContext` (`long finalCategoryCount`) and a `category = 'F'` filter step in the preprocessor algorithm.
 - **Constitution Check** — Principle I's "DTO changes belong upstream" clause is now actively in play; PASS is preserved because the upstream change is in scope and ships in the same Jira.
 - **Complexity Tracking** — no new violations. The TDD waiver for US2/US3 is unchanged.
 
 The companion artifacts in this directory have parallel revision blocks at the top:
 
 - [research.md](./research.md) — R3 marked superseded, R3-revised added with the new gate, branch coordination, and OOS reaffirmed.
-- [data-model.md](./data-model.md) — `DisqualificationContext` algorithm switches to `category = 'F'`; CEL variable `finalNonExcludedCount` replaces the old `hasNonExcludedFinal` derivation; no PreprocessingDefinition schema change.
+- [data-model.md](./data-model.md) — `DisqualificationContext` algorithm switches to `category = 'F'`; CEL variable `finalCategoryCount` (count of F-category lines on the offence) is added as a diagnostic alongside the existing `excludedFinalCount` (semantics tightened to F-category lines only); no PreprocessingDefinition schema change.
 - [contracts/rule-DR-DISQ-001.md](./contracts/rule-DR-DISQ-001.md) — upstream `ResultLineDto` extended with `category`; YAML rule definition unchanged; preprocessor contract updated.
 - [quickstart.md](./quickstart.md) — `curl` examples updated to include `category` on each result line; new adjournment-`'A'` smoke scenario added.
 
@@ -66,7 +66,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 
 | Principle | Compliance | Notes |
 |-----------|------------|-------|
-| **I. YAML/CEL Rule-First** | PASS | The new rule lives in `src/main/resources/rules/DR-DISQ-001.yaml`. CEL condition is a single boolean expression. Severity, message text, and the relevant offence codes / excluded codes / disqualification codes are all in the YAML — BAs can amend without touching Java. The new preprocessor publishes a documented set of CEL variables that the YAML references by name. |
+| **I. YAML/CEL Rule-First** | PASS | The new rule lives in `src/main/resources/rules/DR-DISQ-001.yaml`. CEL condition is a single boolean expression. Severity, message text, and the relevant offence codes / excluded codes / disqualification codes are all in the YAML — BAs can amend without touching Java. The new preprocessor publishes a documented set of CEL variables that the YAML references by name. **Phase 7 (2026-04-28) modifies the preprocessor and context record to consume the new `category` field — covered by Principle I's exception clause ("if [adding a new rule without writing Java is] not [possible], the preprocessor or context model has a gap that MUST be fixed in the same change"); the YAML rule itself remains the contract a BA reads.** |
 | **II. Constructor Injection & Immutable DTOs** | PASS | `DisqualificationExtendedTestPreprocessor` uses constructor injection (no fields needed beyond Spring's stereotype). `DisqualificationContext` is a Java record with `toCelContext()` and `getOffenceIdSet()`. `RuleEvaluationContext` is a sealed interface (Constitution II's "sealed interfaces for polymorphic types"). |
 | **III. Layered Architecture & Data-Driven Preprocessor Dispatch** | PASS *(after the prerequisite refactor)* | The current `CelValidationRule` hard-wires `CustodialPreprocessor` — Principle III explicitly calls this out as a transitional state that "MUST be removed before any second preprocessor type ships". This plan removes that wiring **first**, then adds the new preprocessor. After the refactor, dispatch is by YAML `preprocessing.type` via a Spring registry, which is exactly what Principle III mandates. |
 | **IV. Spec-Driven Build Loop** | PASS | This plan is the `/speckit-plan` output following `/speckit-specify`. `/speckit-tasks` will produce `tasks.md` next; `/speckit-implement` runs the build loop with `code-reviewer`, `qa`, `spec-validator` agents. |
