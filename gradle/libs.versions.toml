@@ -17,7 +17,7 @@ mapstruct = "1.6.3"
 cel-tools = "0.6.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
-caffeine = "3.2.3"
+caffeine = "3.2.4"
 gatling = "3.15.0.1"
 
 [libraries]
