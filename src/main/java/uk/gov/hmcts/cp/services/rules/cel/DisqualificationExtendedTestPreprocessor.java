@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -17,19 +18,20 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * {@link DisqualificationContext} per offence in the request, with counts that drive the YAML CEL
  * condition {@code qualifyingCount > 0}.
  *
- * <p>An offence qualifies (warning fires) when all four of the following hold:
+ * <p>An offence qualifies (warning fires) when all of the following hold:
  * <ol>
  *   <li>The offence's Home Office code is in the YAML's {@code relevantOffenceCodes} list.</li>
- *   <li>At least one result line is recorded against the offence whose short code is
- *       <em>neither</em> in the excluded set <em>nor</em> in the extended-test set.</li>
- *   <li>No result line on the offence has a short code in the excluded set.</li>
- *   <li>No result line on the offence has a short code in the extended-test set
- *       ({@code DDOTE} / {@code DDOTEL}).</li>
+ *   <li>At least one {@code category='F'} result line on the offence has a short code that is
+ *       <em>not</em> in the excluded set (FR-015: lines with null or non-F category are
+ *       treated as non-final).</li>
+ *   <li>No result line on the offence (regardless of category) has a short code in the
+ *       extended-test set ({@code DDOTE} / {@code DDOTEL}).</li>
  * </ol>
  *
  * <p>All short-code and offence-code comparisons are case-insensitive (normalised to upper case
  * once at the top of the algorithm, matching {@link CustodialPreprocessor}'s style).
  */
+@Slf4j
 @Component
 public class DisqualificationExtendedTestPreprocessor implements ValidationPreprocessor {
 
@@ -73,22 +75,41 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
 
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
 
-        final boolean excludedFinal = anyShortCodeIn(lines, excludedShortCodes);
-        final boolean disqExtTest = anyShortCodeIn(lines, extendedTestShortCodes);
-        final boolean hasNonExcludedFinal = lines.stream().anyMatch(rl -> {
-            final String upper = upperOrNull(rl.getShortCode());
-            return upper != null
-                    && !excludedShortCodes.contains(upper)
-                    && !extendedTestShortCodes.contains(upper);
+        lines.forEach(rl -> {
+            final ResultLineDto.CategoryEnum cat = rl.getCategory();
+            if (cat != null
+                    && cat != ResultLineDto.CategoryEnum.A
+                    && cat != ResultLineDto.CategoryEnum.I
+                    && cat != ResultLineDto.CategoryEnum.F) {
+                log.info("Unrecognised result line category '{}' on offenceId='{}' — treating as non-final",
+                        cat.name(), offenceId);
+            }
         });
 
-        final boolean qualifying = relevant && hasNonExcludedFinal && !excludedFinal && !disqExtTest;
+        final List<ResultLineDto> finalLines = lines.stream()
+                .filter(rl -> rl.getCategory() == ResultLineDto.CategoryEnum.F)
+                .toList();
+
+        final long finalCategoryCount = finalLines.size();
+        final long excludedFinalCount = finalLines.stream()
+                .filter(rl -> {
+                    final String upper = upperOrNull(rl.getShortCode());
+                    return upper != null && excludedShortCodes.contains(upper);
+                }).count();
+        final boolean finalNonExcluded = finalLines.stream().anyMatch(rl -> {
+            final String upper = upperOrNull(rl.getShortCode());
+            return upper != null && !excludedShortCodes.contains(upper);
+        });
+        final boolean disqExtTest = anyShortCodeIn(lines, extendedTestShortCodes);
+
+        final boolean qualifying = relevant && finalNonExcluded && !disqExtTest;
 
         return new DisqualificationContext(
                 offenceId,
                 qualifying ? 1L : 0L,
                 relevant ? 1L : 0L,
-                excludedFinal ? 1L : 0L,
+                finalCategoryCount,
+                excludedFinalCount,
                 disqExtTest ? 1L : 0L,
                 qualifying ? List.of(offenceId) : List.of(),
                 List.of(offenceId));

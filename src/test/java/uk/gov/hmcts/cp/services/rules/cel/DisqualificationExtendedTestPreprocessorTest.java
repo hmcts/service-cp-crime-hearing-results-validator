@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for the per-offence preprocessor that drives DR-DISQ-001.
@@ -42,13 +43,15 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void rt88026_with_coew_and_no_ddote_should_qualify() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "COEW", "d1", "off1")),
+                    List.of(resultLine("rl1", "COEW", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
 
             assertThat(ctx.qualifyingCount()).isEqualTo(1L);
             assertThat(ctx.relevantCount()).isEqualTo(1L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(1L);
             assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
             assertThat(ctx.disqExtTestCount()).isEqualTo(0L);
             assertThat(ctx.qualifyingOffenceIds()).containsExactly("off1");
@@ -59,7 +62,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         void each_relevant_offence_code_should_be_recognised() {
             for (String code : RELEVANT_CODES) {
                 DraftValidationRequest request = buildRequest(
-                        List.of(resultLine("rl1", "COEW", "d1", "off1")),
+                        List.of(resultLine("rl1", "COEW", "d1", "off1")
+                                .category(ResultLineDto.CategoryEnum.F)),
                         List.of(offenceWithCode("off1", 1, "RT-relevant", code)));
 
                 DisqualificationContext ctx = preprocess(request).get("off1");
@@ -76,7 +80,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void unknown_short_code_should_be_treated_as_non_excluded() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "ZZZZ", "d1", "off1")),
+                    List.of(resultLine("rl1", "ZZZZ", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -88,8 +93,10 @@ class DisqualificationExtendedTestPreprocessorTest {
         void two_defendants_charged_with_same_relevant_offence_should_produce_one_context() {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", "COEW", "d2", "off1")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d2", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             Map<String, DisqualificationContext> result = preprocess(request);
@@ -108,7 +115,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void wdrn_on_relevant_offence_should_not_qualify() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "wdrn", "d1", "off1")),
+                    List.of(resultLine("rl1", "wdrn", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -122,8 +130,10 @@ class DisqualificationExtendedTestPreprocessorTest {
         void ddote_on_relevant_offence_should_not_qualify() {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", "DDOTE", "d1", "off1")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DDOTE", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -141,7 +151,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void th68001_with_coew_should_not_qualify() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "COEW", "d1", "off1")),
+                    List.of(resultLine("rl1", "COEW", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Theft", "TH68001")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -177,7 +188,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void lowercase_offence_code_and_short_code_should_qualify() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "coew", "d1", "off1")),
+                    List.of(resultLine("rl1", "coew", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "rt88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -195,8 +207,10 @@ class DisqualificationExtendedTestPreprocessorTest {
         void each_offence_should_produce_its_own_context_keyed_by_offence_id() {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", "COEW", "d1", "off2")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d1", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F)),
                     List.of(
                             offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
                             offenceWithCode("off2", 2, "Theft", "TH68001")));
@@ -220,7 +234,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         })
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", excludedCode, "d1", "off1")),
+                    List.of(resultLine("rl1", excludedCode, "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -236,7 +251,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @ValueSource(strings = {"WDRN", "Wdrn", "WdRn", "WDRNOff", "IREMFILE", "Disch"})
         void mixed_case_excluded_short_codes_should_suppress(final String mixedCase) {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", mixedCase, "d1", "off1")),
+                    List.of(resultLine("rl1", mixedCase, "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -250,7 +266,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void non_excluded_final_code_imp_should_still_qualify() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "IMP", "d1", "off1")),
+                    List.of(resultLine("rl1", "IMP", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -262,7 +279,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @Test
         void excluded_short_code_on_non_relevant_offence_should_not_qualify_or_count_as_relevant() {
             DraftValidationRequest request = buildRequest(
-                    List.of(resultLine("rl1", "wdrn", "d1", "off1")),
+                    List.of(resultLine("rl1", "wdrn", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Theft", "TH68001")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -282,8 +300,10 @@ class DisqualificationExtendedTestPreprocessorTest {
         void extended_test_disqualification_codes_should_suppress(final String code) {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", code, "d1", "off1")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", code, "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -300,8 +320,10 @@ class DisqualificationExtendedTestPreprocessorTest {
         void mixed_case_extended_test_codes_should_suppress(final String mixedCase) {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", mixedCase, "d1", "off1")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", mixedCase, "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
 
             DisqualificationContext ctx = preprocess(request).get("off1");
@@ -316,9 +338,12 @@ class DisqualificationExtendedTestPreprocessorTest {
         void ddote_on_a_different_offence_should_not_suppress_first_offence() {
             DraftValidationRequest request = buildRequest(
                     List.of(
-                            resultLine("rl1", "COEW", "d1", "off1"),
-                            resultLine("rl2", "COEW", "d1", "off2"),
-                            resultLine("rl3", "DDOTE", "d1", "off2")),
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d1", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl3", "DDOTE", "d1", "off2")
+                                    .category(ResultLineDto.CategoryEnum.I)),
                     List.of(
                             offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
                             offenceWithCode("off2", 2, "Causing death by dangerous driving",
@@ -330,6 +355,118 @@ class DisqualificationExtendedTestPreprocessorTest {
             assertThat(result.get("off1").disqExtTestCount()).isEqualTo(0L);
             assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
             assertThat(result.get("off2").disqExtTestCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("NoFinalLine — Phase 7 / US4 (category gate)")
+    class NoFinalLine {
+
+        @Test
+        void relevant_offence_with_only_adjournment_line_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "ADJN", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.A)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void relevant_offence_with_only_intermediary_line_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "PLEA", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.I)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void relevant_offence_with_multiple_non_final_lines_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "ADJN", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.A),
+                            resultLine("rl2", "PLEA", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void relevant_offence_with_null_category_should_not_qualify_fr015_fail_safe() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "COEW", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(0L);
+        }
+    }
+
+    @Nested
+    @DisplayName("CategoryFGateBoundary — Phase 7 / US4")
+    class CategoryFGateBoundary {
+
+        @Test
+        void offence_with_two_excluded_f_lines_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "wdrn", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "dism", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(2L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(2L);
+        }
+
+        @Test
+        void offence_with_one_excluded_and_one_non_excluded_f_line_should_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "wdrn", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(1L);
+        }
+
+        @Test
+        void ddote_on_intermediary_line_should_still_suppress_when_f_line_present() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DDOTE", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
         }
     }
 

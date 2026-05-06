@@ -43,7 +43,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                      "defendantId": "d1", "offenceId": "off3"},
                     {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off4", "isConcurrent": true},
-                    {"id": "rl5", "shortCode": "COEW", "label": "Convicted",
+                    {"id": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d1", "offenceId": "off5"}
                   ],
                   "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],

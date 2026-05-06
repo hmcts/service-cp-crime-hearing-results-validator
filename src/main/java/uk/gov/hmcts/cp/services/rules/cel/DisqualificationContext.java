@@ -12,6 +12,7 @@ public record DisqualificationContext(
         String offenceId,
         long qualifyingCount,
         long relevantCount,
+        long finalCategoryCount,
         long excludedFinalCount,
         long disqExtTestCount,
         List<String> qualifyingOffenceIds,
@@ -28,6 +29,7 @@ public record DisqualificationContext(
         return Map.of(
                 "qualifyingCount", qualifyingCount,
                 "relevantCount", relevantCount,
+                "finalCategoryCount", finalCategoryCount,
                 "excludedFinalCount", excludedFinalCount,
                 "disqExtTestCount", disqExtTestCount
         );
