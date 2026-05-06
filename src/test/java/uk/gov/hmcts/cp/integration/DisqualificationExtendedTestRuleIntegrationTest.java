@@ -40,7 +40,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -74,8 +74,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
-                         "defendantId": "d1", "offenceId": "off1"}
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                         "defendantId": "d2", "offenceId": "off1"}
                       ],
                       "defendants": [
                         {"id": "d1", "firstName": "Alex", "lastName": "Driver"},
@@ -108,7 +110,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -143,7 +145,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "wdrn", "label": "Withdrawn",
+                        {"id": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -173,9 +175,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTE", "label": "Disqual extended test",
+                        {"id": "rl2", "shortCode": "DDOTE", "category": "I",
+                         "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -221,11 +224,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "wdrn", "label": "Withdrawn",
+                        {"id": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "label": "Disqual extended test",
+                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                         "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -257,7 +261,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "%s", "label": "Excluded outcome",
+                        {"id": "rl1", "shortCode": "%s", "category": "F",
+                         "label": "Excluded outcome",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -292,9 +297,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTEL", "label": "Disqual life extended",
+                        {"id": "rl2", "shortCode": "DDOTEL", "category": "I",
+                         "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -324,11 +330,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "label": "Disqual extended test",
+                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                         "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -354,6 +361,73 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
+        }
+    }
+
+    @Nested
+    @DisplayName("AdjournmentDoesNotWarn — Phase 7 / US4 (BA scenario 5)")
+    class AdjournmentDoesNotWarn {
+
+        @Test
+        void relevant_offence_with_only_adjournment_line_should_produce_no_warning()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-adjn",
+                      "hearingDay": "2026-04-28",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"id": "rl1", "shortCode": "ADJN", "category": "A",
+                         "label": "Adjourned", "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "offences": [
+                        {"id": "off1", "offenceCode": "RT88026",
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
+        }
+
+        @Test
+        void relevant_offence_with_null_category_should_produce_no_warning_fr015_fail_safe()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-null-cat",
+                      "hearingDay": "2026-04-28",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"id": "rl1", "shortCode": "COEW",
+                         "label": "Convicted", "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "offences": [
+                        {"id": "off1", "offenceCode": "RT88026",
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
         }
     }
 
@@ -384,11 +458,11 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off3"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -434,11 +508,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d2", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "label": "Disqual extended test",
+                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                         "label": "Disqual extended test",
                          "defendantId": "d2", "offenceId": "off2"}
                       ],
                       "defendants": [
@@ -482,15 +557,16 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off3"},
-                        {"id": "rl4", "shortCode": "DDOTEL", "label": "Disqual life extended",
+                        {"id": "rl4", "shortCode": "DDOTEL", "category": "I",
+                         "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off3"},
-                        {"id": "rl5", "shortCode": "DISM", "label": "Dismissed",
+                        {"id": "rl5", "shortCode": "DISM", "category": "F", "label": "Dismissed",
                          "defendantId": "d1", "offenceId": "off4"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
@@ -534,13 +610,15 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTE", "label": "Disqual extended test",
+                        {"id": "rl2", "shortCode": "DDOTE", "category": "I",
+                         "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl3", "shortCode": "COEW", "label": "Convicted",
+                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl4", "shortCode": "DDOTEL", "label": "Disqual life extended",
+                        {"id": "rl4", "shortCode": "DDOTEL", "category": "I",
+                         "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
