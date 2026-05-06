@@ -101,12 +101,6 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
             return upper != null && !excludedShortCodes.contains(upper);
         });
         final boolean disqExtTest = anyShortCodeIn(lines, extendedTestShortCodes);
-        final boolean hasNonExcludedFinal = lines.stream().anyMatch(rl -> {
-            final String upper = upperOrNull(rl.getShortCode());
-            return upper != null
-                    && !excludedShortCodes.contains(upper)
-                    && !extendedTestShortCodes.contains(upper);
-        });
 
         final boolean qualifying = relevant && finalNonExcluded && !disqExtTest;
 

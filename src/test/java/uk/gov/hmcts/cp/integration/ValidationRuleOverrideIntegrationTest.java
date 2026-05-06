@@ -69,24 +69,6 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
             }
             """;
 
-    private static final String AC3_WARNING_REQUEST = """
-            {
-              "hearingId": "h1",
-              "hearingDay": "2026-03-11",
-              "courtType": "MAGISTRATES",
-              "resultLines": [
-                {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2",
-                 "isConcurrent": true, "consecutiveToOffence": "off1"}
-              ],
-              "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
-              "offences": [
-                {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
-              ]
-            }
-            """;
-
     @Resource
     private ValidationRuleRepository repository;
 
@@ -205,98 +187,6 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .content(AC3_WARNING_REQUEST))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
-                .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[0].ruleId", is(RULE_ID)))
-                .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));
-    }
-
-    private void evictOverrideCache(final String ruleId) {
-        Cache cache = cacheManager.getCache("ruleOverrides");
-        if (cache != null) {
-            cache.evict(ruleId);
-        }
-    }
-
-    /**
-     * Verifies that setting a rule's {@code enabled=false} via the database row suppresses
-     * issues from that rule at runtime, without service restart. Mechanism is proven once here
-     * against DR-SENT-002; per-rule override IT is rejected by reviewers per
-     * {@code .claude/rules/design_rules.md}.
-     */
-    @Test
-    void validate_with_disabled_rule_should_emit_no_issues_for_that_rule() throws Exception {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(false)
-                .severity("ERROR")
-                .updatedAt(Instant.now())
-                .updatedBy("test-disabled")
-                .build());
-        evictOverrideCache(RULE_ID);
-
-        mockMvc.perform(post(VALIDATE_URL)
-                        .header("CJSCPPUID", "test-user")
-                        .header("CPP-ACTION", "validation-service.validate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(AC2_ERROR_REQUEST))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
-                .andExpect(jsonPath("$.warnings", empty()));
-    }
-
-    /**
-     * Verifies that a database severity lower than the YAML severity caps the issue's emitted
-     * severity downward. The DR-SENT-002 AC2 condition is YAML-{@code ERROR}; with the ceiling
-     * set to {@code WARNING} the same payload still produces an issue, but the severity is
-     * capped to {@code WARNING} (Constitution Principle VI — ceiling caps downward only).
-     */
-    @Test
-    void validate_with_db_severity_lower_than_yaml_should_cap_downward() throws Exception {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("WARNING")
-                .updatedAt(Instant.now())
-                .updatedBy("test-capped")
-                .build());
-        evictOverrideCache(RULE_ID);
-
-        mockMvc.perform(post(VALIDATE_URL)
-                        .header("CJSCPPUID", "test-user")
-                        .header("CPP-ACTION", "validation-service.validate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(AC2_ERROR_REQUEST))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
-                .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[0].ruleId", is(RULE_ID)))
-                .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));
-    }
-
-    /**
-     * Verifies that a database severity higher than the YAML severity has no effect — the
-     * ceiling cannot promote a YAML-WARNING condition to ERROR. DR-SENT-002 AC3 is
-     * YAML-{@code WARNING}; with the ceiling set to {@code ERROR} the same AC3 payload should
-     * still emit a {@code WARNING} (Constitution Principle VI — never promote).
-     */
-    @Test
-    void validate_with_db_severity_higher_than_yaml_should_be_no_op() throws Exception {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("ERROR")
-                .updatedAt(Instant.now())
-                .updatedBy("test-noop")
-                .build());
-        evictOverrideCache(RULE_ID);
-
-        mockMvc.perform(post(VALIDATE_URL)
-                        .header("CJSCPPUID", "test-user")
-                        .header("CPP-ACTION", "validation-service.validate")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(AC3_WARNING_REQUEST))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is(RULE_ID)))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));

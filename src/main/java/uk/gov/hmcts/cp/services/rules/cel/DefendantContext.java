@@ -21,6 +21,8 @@ public record DefendantContext(
         List<String> allNoInfoOffenceIds
 ) implements RuleEvaluationContext {
 
+    private static final String DEFENDANT_ID_SET = "defendantId";
+
     /**
      * Converts the summary counts into the numeric context consumed by CEL expressions.
      *

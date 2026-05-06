@@ -34,8 +34,6 @@ public class CelValidationRule implements ValidationRule {
 
     private final ValidationPreprocessor preprocessor;
 
-    final ValidationPreprocessor preprocessor;
-
     /**
      * Constructs the rule from a YAML path and the required collaborators. Fails fast at
      * construction time if the YAML's {@code preprocessing.type} qualifier does not resolve in
