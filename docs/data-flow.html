@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crime Hearing Results Validator — Data Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #24292f;
+    background: #fff;
+    padding: 48px 56px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0d1117;
+    border-bottom: 2px solid #d0d7de;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: #57606a;
+    font-size: 12px;
+    margin-bottom: 32px;
+  }
+
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0d1117;
+    margin-top: 36px;
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #d0d7de;
+  }
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d1117;
+    margin-top: 20px;
+    margin-bottom: 8px;
+  }
+
+  h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0550ae;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+
+  p { margin-bottom: 10px; }
+
+  ul { margin: 8px 0 10px 20px; }
+  li { margin-bottom: 4px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 18px 0;
+    font-size: 12px;
+  }
+
+  th {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #24292f;
+  }
+
+  td {
+    border: 1px solid #d0d7de;
+    padding: 7px 10px;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td { background: #f6f8fa; }
+
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11.5px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #0550ae;
+  }
+
+  pre {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11.5px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0 16px 0;
+    overflow-x: auto;
+    line-height: 1.5;
+    color: #24292f;
+  }
+
+  .flow-box {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-left: 4px solid #0550ae;
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 12px;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 22px;
+    margin-bottom: 8px;
+  }
+
+  .step-num {
+    display: inline-block;
+    background: #0550ae;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0d1117;
+  }
+
+  .class-ref {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 11px;
+    color: #57606a;
+    margin-bottom: 10px;
+  }
+
+  .constraint-box {
+    background: #fff8c5;
+    border: 1px solid #d4a017;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 14px 0;
+  }
+
+  .constraint-box ul { margin-top: 6px; }
+
+  .page-break { page-break-before: always; }
+
+  @media print {
+    body { padding: 20px 28px; font-size: 11px; }
+    h1 { font-size: 20px; }
+    h2 { font-size: 14px; margin-top: 22px; }
+    h3 { font-size: 12px; }
+    pre, .flow-box { font-size: 10px; }
+    table { font-size: 10px; }
+    td, th { padding: 5px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Crime Hearing Results Validator</h1>
+<p class="subtitle">Data Flow — Request to Response &nbsp;|&nbsp; service-cp-crime-hearing-results-validator &nbsp;|&nbsp; HMCTS / Crime Common Platform</p>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Overview</h2>
+
+<p>
+  This document describes how an HTTP validation request flows through the service — from the
+  incoming POST body to the structured JSON response. The service applies configurable
+  YAML + CEL rules to hearing result data and returns structured errors and warnings.
+</p>
+
+<pre>
+HTTP POST /validate
+        │
+        ▼
+ValidationController.validateDraftResults()
+  └─ deserialise body → DraftValidationRequest
+        │
+        ▼
+DefaultValidationService.validate()
+  ├─ AzureFeatureToggleService → if disabled, return mode="disabled" immediately
+  └─ for each CelValidationRule (sorted by priority):
+        │
+        ▼
+    CelValidationRule.evaluate(request)
+      ├─ RuleOverrideService.findOverride(ruleId)  ← Caffeine-cached DB lookup
+      ├─ if rule disabled → return empty list
+      ├─ PreprocessorRegistry.require(type) → ValidationPreprocessor
+      │
+      ▼
+    preprocessor.preprocess(request, config) → Map&lt;String, RuleEvaluationContext&gt;
+      │
+      └─ for each context entry:
+              │
+              ▼
+          context.toCelContext() → Map&lt;String, Long&gt;
+              │
+              ▼
+          CelExpressionEvaluator.evaluate(expression, celContext) → boolean
+              │
+              ├─ false → no issue
+              └─ true:
+                    MessageTemplateResolver.resolve(…) → String
+                    SeverityCeiling.resolve(yaml, db)  → severity
+                    → ValidationIssue { ruleId, severity, message, affectedOffences }
+        │
+        ▼
+DefaultValidationService aggregates issues → errors / warnings lists
+        │
+        ▼
+DraftValidationResponse { validationId, isValid, errors, warnings, … }
+        │
+        ▼
+HTTP 200 JSON
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Request &amp; Response Types</h2>
+
+<table>
+  <thead>
+    <tr><th>DTO</th><th>Package</th><th>Key Fields</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>DraftValidationRequest</code></td>
+      <td><code>uk.gov.hmcts.cp.openapi.model</code></td>
+      <td><code>hearingId</code>, <code>defendants</code>, <code>offences</code>, <code>resultLines</code></td>
+    </tr>
+    <tr>
+      <td><code>DefendantDto</code></td>
+      <td>same</td>
+      <td><code>id</code>, <code>firstName</code>, <code>lastName</code>, <code>masterDefendantId</code></td>
+    </tr>
+    <tr>
+      <td><code>OffenceDto</code></td>
+      <td>same</td>
+      <td><code>id</code>, <code>offenceCode</code>, <code>offenceTitle</code>, <code>caseUrn</code>, <code>orderIndex</code></td>
+    </tr>
+    <tr>
+      <td><code>ResultLineDto</code></td>
+      <td>same</td>
+      <td><code>defendantId</code>, <code>offenceId</code>, <code>shortCode</code>, <code>category</code>, <code>isConcurrent</code>, <code>consecutiveToOffence</code></td>
+    </tr>
+    <tr>
+      <td><code>DraftValidationResponse</code></td>
+      <td>same</td>
+      <td><code>validationId</code>, <code>timestamp</code>, <code>mode</code>, <code>rulesEvaluated</code>, <code>isValid</code>, <code>errors</code>, <code>warnings</code>, <code>processingTimeMs</code></td>
+    </tr>
+    <tr>
+      <td><code>ValidationIssue</code></td>
+      <td>same</td>
+      <td><code>ruleId</code>, <code>severity</code> (ERROR / WARNING), <code>message</code>, <code>affectedOffences</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Step-by-Step Data Flow</h2>
+
+<!-- STEP 1 -->
+<div class="step-header">
+  <span class="step-num">1</span>
+  <span class="step-title">HTTP Entry — <code>ValidationController</code></span>
+</div>
+<p class="class-ref">uk.gov.hmcts.cp.controllers.ValidationController</p>
+<p>
+  Receives <code>POST /validate</code>. Deserialises the request body into a
+  <code>DraftValidationRequest</code> and delegates immediately to
+  <code>ValidationService.validate()</code>. No business logic lives here.
+</p>
+
+<!-- STEP 2 -->
+<div class="step-header">
+  <span class="step-num">2</span>
+  <span class="step-title">Orchestration — <code>DefaultValidationService</code></span>
+</div>
+<p class="class-ref">uk.gov.hmcts.cp.services.impl.DefaultValidationService</p>
+<ul>
+  <li>Checks the <code>RESULTS_VALIDATION</code> feature flag via <code>AzureFeatureToggleService</code>. If disabled, returns immediately with <code>mode="disabled"</code> and empty issue lists.</li>
+  <li>Iterates the ordered <code>List&lt;CelValidationRule&gt;</code> (sorted by <code>priority</code> ascending).</li>
+  <li>Calls <code>rule.evaluate(request)</code> on each rule and collects the returned <code>List&lt;ValidationIssue&gt;</code>.</li>
+  <li>Separates issues into <code>errors</code> and <code>warnings</code> lists.</li>
+  <li>Builds and returns <code>DraftValidationResponse</code> with <code>isValid = errors.isEmpty()</code>.</li>
+</ul>
+
+<!-- STEP 3 -->
+<div class="step-header">
+  <span class="step-num">3</span>
+  <span class="step-title">Rule Discovery (Startup) — <code>ValidationRuleAutoConfiguration</code></span>
+</div>
+<p class="class-ref">uk.gov.hmcts.cp.config.ValidationRuleAutoConfiguration</p>
+<p>
+  At application startup, scans <code>classpath*:rules/DR-*.yaml</code> and creates one
+  <code>CelValidationRule</code> bean per file. Rules are sorted by <code>priority</code> and
+  injected into <code>DefaultValidationService</code> as the <code>validationRules</code> bean.
+  Adding a new rule requires only a new YAML file — no Java changes needed if an existing
+  preprocessor type fits.
+</p>
+
+<!-- STEP 4 -->
+<div class="step-header">
+  <span class="step-num">4</span>
+  <span class="step-title">Rule Evaluation — <code>CelValidationRule</code></span>
+</div>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.cel.CelValidationRule</p>
+<p>For each rule, the following sequence runs:</p>
+<ul>
+  <li>Calls <code>RuleOverrideService.findOverride(ruleId)</code> to load any DB row from the <code>validation_rule</code> table (Caffeine-cached).</li>
+  <li>If the rule is disabled (YAML or DB), returns an empty list immediately.</li>
+  <li>Resolves the correct <code>ValidationPreprocessor</code> from <code>PreprocessorRegistry</code> using the YAML <code>preprocessing.type</code> field.</li>
+  <li>Calls <code>preprocessor.preprocess(request, config)</code> → <code>Map&lt;String, RuleEvaluationContext&gt;</code>.</li>
+  <li>For each context entry, evaluates every CEL condition (Steps 5–7).</li>
+  <li>For triggered conditions, constructs a <code>ValidationIssue</code> and applies <code>SeverityCeiling.resolve()</code>.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Step 5 — Preprocessing</h2>
+
+<p>
+  The preprocessor transforms the raw request into a domain-specific context map ready for
+  CEL evaluation. Two preprocessors are currently registered:
+</p>
+
+<!-- CUSTODIAL -->
+<h3>CustodialPreprocessor</h3>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor &nbsp;|&nbsp; YAML type: <code>custodial-concurrent-consecutive</code> &nbsp;|&nbsp; Used by: DR-SENT-002</p>
+
+<table>
+  <thead><tr><th>Action</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Groups result lines</td><td>By defendant (or master defendant for linked defendants)</td></tr>
+    <tr><td>Filters</td><td>Only lines whose <code>shortCode</code> is in <code>filterShortCodes</code> (e.g. <code>IMP</code>, <code>DTO</code>)</td></tr>
+    <tr><td>Skips</td><td>Groups with &lt;= <code>skipWhenGroupCount</code> offences</td></tr>
+    <tr><td>Classifies offences</td><td><code>noInfo</code> (no concurrent/consecutive), <code>hasInfo</code> (one set), <code>hasBoth</code> (both set)</td></tr>
+    <tr><td>Output</td><td><code>Map&lt;String, DefendantContext&gt;</code> — one entry per defendant group</td></tr>
+  </tbody>
+</table>
+
+<p><strong>DefendantContext CEL variables:</strong></p>
+<table>
+  <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>noInfoCount</code></td><td>Offences with no concurrent/consecutive info (excluding primary)</td></tr>
+    <tr><td><code>hasInfoCount</code></td><td>Offences with either concurrent or consecutive set</td></tr>
+    <tr><td><code>hasBothCount</code></td><td>Offences with both concurrent and consecutive set</td></tr>
+    <tr><td><code>hasPrimaryCount</code></td><td>1 if a primary sentence is present, else 0</td></tr>
+    <tr><td><code>totalOffences</code></td><td>Total custodial offences in the defendant group</td></tr>
+  </tbody>
+</table>
+
+<!-- DISQUALIFICATION -->
+<h3>DisqualificationExtendedTestPreprocessor</h3>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor &nbsp;|&nbsp; YAML type: <code>disqualification-extended-test</code> &nbsp;|&nbsp; Used by: DR-DISQ-001</p>
+
+<table>
+  <thead><tr><th>Action</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Groups result lines</td><td>By offence ID</td></tr>
+    <tr><td>Filters</td><td>Only offences whose <code>offenceCode</code> is in <code>relevantOffenceCodes</code></td></tr>
+    <tr><td>Checks finals</td><td>Whether any <code>category=F</code> result lines exist without excluded short codes (e.g. <code>WDRN</code>, <code>DISM</code>)</td></tr>
+    <tr><td>Checks extended test</td><td>Whether an extended-test code (<code>DDOTE</code>, <code>DDOTEL</code>) is already present</td></tr>
+    <tr><td>Output</td><td><code>Map&lt;String, DisqualificationContext&gt;</code> — one entry per offence</td></tr>
+  </tbody>
+</table>
+
+<p><strong>DisqualificationContext CEL variables:</strong></p>
+<table>
+  <thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>qualifyingCount</code></td><td>1 if offence qualifies (relevant + final non-excluded + no extended test), else 0</td></tr>
+    <tr><td><code>relevantCount</code></td><td>1 if offence code is in the relevant list, else 0</td></tr>
+    <tr><td><code>finalCategoryCount</code></td><td>Number of final (category F) result lines on the offence</td></tr>
+    <tr><td><code>excludedFinalCount</code></td><td>Final lines matching excluded short codes</td></tr>
+    <tr><td><code>disqExtTestCount</code></td><td>1 if extended-test code is already present, else 0</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Step 6 — CEL Evaluation: <code>CelExpressionEvaluator</code></h2>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator</p>
+
+<ul>
+  <li>Receives a CEL expression string (from the YAML <code>conditions[].expression</code> field) and the <code>Map&lt;String, Long&gt;</code> produced by <code>context.toCelContext()</code>.</li>
+  <li>Computes a cache key from <code>expression + "|" + sorted context keys</code>.</li>
+  <li>Retrieves or compiles a typed <code>Script</code> (each variable declared as <code>Int</code> / long).</li>
+  <li>Executes the script against the context map and returns a <code>boolean</code>.</li>
+</ul>
+
+<div class="flow-box">
+  Example: expression <code>"hasBothCount > 0"</code> with context <code>{hasBothCount: 0}</code> → <strong>false</strong> → no issue generated.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Step 7 — Message Resolution: <code>MessageTemplateResolver</code></h2>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver</p>
+
+<p>When a condition evaluates to <code>true</code>:</p>
+<ul>
+  <li>Retrieves the named offence ID list from <code>context.getOffenceIdSet(condition.affectedOffenceSet)</code>.</li>
+  <li>Sorts offences by <code>OffenceDisplayHelper.resolveOrderIndex()</code> and formats each as <code>"Offence N (URN:XXX)"</code>.</li>
+  <li>Joins with commas and "and": e.g. <code>"Offence 1, Offence 2, and Offence 3"</code>.</li>
+  <li>Replaces <code>${offenceNumbers}</code> and <code>${defendantName}</code> placeholders in the YAML message template.</li>
+  <li>Returns the fully expanded human-readable message string.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Step 8 — Severity Ceiling: <code>SeverityCeiling</code></h2>
+<p class="class-ref">uk.gov.hmcts.cp.services.rules.SeverityCeiling</p>
+
+<p>
+  Applies the DB override as a one-way ceiling.
+  A <code>WARNING</code> override can cap an <code>ERROR</code> down; nothing promotes a <code>WARNING</code> to <code>ERROR</code>.
+</p>
+
+<pre>
+resolve(yamlSeverity="ERROR",   dbSeverity="WARNING")  →  "WARNING"   ✓ capped down
+resolve(yamlSeverity="WARNING", dbSeverity="ERROR")    →  "WARNING"   ✗ not promoted
+resolve(yamlSeverity="ERROR",   dbSeverity=null)       →  "ERROR"       no override
+</pre>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Step 9 — Response Assembly</h2>
+<p class="class-ref">uk.gov.hmcts.cp.services.impl.DefaultValidationService</p>
+
+<table>
+  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td><code>validationId</code></td><td><code>"val-" + UUID</code> — unique per request</td></tr>
+    <tr><td><code>mode</code></td><td><code>"advisory"</code> (or <code>"disabled"</code> if feature flag is off)</td></tr>
+    <tr><td><code>isValid</code></td><td><code>true</code> if <code>errors</code> list is empty</td></tr>
+    <tr><td><code>errors</code></td><td>All <code>ERROR</code> severity <code>ValidationIssue</code> objects</td></tr>
+    <tr><td><code>warnings</code></td><td>All <code>WARNING</code> severity <code>ValidationIssue</code> objects</td></tr>
+    <tr><td><code>rulesEvaluated</code></td><td>List of rule IDs that ran during this request</td></tr>
+    <tr><td><code>processingTimeMs</code></td><td>Wall-clock duration for the full evaluation</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>End-to-End Transformation Summary</h2>
+
+<table>
+  <thead>
+    <tr><th>Stage</th><th>Class</th><th>Input</th><th>Output</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>HTTP deserialisation</td>
+      <td><code>ValidationController</code></td>
+      <td>HTTP POST body</td>
+      <td><code>DraftValidationRequest</code></td>
+    </tr>
+    <tr>
+      <td>Feature gate + rule loop</td>
+      <td><code>DefaultValidationService</code></td>
+      <td><code>DraftValidationRequest</code></td>
+      <td>Iterates rules, collects issues</td>
+    </tr>
+    <tr>
+      <td>Rule loading (startup)</td>
+      <td><code>ValidationRuleAutoConfiguration</code></td>
+      <td><code>DR-*.yaml</code> files</td>
+      <td><code>List&lt;CelValidationRule&gt;</code></td>
+    </tr>
+    <tr>
+      <td>DB ceiling check</td>
+      <td><code>RuleOverrideService</code> → <code>SeverityCeiling</code></td>
+      <td>Rule ID</td>
+      <td>Normalised severity string</td>
+    </tr>
+    <tr>
+      <td>Custodial preprocessing</td>
+      <td><code>CustodialPreprocessor</code></td>
+      <td>Result lines</td>
+      <td><code>Map&lt;String, DefendantContext&gt;</code></td>
+    </tr>
+    <tr>
+      <td>Disqualification preprocessing</td>
+      <td><code>DisqualificationExtendedTestPreprocessor</code></td>
+      <td>Result lines</td>
+      <td><code>Map&lt;String, DisqualificationContext&gt;</code></td>
+    </tr>
+    <tr>
+      <td>CEL variable bridge</td>
+      <td><code>DefendantContext / DisqualificationContext</code></td>
+      <td>Context record</td>
+      <td><code>Map&lt;String, Long&gt;</code></td>
+    </tr>
+    <tr>
+      <td>CEL evaluation</td>
+      <td><code>CelExpressionEvaluator</code></td>
+      <td>Expression + variable map</td>
+      <td><code>boolean</code></td>
+    </tr>
+    <tr>
+      <td>Message expansion</td>
+      <td><code>MessageTemplateResolver</code></td>
+      <td>Template + offence map</td>
+      <td>Human-readable <code>String</code></td>
+    </tr>
+    <tr>
+      <td>Response build</td>
+      <td><code>DefaultValidationService</code></td>
+      <td><code>List&lt;ValidationIssue&gt;</code></td>
+      <td><code>DraftValidationResponse</code></td>
+    </tr>
+    <tr>
+      <td>HTTP serialisation</td>
+      <td><code>ValidationController</code></td>
+      <td><code>DraftValidationResponse</code></td>
+      <td>HTTP 200 JSON</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<h2>Key Design Constraints</h2>
+
+<div class="constraint-box">
+  <ul>
+    <li>The <code>DraftValidationRequest</code> is <strong>read-only</strong> — no preprocessor or rule mutates it.</li>
+    <li>The DB severity ceiling is <strong>one-way</strong> — it can only cap downward, never promote a WARNING to ERROR.</li>
+    <li>Rules evaluate <strong>independently</strong> — there is no cross-rule shared state.</li>
+    <li>A rule failure is <strong>non-fatal</strong> — <code>DefaultValidationService</code> catches per-rule exceptions so one failing rule does not abort the rest.</li>
+    <li>Adding a new rule requires <strong>only a new YAML file</strong> if an existing preprocessor type covers the logic — no Java changes needed.</li>
+  </ul>
+</div>
+
+</body>
+</html>
