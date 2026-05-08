@@ -17,11 +17,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * End-to-end tests for DR-DISQ-001 (extended-test disqualification warning) over the public
  * validate endpoint. Covers Phase 3 / User Story 1 — the MVP path where a relevant Road
  * Traffic Act 1988 offence with a non-excluded final result and no DDOTE / DDOTEL recorded
- * surfaces as a single non-blocking warning above the affected offence.
+ * surfaces as a single non-blocking warning above the affected offence, plus suppression
+ * smoke tests for the two negative branches and the multi-defendant per-offence-grouping
+ * property.
+ *
+ * <p>Every scenario pins three response slices:
+ * <ul>
+ *   <li>{@code $.errors} is empty (no other rule produced an error on the payload).</li>
+ *   <li>{@code $.warnings[?(@.ruleId=='DR-DISQ-001')]} is the expected size for this rule.</li>
+ *   <li>{@code $.warnings} (the total warnings list) is the expected size, so a future
+ *       unrelated rule emitting a warning on the same payload cannot make these tests pass
+ *       silently.</li>
+ * </ul>
+ * Element-shape assertions then use the regular index path on the pinned-size warnings
+ * list. Negative scenarios assert all three are empty.
  */
 class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+    private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-001')]";
 
     private static final String EXPECTED_MESSAGE =
             "Check whether you need to add extended test disqualification with DDOTE "
@@ -58,6 +72,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
                     .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
@@ -67,7 +82,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
         }
 
         @Test
-        void two_defendants_on_same_relevant_offence_should_produce_one_warning() throws Exception {
+        void two_defendants_charged_with_same_relevant_offence_should_produce_one_warning()
+                throws Exception {
             String request = """
                     {
                       "hearingId": "h-multi",
@@ -96,6 +112,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
@@ -128,10 +146,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
     }
-
 
     @Nested
     @DisplayName("SuppressionSmoke")

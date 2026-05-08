@@ -2,7 +2,6 @@ package uk.gov.hmcts.cp.services.rules.cel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.defendant;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offenceWithCode;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
@@ -11,6 +10,8 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
@@ -89,7 +90,7 @@ class DisqualificationExtendedTestPreprocessorTest {
         }
 
         @Test
-        void two_defendants_on_one_relevant_offence_should_produce_one_qualifying_context() {
+        void two_defendants_charged_with_same_relevant_offence_should_produce_one_context() {
             DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "COEW", "d1", "off1")
@@ -97,9 +98,6 @@ class DisqualificationExtendedTestPreprocessorTest {
                             resultLine("rl2", "COEW", "d2", "off1")
                                     .category(ResultLineDto.CategoryEnum.F)),
                     List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
-            request.setDefendants(List.of(
-                    defendant("d1", "Alex", "Driver"),
-                    defendant("d2", "Sam", "Passenger")));
 
             Map<String, DisqualificationContext> result = preprocess(request);
 

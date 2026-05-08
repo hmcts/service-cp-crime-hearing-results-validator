@@ -44,8 +44,8 @@ Single-module Spring Boot service:
 
 **Purpose**: Confirm baseline build is green before refactoring; no scaffolding required (existing project).
 
-- [ ] T001 Verify baseline build is clean on `DD-41656-results-validation-warning`: run `gradle build` and confirm zero failures, zero Checkstyle warnings, zero PMD violations.
-- [ ] T002 Verify baseline DR-SENT-002 tests pass: `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.CelValidationRuleTest" --tests "uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessorTest"`.
+- [X] T001 Verify baseline build is clean on `DD-41656-results-validation-warning`: run `gradle build` and confirm zero failures, zero Checkstyle warnings, zero PMD violations.
+- [X] T002 Verify baseline DR-SENT-002 tests pass: `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.CelValidationRuleTest" --tests "uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessorTest"`.
 
 **Checkpoint**: Baseline is green. Any later red state is attributable to a task in this list.
 
@@ -59,20 +59,20 @@ Single-module Spring Boot service:
 
 ### Foundational tests (TDD — write failing first)
 
-- [ ] T003 [P] Failing test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessorRegistryTest.java` covering: (a) registry resolves `custodial-concurrent-consecutive` qualifier to `CustodialPreprocessor`, (b) registry throws `IllegalStateException` with the unknown qualifier in the message when asked for a missing type. Test must fail on compilation initially (registry class does not exist).
-- [ ] T004 Failing test: modify `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CelValidationRuleTest.java` so the System Under Test is constructed with a `PreprocessorRegistry` (test double or real with single mock preprocessor) instead of a `CustodialPreprocessor`. All existing assertions for DR-SENT-002 must still hold. Test must fail on compilation initially (constructor signature has not changed).
+- [X] T003 [P] Failing test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessorRegistryTest.java` covering: (a) registry resolves `custodial-concurrent-consecutive` qualifier to `CustodialPreprocessor`, (b) registry throws `IllegalStateException` with the unknown qualifier in the message when asked for a missing type. Test must fail on compilation initially (registry class does not exist).
+- [X] T004 Failing test: modify `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CelValidationRuleTest.java` so the System Under Test is constructed with a `PreprocessorRegistry` (test double or real with single mock preprocessor) instead of a `CustodialPreprocessor`. All existing assertions for DR-SENT-002 must still hold. Test must fail on compilation initially (constructor signature has not changed).
 
 ### Foundational implementation
 
-- [ ] T005 [P] Create sealed interface `src/main/java/uk/gov/hmcts/cp/services/rules/cel/RuleEvaluationContext.java` declaring `Map<String, Long> toCelContext()`, `List<String> getOffenceIdSet(String setName)`, `String defendantName()`, `List<String> allOffenceIds()`. Use `permits DefendantContext, DisqualificationContext`. (`DisqualificationContext` does not exist yet — compile will fail until T018.)
-- [ ] T006 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/DefendantContext.java` to add `implements RuleEvaluationContext`. No body changes — record accessors already match the interface.
-- [ ] T007 [P] Create interface `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ValidationPreprocessor.java` with: `String type()`, `Map<String, ? extends RuleEvaluationContext> preprocess(DraftValidationRequest request, PreprocessingDefinition config)`.
-- [ ] T008 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CustodialPreprocessor.java`: `implements ValidationPreprocessor`; add `@Override public String type() { return "custodial-concurrent-consecutive"; }`; widen the existing `preprocess` return type from `Map<String, DefendantContext>` to `Map<String, ? extends RuleEvaluationContext>`. No algorithm change.
-- [ ] T009 [P] Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessorRegistry.java` as a `@Component` accepting `List<ValidationPreprocessor>` in its constructor and exposing `ValidationPreprocessor require(String type)` that throws `IllegalStateException` with the missing qualifier in the message. Forbid duplicate qualifiers at construction time (throw `IllegalStateException`).
-- [ ] T010 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CelValidationRule.java`: replace the `CustodialPreprocessor preprocessor` field with `PreprocessorRegistry registry`; in `evaluate`, look up the preprocessor via `registry.require(ruleDefinition.getPreprocessing().getType())`; iterate `Map<String, ? extends RuleEvaluationContext>`; replace `context.defendantName()` calls (already on the interface) and `context.getOffenceIdSet(...)` calls — both unchanged at the call site. The constructor signature changes; update all callers.
-- [ ] T011 Modify `src/main/java/uk/gov/hmcts/cp/config/ValidationRuleAutoConfiguration.java`: replace the `CustodialPreprocessor` parameter with `PreprocessorRegistry`; pass it to `new CelValidationRule(...)`. Remove the `CustodialPreprocessor` import.
-- [ ] T012 Run `gradle test` and confirm: `T003` green, `T004` green, `CustodialPreprocessorTest` green (no behaviour change), all existing DR-SENT-002 integration tests green. If any DR-SENT-002 regression appears, fix in this phase before proceeding.
-- [ ] T013 Run `gradle build` to confirm Checkstyle Google (`maxWarnings=0`) and PMD (`ignoreFailures=false`) are green after the refactor.
+- [X] T005 [P] Create sealed interface `src/main/java/uk/gov/hmcts/cp/services/rules/cel/RuleEvaluationContext.java` declaring `Map<String, Long> toCelContext()`, `List<String> getOffenceIdSet(String setName)`, `String defendantName()`, `List<String> allOffenceIds()`. Use `permits DefendantContext, DisqualificationContext`. (`DisqualificationContext` does not exist yet — compile will fail until T018.)
+- [X] T006 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/DefendantContext.java` to add `implements RuleEvaluationContext`. No body changes — record accessors already match the interface.
+- [X] T007 [P] Create interface `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ValidationPreprocessor.java` with: `String type()`, `Map<String, ? extends RuleEvaluationContext> preprocess(DraftValidationRequest request, PreprocessingDefinition config)`.
+- [X] T008 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CustodialPreprocessor.java`: `implements ValidationPreprocessor`; add `@Override public String type() { return "custodial-concurrent-consecutive"; }`; widen the existing `preprocess` return type from `Map<String, DefendantContext>` to `Map<String, ? extends RuleEvaluationContext>`. No algorithm change.
+- [X] T009 [P] Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessorRegistry.java` as a `@Component` accepting `List<ValidationPreprocessor>` in its constructor and exposing `ValidationPreprocessor require(String type)` that throws `IllegalStateException` with the missing qualifier in the message. Forbid duplicate qualifiers at construction time (throw `IllegalStateException`).
+- [X] T010 Modify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CelValidationRule.java`: replace the `CustodialPreprocessor preprocessor` field with `PreprocessorRegistry registry`; in `evaluate`, look up the preprocessor via `registry.require(ruleDefinition.getPreprocessing().getType())`; iterate `Map<String, ? extends RuleEvaluationContext>`; replace `context.defendantName()` calls (already on the interface) and `context.getOffenceIdSet(...)` calls — both unchanged at the call site. The constructor signature changes; update all callers.
+- [X] T011 Modify `src/main/java/uk/gov/hmcts/cp/config/ValidationRuleAutoConfiguration.java`: replace the `CustodialPreprocessor` parameter with `PreprocessorRegistry`; pass it to `new CelValidationRule(...)`. Remove the `CustodialPreprocessor` import.
+- [X] T012 Run `gradle test` and confirm: `T003` green, `T004` green, `CustodialPreprocessorTest` green (no behaviour change), all existing DR-SENT-002 integration tests green. If any DR-SENT-002 regression appears, fix in this phase before proceeding.
+- [X] T013 Run `gradle build` to confirm Checkstyle Google (`maxWarnings=0`) and PMD (`ignoreFailures=false`) are green after the refactor.
 
 **Checkpoint**: Registry-based dispatch is in place. DR-SENT-002 produces identical output. Adding a new preprocessor `@Component` with a new qualifier is now sufficient to ship a new rule (no further `CelValidationRule` changes).
 
@@ -119,8 +119,8 @@ Single-module Spring Boot service:
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Run all US2 tests (`T024`–`T027`). They are expected to pass against the preprocessor implementation from `T021`. If any fail, fix the preprocessor — most likely cause is a missing `toUpperCase(Locale.ROOT)` somewhere in the excluded-code comparison.
-- [ ] T029 [US2] Run `gradle test` to confirm the full unit + integration test suite is green.
+- [X] T028 [US2] Run all US2 tests (`T024`–`T027`). They are expected to pass against the preprocessor implementation from `T021`. If any fail, fix the preprocessor — most likely cause is a missing `toUpperCase(Locale.ROOT)` somewhere in the excluded-code comparison.
+- [X] T029 [US2] Run `gradle test` to confirm the full unit + integration test suite is green.
 
 **Checkpoint**: User Story 2 is verifiably suppressed. The rule correctly treats withdrawn / dismissed / discharged / discontinued / count-on-file / indictment-on-file outcomes as non-warnings.
 
@@ -134,14 +134,14 @@ Single-module Spring Boot service:
 
 ### Tests for User Story 3 (TDD — write failing first) ⚠️
 
-- [ ] T030 [P] [US3] Failing unit test: in `DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested` class `ExtendedTestSuppression` covering: (a) `RT88026 + COEW + DDOTE` → `qualifyingCount == 0` and `disqExtTestCount == 1`; (b) `RT88026 + COEW + DDOTEL` → `qualifyingCount == 0`; (c) DDOTE recorded against a *different* offence in the same hearing → does NOT suppress the warning on the first offence (regression for the spec's "different offence" edge case).
-- [ ] T031 [US3] Failing unit test: in the same `@Nested` class, add `mixedCaseDdoteSuppresses` covering `ddote`, `DdOtE`, `ddotel`, `DDoTeL` → `qualifyingCount == 0`.
-- [ ] T032 [P] [US3] Failing integration test: in `DisqualificationExtendedTestRuleIT.java`, add `@Nested` class `SuppressedByDdote` with two scenarios: (a) single offence with `COEW + DDOTE` → zero issues; (b) two offences, one with `DDOTE` and one without → exactly one `DR-DISQ-001` issue, linked to the offence missing `DDOTE`.
+- [X] T030 [P] [US3] Failing unit test: in `DisqualificationExtendedTestPreprocessorTest.java`, add `@Nested` class `ExtendedTestSuppression` covering: (a) `RT88026 + COEW + DDOTE` → `qualifyingCount == 0` and `disqExtTestCount == 1`; (b) `RT88026 + COEW + DDOTEL` → `qualifyingCount == 0`; (c) DDOTE recorded against a *different* offence in the same hearing → does NOT suppress the warning on the first offence (regression for the spec's "different offence" edge case).
+- [X] T031 [US3] Failing unit test: in the same `@Nested` class, add `mixedCaseDdoteSuppresses` covering `ddote`, `DdOtE`, `ddotel`, `DDoTeL` → `qualifyingCount == 0`.
+- [X] T032 [P] [US3] Failing integration test: in `DisqualificationExtendedTestRuleIT.java`, add `@Nested` class `SuppressedByDdote` with two scenarios: (a) single offence with `COEW + DDOTE` → zero issues; (b) two offences, one with `DDOTE` and one without → exactly one `DR-DISQ-001` issue, linked to the offence missing `DDOTE`.
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Run all US3 tests (`T030`–`T032`). They are expected to pass against the preprocessor from `T021`. If any fail, fix the preprocessor.
-- [ ] T034 [US3] Run `gradle test` to confirm the full unit + integration test suite is green.
+- [X] T033 [US3] Run all US3 tests (`T030`–`T032`). They are expected to pass against the preprocessor from `T021`. If any fail, fix the preprocessor.
+- [X] T034 [US3] Run `gradle test` to confirm the full unit + integration test suite is green.
 
 **Checkpoint**: All three user stories are independently verified. The rule fires on qualifying offences and is correctly suppressed by both excluded final results and existing extended-test disqualifications.
 
@@ -151,17 +151,24 @@ Single-module Spring Boot service:
 
 **Purpose**: Cross-rule regression coverage, static analysis, performance, docs, manual smoke test.
 
-- [ ] T035 [P] Cross-rule regression test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/CrossRuleRegressionIT.java` (or add a `@Nested` class to `DisqualificationExtendedTestRuleIT.java`) covering the scenario from `research.md` R10 — a hearing that triggers both `DR-SENT-002` ERROR and `DR-DISQ-001` WARNING. Assert both issues are present, with correct `ruleId`, `severity`, and `affectedOffences`. Proves the rules evaluate independently per Constitution Principle III and FR-011.
-- [ ] T036 Update `README.md` "Current Rules" table to add a row: `DR-DISQ-001 | Extended test disqualification check`. (Markdown-only edit — exempt from the build loop per Constitution Principle IV.)
-- [ ] T037 [P] Run `gradle checkstyleMain pmdMain` and confirm zero warnings / zero violations across all modified files.
-- [ ] T038 [P] Run `gradle jacocoTestReport` and inspect coverage for `DisqualificationExtendedTestPreprocessor.java` and the new context record — target ≥85% line coverage on production code added in this feature (project default).
-- [ ] T039 Run `gradle build` for the canonical green-build gate (Checkstyle Google `maxWarnings=0` + PMD `ignoreFailures=false` + unit + integration tests). Required before any PR.
-- [ ] T040 Run `gradle api` to execute live API tests against the docker-compose stack — confirms the rule is discovered and reachable end-to-end.
-- [ ] T041 Manually walk through `quickstart.md` against a locally running service (`gradle bootRun`): hit each of the four curl scenarios (warns / excluded suppresses / DDOTE suppresses / two qualifying offences) and the DB-override scenario; confirm responses match the expected outputs.
+- [X] T034a [P] Framework-level (not per-rule) tightening of `ValidationRuleOverrideIntegrationTest.java`. The existing IT covers only the happy path — seeded `DR-SENT-002` row with `enabled=true, severity=ERROR` produces an ERROR. Extend it with three additional `@Test` methods exercising the **mechanism**, against the existing `DR-SENT-002` rule (NOT against DR-DISQ-001):
+
+    1. `validate_with_disabled_rule_should_emit_no_issues_for_that_rule` — set `enabled=false` for `DR-SENT-002`, POST a payload that would otherwise produce an ERROR, assert zero `DR-SENT-002` issues, then restore `enabled=true` (or rely on `@DirtiesContext`).
+    2. `validate_with_db_severity_lower_than_yaml_should_cap_downward` — set `severity='WARNING'` for `DR-SENT-002`, POST the same payload, assert the issue is still emitted but at `WARNING`, not `ERROR`.
+    3. `validate_with_db_severity_higher_than_yaml_should_be_no_op` — set `severity='ERROR'` against a YAML-level WARNING condition, assert severity stays at `WARNING` (Constitution Principle VI — never promote).
+
+    Once these three exist, severity-ceiling and runtime-toggle behaviour is proven once at the framework level. New rules (DR-DISQ-001 and any future rule) inherit this coverage without per-rule duplication. This task addresses the analyze-report finding C1 (and the user's policy decision: framework-once, not rule-by-rule).
+- [X] T035 [P] Cross-rule regression test: create `src/test/java/uk/gov/hmcts/cp/services/rules/cel/integration/CrossRuleRegressionIT.java` (or add a `@Nested` class to `DisqualificationExtendedTestRuleIT.java`) covering the scenario from `research.md` R10 — a hearing that triggers both `DR-SENT-002` ERROR and `DR-DISQ-001` WARNING. Assert both issues are present, with correct `ruleId`, `severity`, and `affectedOffences`. Proves the rules evaluate independently per Constitution Principle III and FR-011.
+- [X] T036 Update `README.md` "Current Rules" table to add a row: `DR-DISQ-001 | Extended test disqualification check`. (Markdown-only edit — exempt from the build loop per Constitution Principle IV.)
+- [X] T037 [P] Run `gradle checkstyleMain pmdMain` and confirm zero warnings / zero violations across all modified files.
+- [X] T038 [P] Run `gradle jacocoTestReport` and inspect coverage for `DisqualificationExtendedTestPreprocessor.java` and the new context record — target ≥85% line coverage on production code added in this feature (project default).
+- [X] T039 Run `gradle build` for the canonical green-build gate (Checkstyle Google `maxWarnings=0` + PMD `ignoreFailures=false` + unit + integration tests). Required before any PR.
+- [X] T040 Run `gradle api` to execute live API tests against the docker-compose stack — confirms the rule is discovered and reachable end-to-end.
+- [X] T041 Manually walk through `quickstart.md` against a locally running service (`gradle bootRun`): hit each of the four curl scenarios (warns / excluded suppresses / DDOTE suppresses / two qualifying offences) and the DB-override scenario; confirm responses match the expected outputs.
 - [ ] T042 [P] Run `gradle gatlingRun-uk.gov.hmcts.cp.simulation.CapacitySimulation -Dgatling.baseUrl=http://localhost:4550` and compare the latency report to a recent baseline. Per `SC-005`, no regression.
-- [ ] T043 Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (per Workflow's Spec → Code Review → QA → Spec-Validate loop). Expected: COMPLIANT.
-- [ ] T044 Run the `code-reviewer` reviewer agent against the diff. Expected: PASS.
-- [ ] T045 Run the `qa` reviewer agent against the diff. Expected: PASS (verifies failing-test-before-prod-code commit ordering per Constitution VIII).
+- [X] T043 Run the `spec-validator` reviewer agent against `src/main/resources/rules/DR-DISQ-001.yaml` (per Workflow's Spec → Code Review → QA → Spec-Validate loop). Expected: COMPLIANT.
+- [X] T044 Run the `code-reviewer` reviewer agent against the diff. Expected: PASS.
+- [X] T045 Run the `qa` reviewer agent against the diff. Expected: PASS (verifies failing-test-before-prod-code commit ordering per Constitution VIII).
 - [ ] T046 Open the PR. Description MUST cite Constitution Principles I, III, VI, VIII (the principles this change touches) per Workflow / Governance.
 
 **Checkpoint**: ~~Feature is complete, reviewed, and ready to merge.~~ **SUPERSEDED 2026-04-28** — original 001 implementation merged-able as a refactor + initial rule shape, but production behaviour requires Phase 7's `category = 'F'` gate to land before share is fit for purpose. See Phase 7 below.
