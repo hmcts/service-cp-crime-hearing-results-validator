@@ -9,6 +9,7 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,7 +26,7 @@ class CelValidationRuleTest {
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule(
             "rules/DR-SENT-002.yaml",
-            new CustodialPreprocessor(),
+            new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
@@ -265,7 +266,7 @@ class CelValidationRuleTest {
                 mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class);
         CelValidationRule localRule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -313,6 +314,25 @@ class CelValidationRuleTest {
         assertThat(issues).hasSize(2);
         assertThat(issues).extracting(ValidationIssue::getSeverity)
                 .containsOnly(ValidationIssue.SeverityEnum.WARNING);
+    }
+
+    /**
+     * Verifies that a YAML rule referencing an unregistered preprocessor qualifier fails fast at
+     * construction time rather than deferring the failure to the first validation request.
+     */
+    @Test
+    void constructor_should_throw_when_preprocessor_qualifier_unknown() {
+        PreprocessorRegistry emptyRegistry = new PreprocessorRegistry(List.of());
+
+        assertThatThrownBy(() -> new CelValidationRule(
+                "rules/DR-SENT-002.yaml",
+                emptyRegistry,
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("custodial-concurrent-consecutive");
     }
 
 }

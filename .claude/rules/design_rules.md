@@ -74,6 +74,24 @@ rule:
    - Add unit tests for the preprocessor and the rule (TDD: write tests first — Constitution Principle VIII)
 3. **Test the YAML:** the `spec-validator` agent compiles every CEL expression, validates the schema, and confirms the `preprocessing.type` resolves to a registered bean.
 
+## Test the framework once, not the rule again (severity ceiling / runtime overrides)
+
+The runtime-override mechanism (`validation_rule` table → `RuleOverrideService` → Caffeine cache → `SeverityCeiling.resolve()` → `CelValidationRule`) is **rule-agnostic**. The same code path executes for every rule. Therefore: **per-rule integration tests of override / severity-ceiling behaviour are duplicative and should be rejected by reviewers.** The mechanism is proven once, against `DR-SENT-002`, in `ValidationRuleOverrideIntegrationTest.java`. New rules (current or future) inherit that coverage without their own override IT.
+
+What a new rule's integration test SHOULD cover:
+
+- Rule-specific input → expected output (the rule's actual logic)
+- Edge cases unique to that rule's preprocessor
+
+What it SHOULD NOT cover (already proven framework-level):
+
+- Inserting a `validation_rule` row with `enabled=false` and asserting suppression.
+- DB severity ceiling capping the YAML severity downward.
+- Severity ceiling refusing to promote.
+- Cache invalidation across runtime row changes.
+
+If the framework-level IT is missing a scenario you need, **extend `ValidationRuleOverrideIntegrationTest.java`** rather than copying it into a new per-rule IT.
+
 ## Out-of-Scope (do not add)
 
 - Business logic in CEL expressions beyond simple count comparisons. If an expression needs branching, add the branching to the preprocessor and expose a single boolean / count to CEL.
