@@ -29,6 +29,8 @@ public class CelValidationRule implements ValidationRule {
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
+    final ValidationPreprocessor preprocessor;
+
     /**
      * Constructs the rule from a YAML path and the required collaborators. Fails fast at
      * construction time if the YAML's {@code preprocessing.type} qualifier does not resolve in
@@ -47,7 +49,7 @@ public class CelValidationRule implements ValidationRule {
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
-        preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
+        preprocessor= preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
     @Override
@@ -80,8 +82,6 @@ public class CelValidationRule implements ValidationRule {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
                     .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
 
-            final ValidationPreprocessor preprocessor = preprocessorRegistry.require(
-                    ruleDefinition.getPreprocessing().getType());
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
