@@ -63,6 +63,20 @@ public final class ValidationRuleTestHelper {
                 .build();
     }
 
+    public static OffenceDto offenceWithCtlFlags(String id, int countNumber, String title,
+                                                  boolean hasExistingCtlRecord,
+                                                  boolean isConvicted) {
+        return OffenceDto.builder()
+                .id(id)
+                .offenceCode("TH68001")
+                .offenceTitle(title)
+                .orderIndex(countNumber)
+                .caseUrn("32AH9105826")
+                .hasExistingCtlRecord(hasExistingCtlRecord)
+                .isConvicted(isConvicted)
+                .build();
+    }
+
     public static DefendantDto defendant(String id, String firstName, String lastName) {
         return DefendantDto.builder()
                 .id(id)
