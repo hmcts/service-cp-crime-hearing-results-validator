@@ -78,8 +78,11 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 - Test naming: `{action}_{scenario}_should_{expectation}` for methods; `@Nested` classes with `@DisplayName` for grouped scenarios
 - Docker health checks use `bash /dev/tcp` (JRE image lacks curl)
 - Default server port: `4550` (override via `SERVER_PORT` env var)
+- **Spec-driven workflow**: features flow through `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`. The constitution at `.specify/memory/constitution.md` is authoritative for principles (YAML/CEL Rule-First, TDD, SLF4J-only / no `System.out`, severity-ceiling never-promote, etc.). Branches use Jira-id prefix (e.g. `DD-41656-...`).
+- **Local speckit patches**: `SPECKIT-LOCAL-PATCH:` markers identify files diverged from upstream — `.specify/scripts/bash/{common,setup-plan,check-prerequisites}.sh`, `.specify/extensions/git/scripts/bash/{create-new-feature,auto-commit}.sh`, and `.claude/skills/speckit-git-feature/SKILL.md`. Re-apply after `specify extension update`.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+shell commands, and other important information, read the current plan:
+[specs/001-extended-test-disq-warning/plan.md](specs/001-extended-test-disq-warning/plan.md)
 <!-- SPECKIT END -->

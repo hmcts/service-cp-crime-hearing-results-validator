@@ -1,0 +1,301 @@
+# =============================================================================
+# T041 — Manual smoke test for DR-DISQ-001
+# =============================================================================
+# Companion to specs/001-extended-test-disq-warning/quickstart.md §3.
+# Each scenario is independently paste-able (no shell variables).
+#
+# Targets the cpp-dev-environment stack: hearing-results-validator behind
+# Envoy on localhost:8048. Identity is provided by the in-stack IDAM
+# simulator, so no extra auth setup is required.
+#
+# Pre-flight:
+#   1. cd ~/moj/service-cp-crime-hearing-results-validator && gradle bootJar
+#   2. cd ~/moj/cpp-dev-environment       && ./scripts/start-minimal.sh
+#   3. docker restart hearing-results-validator   (only if it was already up)
+#   4. (optional) docker logs -f hearing-results-validator | grep "Auto-discovered"
+#      should show: "Auto-discovered 2 validation rule(s) from classpath:rules/"
+#
+# All scenarios pipe through `jq .` for readable output. Drop "| jq ." if you
+# don't have jq installed.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# 3.1  Triggers the warning
+# -----------------------------------------------------------------------------
+# RT88026 (dangerous driving) + COEW + no DDOTE/DDOTEL.
+# Expect: errors=[], warnings=[{ruleId="DR-DISQ-001", severity="WARNING",
+#         message="Check whether you need to add extended test disqualification
+#                  with DDOTE (disqualification and extended test) or DDOTEL
+#                  (disqualification for life and extended test)",
+#         affectedOffences=[{offenceId="o1", ...}]}]
+# -----------------------------------------------------------------------------
+curl -sX POST http://localhost:8048/api/validation/validate \
+  -H "Content-Type: application/json" \
+  -H "CJSCPPUID: 7aee5dea-b0de-4604-b49b-86c7788cfc4b" \
+  -H "CPP-ACTION: validation-service.validate" \
+  -d '{
+    "hearingId": "smoke-1",
+    "hearingDay": "2026-04-26",
+    "courtType": "MAGISTRATES",
+    "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+    "offences": [
+      {"id": "o1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 1}
+    ],
+    "resultLines": [
+      {"id": "r1", "shortCode": "COEW", "label": "Convicted", "defendantId": "d1", "offenceId": "o1"}
+    ]
+  }' | jq .
+
+Response:
+{
+  "errors": [],
+  "isValid": true,
+  "mode": "advisory",
+  "processingTimeMs": 175,
+  "rulesEvaluated": [
+    "DR-SENT-002",
+    "DR-DISQ-001"
+  ],
+  "timestamp": "2026-04-26T22:59:45.290242646Z",
+  "validationId": "val-f6fbf710-9948-415f-bdb6-477be536510c",
+  "warnings": [
+    {
+      "affectedOffences": [
+        {
+          "offenceId": "o1",
+          "offenceTitle": "Dangerous driving"
+        }
+      ],
+      "affectedResultCodes": [],
+      "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
+      "ruleId": "DR-DISQ-001",
+      "severity": "WARNING"
+    }
+  ]
+}
+
+
+# -----------------------------------------------------------------------------
+# 3.2  Excluded final result suppresses
+# -----------------------------------------------------------------------------
+# Same shape as 3.1 but the result short code is `wdrn` (withdrawn).
+# Expect: errors=[], warnings=[]
+# -----------------------------------------------------------------------------
+curl -sX POST http://localhost:8048/api/validation/validate \
+  -H "Content-Type: application/json" \
+  -H "CJSCPPUID: 7aee5dea-b0de-4604-b49b-86c7788cfc4b" \
+  -H "CPP-ACTION: validation-service.validate" \
+  -d '{
+    "hearingId": "smoke-2",
+    "hearingDay": "2026-04-26",
+    "courtType": "MAGISTRATES",
+    "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+    "offences": [
+      {"id": "o1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 1}
+    ],
+    "resultLines": [
+      {"id": "r1", "shortCode": "wdrn", "label": "Withdrawn", "defendantId": "d1", "offenceId": "o1"}
+    ]
+  }' | jq .
+
+Response:
+{
+  "errors": [],
+  "isValid": true,
+  "mode": "advisory",
+  "processingTimeMs": 3,
+  "rulesEvaluated": [
+    "DR-SENT-002",
+    "DR-DISQ-001"
+  ],
+  "timestamp": "2026-04-26T23:01:00.936884257Z",
+  "validationId": "val-ced7c681-7428-4511-933f-86793345d474",
+  "warnings": []
+}
+
+# -----------------------------------------------------------------------------
+# 3.3  DDOTE present suppresses
+# -----------------------------------------------------------------------------
+# RT88026 + COEW + DDOTE on the same offence.
+# Expect: errors=[], warnings=[]   (DDOTE suppresses the rule)
+# -----------------------------------------------------------------------------
+curl -sX POST http://localhost:8048/api/validation/validate \
+  -H "Content-Type: application/json" \
+  -H "CJSCPPUID: 7aee5dea-b0de-4604-b49b-86c7788cfc4b" \
+  -H "CPP-ACTION: validation-service.validate" \
+  -d '{
+    "hearingId": "smoke-3",
+    "hearingDay": "2026-04-26",
+    "courtType": "MAGISTRATES",
+    "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+    "offences": [
+      {"id": "o1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 1}
+    ],
+    "resultLines": [
+      {"id": "r1", "shortCode": "COEW",  "label": "Convicted",        "defendantId": "d1", "offenceId": "o1"},
+      {"id": "r2", "shortCode": "DDOTE", "label": "Disqual extended", "defendantId": "d1", "offenceId": "o1"}
+    ]
+  }' | jq .
+Response:
+{
+  "errors": [],
+  "isValid": true,
+  "mode": "advisory",
+  "processingTimeMs": 2,
+  "rulesEvaluated": [
+    "DR-SENT-002",
+    "DR-DISQ-001"
+  ],
+  "timestamp": "2026-04-26T23:01:49.376979885Z",
+  "validationId": "val-dfea6be3-87e4-4d9f-9b13-63d789b5d2f3",
+  "warnings": []
+}
+
+# -----------------------------------------------------------------------------
+# 3.4  Two qualifying offences → two warnings
+# -----------------------------------------------------------------------------
+# RT88026 + COEW (offence o1) and RT88046 + FO (offence o2).
+# Expect: errors=[], warnings.length()=2, both with ruleId="DR-DISQ-001",
+#         each affectedOffences carries its own offenceId (o1 / o2).
+# -----------------------------------------------------------------------------
+curl -sX POST http://localhost:8048/api/validation/validate \
+  -H "Content-Type: application/json" \
+  -H "CJSCPPUID: 7aee5dea-b0de-4604-b49b-86c7788cfc4b" \
+  -H "CPP-ACTION: validation-service.validate" \
+  -d '{
+    "hearingId": "smoke-4",
+    "hearingDay": "2026-04-26",
+    "courtType": "MAGISTRATES",
+    "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+    "offences": [
+      {"id": "o1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving",                 "orderIndex": 1},
+      {"id": "o2", "offenceCode": "RT88046", "offenceTitle": "Causing death by dangerous driving","orderIndex": 2}
+    ],
+    "resultLines": [
+      {"id": "r1", "shortCode": "COEW", "label": "Convicted",  "defendantId": "d1", "offenceId": "o1"},
+      {"id": "r2", "shortCode": "FO",   "label": "Final order","defendantId": "d1", "offenceId": "o2"}
+    ]
+  }' | jq .
+
+Response:
+{
+  "errors": [],
+  "isValid": true,
+  "mode": "advisory",
+  "processingTimeMs": 3,
+  "rulesEvaluated": [
+    "DR-SENT-002",
+    "DR-DISQ-001"
+  ],
+  "timestamp": "2026-04-26T23:02:39.340044463Z",
+  "validationId": "val-c5d46a2c-c2f4-48dd-8e77-53a8d0d1d6ca",
+  "warnings": [
+    {
+      "affectedOffences": [
+        {
+          "offenceId": "o1",
+          "offenceTitle": "Dangerous driving"
+        }
+      ],
+      "affectedResultCodes": [],
+      "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
+      "ruleId": "DR-DISQ-001",
+      "severity": "WARNING"
+    },
+    {
+      "affectedOffences": [
+        {
+          "offenceId": "o2",
+          "offenceTitle": "Causing death by dangerous driving"
+        }
+      ],
+      "affectedResultCodes": [],
+      "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
+      "ruleId": "DR-DISQ-001",
+      "severity": "WARNING"
+    }
+  ]
+}
+
+
+# -----------------------------------------------------------------------------
+# 3.5  DB override disable → rule produces no warnings
+# -----------------------------------------------------------------------------
+# Three steps: insert override row, wait for cache, repeat 3.1; clean up after.
+# Caffeine TTL on the ruleOverrides cache defaults to 30s
+# (validation.cache.override-ttl-seconds in CacheConfig), so a 35s sleep is
+# safe; bump it if you've configured a longer TTL in this environment.
+#
+# Note: the validation_rule.severity column is NOT NULL, so when disabling the
+# rule we still need to provide a severity — set it to the rule's YAML-default
+# (WARNING) which has no semantic effect when enabled=false. (The contract
+# document treats the column as semantically optional in this case; the schema
+# disagrees.)
+# -----------------------------------------------------------------------------
+
+# Step 1 — disable the rule at runtime (works under cpp-dev-environment Postgres)
+PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validator-db -c "
+  INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)
+  VALUES ('DR-DISQ-001', false, 'WARNING', now(), 'manual-smoke-test')
+  ON CONFLICT (id) DO UPDATE
+    SET enabled=false, severity='WARNING', updated_at=now(), updated_by='manual-smoke-test';
+"
+
+# Step 2 — wait for the override-cache TTL, then repeat the 3.1 payload
+sleep 35
+curl -sX POST http://localhost:8048/api/validation/validate \
+  -H "Content-Type: application/json" \
+  -H "CJSCPPUID: 7aee5dea-b0de-4604-b49b-86c7788cfc4b" \
+  -H "CPP-ACTION: validation-service.validate" \
+  -d '{
+    "hearingId": "smoke-5",
+    "hearingDay": "2026-04-26",
+    "courtType": "MAGISTRATES",
+    "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+    "offences": [
+      {"id": "o1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 1}
+    ],
+    "resultLines": [
+      {"id": "r1", "shortCode": "COEW", "label": "Convicted", "defendantId": "d1", "offenceId": "o1"}
+    ]
+  }' | jq '{errors, warnings, rulesEvaluated}'
+# Expect: errors=[], warnings=[], rulesEvaluated still includes both rule ids
+# (the rule was evaluated but produced no issue because enabled=false).
+
+Response:
+{
+  "errors": [],
+  "warnings": [],
+  "rulesEvaluated": [
+    "DR-SENT-002",
+    "DR-DISQ-001"
+  ]
+}
+
+# Step 3 — clean up so the next session is back to default (rule enabled per YAML)
+PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validator-db -c "
+  DELETE FROM validation_rule WHERE id='DR-DISQ-001';
+"
+
+
+# =============================================================================
+# T041 verification log — 2026-04-27, against cpp-dev-environment stack
+# =============================================================================
+# All five scenarios produced the expected response shape end-to-end through
+# Envoy + cp-auth-rules-filter + the assembled JAR running in the
+# hearing-results-validator container against real Postgres.
+#
+#   3.1  RT88026 + COEW + no DDOTE   → 1 DR-DISQ-001 WARNING on offenceId=o1   PASS
+#   3.2  RT88026 + wdrn               → no warnings (excluded final suppresses) PASS
+#   3.3  RT88026 + COEW + DDOTE       → no warnings (DDOTE suppresses)          PASS
+#   3.4  RT88026/o1 + RT88046/o2      → 2 DR-DISQ-001 warnings, one per offence PASS
+#   3.5  validation_rule enabled=false → no warnings after Caffeine TTL          PASS
+#
+# Latency for the smoke-1 trigger path: 175 ms cold, ~3 ms warm. SC-005 holds.
+#
+# PR description one-liner:
+#   "T041: ran specs/001-extended-test-disq-warning/smoke/curls.txt against the
+#    cpp-dev-environment stack on localhost:8048. All five scenarios produced
+#    the expected response shape; rule disable verified via validation_rule row."
+# =============================================================================
