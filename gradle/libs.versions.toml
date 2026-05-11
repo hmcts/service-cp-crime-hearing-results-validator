@@ -18,7 +18,7 @@ cel-tools = "0.6.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.2.4"
-gatling = "3.15.0.1"
+gatling = "3.15.0.2"
 
 [libraries]
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
