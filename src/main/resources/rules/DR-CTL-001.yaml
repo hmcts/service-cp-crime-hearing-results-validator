@@ -1,0 +1,32 @@
+rule:
+  id: "DR-CTL-001"
+  title: "CTL missing check"
+  description: >-
+    Warns when a remand-type result is recorded against an offence that has no
+    existing CTL record from a previous hearing, no CTL result in the current
+    hearing, and is not convicted.
+  priority: 3000
+  enabled: true
+
+  preprocessing:
+    type: "ctl-missing"
+    remandShortCodes:
+      - RI
+      - RIYDA
+      - RIH
+      - RIB
+      - RILA
+      - RILAB
+      - REMYD
+    ctlShortCodes:
+      - CTL
+
+  conditions:
+    - id: "AC1"
+      name: "Remand result with no CTL"
+      expression: "ctlWarningCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence does not have a CTL. If the trial has started a CTL is not
+        needed. It is your responsibility to check and confirm.
+      affectedOffenceSet: "warningOffenceIds"
