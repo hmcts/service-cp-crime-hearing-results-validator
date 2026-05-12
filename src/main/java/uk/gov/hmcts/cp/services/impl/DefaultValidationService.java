@@ -38,16 +38,8 @@ public class DefaultValidationService implements ValidationService {
     @Override
     @Observed(name = "validation.request")
     public DraftValidationResponse validate(final DraftValidationRequest request) {
-        final DraftValidationResponse response;
 
-        if (isFeatureActive()) {
-            response = evaluateRules(request);
-        } else {
-            log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
-            response = buildDisabledResponse();
-        }
-
-        return response;
+        throw new NullPointerException("InternalServer error");
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
