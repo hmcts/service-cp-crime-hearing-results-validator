@@ -24,4 +24,10 @@ public class PreprocessingDefinition {
     private List<String> extendedTestShortCodes;
     private List<String> remandShortCodes;
     private List<String> ctlShortCodes;
+    private List<String> communityOrderShortCodes;
+    private List<String> curfewShortCodes;
+    private List<String> curfewTagShortCodes;
+    private List<String> furtherCurfewShortCodes;
+    private List<String> alcoholAbstinenceShortCodes;
+    private List<String> unpaidWorkShortCodes;
 }

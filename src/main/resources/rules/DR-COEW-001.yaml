@@ -1,0 +1,76 @@
+rule:
+  id: "DR-COEW-001"
+  title: "Community Order End Date Validation"
+  description: >-
+    Validates that the end date of a community order (COEW, COS, CONI) is in the
+    future, is not earlier than any attached requirement's end date (CUR, CURE, CURA,
+    AAR), and is at least 12 months from the hearing date when an Unpaid Work
+    requirement (UPWR) is present.
+  priority: 4000
+  enabled: true
+
+  preprocessing:
+    type: "community-order-end-date"
+    communityOrderShortCodes:
+      - COEW
+      - COS
+      - CONI
+    curfewShortCodes:
+      - CUR
+    curfewTagShortCodes:
+      - CURE
+    furtherCurfewShortCodes:
+      - CURA
+    alcoholAbstinenceShortCodes:
+      - AAR
+    unpaidWorkShortCodes:
+      - UPWR
+
+  conditions:
+    - id: "AC1"
+      name: "Community order end date in the past"
+      expression: "pastEndDateCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date must be in the future
+      affectedOffenceSet: "allOffenceIds"
+    - id: "AC2a"
+      name: "Order end date before CUR end date"
+      expression: "curViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew (community requirement) - CUR
+      affectedOffenceSet: "allOffenceIds"
+    - id: "AC2b"
+      name: "Order end date before CURE end date of tag"
+      expression: "cureViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew with electronic monitoring - CURE
+      affectedOffenceSet: "allOffenceIds"
+    - id: "AC2c"
+      name: "Order end date before CURA end date"
+      expression: "curaViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Further curfew requirement made - CURA
+      affectedOffenceSet: "allOffenceIds"
+    - id: "AC2d"
+      name: "Order end date before AAR until date"
+      expression: "aarViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Alcohol abstinence and monitoring - AAR
+      affectedOffenceSet: "allOffenceIds"
+    - id: "AC3"
+      name: "UPWR order end date less than 12 months from hearing"
+      expression: "upwrViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must be at least 12 months as it includes an
+        unpaid work requirement
+      affectedOffenceSet: "allOffenceIds"
