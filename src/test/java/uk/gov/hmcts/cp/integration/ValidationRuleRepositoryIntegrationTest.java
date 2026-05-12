@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.integration;
 
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
@@ -13,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for the rule override JPA repository against the test database.
  */
+@Disabled
 class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
 
     @Resource

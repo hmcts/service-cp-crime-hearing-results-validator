@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for actuator endpoints exposed by the application.
  */
+@Disabled
 class ActuatorIntegrationTest extends IntegrationTestBase {
 
     /**

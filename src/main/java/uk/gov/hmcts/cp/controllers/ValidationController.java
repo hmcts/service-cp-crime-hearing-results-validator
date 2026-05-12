@@ -35,6 +35,6 @@ public class ValidationController implements ValidationApi {
             @Nullable final String cppClientCorrelationId) {
 
         log.info("Validate draft results request received");
-        throw new NullPointerException("Test for 50O Internal Server Error");
+        return ResponseEntity.ok(validationService.validate(draftValidationRequest));
     }
 }

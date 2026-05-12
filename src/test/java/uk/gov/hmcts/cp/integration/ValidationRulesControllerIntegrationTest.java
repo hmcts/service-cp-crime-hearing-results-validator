@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.containsString;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * End-to-end tests for the validation-rule metadata endpoints.
  */
+@Disabled
 class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
 
     /**

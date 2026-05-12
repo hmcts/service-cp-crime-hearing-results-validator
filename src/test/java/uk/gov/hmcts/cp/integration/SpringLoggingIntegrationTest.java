@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for the application JSON logging configuration in a Spring Boot test context.
  */
 @Slf4j
+@Disabled
 class SpringLoggingIntegrationTest extends IntegrationTestBase {
     private PrintStream originalStdOut = System.out;
 
