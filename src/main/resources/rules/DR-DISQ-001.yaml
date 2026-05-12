@@ -13,7 +13,10 @@ rule:
     relevantOffenceCodes:
       - RT88046   # s.1   — causing death by dangerous driving
       - RT88526   # s.1A  — causing serious injury by dangerous driving
+      - RT88526A  # s.1A  — causing serious injury by dangerous driving
+      - RT88526B  # s.1A  — causing serious injury by dangerous driving
       - RT88026   # s.2   — dangerous driving
+      - RT88026B   # s.2   — dangerous driving
       - RT88530   # s.3ZC — causing death by driving: disqualified drivers
       - RT88531   # s.3ZD — causing serious injury by driving: disqualified drivers
     excludedFinalShortCodes:
