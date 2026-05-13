@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -31,7 +32,7 @@ public class ValidationController implements ValidationApi {
     @Override
     public ResponseEntity<DraftValidationResponse> validateDraftResults(
             final String cjsCppUid,
-            final DraftValidationRequest draftValidationRequest,
+            @Valid final DraftValidationRequest draftValidationRequest,
             @Nullable final String cppClientCorrelationId) {
 
         log.info("Validate draft results request received");
