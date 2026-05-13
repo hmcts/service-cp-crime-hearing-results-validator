@@ -248,7 +248,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
             """;
 
     /**
-     * Verifies malformed JSON is translated into the standard bad-request response.
+     * Verifies invalid JSON with missing field is translated into the standard bad-request response.
      */
     @Test
     void validate_should_return_400_when_no_hearing_id_json() throws Exception {
