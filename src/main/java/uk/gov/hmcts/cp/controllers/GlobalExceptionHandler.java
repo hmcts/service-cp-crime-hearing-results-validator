@@ -7,7 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import java.util.stream.Collectors;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.core.annotation.Order;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
  * Converts controller-layer exceptions into RFC 7807 Problem Detail responses.
  */
 @RestControllerAdvice
+@Order(-1)
 @Slf4j
 public class GlobalExceptionHandler {
 
@@ -41,6 +45,26 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(status)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .body(problem);
+    }
+
+    /** Handles bean validation failures on request bodies and returns a 400 Problem Detail response. */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(
+            final MethodArgumentNotValidException exception) {
+
+        final String detail = exception.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+
+        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, detail.isEmpty() ? "Validation failed" : detail);
+        problem.setTitle("Bad Request");
+        addTraceProperties(problem);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }
