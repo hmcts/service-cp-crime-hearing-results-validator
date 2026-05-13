@@ -8,7 +8,7 @@ gradle-git-properties = "2.5.7"
 avast-docker-compose = "0.17.21"
 cp-auth-rules-filter = "1.0.7"
 cp-audit-filter-springboot = "1.0.5"
-swagger-core = "2.2.49"
+swagger-core = "2.2.50"
 junit-bom = "6.0.3"
 logstash-logback-encoder = "9.0"
 owasp-encoder = "1.4.0"
@@ -18,7 +18,7 @@ cel-tools = "0.6.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.2.4"
-gatling = "3.15.0.1"
+gatling = "3.15.0.2"
 
 [libraries]
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
