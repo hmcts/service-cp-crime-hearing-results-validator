@@ -29,7 +29,7 @@ public class CelValidationRule implements ValidationRule {
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
-    final ValidationPreprocessor preprocessor;
+    private final ValidationPreprocessor preprocessor;
 
     /**
      * Constructs the rule from a YAML path and the required collaborators. Fails fast at
@@ -49,7 +49,7 @@ public class CelValidationRule implements ValidationRule {
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
-        preprocessor= preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
+        preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
     @Override
