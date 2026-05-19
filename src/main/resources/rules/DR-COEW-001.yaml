@@ -27,19 +27,12 @@ rule:
       - UPWR
 
   conditions:
-    - id: "AC1"
-      name: "Community order end date in the past"
-      expression: "pastEndDateCount > 0"
-      severity: ERROR
-      messageTemplate: >-
-        The end date must be in the future
-      affectedOffenceSet: "allOffenceIds"
     - id: "AC2a"
       name: "Order end date before CUR end date"
       expression: "curViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Curfew (community requirement) - CUR
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2b"
@@ -47,7 +40,7 @@ rule:
       expression: "cureViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Curfew with electronic monitoring - CURE
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2c"
@@ -55,7 +48,7 @@ rule:
       expression: "curaViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Further curfew requirement made - CURA
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2d"
@@ -63,7 +56,7 @@ rule:
       expression: "aarViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring - AAR
       affectedOffenceSet: "allOffenceIds"
     - id: "AC3"
@@ -71,6 +64,6 @@ rule:
       expression: "upwrViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
+        ${defendantName} — The end date of the order must be at least 12 months as it includes an
         unpaid work requirement
       affectedOffenceSet: "allOffenceIds"

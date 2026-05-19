@@ -15,7 +15,6 @@ One context instance is created per `(defendantId, offenceId)` pair that contain
 ```
 CommunityOrderContext
 ├── defendantName: String          — "FirstName LastName" for ${defendantName} placeholder
-├── pastEndDateCount: long         — 1 if orderEndDate <= hearingDate, else 0
 ├── curViolationCount: long        — 1 if any CUR.endDate > orderEndDate, else 0
 ├── cureViolationCount: long       — 1 if any CURE.endDate > orderEndDate, else 0
 ├── curaViolationCount: long       — 1 if any CURA.endDate > orderEndDate, else 0
@@ -27,7 +26,6 @@ CommunityOrderContext
 **toCelContext()** returns:
 ```
 {
-  "pastEndDateCount":   <0 or 1>,
   "curViolationCount":  <0 or 1>,
   "cureViolationCount": <0 or 1>,
   "curaViolationCount": <0 or 1>,
@@ -86,14 +84,13 @@ Input: DraftValidationRequest request, PreprocessingDefinition config
    b. If no orderLine found → skip (no community order on this offence/defendant)
    c. hearingDate = request.getHearingDay()
    d. Compute counts:
-      pastEndDateCount  = orderLine.endDate <= hearingDate ? 1 : 0
       curViolationCount  = lines(CUR) with endDate != null AND endDate > orderLine.endDate → 1 : 0
       cureViolationCount = lines(CURE) with endDate != null AND endDate > orderLine.endDate → 1 : 0
       curaViolationCount = lines(CURA) with endDate != null AND endDate > orderLine.endDate → 1 : 0
       aarViolationCount  = lines(AAR) with endDate != null AND endDate > orderLine.endDate → 1 : 0
       upwrViolationCount = lines(UPWR) exists ? (orderLine.endDate.isBefore(hearingDate.plusMonths(12)) ? 1 : 0) : 0
    e. Resolve defendantName from defendantMap (firstName + " " + lastName)
-   f. Create CommunityOrderContext(defendantName, pastEndDateCount, curViolation…, allOffenceIds=[offenceId])
+   f. Create CommunityOrderContext(defendantName, curViolation…, allOffenceIds=[offenceId])
    g. Add to result map with key = defendantId + "_" + offenceId
 
 4. Return: Map<String, CommunityOrderContext>
@@ -139,13 +136,6 @@ rule:
     unpaidWorkShortCodes:
       - UPWR
   conditions:
-    - id: "AC1"
-      name: "Community order end date in the past"
-      expression: "pastEndDateCount > 0"
-      severity: ERROR
-      messageTemplate: >-
-        The end date must be in the future
-      affectedOffenceSet: "allOffenceIds"
     - id: "AC2a"
       name: "Order end date before CUR end date"
       expression: "curViolationCount > 0"
@@ -205,7 +195,6 @@ The upstream `api-cp-crime-hearing-results-validator` dependency requires **no c
 
 | Input State | Trigger | Resulting ValidationIssue |
 |-------------|---------|--------------------------|
-| COEW/COS/CONI with endDate ≤ hearingDate | AC1 | ERROR: "The end date must be in the future" |
 | COEW with endDate < CUR.endDate on same offence | AC2a | ERROR: "…end date of Curfew (community requirement) - CUR" |
 | COEW with endDate < CURE.endDate on same offence | AC2b | ERROR: "…end date of Curfew with electronic monitoring - CURE" |
 | COEW with endDate < CURA.endDate on same offence | AC2c | ERROR: "…end date of Further curfew requirement made - CURA" |

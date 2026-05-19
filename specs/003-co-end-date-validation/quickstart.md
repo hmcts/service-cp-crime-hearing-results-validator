@@ -32,37 +32,6 @@ Or start locally:
 gradle bootRun
 ```
 
-### AC1 — End date in the past
-
-```http
-POST http://localhost:4550/validate-draft
-Content-Type: application/json
-
-{
-  "hearingId": "abc123",
-  "hearingDay": "2026-05-12",
-  "courtType": "MAGISTRATES",
-  "defendants": [
-    { "id": "def1", "firstName": "John", "lastName": "Smith" }
-  ],
-  "offences": [
-    { "id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1 }
-  ],
-  "resultLines": [
-    {
-      "id": "rl1",
-      "shortCode": "COEW",
-      "label": "Community Order with Electronically Monitored Requirement",
-      "defendantId": "def1",
-      "offenceId": "off1",
-      "endDate": "2026-05-12"
-    }
-  ]
-}
-```
-
-**Expected**: 400 with error `"The end date must be in the future"`.
-
 ### AC2 — CUR end date after order end date
 
 ```http

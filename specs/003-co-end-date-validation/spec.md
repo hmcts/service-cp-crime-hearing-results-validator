@@ -3,27 +3,11 @@
 **Feature Branch**: `DD-41653-co-end-date-validation`  
 **Created**: 2026-05-12  
 **Status**: Draft  
-**Input**: User description: "Community Order End Date Validation — AC1 end date in the past, AC2 end date before requirement end dates, AC3 end date less than 12 months when UPWR included"
+**Input**: User description: "Community Order End Date Validation — AC2 end date before requirement end dates, AC3 end date less than 12 months when UPWR included"
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 — Community Order End Date Must Be in the Future (Priority: P1)
-
-A caseworker recording a community order (COEW, COS, or CONI) enters an end date that is today's date or earlier. The system must prevent them from saving the result until they correct the end date to a future date.
-
-**Why this priority**: This is the most fundamental constraint on a community order end date. An order that has already expired at the point of sentencing is legally invalid. Catching this at data entry prevents downstream errors and invalid records from being shared.
-
-**Independent Test**: Can be tested by submitting a draft hearing result containing a community order result line with an end date set to today or the past and verifying the validation response includes the appropriate error.
-
-**Acceptance Scenarios**:
-
-1. **Given** a draft hearing result includes a community order result (COEW, COS, or CONI) on one or more offences, **When** the recorded end date is the date of the hearing (today), **Then** validation returns an error with message "The end date must be in the future" and the result cannot be shared.
-2. **Given** a draft hearing result includes a community order result (COEW, COS, or CONI) on one or more offences, **When** the recorded end date is before the date of the hearing, **Then** validation returns an error with message "The end date must be in the future" and the result cannot be shared.
-3. **Given** a draft hearing result includes a community order result (COEW, COS, or CONI) on one or more offences, **When** the recorded end date is after the date of the hearing, **Then** no end-date-in-past error is raised for this rule.
-
----
-
-### User Story 2 — Community Order End Date Must Not Be Earlier Than Any Requirement End Date (Priority: P2)
+### User Story 1 — Community Order End Date Must Not Be Earlier Than Any Requirement End Date (Priority: P1)
 
 A caseworker recording a community order with one or more requirements (Curfew — CUR, Curfew with electronic monitoring — CURE, Further curfew — CURA, or Alcohol Abstinence and Monitoring Requirement — AAR) sets an order end date that falls before the end date of at least one of those requirements. The system must prevent the result from being shared until the order end date is extended to match or exceed all requirement end dates.
 
@@ -42,7 +26,7 @@ A caseworker recording a community order with one or more requirements (Curfew �
 
 ---
 
-### User Story 3 — Community Order Including Unpaid Work Must Last at Least 12 Months (Priority: P3)
+### User Story 2 — Community Order Including Unpaid Work Must Last at Least 12 Months (Priority: P2)
 
 A caseworker recording a community order that includes an Unpaid Work requirement (UPWR — "Unpaid work. Requirement to be completed within 12 months") sets an order end date that is less than 12 months from the date of the hearing. The system must prevent the result from being shared until the end date is at least 12 months after the hearing date.
 
@@ -71,41 +55,38 @@ A caseworker recording a community order that includes an Unpaid Work requiremen
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST raise an error when a community order result (COEW, COS, or CONI) has an end date that is on or before the date of the hearing.
-- **FR-002**: The error message for FR-001 MUST read exactly: "The end date must be in the future".
-- **FR-003**: The system MUST raise an error when a community order end date is earlier than the end date of any Curfew (CUR), Curfew with electronic monitoring (CURE), Further curfew requirement (CURA), or Alcohol Abstinence and Monitoring Requirement (AAR) child result attached to that order.
-- **FR-004**: The error message for FR-003 MUST identify the specific offending requirement(s) by name and short code (e.g., "Curfew (community requirement) - CUR") and list the names of all affected defendants.
-- **FR-005**: The system MUST raise an error when a community order that includes an Unpaid Work (UPWR) child requirement has an end date fewer than 12 months from the hearing date. "Fewer than 12 months" means strictly before the same calendar date 12 months later (i.e., an end date of exactly hearing-date + 12 months is acceptable).
-- **FR-006**: The error message for FR-005 MUST read: "The end date of the order must be at least 12 months as it includes an unpaid work requirement" and list the names of all affected defendants.
-- **FR-007**: All three error conditions (FR-001, FR-003, FR-005) MUST be classified as blocking errors (not warnings), preventing the result from being shared until resolved.
-- **FR-008**: Multiple errors from different conditions MAY be returned simultaneously if more than one condition is triggered on the same draft hearing result.
-- **FR-009**: Each error MUST be associated with the specific defendant(s) and offence(s) to which it applies.
-- **FR-010**: For the requirement-comparison rule (FR-003), the date fields compared are: "End date" for CUR and CURA, "End date of tag" for CURE, and "Until" for AAR.
+- **FR-001**: The system MUST raise an error when a community order end date is earlier than the end date of any Curfew (CUR), Curfew with electronic monitoring (CURE), Further curfew requirement (CURA), or Alcohol Abstinence and Monitoring Requirement (AAR) child result attached to that order.
+- **FR-002**: The error message for FR-001 MUST identify the specific offending requirement(s) by name and short code (e.g., "Curfew (community requirement) - CUR") and list the names of all affected defendants.
+- **FR-003**: The system MUST raise an error when a community order that includes an Unpaid Work (UPWR) child requirement has an end date fewer than 12 months from the hearing date. "Fewer than 12 months" means strictly before the same calendar date 12 months later (i.e., an end date of exactly hearing-date + 12 months is acceptable).
+- **FR-004**: The error message for FR-003 MUST read: "The end date of the order must be at least 12 months as it includes an unpaid work requirement" and list the names of all affected defendants.
+- **FR-005**: Both error conditions (FR-001, FR-003) MUST be classified as blocking errors (not warnings), preventing the result from being shared until resolved.
+- **FR-006**: Multiple errors from different conditions MAY be returned simultaneously if more than one condition is triggered on the same draft hearing result.
+- **FR-007**: Each error MUST be associated with the specific defendant(s) and offence(s) to which it applies.
+- **FR-008**: For the requirement-comparison rule (FR-001), the date fields compared are: "End date" for CUR and CURA, "End date of tag" for CURE, and "Until" for AAR.
 
 ### Key Entities
 
 - **Community Order Result**: A result line recorded against one or more offences with a short code of COEW (Community Order with Electronically Monitored Requirement), COS (Community Order), or CONI (Community Order — No Requirements). Has an end date attribute.
 - **Requirement (Child Result)**: A child result line subordinate to a parent community order result. Relevant requirement types: CUR (Curfew — community requirement), CURE (Curfew with electronic monitoring), CURA (Further curfew requirement made), AAR (Alcohol abstinence and monitoring requirement), UPWR (Unpaid work — requirement to be completed within 12 months).
-- **Date of Hearing**: The date on which the hearing takes place, sourced from the hearing record in the draft validation request. Used as the reference point for AC1 (past-date check) and AC3 (12-month minimum).
+- **Date of Hearing**: The date on which the hearing takes place, sourced from the hearing record in the draft validation request. Used as the reference point for AC2 (12-month minimum).
 - **Validation Error**: A blocking outcome produced when a condition is triggered. Carries a message, the names of affected defendants, and the relevant offence linkage.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of draft hearing results containing a community order with an end date on or before the hearing date are blocked from sharing, with the correct error message presented.
-- **SC-002**: 100% of draft hearing results where a community order end date is earlier than any attached requirement end date (CUR, CURE, CURA, AAR) are blocked from sharing, with all offending requirements named in the error.
-- **SC-003**: 100% of draft hearing results containing a UPWR requirement where the order end date is fewer than 12 months from the hearing date are blocked from sharing, with the correct error message and affected defendant names presented.
-- **SC-004**: Valid results (all end-date constraints satisfied) pass validation without false positives — no spurious end-date errors are raised.
-- **SC-005**: When multiple end-date conditions apply simultaneously, all corresponding errors are returned in a single validation response (no silent suppression of secondary errors).
+- **SC-001**: 100% of draft hearing results where a community order end date is earlier than any attached requirement end date (CUR, CURE, CURA, AAR) are blocked from sharing, with all offending requirements named in the error.
+- **SC-002**: 100% of draft hearing results containing a UPWR requirement where the order end date is fewer than 12 months from the hearing date are blocked from sharing, with the correct error message and affected defendant names presented.
+- **SC-003**: Valid results (all end-date constraints satisfied) pass validation without false positives — no spurious end-date errors are raised.
+- **SC-004**: When multiple end-date conditions apply simultaneously, all corresponding errors are returned in a single validation response (no silent suppression of secondary errors).
 
 ## Assumptions
 
-- The date of the hearing is available as a field in the `DraftValidationRequest`. All date-relative rules (AC1 and AC3) use this date as their reference point.
+- The date of the hearing is available as a field in the `DraftValidationRequest`. The date-relative rule (AC2) uses this date as its reference point.
 - End date values are provided in a structured date format (day, month, year) rather than as a free-text string. The service can compare them as calendar dates.
 - A child result (requirement) is identifiable as subordinate to a specific parent community order result by the existing data structure in `DraftValidationRequest`; no schema change to the request DTO is required.
 - "12 months from the hearing date" is interpreted as the same calendar date one year later (e.g., hearing on 2026-05-12 → 12-month threshold is 2027-05-12). An end date of exactly 2027-05-12 is acceptable; 2027-05-11 is not.
-- These three validation rules are independent of one another and of any existing validation rules. They do not modify the behaviour of DR-SENT-002 or any other existing rule.
+- These two validation rules are independent of one another and of any existing validation rules. They do not modify the behaviour of DR-SENT-002 or any other existing rule.
 - The feature is entirely server-side validation (within this service). The UI display of error placement (below labels, above fields, top-of-page summary) is a front-end concern and is out of scope for the results-validator service.
 - Rules apply equally to all three parent order types (COEW, COS, CONI); there is no parent-type-specific branching.
 - The severity ceiling mechanism (runtime DB overrides) applies to these rules as it does to all others. The rules ship with severity ERROR; DB overrides may cap them to WARNING at runtime but cannot promote below ERROR.

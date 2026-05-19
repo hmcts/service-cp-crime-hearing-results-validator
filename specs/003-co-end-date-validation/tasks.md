@@ -19,7 +19,7 @@
 **Purpose**: Create the foundational types that all user story phases depend on. Must complete before any user story work begins.
 
 - [X] T001 [P] Add 6 new `List<String>` fields to `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java`: `communityOrderShortCodes`, `curfewShortCodes`, `curfewTagShortCodes`, `furtherCurfewShortCodes`, `alcoholAbstinenceShortCodes`, `unpaidWorkShortCodes` (all nullable, Lombok `@Data` / `@Builder` already present)
-- [X] T002 [P] Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderContext.java` — Java record implementing `RuleEvaluationContext` with fields: `defendantName`, `pastEndDateCount`, `curViolationCount`, `cureViolationCount`, `curaViolationCount`, `aarViolationCount`, `upwrViolationCount`, `allOffenceIds`; implement `toCelContext()` returning `Map.of(...)` for all 6 long fields; implement `getOffenceIdSet("allOffenceIds")` returning `allOffenceIds` (throw `IllegalArgumentException` for unknown set names); implement `allOffenceIds()` returning the list
+- [X] T002 [P] Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderContext.java` — Java record implementing `RuleEvaluationContext` with fields: `defendantName`, `curViolationCount`, `cureViolationCount`, `curaViolationCount`, `aarViolationCount`, `upwrViolationCount`, `allOffenceIds`; implement `toCelContext()` returning `Map.of(...)` for all 5 long fields; implement `getOffenceIdSet("allOffenceIds")` returning `allOffenceIds` (throw `IllegalArgumentException` for unknown set names); implement `allOffenceIds()` returning the list
 - [X] T003 Create skeleton `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderEndDatePreprocessor.java` — `@Component`, `@Slf4j`, `@RequiredArgsConstructor`, implements `ValidationPreprocessor`; `type()` returns `"community-order-end-date"`; `preprocess()` returns `Collections.emptyMap()` (skeleton only — logic added per story)
 
 **Checkpoint**: Project compiles cleanly with `gradle compileJava`
@@ -32,31 +32,11 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 
 ---
 
-## Phase 3: User Story 1 — End Date Must Be in the Future (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — End Date Must Not Be Earlier Than Any Requirement End Date (Priority: P1)
 
-**Goal**: Reject any community order (COEW, COS, CONI) where the end date is today or in the past.
+**Note**: AC1 (end date in the past) has been removed from scope. Phase 3 now begins with AC2.
 
-**Independent Test**: Submit a `POST /validate-draft` payload with a COEW result line where `endDate` equals today (`hearingDay`); expect an ERROR with message `"The end date must be in the future"`. See `specs/003-co-end-date-validation/quickstart.md` for the full payload.
-
-### Tests for User Story 1 — write FIRST, confirm they FAIL ⚠️
-
-- [X] T004 [P] [US1] Add AC1 unit test methods to `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderEndDatePreprocessorTest.java`: `preprocess_coewEndDateIsHearingDate_should_returnPastEndDateCountOne`, `preprocess_coewEndDateInPast_should_returnPastEndDateCountOne`, `preprocess_coewEndDateInFuture_should_returnPastEndDateCountZero`, `preprocess_cosResultLine_should_applyAc1LikeCoew`, `preprocess_coniResultLine_should_applyAc1LikeCoew`, `preprocess_coewEndDateNull_should_returnEmptyContext`, `preprocess_noCoewResultLine_should_returnEmptyContext` — use `@ExtendWith(MockitoExtension.class)`, `@Nested @DisplayName` grouping, method-name pattern `{action}_{scenario}_should_{expectation}`; build test data using `ValidationRuleTestHelper`
-- [X] T005 [P] [US1] Add AC1 integration test methods to `src/test/java/uk/gov/hmcts/cp/integration/CommunityOrderEndDateValidationIT.java` (extend `IntegrationTestBase`): `validate_coewEndDateIsToday_should_returnAc1Error`, `validate_coewEndDateInPast_should_returnAc1Error`, `validate_coewEndDateInFuture_should_returnNoAc1Error` — verify rule ID `"DR-COEW-001"`, severity `"ERROR"`, and message text in response body
-
-**Confirm**: Run `gradle test --tests "CommunityOrderEndDatePreprocessorTest"` and `gradle test --tests "CommunityOrderEndDateValidationIT"` — tests must FAIL (assertion failure, not compilation error)
-
-### Implementation for User Story 1
-
-- [X] T006 [US1] Create `src/main/resources/rules/DR-COEW-001.yaml` with rule metadata (`id: "DR-COEW-001"`, `title`, `description`, `priority: 4000`, `enabled: true`) and the full preprocessing block (all 6 short-code lists from `data-model.md`); add only the AC1 condition (`id: "AC1"`, `expression: "pastEndDateCount > 0"`, `severity: ERROR`, `messageTemplate: "The end date must be in the future"`, `affectedOffenceSet: "allOffenceIds"`)
-- [X] T007 [US1] Implement AC1 logic inside `CommunityOrderEndDatePreprocessor.preprocess()` in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderEndDatePreprocessor.java`: build `defendantMap` from `request.getDefendants()`; group result lines by `(defendantId + "_" + offenceId)`; for each group, find the community order result line (shortCode in `config.getCommunityOrderShortCodes()` with non-null `endDate`); set `pastEndDateCount = orderLine.getEndDate().isAfter(request.getHearingDay()) ? 0 : 1`; set all other violation counts to 0 for now; populate `defendantName` from `defendantMap`; return one `CommunityOrderContext` per group that has a community order line
-
-**Verify**: Run `gradle test --tests "CommunityOrderEndDatePreprocessorTest"` then `gradle test --tests "CommunityOrderEndDateValidationIT"` — AC1 tests must now PASS
-
-**Checkpoint**: User Story 1 is fully functional. `gradle test` passes for AC1 scenarios. (T006 = YAML created first, T007 = Java logic second — Constitution Principle I satisfied.)
-
----
-
-## Phase 4: User Story 2 — End Date Must Not Be Earlier Than Any Requirement End Date (Priority: P2)
+## Phase 4: User Story 2 — End Date Must Not Be Earlier Than Any Requirement End Date (Priority: P1)
 
 **Goal**: Reject community orders where the order end date falls before the end date of any attached Curfew (CUR), Curfew with electronic monitoring (CURE), Further curfew (CURA), or Alcohol Abstinence and Monitoring (AAR) requirement on the same offence.
 
@@ -124,16 +104,14 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 
 - **Phase 1 (Setup)**: No dependencies — start immediately
 - **Phase 2**: No additional foundational work — skipped
-- **Phase 3 (US1)**: Depends on Phase 1 completion (T001, T002, T003 done)
-- **Phase 4 (US2)**: Depends on Phase 3 completion (US1 tests + implementation done)
-- **Phase 5 (US3)**: Depends on Phase 4 completion (US2 tests + implementation done)
+- **Phase 4 (US1/AC2)**: Depends on Phase 1 completion (T001, T002, T003 done)
+- **Phase 5 (US2/AC3)**: Depends on Phase 4 completion (AC2 tests + implementation done)
 - **Phase 6 (Polish)**: Depends on Phase 5 completion (all tests green)
 
 ### User Story Dependencies
 
-- **US1 (P1)**: Depends only on Phase 1 (T001–T003)
-- **US2 (P2)**: Depends on US1 being complete (preprocessor skeleton exists, YAML exists)
-- **US3 (P3)**: Depends on US2 being complete (same files extended incrementally)
+- **US1/AC2 (P1)**: Depends only on Phase 1 (T001–T003)
+- **US2/AC3 (P2)**: Depends on US1/AC2 being complete (preprocessor skeleton exists, YAML exists)
 
 ### Within Each User Story (strict TDD order)
 
@@ -173,21 +151,12 @@ Task T005: Integration tests in CommunityOrderEndDateValidationIT.java
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
-
-1. Complete Phase 1 (T001–T003)
-2. Write US1 tests (T004–T005), confirm they fail
-3. Implement US1 (T006–T007)
-4. Verify AC1 tests pass
-5. **STOP and VALIDATE**: Submit AC1 payload from `quickstart.md`, confirm error returned
-
 ### Incremental Delivery
 
 1. Phase 1 → compile check
-2. US1 (T004–T007) → AC1 error validation works → MVP
-3. US2 (T008–T011) → AC2 requirement-date errors work
-4. US3 (T012–T015) → AC3 UPWR 12-month error works
-5. Polish (T016–T022) → agent review, build loop complete → ready to merge
+2. US1/US2 (T008–T011) → AC2 requirement-date errors work
+3. US3 (T012–T015) → AC3 UPWR 12-month error works
+4. Polish (T016–T022) → agent review, build loop complete → ready to merge
 
 ---
 

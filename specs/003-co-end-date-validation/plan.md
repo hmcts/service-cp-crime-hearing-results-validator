@@ -5,8 +5,7 @@
 
 ## Summary
 
-Adds validation rule `DR-COEW-001` to detect three categories of invalid community order end dates:
-- **AC1**: Order end date is today or in the past
+Adds validation rule `DR-COEW-001` to detect two categories of invalid community order end dates:
 - **AC2**: Order end date is earlier than the end date of any attached requirement (CUR, CURE, CURA, AAR)
 - **AC3**: Order end date is less than 12 months from the hearing date when an Unpaid Work (UPWR) requirement is present
 
@@ -22,7 +21,7 @@ Implemented as one new YAML rule file and one new preprocessor (`CommunityOrderE
 **Project Type**: Web service (Spring Boot validation microservice)  
 **Performance Goals**: Preprocessing per rule < 1 ms for typical hearing sizes (< 20 result lines)  
 **Constraints**: Checkstyle Google maxWarnings=0; PMD ignoreFailures=false; Java records for all DTOs/context types; SLF4J only  
-**Scale/Scope**: One new rule, one new preprocessor class, one new context record, six additive fields on PreprocessingDefinition
+**Scale/Scope**: One new rule (5 conditions: AC2a-AC2d + AC3), one new preprocessor class, one new context record, six additive fields on PreprocessingDefinition
 
 ## Constitution Check
 
@@ -30,7 +29,7 @@ Implemented as one new YAML rule file and one new preprocessor (`CommunityOrderE
 
 | # | Principle | Status | Evidence |
 |---|-----------|--------|---------|
-| I | YAML/CEL Rule-First | ✅ PASS | `DR-COEW-001.yaml` is the source of truth. Six conditions expressed as CEL. Preprocessor is general-purpose, not rule-specific logic. |
+| I | YAML/CEL Rule-First | ✅ PASS | `DR-COEW-001.yaml` is the source of truth. Five conditions expressed as CEL. Preprocessor is general-purpose, not rule-specific logic. |
 | II | Constructor Injection & Immutable DTOs | ✅ PASS | `CommunityOrderEndDatePreprocessor` will use `@RequiredArgsConstructor`. `CommunityOrderContext` is a Java record (immutable). |
 | III | Layered Architecture & Data-Driven Dispatch | ✅ PASS | New preprocessor registered as `@Component` with qualifier `"community-order-end-date"`. `CelValidationRule` dispatches via registry — no hard-wiring. |
 | IV | Spec-Driven Build Loop | ✅ PASS | Spec → Plan → Tasks → Implement → Review → QA → Spec-Validate → Ship cycle is followed. |
@@ -100,7 +99,6 @@ package uk.gov.hmcts.cp.services.rules.cel;
 
 record CommunityOrderContext(
     String defendantName,
-    long pastEndDateCount,
     long curViolationCount,
     long cureViolationCount,
     long curaViolationCount,
@@ -112,7 +110,6 @@ record CommunityOrderContext(
     @Override
     public Map<String, Long> toCelContext() {
         return Map.of(
-            "pastEndDateCount",   pastEndDateCount,
             "curViolationCount",  curViolationCount,
             "cureViolationCount", cureViolationCount,
             "curaViolationCount", curaViolationCount,
@@ -182,9 +179,6 @@ Follow Red → Green → Refactor for each step.
 File: `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderEndDatePreprocessorTest.java`
 
 Test scenarios:
-- `preprocess_coewEndDateIsHearingDate_should_returnPastEndDateCountOne`
-- `preprocess_coewEndDateInPast_should_returnPastEndDateCountOne`
-- `preprocess_coewEndDateInFuture_should_returnPastEndDateCountZero`
 - `preprocess_coewEndDateBeforeCurEndDate_should_returnCurViolationCountOne`
 - `preprocess_coewEndDateBeforeCureEndDate_should_returnCureViolationCountOne`
 - `preprocess_coewEndDateBeforeCuraEndDate_should_returnCuraViolationCountOne`
@@ -194,11 +188,7 @@ Test scenarios:
 - `preprocess_coewWithUpwrAndEndDateExactly12Months_should_returnUpwrViolationCountZero`
 - `preprocess_coewWithUpwrAndEndDateOver12Months_should_returnUpwrViolationCountZero`
 - `preprocess_coewWithNoUpwr_should_returnUpwrViolationCountZero`
-- `preprocess_coewEndDateNull_should_returnEmptyContext`
-- `preprocess_noCoewResultLine_should_returnEmptyContext`
 - `preprocess_multipleDefendantsOnSameOffence_should_returnSeparateContextPerDefendant`
-- `preprocess_cosResultLine_should_applyAllRulesLikeCoew`
-- `preprocess_coniResultLine_should_applyAllRulesLikeCoew`
 - `preprocess_requirementEndDateNull_should_notCountAsViolation`
 
 ### Step 2 — Failing integration tests (write first, confirm they fail)
@@ -206,9 +196,6 @@ Test scenarios:
 File: `src/test/java/uk/gov/hmcts/cp/services/rules/integration/CommunityOrderEndDateValidationIT.java`
 
 Test scenarios:
-- `validate_coewEndDateIsToday_should_returnErrorAc1`
-- `validate_coewEndDateInPast_should_returnErrorAc1`
-- `validate_coewEndDateInFuture_should_returnNoAc1Error`
 - `validate_coewEndDateBeforeCurEndDate_should_returnErrorAc2a`
 - `validate_coewEndDateBeforeCureEndDate_should_returnErrorAc2b`
 - `validate_coewEndDateBeforeCuraEndDate_should_returnErrorAc2c`
@@ -217,8 +204,6 @@ Test scenarios:
 - `validate_coewWithUpwrAndExactly12Months_should_returnNoAc3Error`
 - `validate_allConstraintsSatisfied_should_returnNoErrors`
 - `validate_multipleConditionsFire_should_returnAllErrors`
-- `validate_cosResultLine_should_applyRules`
-- `validate_coniResultLine_should_applyRules`
 
 ### Step 3 — Production code (after tests are red)
 

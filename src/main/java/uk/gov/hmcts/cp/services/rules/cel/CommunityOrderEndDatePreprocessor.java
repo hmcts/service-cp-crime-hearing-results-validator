@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.openapi.model.ResultLineDtoPromptsInner;
 
 /**
  * Per-(defendant, offence) preprocessor for the DR-COEW-001 community order end-date validation
@@ -68,8 +69,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                                                        final Set<String> aarCodes,
                                                        final Set<String> upwrCodes,
                                                        final LocalDate hearingDate) {
-        final LocalDate orderEndDate = orderLine.getEndDate();
-        final long pastEndDateCount = orderEndDate.isAfter(hearingDate) ? 0L : 1L;
+        final LocalDate orderEndDate = getPromptDate(orderLine, "endDate");
         final long curViolationCount = hasRequirementAfter(lines, curCodes, orderEndDate) ? 1L : 0L;
         final long cureViolationCount = hasRequirementAfter(lines, cureCodes, orderEndDate) ? 1L : 0L;
         final long curaViolationCount = hasRequirementAfter(lines, curaCodes, orderEndDate) ? 1L : 0L;
@@ -78,7 +78,6 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         final String defendantName = resolveDefendantName(defendantMap, orderLine.getDefendantId());
         return new CommunityOrderContext(
                 defendantName,
-                pastEndDateCount,
                 curViolationCount,
                 cureViolationCount,
                 curaViolationCount,
@@ -90,7 +89,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     private static ResultLineDto findOrderLine(final List<ResultLineDto> lines,
                                                 final Set<String> orderCodes) {
         return lines.stream()
-                .filter(line -> line.getEndDate() != null
+                .filter(line -> getPromptDate(line, "endDate") != null
                         && upperCodes(line.getShortCode(), orderCodes))
                 .findFirst()
                 .orElse(null);
@@ -100,9 +99,22 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                                                 final Set<String> codes,
                                                 final LocalDate orderEndDate) {
         return lines.stream()
-                .anyMatch(line -> line.getEndDate() != null
-                        && upperCodes(line.getShortCode(), codes)
-                        && line.getEndDate().isAfter(orderEndDate));
+                .anyMatch(line -> {
+                    final LocalDate reqDate = getPromptDate(line, "endDate");
+                    return reqDate != null
+                            && upperCodes(line.getShortCode(), codes)
+                            && reqDate.isAfter(orderEndDate);
+                });
+    }
+
+    private static LocalDate getPromptDate(final ResultLineDto line, final String ref) {
+        final List<ResultLineDtoPromptsInner> prompts = line.getPrompts();
+        return prompts == null ? null : prompts.stream()
+                .filter(p -> ref.equals(p.getPromptRef()) && p.getValue() != null)
+                .map(ResultLineDtoPromptsInner::getValue)
+                .map(LocalDate::parse)
+                .findFirst()
+                .orElse(null);
     }
 
     private static long computeUpwrViolation(final List<ResultLineDto> lines,

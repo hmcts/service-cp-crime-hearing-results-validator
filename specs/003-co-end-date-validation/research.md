@@ -29,15 +29,15 @@
 
 ---
 
-### D-003: Single Rule vs Three Separate Rules
+### D-003: Single Rule vs Two Separate Rules
 
-**Question**: Should AC1, AC2, and AC3 be one YAML rule file or three separate files?
+**Question**: Should AC2 and AC3 be one YAML rule file or two separate files?
 
-**Decision**: **One YAML rule file** (`DR-COEW-001.yaml`) with six conditions — one for AC1, four for AC2 (one per requirement type: CUR, CURE, CURA, AAR), and one for AC3.
+**Decision**: **One YAML rule file** (`DR-COEW-001.yaml`) with five conditions — four for AC2 (one per requirement type: CUR, CURE, CURA, AAR), and one for AC3.
 
-**Rationale**: All six conditions share one preprocessor computation. A single rule allows atomic enable/disable via the `validation_rule` DB table. Splitting into three rules would cause the same preprocessor to run three times per request with the same result. The existing `DR-SENT-002.yaml` also bundles multiple conditions (3) in one file; this is precedent.
+**Rationale**: All five conditions share one preprocessor computation. A single rule allows atomic enable/disable via the `validation_rule` DB table. Splitting into two rules would cause the same preprocessor to run twice per request with the same result. The existing `DR-SENT-002.yaml` also bundles multiple conditions (3) in one file; this is precedent.
 
-**Alternatives considered**: Three separate rules (DR-COEW-001/002/003) for independent DB override control — rejected because the ability to disable "end date in past" separately from "UPWR 12-month check" is not a stated requirement, and premature splitting adds management overhead.
+**Alternatives considered**: Two separate rules (DR-COEW-001/002) for independent DB override control — rejected because the ability to disable requirement-date checking separately from the UPWR 12-month check is not a stated requirement, and premature splitting adds management overhead.
 
 ---
 

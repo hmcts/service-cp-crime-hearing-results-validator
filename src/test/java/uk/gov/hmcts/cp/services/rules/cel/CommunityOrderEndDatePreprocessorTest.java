@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.openapi.model.ResultLineDtoPromptsInner;
 
 /**
  * Unit tests for {@link CommunityOrderEndDatePreprocessor} covering all three AC families.
@@ -63,115 +64,21 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private ResultLineDto coew(final String id, final String defendantId,
                                 final String offenceId, final LocalDate endDate) {
-        ResultLineDto line = resultLine(id, "COEW", defendantId, offenceId);
-        line.setEndDate(endDate);
-        return line;
+        return withEndDate(resultLine(id, "COEW", defendantId, offenceId), endDate);
     }
 
     private ResultLineDto req(final String id, final String shortCode,
                                final String defendantId, final String offenceId,
                                final LocalDate endDate) {
-        ResultLineDto line = resultLine(id, shortCode, defendantId, offenceId);
-        line.setEndDate(endDate);
-        return line;
+        return withEndDate(resultLine(id, shortCode, defendantId, offenceId), endDate);
     }
 
-    // -------------------------------------------------------------------------
-    // AC1 — end date in the past
-    // -------------------------------------------------------------------------
-
-    @Nested
-    @DisplayName("AC1_EndDateInPast")
-    class Ac1EndDateInPast {
-
-        @Test
-        void preprocess_coewEndDateIsHearingDate_should_returnPastEndDateCountOne() {
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(coew("rl1", "d1", "off1", HEARING_DATE)),
-                    List.of(offence("off1", 1, "Theft")));
-
-            CommunityOrderContext ctx = preprocess(request).get("d1_off1");
-
-            assertThat(ctx).isNotNull();
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-        }
-
-        @Test
-        void preprocess_coewEndDateInPast_should_returnPastEndDateCountOne() {
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(coew("rl1", "d1", "off1", HEARING_DATE.minusDays(1))),
-                    List.of(offence("off1", 1, "Theft")));
-
-            CommunityOrderContext ctx = preprocess(request).get("d1_off1");
-
-            assertThat(ctx).isNotNull();
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-        }
-
-        @Test
-        void preprocess_coewEndDateInFuture_should_returnPastEndDateCountZero() {
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(coew("rl1", "d1", "off1", HEARING_DATE.plusDays(1))),
-                    List.of(offence("off1", 1, "Theft")));
-
-            CommunityOrderContext ctx = preprocess(request).get("d1_off1");
-
-            assertThat(ctx).isNotNull();
-            assertThat(ctx.pastEndDateCount()).isEqualTo(0L);
-        }
-
-        @Test
-        void preprocess_cosResultLine_should_applyAc1LikeCoew() {
-            ResultLineDto line = resultLine("rl1", "COS", "d1", "off1");
-            line.setEndDate(HEARING_DATE);
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(line),
-                    List.of(offence("off1", 1, "Theft")));
-
-            CommunityOrderContext ctx = preprocess(request).get("d1_off1");
-
-            assertThat(ctx).isNotNull();
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-        }
-
-        @Test
-        void preprocess_coniResultLine_should_applyAc1LikeCoew() {
-            ResultLineDto line = resultLine("rl1", "CONI", "d1", "off1");
-            line.setEndDate(HEARING_DATE);
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(line),
-                    List.of(offence("off1", 1, "Theft")));
-
-            CommunityOrderContext ctx = preprocess(request).get("d1_off1");
-
-            assertThat(ctx).isNotNull();
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-        }
-
-        @Test
-        void preprocess_coewEndDateNull_should_returnEmptyContext() {
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(resultLine("rl1", "COEW", "d1", "off1")),
-                    List.of(offence("off1", 1, "Theft")));
-
-            assertThat(preprocess(request)).doesNotContainKey("d1_off1");
-        }
-
-        @Test
-        void preprocess_noCoewResultLine_should_returnEmptyContext() {
-            DraftValidationRequest request = buildRequest(
-                    HEARING_DATE,
-                    List.of(resultLine("rl1", "IMP", "d1", "off1")),
-                    List.of(offence("off1", 1, "Theft")));
-
-            assertThat(preprocess(request)).isEmpty();
-        }
+    private static ResultLineDto withEndDate(final ResultLineDto line, final LocalDate endDate) {
+        line.addPromptsItem(ResultLineDtoPromptsInner.builder()
+                .promptRef("endDate")
+                .value(endDate.toString())
+                .build());
+        return line;
     }
 
     // -------------------------------------------------------------------------
@@ -365,8 +272,8 @@ class CommunityOrderEndDatePreprocessorTest {
 
         @Test
         void preprocess_multipleDefendantsOnSameOffence_should_returnSeparateContextPerDefendant() {
-            ResultLineDto coewD1 = coew("rl1", "d1", "off1", HEARING_DATE);
-            ResultLineDto coewD2 = coew("rl2", "d2", "off1", HEARING_DATE.plusDays(1));
+            ResultLineDto coewD1 = coew("rl1", "d1", "off1", UNDER_12_MONTHS);
+            ResultLineDto coewD2 = coew("rl2", "d2", "off1", UNDER_12_MONTHS);
             DraftValidationRequest request = buildRequest(
                     HEARING_DATE,
                     List.of(coewD1, coewD2),
@@ -375,8 +282,8 @@ class CommunityOrderEndDatePreprocessorTest {
             Map<String, CommunityOrderContext> result = preprocess(request);
 
             assertThat(result).containsKeys("d1_off1", "d2_off1");
-            assertThat(result.get("d1_off1").pastEndDateCount()).isEqualTo(1L);
-            assertThat(result.get("d2_off1").pastEndDateCount()).isEqualTo(0L);
+            assertThat(result.get("d1_off1").defendantName()).isEqualTo("John Smith");
+            assertThat(result.get("d2_off1").defendantName()).isEqualTo("Jane Doe");
         }
     }
 }

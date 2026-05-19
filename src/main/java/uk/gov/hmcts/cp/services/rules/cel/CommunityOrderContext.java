@@ -12,7 +12,6 @@ import java.util.Map;
  */
 public record CommunityOrderContext(
         String defendantName,
-        long pastEndDateCount,
         long curViolationCount,
         long cureViolationCount,
         long curaViolationCount,
@@ -26,7 +25,6 @@ public record CommunityOrderContext(
     @Override
     public Map<String, Long> toCelContext() {
         return Map.of(
-                "pastEndDateCount",   pastEndDateCount,
                 "curViolationCount",  curViolationCount,
                 "cureViolationCount", cureViolationCount,
                 "curaViolationCount", curaViolationCount,
