@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.Prompt;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
-import uk.gov.hmcts.cp.openapi.model.ResultLineDtoPromptsInner;
 
 /**
  * Per-(defendant, offence) preprocessor for the DR-COEW-001 community order end-date validation
@@ -108,10 +108,10 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     }
 
     private static LocalDate getPromptDate(final ResultLineDto line, final String ref) {
-        final List<ResultLineDtoPromptsInner> prompts = line.getPrompts();
+        final List<Prompt> prompts = line.getPrompts();
         return prompts == null ? null : prompts.stream()
-                .filter(p -> ref.equals(p.getPromptRef()) && p.getValue() != null)
-                .map(ResultLineDtoPromptsInner::getValue)
+                .filter(p -> ref.equals(p.getPromptRef()) && p.getPromptValue() != null)
+                .map(Prompt::getPromptValue)
                 .map(LocalDate::parse)
                 .findFirst()
                 .orElse(null);

@@ -40,7 +40,7 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 
 **Goal**: Reject community orders where the order end date falls before the end date of any attached Curfew (CUR), Curfew with electronic monitoring (CURE), Further curfew (CURA), or Alcohol Abstinence and Monitoring (AAR) requirement on the same offence.
 
-**Independent Test**: Submit a payload with a COEW (`endDate: 2026-10-30`) and a CUR on the same offence (`endDate: 2026-11-30`); expect an ERROR with message containing `"Curfew (community requirement) - CUR"`. See `quickstart.md` for the full payload.
+**Independent Test**: Submit a payload with a COEW (`prompts:[{promptRef:"endDate",promptValue:"2026-10-30"}]`) and a CUR on the same offence (`prompts:[{promptRef:"endDate",promptValue:"2026-11-30"}]`); expect an ERROR with message containing `"Curfew (community requirement) - CUR"`. See `quickstart.md` for the full payload.
 
 ### Tests for User Story 2 — write FIRST, confirm they FAIL ⚠️
 
@@ -52,7 +52,7 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 ### Implementation for User Story 2
 
 - [X] T010 [US2] Append AC2a, AC2b, AC2c, AC2d conditions to `src/main/resources/rules/DR-COEW-001.yaml` after the AC1 condition block (see `data-model.md` for exact YAML text for each condition)
-- [X] T011 [US2] Extend `preprocess()` in `CommunityOrderEndDatePreprocessor.java` to compute `curViolationCount`, `cureViolationCount`, `curaViolationCount`, `aarViolationCount`: for each group, after finding the order line, filter sibling lines by short code (using the respective config lists); set violation count to 1 if any sibling has a non-null `endDate` strictly after (`isAfter`) the order's `endDate`, else 0; `CommunityOrderContext` already accepts these fields, just populate them
+- [X] T011 [US2] Extend `preprocess()` in `CommunityOrderEndDatePreprocessor.java` to compute `curViolationCount`, `cureViolationCount`, `curaViolationCount`, `aarViolationCount`: for each group, after finding the order line, filter sibling lines by short code (using the respective config lists); dates are read from `line.getPrompts()` where `promptRef="endDate"` and parsed from `promptValue` (via `Prompt` from `api-cp-crime-hearing-results-validator` 0.1.6); set violation count to 1 if any sibling prompt date is strictly after (`isAfter`) the order's prompt date, else 0; `CommunityOrderContext` already accepts these fields, just populate them
 
 **Verify**: Run `gradle test --tests "CommunityOrderEndDatePreprocessorTest"` then `gradle test --tests "CommunityOrderEndDateValidationIT"` — AC1 + AC2 tests must all PASS
 
@@ -64,7 +64,7 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 
 **Goal**: Reject community orders containing an Unpaid Work (UPWR) requirement where the order end date is fewer than 12 months from the hearing date (strictly before `hearingDate.plusMonths(12)`).
 
-**Independent Test**: Submit a payload with a COEW (`endDate: 2027-05-11`, `hearingDay: 2026-05-12`) and a UPWR sibling on the same offence; expect an ERROR with message `"The end date of the order must be at least 12 months as it includes an unpaid work requirement"`. See `quickstart.md` for the full payload.
+**Independent Test**: Submit a payload with a COEW (`prompts:[{promptRef:"endDate",promptValue:"2027-05-11"}]`, `hearingDay: 2026-05-12`) and a UPWR sibling on the same offence; expect an ERROR with message containing `"at least 12 months as it includes an unpaid work requirement"`. See `quickstart.md` for the full payload.
 
 ### Tests for User Story 3 — write FIRST, confirm they FAIL ⚠️
 
@@ -76,7 +76,7 @@ No additional blocking prerequisites beyond Phase 1. Proceed to user stories.
 ### Implementation for User Story 3
 
 - [X] T014 [US3] Append the AC3 condition to `src/main/resources/rules/DR-COEW-001.yaml` after the AC2d condition block (see `data-model.md` for exact YAML text)
-- [X] T015 [US3] Extend `preprocess()` in `CommunityOrderEndDatePreprocessor.java` to compute `upwrViolationCount`: check whether any sibling result line has a short code in `config.getUnpaidWorkShortCodes()`; if UPWR present, set `upwrViolationCount = orderLine.getEndDate().isBefore(request.getHearingDay().plusMonths(12)) ? 1 : 0`; else 0
+- [X] T015 [US3] Extend `preprocess()` in `CommunityOrderEndDatePreprocessor.java` to compute `upwrViolationCount`: check whether any sibling result line has a short code in `config.getUnpaidWorkShortCodes()`; if UPWR present, resolve the order's endDate from `line.getPrompts()` (promptRef="endDate", parse `promptValue`) and set `upwrViolationCount = orderEndDate.isBefore(request.getHearingDay().plusMonths(12)) ? 1 : 0`; else 0
 
 **Verify**: Run `gradle test --tests "CommunityOrderEndDatePreprocessorTest"` then `gradle test --tests "CommunityOrderEndDateValidationIT"` — all AC1, AC2, and AC3 tests must PASS
 

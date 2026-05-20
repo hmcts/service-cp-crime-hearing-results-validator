@@ -9,7 +9,7 @@ Adds validation rule `DR-COEW-001` to detect two categories of invalid community
 - **AC2**: Order end date is earlier than the end date of any attached requirement (CUR, CURE, CURA, AAR)
 - **AC3**: Order end date is less than 12 months from the hearing date when an Unpaid Work (UPWR) requirement is present
 
-Implemented as one new YAML rule file and one new preprocessor (`CommunityOrderEndDatePreprocessor`) with a new context record (`CommunityOrderContext`). `PreprocessingDefinition` receives six new fields (additive, backward-compatible). No DTO or API contract changes are required.
+Implemented as one new YAML rule file and one new preprocessor (`CommunityOrderEndDatePreprocessor`) with a new context record (`CommunityOrderContext`). `PreprocessingDefinition` receives six new fields (additive, backward-compatible). Requires `api-cp-crime-hearing-results-validator` 0.1.6 for the `Prompt` model (dates delivered via `prompts[].promptValue` rather than a direct `endDate` field).
 
 ## Technical Context
 
@@ -81,8 +81,8 @@ Complete. See [research.md](research.md) for decisions D-001 through D-007.
 
 **Key resolved decisions**:
 - Parent-child relationship inferred from shared `(defendantId, offenceId)` — no DTO change needed
-- All requirement dates use the single `endDate: LocalDate` field on `ResultLineDto`
-- One YAML rule (DR-COEW-001) with 6 conditions — not three separate rules
+- All requirement dates are delivered via `ResultLineDto.prompts` as `Prompt(promptRef="endDate", promptValue="YYYY-MM-DD")` — requires `api-cp-crime-hearing-results-validator` 0.1.6
+- One YAML rule (DR-COEW-001) with 5 conditions — not three separate rules
 - Per-offence-per-defendant context grouping
 - Priority 4000 (after existing rules at 1000/2000/3000)
 
@@ -168,7 +168,7 @@ See [data-model.md](data-model.md#dr-coew-001yaml-new-yaml-rule) for the full YA
 
 ### External contracts
 
-No changes to the external API contract (`DraftValidationRequest`, `DraftValidationResponse`). The `api-cp-crime-hearing-results-validator` upstream dependency is unchanged.
+No changes to the `DraftValidationRequest` or `DraftValidationResponse` contracts consumed by callers of this service. The `api-cp-crime-hearing-results-validator` upstream dependency is bumped to **0.1.6**: `ResultLineDto.prompts` now returns `List<Prompt>` where `Prompt` exposes `getPromptRef()` and `getPromptValue()` (replacing the previous `ResultLineDtoPromptsInner.getValue()` pattern).
 
 ## Implementation Order (TDD sequence)
 

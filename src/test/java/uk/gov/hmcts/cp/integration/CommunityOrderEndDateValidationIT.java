@@ -54,10 +54,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "CUR", "label": "Curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -89,10 +89,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "CURE", "label": "Curfew with tag",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -124,10 +124,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "CURA", "label": "Further curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -159,10 +159,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "AAR", "label": "Alcohol abstinence",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -194,10 +194,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
                         {"id": "rl2", "shortCode": "CUR", "label": "Curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -226,13 +226,13 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "CUR", "label": "Curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
                         {"id": "rl3", "shortCode": "CURE", "label": "Curfew with tag",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-12-31"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -266,7 +266,7 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2027-01-14"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-14"}]},
                         {"id": "rl2", "shortCode": "UPWR", "label": "Unpaid work",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
@@ -300,7 +300,7 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2027-01-15"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-15"}]},
                         {"id": "rl2", "shortCode": "UPWR", "label": "Unpaid work",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
@@ -331,7 +331,7 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2027-06-15"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-15"}]},
                         {"id": "rl2", "shortCode": "UPWR", "label": "Unpaid work",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
@@ -362,7 +362,7 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2027-01-14"}]}
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-14"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
@@ -391,10 +391,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2027-06-15"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-15"}]},
                         {"id": "rl2", "shortCode": "CUR", "label": "Curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-06-15"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-15"}]},
                         {"id": "rl3", "shortCode": "UPWR", "label": "Unpaid work",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
@@ -425,10 +425,10 @@ class CommunityOrderEndDateValidationIT extends IntegrationTestBase {
                       "resultLines": [
                         {"id": "rl1", "shortCode": "COEW", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-10-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
                         {"id": "rl2", "shortCode": "CUR", "label": "Curfew",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "value": "2026-11-30"}]},
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
                         {"id": "rl3", "shortCode": "UPWR", "label": "Unpaid work",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],

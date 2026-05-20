@@ -10,7 +10,7 @@
 **Package**: `uk.gov.hmcts.cp.services.rules.cel`  
 **File**: `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CommunityOrderContext.java`
 
-One context instance is created per `(defendantId, offenceId)` pair that contains a community order result line (COEW/COS/CONI) with a non-null `endDate`.
+One context instance is created per `(defendantId, offenceId)` pair that contains a community order result line (COEW/COS/CONI) with a non-null endDate prompt (`promptRef="endDate"`, `promptValue="YYYY-MM-DD"`).
 
 ```
 CommunityOrderContext
@@ -80,15 +80,15 @@ Input: DraftValidationRequest request, PreprocessingDefinition config
 3. For each entry in resultLinesByOffenceAndDefendant:
    a. Find the community order result line:
       orderLine = lines where shortCode ∈ config.communityOrderShortCodes
-                  AND endDate != null
+                  AND prompt(promptRef="endDate") != null
    b. If no orderLine found → skip (no community order on this offence/defendant)
    c. hearingDate = request.getHearingDay()
-   d. Compute counts:
-      curViolationCount  = lines(CUR) with endDate != null AND endDate > orderLine.endDate → 1 : 0
-      cureViolationCount = lines(CURE) with endDate != null AND endDate > orderLine.endDate → 1 : 0
-      curaViolationCount = lines(CURA) with endDate != null AND endDate > orderLine.endDate → 1 : 0
-      aarViolationCount  = lines(AAR) with endDate != null AND endDate > orderLine.endDate → 1 : 0
-      upwrViolationCount = lines(UPWR) exists ? (orderLine.endDate.isBefore(hearingDate.plusMonths(12)) ? 1 : 0) : 0
+   d. Compute counts (dates resolved via line.prompts where promptRef="endDate", parsed from promptValue):
+      curViolationCount  = lines(CUR) with promptDate != null AND promptDate > orderEndDate → 1 : 0
+      cureViolationCount = lines(CURE) with promptDate != null AND promptDate > orderEndDate → 1 : 0
+      curaViolationCount = lines(CURA) with promptDate != null AND promptDate > orderEndDate → 1 : 0
+      aarViolationCount  = lines(AAR) with promptDate != null AND promptDate > orderEndDate → 1 : 0
+      upwrViolationCount = lines(UPWR) exists ? (orderEndDate.isBefore(hearingDate.plusMonths(12)) ? 1 : 0) : 0
    e. Resolve defendantName from defendantMap (firstName + " " + lastName)
    f. Create CommunityOrderContext(defendantName, curViolation…, allOffenceIds=[offenceId])
    g. Add to result map with key = defendantId + "_" + offenceId
@@ -98,8 +98,8 @@ Input: DraftValidationRequest request, PreprocessingDefinition config
 
 **Edge cases**:
 - Multiple COEW result lines on the same offence/defendant: use the first one found (rare edge case; first encountered in stream order).
-- `endDate` null on order line: skip (no context generated).
-- `endDate` null on requirement line: exclude from comparison (treated as "no date set").
+- endDate prompt absent on order line: skip (no context generated).
+- endDate prompt absent on requirement line: exclude from comparison (treated as "no date set").
 - No requirements on the offence: all violation counts remain 0; AC2/AC3 conditions do not fire.
 
 ---
@@ -141,7 +141,7 @@ rule:
       expression: "curViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Curfew (community requirement) - CUR
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2b"
@@ -149,7 +149,7 @@ rule:
       expression: "cureViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Curfew with electronic monitoring - CURE
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2c"
@@ -157,7 +157,7 @@ rule:
       expression: "curaViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Further curfew requirement made - CURA
       affectedOffenceSet: "allOffenceIds"
     - id: "AC2d"
@@ -165,7 +165,7 @@ rule:
       expression: "aarViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must match or be longer than the end date of
+        ${defendantName} — The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring - AAR
       affectedOffenceSet: "allOffenceIds"
     - id: "AC3"
@@ -173,21 +173,24 @@ rule:
       expression: "upwrViolationCount > 0"
       severity: ERROR
       messageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
+        ${defendantName} — The end date of the order must be at least 12 months as it includes an
         unpaid work requirement
       affectedOffenceSet: "allOffenceIds"
 ```
 
 ---
 
-## No External Contract Changes
+## API Dependency
 
-This feature adds a new YAML rule and preprocessor. It does NOT change:
+This feature requires `api-cp-crime-hearing-results-validator` **0.1.6**.
+
+Key change in 0.1.6: date values on result lines are no longer carried as a direct `endDate: LocalDate` field. They are now delivered as prompt entries in `ResultLineDto.prompts: List<Prompt>`, where each `Prompt` has:
+- `promptRef: String` — identifies the date field (e.g. `"endDate"`)
+- `promptValue: String` — ISO-8601 date string (e.g. `"2026-10-30"`)
+
+This feature does NOT change:
 - The `ValidationController` API (no new endpoints)
 - The `DraftValidationResponse` or `ValidationIssue` structure
-- The request DTO (`DraftValidationRequest`, `ResultLineDto`) — all required fields already exist
-
-The upstream `api-cp-crime-hearing-results-validator` dependency requires **no changes**.
 
 ---
 
@@ -195,9 +198,9 @@ The upstream `api-cp-crime-hearing-results-validator` dependency requires **no c
 
 | Input State | Trigger | Resulting ValidationIssue |
 |-------------|---------|--------------------------|
-| COEW with endDate < CUR.endDate on same offence | AC2a | ERROR: "…end date of Curfew (community requirement) - CUR" |
-| COEW with endDate < CURE.endDate on same offence | AC2b | ERROR: "…end date of Curfew with electronic monitoring - CURE" |
-| COEW with endDate < CURA.endDate on same offence | AC2c | ERROR: "…end date of Further curfew requirement made - CURA" |
-| COEW with endDate < AAR.endDate on same offence | AC2d | ERROR: "…end date of Alcohol abstinence and monitoring - AAR" |
-| COEW + UPWR on same offence AND endDate < hearingDate.plusMonths(12) | AC3 | ERROR: "…at least 12 months…unpaid work requirement" |
+| COEW with endDate < CUR.endDate on same offence | AC2a | ERROR: "${defendantName} — …end date of Curfew (community requirement) - CUR" |
+| COEW with endDate < CURE.endDate on same offence | AC2b | ERROR: "${defendantName} — …end date of Curfew with electronic monitoring - CURE" |
+| COEW with endDate < CURA.endDate on same offence | AC2c | ERROR: "${defendantName} — …end date of Further curfew requirement made - CURA" |
+| COEW with endDate < AAR.endDate on same offence | AC2d | ERROR: "${defendantName} — …end date of Alcohol abstinence and monitoring - AAR" |
+| COEW + UPWR on same offence AND endDate < hearingDate.plusMonths(12) | AC3 | ERROR: "${defendantName} — …at least 12 months…unpaid work requirement" |
 | All constraints satisfied | — | No ValidationIssue from DR-COEW-001 |

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
-import uk.gov.hmcts.cp.openapi.model.ResultLineDtoPromptsInner;
+import uk.gov.hmcts.cp.openapi.model.Prompt;
 
 /**
  * Unit tests for {@link CommunityOrderEndDatePreprocessor} covering all three AC families.
@@ -74,9 +74,9 @@ class CommunityOrderEndDatePreprocessorTest {
     }
 
     private static ResultLineDto withEndDate(final ResultLineDto line, final LocalDate endDate) {
-        line.addPromptsItem(ResultLineDtoPromptsInner.builder()
+        line.addPromptsItem(Prompt.builder()
                 .promptRef("endDate")
-                .value(endDate.toString())
+                .promptValue(endDate.toString())
                 .build());
         return line;
     }
