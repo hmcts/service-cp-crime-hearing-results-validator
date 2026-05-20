@@ -1,0 +1,72 @@
+rule:
+  id: "DR-COEW-001"
+  title: "Community Order End Date Validation"
+  description: >-
+    Validates that a community order's end date is not earlier than the end date of any
+    attached requirement (AC2: CUR, CURE, CURA, AAR) and that an order containing an
+    unpaid work requirement (AC3: UPWR) is at least 12 calendar months from the hearing date.
+  priority: 4000
+  enabled: true
+
+  preprocessing:
+    type: "community-order-end-date"
+    communityOrderShortCodes:
+      - COEW
+      - COS
+      - CONI
+    curfewShortCodes:
+      - CUR
+    curfewTagShortCodes:
+      - CURE
+    furtherCurfewShortCodes:
+      - CURA
+    alcoholAbstinenceShortCodes:
+      - AAR
+    unpaidWorkShortCodes:
+      - UPWR
+
+  conditions:
+    - id: "AC2a"
+      name: "Curfew requirement exceeds order end date"
+      expression: "curViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew (community requirement)
+      affectedOffenceSet: "curViolationOffenceIds"
+
+    - id: "AC2b"
+      name: "Curfew with tag requirement exceeds order end date"
+      expression: "cureViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew with electronic monitoring
+      affectedOffenceSet: "cureViolationOffenceIds"
+
+    - id: "AC2c"
+      name: "Further curfew requirement exceeds order end date"
+      expression: "curaViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Further curfew requirement made
+      affectedOffenceSet: "curaViolationOffenceIds"
+
+    - id: "AC2d"
+      name: "Alcohol abstinence requirement exceeds order end date"
+      expression: "aarViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Alcohol abstinence and monitoring
+      affectedOffenceSet: "aarViolationOffenceIds"
+
+    - id: "AC3"
+      name: "Unpaid work order shorter than 12 months"
+      expression: "upwrViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must be at least 12 months as it includes an
+        unpaid work requirement
+      affectedOffenceSet: "upwrViolationOffenceIds"

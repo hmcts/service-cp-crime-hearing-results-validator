@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
@@ -85,7 +86,10 @@ public class CelValidationRule implements ValidationRule {
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
-            for (final RuleEvaluationContext context : contexts.values()) {
+            for (final Map.Entry<String, ? extends RuleEvaluationContext> contextEntry
+                    : contexts.entrySet()) {
+                final String defendantId = contextEntry.getKey();
+                final RuleEvaluationContext context = contextEntry.getValue();
                 final Map<String, Long> celContext = context.toCelContext();
 
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
@@ -105,11 +109,15 @@ public class CelValidationRule implements ValidationRule {
                         final String normalizedSeverity = Optional
                                 .ofNullable(SeverityCeiling.normalize(effectiveSeverity))
                                 .orElse("ERROR");
+                        final List<AffectedDefendant> defendants = List.of(
+                                AffectedDefendant.builder().defendantId(defendantId).build());
                         issues.add(ValidationIssue.builder()
                                 .ruleId(ruleDefinition.getId())
                                 .severity(ValidationIssue.SeverityEnum.valueOf(normalizedSeverity))
                                 .message(message)
-                                .affectedOffences(offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap))
+                                .affectedOffences(offenceDisplayHelper
+                                        .buildAffectedOffences(affectedIds, offenceMap))
+                                .affectedDefendants(defendants)
                                 .build());
                     }
                 }
