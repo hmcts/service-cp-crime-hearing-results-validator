@@ -115,7 +115,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-01"}]},
                         {"id": "rl-cure", "shortCode": "CURE", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDateOfTag", "promptValue": "2026-12-15"}]}
+                         "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2026-12-15"}]}
                       ],
                       "defendants": [{"id": "d1", "firstName": "Jane", "lastName": "Doe"}],
                       "offences": [{"id": "off1", "offenceCode": "TH68001",

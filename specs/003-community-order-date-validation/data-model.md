@@ -43,7 +43,7 @@
 |-------------------|-------------|---------|
 | COEW, COS, CONI | `"endDate"` | Community order end date |
 | CUR | `"endDate"` | Curfew requirement end date |
-| CURE | `"endDateOfTag"` | Curfew with tag — end date of tag |
+| CURE | `"endDateOfTagging"` | Curfew with tag — end date of tag |
 | CURA | `"endDate"` | Further curfew end date |
 | AAR | `"until"` | Alcohol abstinence until date |
 | UPWR | *(no date prompt)* | Presence alone triggers AC3 |

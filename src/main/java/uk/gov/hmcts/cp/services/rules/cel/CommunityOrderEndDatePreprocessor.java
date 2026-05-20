@@ -41,7 +41,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
 
     // Prompt ref keys — stable API-contract values (research.md Decision 3)
     private static final String PROMPT_END_DATE = "endDate";
-    private static final String PROMPT_END_DATE_OF_TAG = "endDateOfTag";
+    private static final String PROMPT_END_DATE_OF_TAG = "endDateOfTagging";
     private static final String PROMPT_UNTIL = "until";
 
     @Override
@@ -125,7 +125,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                 checkRequirementViolation(offenceLines, curCodes, PROMPT_END_DATE,
                         orderEndDate, offenceId, curViolationIds);
 
-                // AC2b — CURE: compare "endDateOfTag" prompt
+                // AC2b — CURE: compare "endDateOfTagging" prompt
                 checkRequirementViolation(offenceLines, cureCodes, PROMPT_END_DATE_OF_TAG,
                         orderEndDate, offenceId, cureViolationIds);
 

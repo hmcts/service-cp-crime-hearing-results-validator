@@ -161,7 +161,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     LocalDate.of(2026, 1, 1),
                     List.of(
                             orderLine("rl-order", "COS", "d1", "off1", "2026-12-01"),
-                            requirementLine("rl-cure", "CURE", "d1", "off1", "endDateOfTag", "2026-12-15")
+                            requirementLine("rl-cure", "CURE", "d1", "off1", "endDateOfTagging", "2026-12-15")
                     ),
                     List.of(defendant("d1", "Jane", "Doe")));
 
