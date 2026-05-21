@@ -35,6 +35,8 @@ services:
       APP_NAME_DATASOURCE_PASSWORD: postgres
       AUTHZ_ENABLED: "true"
       CP_BASE_URL: "http://wiremock:8080"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     ports:
       - "4550:4550"
+      - "5005:5005"
 

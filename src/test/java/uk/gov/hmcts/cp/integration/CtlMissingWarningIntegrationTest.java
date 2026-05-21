@@ -61,7 +61,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-CTL-001")))
@@ -101,7 +101,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -133,7 +133,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -163,7 +163,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -193,7 +193,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -232,7 +232,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));

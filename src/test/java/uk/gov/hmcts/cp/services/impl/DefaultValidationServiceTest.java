@@ -38,8 +38,8 @@ class DefaultValidationServiceTest {
         assertThat(response.getValidationId()).startsWith("val-");
         assertThat(response.getTimestamp()).isNotNull();
         assertThat(response.getMode()).isEqualTo("advisory");
-        assertThat(response.getErrors()).isEmpty();
-        assertThat(response.getErrorMessages()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
+        assertThat(response.getErrors().getErrorMessages()).isEmpty();
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).isEmpty();
     }
@@ -65,8 +65,8 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isFalse();
-        assertThat(response.getErrors()).hasSize(1);
-        assertThat(response.getErrorMessages()).containsExactly("Test error");
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Test error");
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
     }
@@ -91,7 +91,7 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isTrue();
-        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-002");
     }
@@ -123,7 +123,7 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isFalse();
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001", "RULE-002");
     }
@@ -172,7 +172,7 @@ class DefaultValidationServiceTest {
 
         DraftValidationResponse response = service.validate(request);
 
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated())
                 .containsExactly("RULE-001", "RULE-003")
@@ -244,8 +244,8 @@ class DefaultValidationServiceTest {
         assertThat(response.getMode()).isEqualTo("disabled");
         assertThat(response.getValidationId()).startsWith("val-");
         assertThat(response.getTimestamp()).isNotNull();
-        assertThat(response.getErrors()).isEmpty();
-        assertThat(response.getErrorMessages()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
+        assertThat(response.getErrors().getErrorMessages()).isEmpty();
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).isEmpty();
         assertThat(response.getProcessingTimeMs()).isZero();
@@ -273,7 +273,7 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getMode()).isEqualTo("advisory");
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
     }
 

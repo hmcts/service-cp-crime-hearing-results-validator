@@ -36,6 +36,8 @@ rule:
       expression: "qualifyingCount > 0"
       severity: WARNING
       messageTemplate: >-
-      Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)
+        Check whether you need to add extended test disqualification with DDOTE
+        (disqualification and extended test) or DDOTEL (disqualification for life
+        and extended test)
       affectedOffenceSet: "qualifyingOffenceIds"
       validationLevel: OFFENCE

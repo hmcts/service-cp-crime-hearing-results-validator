@@ -49,7 +49,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.validationId", startsWith("val-")))
                 .andExpect(jsonPath("$.timestamp", notNullValue()))
                 .andExpect(jsonPath("$.mode", is("advisory")))
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
                 .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002", "DR-DISQ-001")));
     }
@@ -84,7 +84,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(true)))
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()));
     }
 
@@ -122,11 +122,11 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(false)))
-                .andExpect(jsonPath("$.errors", hasSize(1)))
-                .andExpect(jsonPath("$.errors[0].ruleId", is("DR-SENT-002")))
-                .andExpect(jsonPath("$.errors[0].severity", is("ERROR")))
-                .andExpect(jsonPath("$.errorMessages[0]", startsWith("Some offences do not include details")))
-                .andExpect(jsonPath("$.errorMessages[0]", containsString("This affects John Doe")));
+                .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
+                .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
+                .andExpect(jsonPath("$.errors.errorMessages[0]", startsWith("Some offences do not include details")))
+                .andExpect(jsonPath("$.errors.errorMessages[0]", containsString("This affects John Doe")));
     }
 
     /**
@@ -159,7 +159,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(true)))
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
@@ -198,7 +198,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(true)))
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.warnings[0].errorMessages").doesNotExist())

@@ -71,7 +71,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -112,7 +112,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -145,7 +145,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -218,7 +218,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -251,7 +251,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -305,7 +305,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -335,7 +335,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -373,7 +373,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -411,7 +411,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -450,7 +450,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -481,7 +481,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
@@ -541,7 +541,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(3)))
                     .andExpect(jsonPath("$.warnings", hasSize(3)))
                     .andExpect(jsonPath("$.warnings[*].ruleId",
@@ -592,7 +592,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
@@ -647,7 +647,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(2)))
                     .andExpect(jsonPath("$.warnings", hasSize(2)))
                     .andExpect(jsonPath("$.warnings[*].affectedOffences[0].offenceId",
@@ -694,7 +694,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, empty()))
                     .andExpect(jsonPath("$.warnings", empty()));
         }
