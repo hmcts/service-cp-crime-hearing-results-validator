@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -124,7 +125,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors", hasSize(1)))
                 .andExpect(jsonPath("$.errors[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.errors[0].severity", is("ERROR")))
-                .andExpect(jsonPath("$.errors[0].message", startsWith("John Doe Offence 1, Offence 2 and Offence 3")));
+                .andExpect(jsonPath("$.errorMessages[0]", startsWith("Some offences do not include details")))
+                .andExpect(jsonPath("$.errorMessages[0]", containsString("This affects John Doe")));
     }
 
     /**
@@ -161,7 +163,9 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
-                .andExpect(jsonPath("$.warnings[0].message", startsWith("John Doe Offence 2")));
+                .andExpect(jsonPath("$.warnings[0].errorMessages").doesNotExist())
+                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(2)))
+                .andExpect(jsonPath("$.warnings[0].affectedOffences[1].message", startsWith("John Doe Offence 2")));
     }
 
     /**
@@ -197,7 +201,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
-                .andExpect(jsonPath("$.warnings[0].message", startsWith("John Doe")));
+                .andExpect(jsonPath("$.warnings[0].errorMessages").doesNotExist())
+                .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].message", startsWith("John Doe")));
     }
 
     /**

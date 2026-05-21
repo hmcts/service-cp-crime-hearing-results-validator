@@ -76,9 +76,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
                     .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
-                    .andExpect(jsonPath("$.warnings[0].message", is(EXPECTED_MESSAGE)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(EXPECTED_MESSAGE)));
         }
 
         @Test

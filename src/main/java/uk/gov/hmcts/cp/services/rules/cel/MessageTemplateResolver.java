@@ -30,7 +30,7 @@ public class MessageTemplateResolver {
                           final Map<String, OffenceDto> offenceMap,
                           final List<String> allOffenceIds) {
         final String formatted = formatOffenceNumbers(affectedOffenceIds, offenceMap, allOffenceIds);
-        String result = template.replace("${offenceNumbers}", formatted);
+        String result = template.replace("${offenceNumber}", formatted);
         if (defendantName != null) {
             result = result.replace("${defendantName}", defendantName);
         }
