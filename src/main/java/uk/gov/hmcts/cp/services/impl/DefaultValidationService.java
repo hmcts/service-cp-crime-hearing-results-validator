@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationErrors;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.ValidationService;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
@@ -43,7 +44,7 @@ public class DefaultValidationService implements ValidationService {
     public DraftValidationResponse validate(final DraftValidationRequest request) {
         final DraftValidationResponse response;
 
-        if (isFeatureActive()) {
+            if (isFeatureActive()) {
             response = evaluateRules(request);
         } else {
             log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
@@ -104,14 +105,18 @@ public class DefaultValidationService implements ValidationService {
 
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
 
+        final ValidationErrors errors = ValidationErrors.builder()
+                .errorMessages(errorMessages)
+                .validationIssues(errorItemsList)
+                .build();
+
         return DraftValidationResponse.builder()
                 .validationId("val-" + UUID.randomUUID())
                 .timestamp(Instant.now())
                 .mode("advisory")
                 .rulesEvaluated(rulesEvaluated)
                 .isValid(errorItemsList.isEmpty())
-                .errors(errorItemsList)
-                .errorMessages(errorMessages)
+                .errors(errors)
                 .warnings(warnings)
                 .processingTimeMs((int) processingTimeMs)
                 .build();
@@ -136,8 +141,7 @@ public class DefaultValidationService implements ValidationService {
                 .mode("disabled")
                 .rulesEvaluated(List.of())
                 .isValid(true)
-                .errors(List.of())
-                .errorMessages(List.of())
+                .errors(ValidationErrors.builder().build())
                 .warnings(List.of())
                 .processingTimeMs(0)
                 .build();
