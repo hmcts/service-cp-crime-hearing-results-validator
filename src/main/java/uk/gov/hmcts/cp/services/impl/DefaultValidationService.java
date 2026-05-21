@@ -3,7 +3,9 @@ package uk.gov.hmcts.cp.services.impl;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.ValidationService;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 /**
@@ -56,7 +59,10 @@ public class DefaultValidationService implements ValidationService {
         final long startNanos = System.nanoTime();
 
         final List<String> rulesEvaluated = new ArrayList<>();
-        final List<ValidationIssue> errors = new ArrayList<>();
+        final Map<String, String> errorBaseByRule = new LinkedHashMap<>();
+        final Map<String, List<String>> errorNamesByRule = new LinkedHashMap<>();
+        final List<String> standaloneMessages = new ArrayList<>();
+        final List<ValidationIssue> errorItemsList = new ArrayList<>();
         final List<ValidationIssue> warnings = new ArrayList<>();
 
         for (final ValidationRule rule : rules) {
@@ -64,12 +70,21 @@ public class DefaultValidationService implements ValidationService {
             try {
                 ruleId = rule.getRuleDetail().getRuleId();
 
-                final List<ValidationIssue> issues = rule.evaluate(request);
-                for (final ValidationIssue issue : issues) {
-                    if (issue.getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
-                        errors.add(issue);
+                final List<ValidationIssueResult> results = rule.evaluate(request);
+                for (final ValidationIssueResult result : results) {
+                    if (result.issue().getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
+                        errorItemsList.add(result.issue());
+                        if (result.errorMessage() != null) {
+                            if (result.affectedDefendantName() != null) {
+                                errorBaseByRule.putIfAbsent(ruleId, result.errorMessage());
+                                errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>())
+                                        .add(result.affectedDefendantName());
+                            } else {
+                                standaloneMessages.add(result.errorMessage());
+                            }
+                        }
                     } else {
-                        warnings.add(issue);
+                        warnings.add(result.issue());
                     }
                 }
 
@@ -80,6 +95,13 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
+        final List<String> errorMessages = new ArrayList<>(standaloneMessages);
+        for (final Map.Entry<String, String> entry : errorBaseByRule.entrySet()) {
+            final List<String> names = errorNamesByRule.get(entry.getKey());
+            errorMessages.add(entry.getValue().replace(
+                    "${defendantNames}", formatDefendantNames(names)));
+        }
+
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
 
         return DraftValidationResponse.builder()
@@ -87,8 +109,9 @@ public class DefaultValidationService implements ValidationService {
                 .timestamp(Instant.now())
                 .mode("advisory")
                 .rulesEvaluated(rulesEvaluated)
-                .isValid(errors.isEmpty())
-                .errors(errors)
+                .isValid(errorItemsList.isEmpty())
+                .errors(errorItemsList)
+                .errorMessages(errorMessages)
                 .warnings(warnings)
                 .processingTimeMs((int) processingTimeMs)
                 .build();
@@ -114,8 +137,17 @@ public class DefaultValidationService implements ValidationService {
                 .rulesEvaluated(List.of())
                 .isValid(true)
                 .errors(List.of())
+                .errorMessages(List.of())
                 .warnings(List.of())
                 .processingTimeMs(0)
                 .build();
+    }
+
+    private static String formatDefendantNames(final List<String> names) {
+        if (names.size() == 1) {
+            return names.get(0);
+        }
+        return String.join(", ", names.subList(0, names.size() - 1))
+                + " and " + names.get(names.size() - 1);
     }
 }

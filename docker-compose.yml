@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   wiremock:
     image: wiremock/wiremock:3.13.0
@@ -20,8 +25,10 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - db
-      - wiremock
+      db:
+        condition: service_healthy
+      wiremock:
+        condition: service_started
     environment:
       APP_NAME_DATASOURCE_URL: jdbc:postgresql://db:5432/results-validator-db
       APP_NAME_DATASOURCE_USERNAME: postgres

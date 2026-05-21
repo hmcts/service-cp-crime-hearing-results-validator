@@ -5,6 +5,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 
 import java.util.List;
 
@@ -63,9 +64,9 @@ class CelValidationRuleTest {
         );
         request.getResultLines().get(1).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).isEmpty();
+        assertThat(results).isEmpty();
     }
 
     /**
@@ -91,16 +92,20 @@ class CelValidationRuleTest {
         // off1=primary (first no-info), off2+off3=noInfo (2 non-primary missing), off4=concurrent
         request.getResultLines().get(3).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).hasSize(1);
-        ValidationIssue error = issues.getFirst();
+        assertThat(results).hasSize(1);
+        ValidationIssueResult result = results.getFirst();
+        ValidationIssue error = result.issue();
         assertThat(error.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(error.getRuleId()).isEqualTo("DR-SENT-002");
-        assertThat(error.getMessage()).contains("John Smith");
-        assertThat(error.getMessage()).contains("do not include details");
-        assertThat(error.getMessage()).contains("Offence 1 (URN:32AH9105826), Offence 2 (URN:32AH9105826) and Offence 3 (URN:32AH9105826)");
+        assertThat(result.errorMessage()).contains("Some offences do not include details");
+        assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
+        assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);
+        assertThat(error.getAffectedOffences()).extracting(o -> o.getOffenceId())
+                .containsExactlyInAnyOrder("off1", "off2", "off3");
+        assertThat(error.getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -122,14 +127,19 @@ class CelValidationRuleTest {
         request.getResultLines().get(1).setIsConcurrent(true);
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).hasSize(1);
-        ValidationIssue warning = issues.getFirst();
+        assertThat(results).hasSize(1);
+        ValidationIssueResult result = results.getFirst();
+        ValidationIssue warning = result.issue();
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
-        assertThat(warning.getMessage()).contains("John Smith");
-        assertThat(warning.getMessage()).contains("both concurrent and consecutive");
-        assertThat(warning.getMessage()).contains("Offence 2 (URN:32AH9105826)");
+        assertThat(result.errorMessage()).isNull();
+        assertThat(warning.getAffectedOffences()).hasSize(2);
+        assertThat(warning.getAffectedOffences()).allSatisfy(ao -> {
+            assertThat(ao.getMessage()).contains("John Smith");
+            assertThat(ao.getMessage()).contains("both concurrent and consecutive");
+        });
+        assertThat(warning.getAffectedOffences().get(1).getMessage()).contains("Offence 2 (URN:32AH9105826)");
     }
 
     /**
@@ -151,12 +161,14 @@ class CelValidationRuleTest {
         request.getResultLines().get(0).setIsConcurrent(true);
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).hasSize(1);
-        ValidationIssue warning = issues.getFirst();
+        assertThat(results).hasSize(1);
+        ValidationIssueResult result = results.getFirst();
+        ValidationIssue warning = result.issue();
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
-        assertThat(warning.getMessage()).contains("no primary sentence");
+        assertThat(result.errorMessage()).isNull();
+        assertThat(warning.getAffectedDefendants().get(0).getMessage()).contains("no primary sentence");
     }
 
     /**
@@ -175,9 +187,9 @@ class CelValidationRuleTest {
                 )
         );
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).isEmpty();
+        assertThat(results).isEmpty();
     }
 
     /**
@@ -209,10 +221,10 @@ class CelValidationRuleTest {
         request.getResultLines().get(3).setIsConcurrent(true);
         request.getResultLines().get(5).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).hasSize(1);
-        assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().issue().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
     }
 
     /**
@@ -235,9 +247,9 @@ class CelValidationRuleTest {
         );
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).isEmpty();
+        assertThat(results).isEmpty();
     }
 
     /**
@@ -251,9 +263,9 @@ class CelValidationRuleTest {
                 List.of(offence("off1", 1, "Theft"))
         );
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).isEmpty();
+        assertThat(results).isEmpty();
     }
 
     /**
@@ -284,9 +296,9 @@ class CelValidationRuleTest {
     void empty_result_lines_should_produce_no_issues() {
         DraftValidationRequest request = buildRequest(List.of(), List.of());
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).isEmpty();
+        assertThat(results).isEmpty();
     }
 
     /**
@@ -309,11 +321,48 @@ class CelValidationRuleTest {
         request.getResultLines().get(0).setConsecutiveToOffence("off2");
         request.getResultLines().get(1).setConsecutiveToOffence("off1");
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssueResult> results = rule.evaluate(request);
 
-        assertThat(issues).hasSize(2);
-        assertThat(issues).extracting(ValidationIssue::getSeverity)
+        assertThat(results).hasSize(2);
+        assertThat(results).extracting(r -> r.issue().getSeverity())
                 .containsOnly(ValidationIssue.SeverityEnum.WARNING);
+    }
+
+    /**
+     * Verifies that a DEFENDANT-level condition populates affectedDefendants (not affectedOffences)
+     * and sets validationLevel to DEFENDANT on the produced issue.
+     */
+    @Test
+    void defendant_level_condition_should_populate_affected_defendants() {
+        CelValidationRule defendantRule = new CelValidationRule(
+                "rules/TEST-defendant-level.yaml",
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
+
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")
+                ),
+                List.of(
+                        offence("off1", 1, "Theft"),
+                        offence("off2", 2, "Assault")
+                )
+        );
+        request.getResultLines().get(1).setIsConcurrent(true);
+        request.getResultLines().get(1).setConsecutiveToOffence("off1");
+
+        List<ValidationIssueResult> results = defendantRule.evaluate(request);
+
+        assertThat(results).hasSize(1);
+        ValidationIssue issue = results.getFirst().issue();
+        assertThat(issue.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.DEFENDANT);
+        assertThat(issue.getAffectedDefendants()).hasSize(1);
+        assertThat(issue.getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issue.getAffectedOffences()).isNullOrEmpty();
     }
 
     /**
