@@ -43,3 +43,4 @@ rule:
         (disqualification and extended test) or DDOTEL (disqualification for life
         and extended test)
       affectedOffenceSet: "qualifyingOffenceIds"
+      validationLevel: OFFENCE
