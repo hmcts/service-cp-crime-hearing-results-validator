@@ -37,8 +37,7 @@ class CustodialPreprocessorTest {
                 List.of());
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
-
-//        assertThat(result).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     /**
