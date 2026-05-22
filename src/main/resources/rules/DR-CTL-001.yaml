@@ -27,6 +27,6 @@ rule:
       expression: "ctlWarningCount > 0"
       severity: WARNING
       messageTemplate: >-
-        This offence does not have a CTL. If the trial has started a CTL is not
-        needed. It is your responsibility to check and confirm.
+          This offence does not have a CTL. If the trial has started a CTL is not needed. It is your responsibility to check and confirm.
       affectedOffenceSet: "warningOffenceIds"
+      validationLevel: OFFENCE

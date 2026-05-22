@@ -33,6 +33,9 @@ rule:
       messageTemplate: >-
         The end date of the order must match or be longer than the end date of
         Curfew (community requirement)
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew (community requirement). This affects ${defendantNames}.
       affectedOffenceSet: "curViolationOffenceIds"
 
     - id: "AC2b"
@@ -42,6 +45,9 @@ rule:
       messageTemplate: >-
         The end date of the order must match or be longer than the end date of
         Curfew with electronic monitoring
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Curfew with electronic monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "cureViolationOffenceIds"
 
     - id: "AC2c"
@@ -51,6 +57,9 @@ rule:
       messageTemplate: >-
         The end date of the order must match or be longer than the end date of
         Further curfew requirement made
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Further curfew requirement made. This affects ${defendantNames}.
       affectedOffenceSet: "curaViolationOffenceIds"
 
     - id: "AC2d"
@@ -60,6 +69,9 @@ rule:
       messageTemplate: >-
         The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Alcohol abstinence and monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "aarViolationOffenceIds"
 
     - id: "AC3"
@@ -69,4 +81,7 @@ rule:
       messageTemplate: >-
         The end date of the order must be at least 12 months as it includes an
         unpaid work requirement
+      errorMessageTemplate: >-
+        The end date of the order must be at least 12 months as it includes an
+        unpaid work requirement. This affects ${defendantNames}.
       affectedOffenceSet: "upwrViolationOffenceIds"

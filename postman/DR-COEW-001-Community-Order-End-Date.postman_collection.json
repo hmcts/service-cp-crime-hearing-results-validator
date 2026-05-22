@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "DR-COEW-001 — Community Order End Date Validation",
+    "description": "Manual tests for DR-COEW-001.\n\nAC2 (a–d): requirement end date exceeds the community order end date.\nAC3: order containing UPWR is shorter than 12 calendar months from the hearing date.\n\nAll requests target http://localhost:4550. Import and set the `baseUrl` variable if you need a different host.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4550",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "AC2 — Requirement end date exceeds order",
+      "item": [
+        {
+          "name": "S06 AC2a — CUR ends after COEW order → ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s06\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-10-30\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-30\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "COEW order ends 30-Oct-2026, CUR ends 30-Nov-2026.\nExpected: 1 ERROR on off1 (AC2a — Curfew requirement).\nerrors.errorMessages[0] = 'The end date of the order must match or be longer than the end date of Curfew (community requirement). This affects John Smith.'"
+          },
+          "response": []
+        },
+        {
+          "name": "S07 AC2b — CURE endDateOfTagging after COS order → ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s07\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COS\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-01\"}]\n    },\n    {\n      \"id\": \"rl-cure\",\n      \"shortCode\": \"CURE\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDateOfTagging\", \"promptValue\": \"2026-12-15\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Jane\", \"lastName\": \"Doe\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "COS order ends 01-Dec-2026, CURE endDateOfTagging 15-Dec-2026.\nExpected: 1 ERROR on off1 (AC2b — Curfew with electronic monitoring).\nerrors.errorMessages[0] ends with 'Jane Doe.'"
+          },
+          "response": []
+        },
+        {
+          "name": "S08 AC2c — CURA ends after CONI order → ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s08\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"CONI\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-01-01\"}]\n    },\n    {\n      \"id\": \"rl-cura\",\n      \"shortCode\": \"CURA\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-01-15\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Bob\", \"lastName\": \"Brown\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "CONI order ends 01-Jan-2027, CURA ends 15-Jan-2027.\nExpected: 1 ERROR on off1 (AC2c — Further curfew requirement made).\nerrors.errorMessages[0] ends with 'Bob Brown.'"
+          },
+          "response": []
+        },
+        {
+          "name": "S09 AC2d — AAR until after COEW order → ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s09\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-06-01\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"until\", \"promptValue\": \"2027-06-15\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Sarah\", \"lastName\": \"Green\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "COEW order ends 01-Jun-2027, AAR until 15-Jun-2027.\nExpected: 1 ERROR on off1 (AC2d — Alcohol abstinence and monitoring).\nerrors.errorMessages[0] ends with 'Sarah Green.'"
+          },
+          "response": []
+        },
+        {
+          "name": "S10 AC2 PASS — COEW order end longer than CUR → no errors",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s10\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-30\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-30\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Valid\", \"lastName\": \"Order\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "COEW order ends 30-Dec-2026, CUR ends 30-Nov-2026 (order is longer).\nExpected: isValid=true, no errors, no warnings."
+          },
+          "response": []
+        },
+        {
+          "name": "S11 — CUR + AAR both violating same order → 2 ERRORs",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s11\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-06-01\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-06-15\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"until\", \"promptValue\": \"2027-06-25\"}]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Multi\", \"lastName\": \"Violator\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "COEW ends 01-Jun-2027. CUR ends 15-Jun, AAR ends 25-Jun — both exceed order.\nExpected: 2 ERRORs on off1 (AC2a + AC2d), 2 errorMessages, isValid=false."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AC3 — UPWR shorter than 12 months",
+      "item": [
+        {
+          "name": "S14 AC3 — COEW + UPWR under 12 months → ERROR",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s14\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-04-13\"}]\n    },\n    {\n      \"id\": \"rl-upwr\",\n      \"shortCode\": \"UPWR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\"\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "Hearing 14-May-2026, COEW ends 13-Apr-2027 (364 days — under 12 months).\nExpected: 1 ERROR on off1 (AC3 — unpaid work requirement).\nerrors.errorMessages[0] = 'The end date of the order must be at least 12 months as it includes an unpaid work requirement. This affects John Smith.'\nisValid=false."
+          },
+          "response": []
+        },
+        {
+          "name": "S15 AC3 PASS — COS + UPWR exactly 12 months minus 1 day (boundary)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s15\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COS\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-05-13\"}]\n    },\n    {\n      \"id\": \"rl-upwr\",\n      \"shortCode\": \"UPWR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\"\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Boundary\", \"lastName\": \"Pass\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "Hearing 14-May-2026, COS ends 13-May-2027 (hearingDay + 12m − 1d).\nChange promptValue to 2027-05-14 (exact 12m boundary) for a pass.\nExpected with 2027-05-13: still triggers ERROR (under boundary)."
+          },
+          "response": []
+        },
+        {
+          "name": "S16 AC3 PASS — CONI + UPWR over 12 months → no errors",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",   "value": "test-user" },
+              { "key": "CPP-ACTION",  "value": "validation-service.validate" },
+              { "key": "Content-Type","value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-s16\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"CONI\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-05-20\"}]\n    },\n    {\n      \"id\": \"rl-upwr\",\n      \"shortCode\": \"UPWR\",\n      \"category\": \"I\",\n      \"label\": \"Requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\"\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"Valid\", \"lastName\": \"Duration\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}"
+            },
+            "description": "Hearing 14-May-2026, CONI ends 20-May-2027 (>12 months).\nExpected: isValid=true, no errors, no warnings."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Multi-defendant scenarios",
+      "description": "Scenarios covering multiple defendants in the same hearing, verifying:\n- Each defendant's violation produces its own affectedDefendants entry\n- Distinct condition templates produce separate errorMessages entries\n- Same violation type shared by multiple defendants merges names into one errorMessages entry (\"This affects A and B.\")\n- Valid defendants are not mentioned anywhere in the response",
+      "item": [
+        {
+          "name": "MD-01 — 4 defendants: AC2a + AC3 + AC2b + 1 valid → 3 errors, 3 errorMessages",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",    "value": "test-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-md01\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-d1-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-10-30\"}]\n    },\n    {\n      \"id\": \"rl-d1-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-30\"}]\n    },\n    {\n      \"id\": \"rl-d2-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-04-13\"}]\n    },\n    {\n      \"id\": \"rl-d2-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\"\n    },\n    {\n      \"id\": \"rl-d3-order\",\n      \"shortCode\": \"COS\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-01\"}]\n    },\n    {\n      \"id\": \"rl-d3-cure\",\n      \"shortCode\": \"CURE\", \"category\": \"I\", \"label\": \"Curfew with tag\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\",\n      \"prompts\": [{\"promptRef\": \"endDateOfTagging\", \"promptValue\": \"2026-12-15\"}]\n    },\n    {\n      \"id\": \"rl-d4-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d4\", \"offenceId\": \"off4\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-12-31\"}]\n    },\n    {\n      \"id\": \"rl-d4-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d4\", \"offenceId\": \"off4\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-30\"}]\n    }\n  ],\n  \"defendants\": [\n    { \"id\": \"d1\", \"firstName\": \"Alice\",  \"lastName\": \"Johnson\" },\n    { \"id\": \"d2\", \"firstName\": \"Bob\",    \"lastName\": \"Williams\" },\n    { \"id\": \"d3\", \"firstName\": \"Carol\",  \"lastName\": \"Davies\" },\n    { \"id\": \"d4\", \"firstName\": \"David\",  \"lastName\": \"Taylor\" }\n  ],\n  \"offences\": [\n    { \"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",    \"orderIndex\": 1 },\n    { \"id\": \"off2\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",    \"orderIndex\": 2 },\n    { \"id\": \"off3\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Assault\",  \"orderIndex\": 3 },\n    { \"id\": \"off4\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Burglary\", \"orderIndex\": 4 }\n  ]\n}"
+            },
+            "description": "4 defendants in one hearing:\n\nd1 Alice Johnson  — COEW ends 30-Oct-2026 < CUR ends 30-Nov-2026   → CUR ERROR (AC2a)\nd2 Bob Williams   — COEW ends 13-Apr-2027, hearing 14-May-2026 + UPWR → UPWR ERROR (AC3)\nd3 Carol Davies   — COS  ends 01-Dec-2026 < CURE tag ends 15-Dec-2026 → CURE ERROR (AC2b)\nd4 David Taylor   — COEW ends 31-Dec-2027 > CUR ends 30-Nov-2026   → PASS\n\nExpected response:\n• isValid: false\n• warnings: []\n• errors.validationIssues: 3 entries\n• errors.errorMessages: 3 separate entries (each template is distinct):\n    – \"...Curfew (community requirement). This affects Alice Johnson.\"\n    – \"...unpaid work requirement. This affects Bob Williams.\"\n    – \"...Curfew with electronic monitoring. This affects Carol Davies.\"\n• d4 David Taylor must NOT appear anywhere in errors or affectedDefendants\n\nKey paths to check:\n  $.errors.validationIssues[*].affectedDefendants[*].defendantId → [\"d1\",\"d2\",\"d3\"] (any order)\n  $.errors.validationIssues[*].affectedOffences[0].offenceId     → [\"off1\",\"off2\",\"off3\"] (any order)\n  $.errors.errorMessages.length                                   → 3"
+          },
+          "response": []
+        },
+        {
+          "name": "MD-02 — 2 defendants both CUR violation → merged into 1 errorMessage with \"and\"",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",    "value": "test-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-md02\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-d1-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-09-30\"}]\n    },\n    {\n      \"id\": \"rl-d1-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-30\"}]\n    },\n    {\n      \"id\": \"rl-d2-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-10-15\"}]\n    },\n    {\n      \"id\": \"rl-d2-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-01\"}]\n    }\n  ],\n  \"defendants\": [\n    { \"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\" },\n    { \"id\": \"d2\", \"firstName\": \"Jane\", \"lastName\": \"Doe\" }\n  ],\n  \"offences\": [\n    { \"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",   \"orderIndex\": 1 },\n    { \"id\": \"off2\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Assault\", \"orderIndex\": 2 }\n  ]\n}"
+            },
+            "description": "Both d1 John Smith and d2 Jane Doe violate the same condition (AC2a — CUR exceeds order end date).\nBecause they share the same errorMessageTemplate, their names are merged into\na single errorMessages entry using \"and\" joining.\n\nExpected response:\n• isValid: false\n• errors.validationIssues: 2 entries (one per defendant, each with its own affectedOffences)\n• errors.errorMessages: exactly 1 entry:\n    \"The end date of the order must match or be longer than the end date of\n     Curfew (community requirement). This affects John Smith and Jane Doe.\"\n\nKey thing to check:\n  $.errors.errorMessages.length === 1   (NOT 2 — same template merges names)\n  $.errors.errorMessages[0] contains both \"John Smith\" and \"Jane Doe\""
+          },
+          "response": []
+        },
+        {
+          "name": "MD-03 — 3 defendants: 2 UPWR violations + 1 valid → merged UPWR errorMessage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",    "value": "test-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-md03\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-d1-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-04-13\"}]\n    },\n    {\n      \"id\": \"rl-d1-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\"\n    },\n    {\n      \"id\": \"rl-d2-order\",\n      \"shortCode\": \"COS\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-03-01\"}]\n    },\n    {\n      \"id\": \"rl-d2-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\"\n    },\n    {\n      \"id\": \"rl-d3-order\",\n      \"shortCode\": \"CONI\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-05-20\"}]\n    },\n    {\n      \"id\": \"rl-d3-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\"\n    }\n  ],\n  \"defendants\": [\n    { \"id\": \"d1\", \"firstName\": \"Emma\",   \"lastName\": \"Clarke\" },\n    { \"id\": \"d2\", \"firstName\": \"Liam\",   \"lastName\": \"Foster\" },\n    { \"id\": \"d3\", \"firstName\": \"Sophia\", \"lastName\": \"Reid\" }\n  ],\n  \"offences\": [\n    { \"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",    \"orderIndex\": 1 },\n    { \"id\": \"off2\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Assault\",  \"orderIndex\": 2 },\n    { \"id\": \"off3\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Burglary\", \"orderIndex\": 3 }\n  ]\n}"
+            },
+            "description": "d1 Emma Clarke  — COEW ends 13-Apr-2027 (364 days from hearing)   → UPWR ERROR (AC3)\nd2 Liam Foster   — COS  ends 01-Mar-2027 (291 days from hearing)   → UPWR ERROR (AC3)\nd3 Sophia Reid   — CONI ends 20-May-2027 (371 days from hearing)   → PASS (≥12 months)\n\nBoth d1 and d2 trigger the same AC3 template, so their names merge:\n\nExpected response:\n• isValid: false\n• errors.validationIssues: 2 entries (d1 + d2)\n• errors.errorMessages: exactly 1 entry:\n    \"The end date of the order must be at least 12 months as it includes an\n     unpaid work requirement. This affects Emma Clarke and Liam Foster.\"\n• d3 Sophia Reid must NOT appear in errors or affectedDefendants\n\nKey things to check:\n  $.errors.errorMessages.length === 1\n  $.errors.errorMessages[0] ends with \"Emma Clarke and Liam Foster.\"\n  $.errors.validationIssues[*].affectedDefendants[*].defendantId → [\"d1\",\"d2\"] only"
+          },
+          "response": []
+        },
+        {
+          "name": "MD-04 — 5 defendants: AC2a + AC2d + AC3 + 2 valid → 3 separate errorMessages",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "CJSCPPUID",    "value": "test-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"hearingId\": \"h-md04\",\n  \"hearingDay\": \"2026-05-14\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-d1-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-10-01\"}]\n    },\n    {\n      \"id\": \"rl-d1-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d1\", \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-01\"}]\n    },\n    {\n      \"id\": \"rl-d2-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-01-01\"}]\n    },\n    {\n      \"id\": \"rl-d2-aar\",\n      \"shortCode\": \"AAR\", \"category\": \"I\", \"label\": \"Alcohol abstinence\",\n      \"defendantId\": \"d2\", \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"until\", \"promptValue\": \"2027-02-01\"}]\n    },\n    {\n      \"id\": \"rl-d3-order\",\n      \"shortCode\": \"CONI\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-04-01\"}]\n    },\n    {\n      \"id\": \"rl-d3-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d3\", \"offenceId\": \"off3\"\n    },\n    {\n      \"id\": \"rl-d4-order\",\n      \"shortCode\": \"COEW\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d4\", \"offenceId\": \"off4\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-12-01\"}]\n    },\n    {\n      \"id\": \"rl-d4-cur\",\n      \"shortCode\": \"CUR\", \"category\": \"I\", \"label\": \"Curfew\",\n      \"defendantId\": \"d4\", \"offenceId\": \"off4\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-11-01\"}]\n    },\n    {\n      \"id\": \"rl-d5-order\",\n      \"shortCode\": \"CONI\", \"category\": \"F\", \"label\": \"Community order\",\n      \"defendantId\": \"d5\", \"offenceId\": \"off5\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2027-06-01\"}]\n    },\n    {\n      \"id\": \"rl-d5-upwr\",\n      \"shortCode\": \"UPWR\", \"category\": \"I\", \"label\": \"Unpaid work\",\n      \"defendantId\": \"d5\", \"offenceId\": \"off5\"\n    }\n  ],\n  \"defendants\": [\n    { \"id\": \"d1\", \"firstName\": \"Oliver\", \"lastName\": \"Brown\" },\n    { \"id\": \"d2\", \"firstName\": \"Isla\",   \"lastName\": \"Patel\" },\n    { \"id\": \"d3\", \"firstName\": \"Noah\",   \"lastName\": \"Evans\" },\n    { \"id\": \"d4\", \"firstName\": \"Mia\",    \"lastName\": \"Turner\" },\n    { \"id\": \"d5\", \"firstName\": \"Jack\",   \"lastName\": \"Morris\" }\n  ],\n  \"offences\": [\n    { \"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",    \"orderIndex\": 1 },\n    { \"id\": \"off2\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Assault\",  \"orderIndex\": 2 },\n    { \"id\": \"off3\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Burglary\", \"orderIndex\": 3 },\n    { \"id\": \"off4\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Robbery\",  \"orderIndex\": 4 },\n    { \"id\": \"off5\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Fraud\",    \"orderIndex\": 5 }\n  ]\n}"
+            },
+            "description": "5 defendants, 3 violations across 3 different conditions, 2 valid:\n\nd1 Oliver Brown — COEW 01-Oct-2026 < CUR 01-Nov-2026         → CUR ERROR (AC2a)\nd2 Isla Patel   — COEW 01-Jan-2027 < AAR until 01-Feb-2027   → AAR ERROR (AC2d)\nd3 Noah Evans   — CONI 01-Apr-2027 (322 days from hearing)   → UPWR ERROR (AC3)\nd4 Mia Turner   — COEW 01-Dec-2027 > CUR 01-Nov-2026         → PASS\nd5 Jack Morris  — CONI 01-Jun-2027 (383 days from hearing)   → PASS\n\nExpected response:\n• isValid: false\n• errors.validationIssues: 3 entries\n• errors.errorMessages: 3 separate entries (each template distinct — no merging):\n    – \"...Curfew (community requirement). This affects Oliver Brown.\"\n    – \"...Alcohol abstinence and monitoring. This affects Isla Patel.\"\n    – \"...unpaid work requirement. This affects Noah Evans.\"\n• d4 Mia Turner and d5 Jack Morris must NOT appear in errors or affectedDefendants\n\nKey things to check:\n  $.errors.errorMessages.length === 3\n  $.errors.validationIssues[*].affectedDefendants[*].defendantId → [\"d1\",\"d2\",\"d3\"] (any order)\n  \"d4\" and \"d5\" absent from $.errors"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

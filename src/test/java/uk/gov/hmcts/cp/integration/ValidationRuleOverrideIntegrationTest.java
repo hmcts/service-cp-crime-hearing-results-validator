@@ -104,7 +104,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .content(AC2_ERROR_REQUEST))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(false)))
-                .andExpect(jsonPath("$.errors", hasSize(1)));
+                .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)));
     }
 
     /**
@@ -130,7 +130,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AC2_ERROR_REQUEST))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()));
     }
 
@@ -157,7 +157,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AC2_ERROR_REQUEST))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is(RULE_ID)))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));
@@ -186,7 +186,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(AC3_WARNING_REQUEST))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].ruleId", is(RULE_ID)))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));

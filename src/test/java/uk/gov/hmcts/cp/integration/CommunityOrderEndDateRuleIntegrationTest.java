@@ -27,16 +27,16 @@ import static org.hamcrest.Matchers.hasItem;
  * <p>Every positive scenario pins:
  * <ul>
  *   <li>{@code $.warnings} is empty (DR-COEW-001 produces ERRORs only).</li>
- *   <li>{@code $.errors[?(@.ruleId=='DR-COEW-001')]} has the expected size.</li>
+ *   <li>{@code $.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]} has the expected size.</li>
  *   <li>Rule id, severity, message, and affectedOffences are verified per issue.</li>
  * </ul>
  */
 class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
-    private static final String DR_COEW_ERRORS = "$.errors[?(@.ruleId=='DR-COEW-001')]";
+    private static final String DR_COEW_ERRORS = "$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]";
 
-    // ── AC2a message ──────────────────────────────────────────────────────────
+    // ── AC2a–AC2d inline messages (messageTemplate — per offence) ─────────────
     private static final String MSG_CUR =
             "The end date of the order must match or be longer than the end date of "
                     + "Curfew (community requirement)";
@@ -52,6 +52,23 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     private static final String MSG_UPWR =
             "The end date of the order must be at least 12 months as it includes an "
                     + "unpaid work requirement";
+
+    // ── AC2a–AC2d / AC3 error-summary base messages (errorMessageTemplate — "This affects …") ──
+    private static final String ERR_MSG_BASE_CUR =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Curfew (community requirement). This affects ";
+    private static final String ERR_MSG_BASE_CURE =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Curfew with electronic monitoring. This affects ";
+    private static final String ERR_MSG_BASE_CURA =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Further curfew requirement made. This affects ";
+    private static final String ERR_MSG_BASE_AAR =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Alcohol abstinence and monitoring. This affects ";
+    private static final String ERR_MSG_BASE_UPWR =
+            "The end date of the order must be at least 12 months as it includes an "
+                    + "unpaid work requirement. This affects ";
 
     // ═════════════════════════════════════════════════════════════════════════
     // AC2 Scenarios 6–13
@@ -90,11 +107,13 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].ruleId", is("DR-COEW-001")))
-                    .andExpect(jsonPath("$.errors[0].severity", is("ERROR")))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_CUR)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-COEW-001")))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CUR)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CUR + "John Smith.")));
         }
     }
 
@@ -131,8 +150,10 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_CURE)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CURE)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CURE + "Jane Doe.")));
         }
     }
 
@@ -169,8 +190,10 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_CURA)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CURA)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CURA + "Bob Brown.")));
         }
     }
 
@@ -207,8 +230,10 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_AAR)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_AAR)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_AAR + "Sarah Green.")));
         }
     }
 
@@ -245,7 +270,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, empty()))
-                    .andExpect(jsonPath("$.errors", empty()));
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()));
         }
     }
 
@@ -286,9 +311,9 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].message",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_AAR)))
-                    .andExpect(jsonPath("$.errors[*].ruleId",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].ruleId",
                             containsInAnyOrder("DR-COEW-001", "DR-COEW-001")));
         }
     }
@@ -349,7 +374,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.warnings", empty()))
                     // d2 → CUR violation, d3 → AAR violation
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].message",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_AAR)));
         }
     }
@@ -425,9 +450,11 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_UPWR)))
-                    .andExpect(jsonPath("$.errors[0].severity", is("ERROR")))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_UPWR)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_UPWR + "John Smith.")));
         }
     }
 
@@ -464,7 +491,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, empty()))
-                    .andExpect(jsonPath("$.errors", empty()));
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()));
         }
     }
 
@@ -500,7 +527,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, empty()))
-                    .andExpect(jsonPath("$.errors", empty()));
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()));
         }
     }
 
@@ -548,8 +575,10 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_UPWR)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_UPWR)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_UPWR + "Under Minimum.")));
         }
     }
 
@@ -608,9 +637,14 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.warnings", empty()))
                     // d1 has CUR violation, d2 has UPWR violation — 2 total DR-COEW-001 errors
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].message",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_UPWR)))
-                    .andExpect(jsonPath("$.isValid", is(false)));
+                    .andExpect(jsonPath("$.isValid", is(false)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages",
+                            containsInAnyOrder(
+                                    ERR_MSG_BASE_CUR + "CUR Violator.",
+                                    ERR_MSG_BASE_UPWR + "UPWR Violator.")));
         }
     }
 
@@ -649,7 +683,9 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors[0].message", is(MSG_CUR)));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CUR)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CUR + "John Smith.")));
         }
 
         @Test
@@ -694,8 +730,13 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].message",
-                            containsInAnyOrder(MSG_CUR, MSG_UPWR)));
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
+                            containsInAnyOrder(MSG_CUR, MSG_UPWR)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages",
+                            containsInAnyOrder(
+                                    ERR_MSG_BASE_CUR + "AC2 Defendant.",
+                                    ERR_MSG_BASE_UPWR + "AC3 Defendant.")));
         }
     }
 
@@ -744,8 +785,8 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants[0].defendantId", is("d1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants[0].defendantId", is("d1")));
         }
 
         @Test
@@ -797,13 +838,13 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
                     // Both errors are for CUR violations
-                    .andExpect(jsonPath("$.errors[*].message",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_CUR)))
                     // Each error carries exactly one defendant attribution
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[1].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[1].affectedDefendants", hasSize(1)))
                     // Together the two errors cover both defendant IDs
-                    .andExpect(jsonPath("$.errors[*].affectedDefendants[0].defendantId",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedDefendants[0].defendantId",
                             containsInAnyOrder("d1", "d2")));
         }
 
@@ -837,8 +878,8 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants[0].defendantId", is("d1")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants[0].defendantId", is("d1")));
         }
 
         @Test
@@ -888,19 +929,19 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
                     // Verify both defendants are attributed across the two errors
-                    .andExpect(jsonPath("$.errors[*].affectedDefendants[*].defendantId",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedDefendants[*].defendantId",
                             containsInAnyOrder("d1", "d2")))
                     // Each error attributes only one defendant
-                    .andExpect(jsonPath("$.errors[0].affectedDefendants", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[1].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[1].affectedDefendants", hasSize(1)))
                     // CUR violation is on off1 (d1's offence) → that error carries d1
                     .andExpect(jsonPath(
-                            "$.errors[?(@.affectedOffences[0].offenceId=='off1')]"
+                            "$.errors.validationIssues[?(@.affectedOffences[0].offenceId=='off1')]"
                                     + ".affectedDefendants[0].defendantId",
                             hasItem("d1")))
                     // UPWR violation is on off2 (d2's offence) → that error carries d2
                     .andExpect(jsonPath(
-                            "$.errors[?(@.affectedOffences[0].offenceId=='off2')]"
+                            "$.errors.validationIssues[?(@.affectedOffences[0].offenceId=='off2')]"
                                     + ".affectedDefendants[0].defendantId",
                             hasItem("d2")));
         }
@@ -963,8 +1004,8 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
                     // only off2 violates (order end 30/10, CUR end 30/11)
-                    .andExpect(jsonPath("$.errors[0].affectedOffences", hasSize(1)))
-                    .andExpect(jsonPath("$.errors[0].affectedOffences[0].offenceId", is("off2")));
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off2")));
         }
 
         @Test
@@ -1006,7 +1047,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors[*].message",
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_UPWR)));
         }
     }

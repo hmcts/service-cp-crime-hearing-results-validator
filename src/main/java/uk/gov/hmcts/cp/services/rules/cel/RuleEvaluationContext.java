@@ -47,4 +47,26 @@ public interface RuleEvaluationContext {
      * @return offence ids in this context
      */
     List<String> allOffenceIds();
+
+    /**
+     * The defendant (or defendant-group) identifier this context is anchored to. Used when
+     * building {@code affectedDefendants} for DEFENDANT-level conditions.
+     *
+     * @return defendant id, or {@code null} when this context is not anchored to a defendant
+     */
+    default String defendantId() {
+        return null;
+    }
+
+    /**
+     * Returns the defendant-id list named by a YAML condition's {@code affectedDefendantSet} field.
+     * Mirrors {@link #getOffenceIdSet(String)} for DEFENDANT-level conditions.
+     *
+     * @param setName configured defendant-id set name
+     * @return matching defendant-id list
+     * @throws IllegalArgumentException if the set name is unknown to this context
+     */
+    default List<String> getDefendantIdSet(final String setName) {
+        throw new IllegalArgumentException("Unknown defendant set: " + setName);
+    }
 }
