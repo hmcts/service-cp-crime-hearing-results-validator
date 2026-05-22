@@ -6,6 +6,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.ArrayList;
@@ -37,7 +38,8 @@ class DefaultValidationServiceTest {
         assertThat(response.getValidationId()).startsWith("val-");
         assertThat(response.getTimestamp()).isNotNull();
         assertThat(response.getMode()).isEqualTo("advisory");
-        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
+        assertThat(response.getErrors().getErrorMessages()).isEmpty();
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).isEmpty();
     }
@@ -49,11 +51,12 @@ class DefaultValidationServiceTest {
     @Test
     void rule_with_error_should_return_invalid_response() {
         ValidationRule errorRule = stubRule("RULE-001",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-001")
-                        .severity(ValidationIssue.SeverityEnum.ERROR)
-                        .message("Test error")
-                        .build()));
+                List.of(new ValidationIssueResult(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR)
+                                .build(),
+                        "Test error", null)));
         DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -62,7 +65,8 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isFalse();
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Test error");
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
     }
@@ -74,11 +78,11 @@ class DefaultValidationServiceTest {
     @Test
     void rule_with_warning_should_return_valid_response() {
         ValidationRule warningRule = stubRule("RULE-002",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-002")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("Test warning")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-002")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
         DefaultValidationService service = new DefaultValidationService(List.of(warningRule), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -87,7 +91,7 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isTrue();
-        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-002");
     }
@@ -99,17 +103,18 @@ class DefaultValidationServiceTest {
     @Test
     void multiple_rules_should_be_aggregated() {
         ValidationRule rule1 = stubRule("RULE-001",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-001")
-                        .severity(ValidationIssue.SeverityEnum.ERROR)
-                        .message("Error from rule 1")
-                        .build()));
+                List.of(new ValidationIssueResult(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR)
+                                .build(),
+                        "Error from rule 1", null)));
         ValidationRule rule2 = stubRule("RULE-002",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-002")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("Warning from rule 2")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-002")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
         DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -118,7 +123,7 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getIsValid()).isFalse();
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001", "RULE-002");
     }
@@ -146,18 +151,19 @@ class DefaultValidationServiceTest {
     @Test
     void rule_that_throws_should_not_prevent_other_rules() {
         ValidationRule rule1 = stubRule("RULE-001",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-001")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("Warning from rule 1")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
         ValidationRule throwingRule = stubRule("RULE-002", null);
         ValidationRule rule3 = stubRule("RULE-003",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-003")
-                        .severity(ValidationIssue.SeverityEnum.ERROR)
-                        .message("Error from rule 3")
-                        .build()));
+                List.of(new ValidationIssueResult(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-003")
+                                .severity(ValidationIssue.SeverityEnum.ERROR)
+                                .build(),
+                        "Error from rule 3", null)));
         DefaultValidationService service = new DefaultValidationService(
                 List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED);
         DraftValidationRequest request = DraftValidationRequest.builder()
@@ -166,7 +172,7 @@ class DefaultValidationServiceTest {
 
         DraftValidationResponse response = service.validate(request);
 
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getWarnings()).hasSize(1);
         assertThat(response.getRulesEvaluated())
                 .containsExactly("RULE-001", "RULE-003")
@@ -180,23 +186,23 @@ class DefaultValidationServiceTest {
     @Test
     void rules_should_execute_in_provided_order() {
         ValidationRule lowPriority = stubRule("RULE-LOW", 1000,
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-LOW")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("Low priority")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-LOW")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
         ValidationRule highPriority = stubRule("RULE-HIGH", 100,
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-HIGH")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("High priority")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-HIGH")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
         ValidationRule medPriority = stubRule("RULE-MED", 500,
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-MED")
-                        .severity(ValidationIssue.SeverityEnum.WARNING)
-                        .message("Med priority")
-                        .build()));
+                List.of(ValidationIssueResult.withIssueOnly(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-MED")
+                                .severity(ValidationIssue.SeverityEnum.WARNING)
+                                .build())));
 
         // Simulate what ValidationRuleAutoConfiguration does: sort by priority
         List<ValidationRule> sorted = new ArrayList<>(List.of(lowPriority, highPriority, medPriority));
@@ -221,11 +227,12 @@ class DefaultValidationServiceTest {
     void validate_returns_disabled_response_when_feature_disabled() {
         FeatureToggleService disabled = featureName -> false;
         ValidationRule rule = stubRule("RULE-001",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-001")
-                        .severity(ValidationIssue.SeverityEnum.ERROR)
-                        .message("Should not appear")
-                        .build()));
+                List.of(new ValidationIssueResult(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR)
+                                .build(),
+                        "Should not appear", null)));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -237,7 +244,8 @@ class DefaultValidationServiceTest {
         assertThat(response.getMode()).isEqualTo("disabled");
         assertThat(response.getValidationId()).startsWith("val-");
         assertThat(response.getTimestamp()).isNotNull();
-        assertThat(response.getErrors()).isEmpty();
+        assertThat(response.getErrors().getValidationIssues()).isEmpty();
+        assertThat(response.getErrors().getErrorMessages()).isEmpty();
         assertThat(response.getWarnings()).isEmpty();
         assertThat(response.getRulesEvaluated()).isEmpty();
         assertThat(response.getProcessingTimeMs()).isZero();
@@ -251,11 +259,12 @@ class DefaultValidationServiceTest {
     void validate_runs_rules_when_toggle_check_throws() {
         FeatureToggleService broken = featureName -> { throw new RuntimeException("Toggle broken"); };
         ValidationRule rule = stubRule("RULE-001",
-                List.of(ValidationIssue.builder()
-                        .ruleId("RULE-001")
-                        .severity(ValidationIssue.SeverityEnum.ERROR)
-                        .message("Error found")
-                        .build()));
+                List.of(new ValidationIssueResult(
+                        ValidationIssue.builder()
+                                .ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR)
+                                .build(),
+                        "Error found", null)));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), broken);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -264,15 +273,15 @@ class DefaultValidationServiceTest {
         DraftValidationResponse response = service.validate(request);
 
         assertThat(response.getMode()).isEqualTo("advisory");
-        assertThat(response.getErrors()).hasSize(1);
+        assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
     }
 
-    private static ValidationRule stubRule(String ruleId, List<ValidationIssue> issues) {
-        return stubRule(ruleId, 1000, issues);
+    private static ValidationRule stubRule(String ruleId, List<ValidationIssueResult> results) {
+        return stubRule(ruleId, 1000, results);
     }
 
-    private static ValidationRule stubRule(String ruleId, int priority, List<ValidationIssue> issues) {
+    private static ValidationRule stubRule(String ruleId, int priority, List<ValidationIssueResult> results) {
         return new ValidationRule() {
             @Override
             public RuleDetailResponse getRuleDetail() {
@@ -287,11 +296,11 @@ class DefaultValidationServiceTest {
             }
 
             @Override
-            public List<ValidationIssue> evaluate(DraftValidationRequest request) {
-                if (issues == null) {
+            public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
+                if (results == null) {
                     throw new RuntimeException("Simulated rule failure");
                 }
-                return issues;
+                return results;
             }
         };
     }

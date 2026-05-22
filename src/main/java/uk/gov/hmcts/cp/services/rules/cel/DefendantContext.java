@@ -7,6 +7,7 @@ import java.util.Map;
  * Derived custodial-sentencing summary for a single defendant or defendant group.
  */
 public record DefendantContext(
+        String defendantId,
         String defendantName,
         long noInfoCount,
         long hasInfoCount,
@@ -18,13 +19,16 @@ public record DefendantContext(
         List<String> hasBothOffenceIds,
         List<String> allOffenceIds,
         List<String> allNoInfoOffenceIds
-) {
+) implements RuleEvaluationContext {
+
+    private static final String DEFENDANT_ID_SET = "defendantId";
 
     /**
      * Converts the summary counts into the numeric context consumed by CEL expressions.
      *
      * @return CEL variable map for this defendant context
      */
+    @Override
     public Map<String, Long> toCelContext() {
         return Map.of(
                 "noInfoCount", noInfoCount,
@@ -35,12 +39,21 @@ public record DefendantContext(
         );
     }
 
+    @Override
+    public List<String> getDefendantIdSet(final String setName) {
+        if (DEFENDANT_ID_SET.equals(setName)) {
+            return List.of(defendantId);
+        }
+        throw new IllegalArgumentException("Unknown defendant set: " + setName);
+    }
+
     /**
      * Returns the named offence-id set referenced by a condition's {@code affectedOffenceSet}.
      *
      * @param setName configured offence-id set name
      * @return matching offence-id list
      */
+    @Override
     public List<String> getOffenceIdSet(final String setName) {
         return switch (setName) {
             case "noInfoOffenceIds" -> noInfoOffenceIds;

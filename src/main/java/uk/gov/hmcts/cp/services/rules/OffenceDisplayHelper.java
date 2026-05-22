@@ -2,7 +2,9 @@ package uk.gov.hmcts.cp.services.rules;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
+import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
 import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 
@@ -51,15 +53,28 @@ public class OffenceDisplayHelper {
 
     /** Builds affected-offence payload entries for the supplied offence identifiers. */
     public List<AffectedOffence> buildAffectedOffences(final List<String> offenceIds,
-                                                        final Map<String, OffenceDto> offenceMap) {
+                                                        final Map<String, OffenceDto> offenceMap,
+                                                        final Function<String, String> messageForId) {
         return offenceIds.stream()
                 .map(id -> {
                     final OffenceDto offence = offenceMap.get(id);
                     return AffectedOffence.builder()
                             .offenceId(id)
                             .offenceTitle(offence != null ? offence.getOffenceTitle() : null)
+                            .message(messageForId.apply(id))
                             .build();
                 })
+                .toList();
+    }
+
+    /** Builds affected-defendant payload entries for the supplied defendant identifiers. */
+    public List<AffectedDefendant> buildAffectedDefendants(final List<String> defendantIds,
+                                                            final String message) {
+        return defendantIds.stream()
+                .map(id -> AffectedDefendant.builder()
+                        .defendantId(id)
+                        .message(message)
+                        .build())
                 .toList();
     }
 }
