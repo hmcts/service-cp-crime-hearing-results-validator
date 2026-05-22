@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
@@ -141,12 +140,6 @@ public class CelValidationRule implements ValidationRule {
                                                     List.of(id),
                                                     offenceMap,
                                                     context.allOffenceIds())));
-                            if (defendantId != null) {
-                                issueBuilder.affectedDefendants(
-                                        List.of(AffectedDefendant.builder()
-                                                .defendantId(defendantId)
-                                                .build()));
-                            }
                         }
 
                         final String errorMessage = (isError && condition.getErrorMessageTemplate() != null)

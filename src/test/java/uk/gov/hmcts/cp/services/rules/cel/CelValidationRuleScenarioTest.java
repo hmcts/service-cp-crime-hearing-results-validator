@@ -116,8 +116,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
             assertThat(issueList.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList.getFirst().getAffectedOffences()).hasSize(2);
-            assertThat(issueList.getFirst().getAffectedDefendants()).hasSize(1);
-            assertThat(issueList.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+            assertThat(issueList.getFirst().getAffectedDefendants()).isNullOrEmpty();
         }
 
         /**
@@ -143,8 +142,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
             assertThat(issueList.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList.getFirst().getAffectedOffences()).hasSize(3);
-            assertThat(issueList.getFirst().getAffectedDefendants()).hasSize(1);
-            assertThat(issueList.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+            assertThat(issueList.getFirst().getAffectedDefendants()).isNullOrEmpty();
         }
     }
 
@@ -451,8 +449,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
             assertThat(issueList.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList.getFirst().getAffectedOffences()).hasSize(3);
-            assertThat(issueList.getFirst().getAffectedDefendants()).hasSize(1);
-            assertThat(issueList.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+            assertThat(issueList.getFirst().getAffectedDefendants()).isNullOrEmpty();
         }
 
         /**
@@ -581,10 +578,7 @@ class CelValidationRuleScenarioTest {
                     .containsOnly(ValidationIssue.SeverityEnum.ERROR);
             assertThat(issueList).extracting(ValidationIssue::getValidationLevel)
                     .containsOnly(ValidationIssue.ValidationLevelEnum.OFFENCE);
-            assertThat(issueList).allSatisfy(issue -> assertThat(issue.getAffectedDefendants()).hasSize(1));
-            assertThat(issueList).flatExtracting(i -> i.getAffectedDefendants()
-                    .stream().map(d -> d.getDefendantId()).toList())
-                    .containsExactlyInAnyOrder("d1", "d2");
+            assertThat(issueList).allSatisfy(issue -> assertThat(issue.getAffectedDefendants()).isNullOrEmpty());
             assertThat(issueList).flatExtracting(i -> i.getAffectedOffences()
                     .stream().map(o -> o.getOffenceId()).toList())
                     .containsExactlyInAnyOrder("off1", "off2", "off3", "off4");

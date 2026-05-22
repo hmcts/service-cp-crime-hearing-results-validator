@@ -105,8 +105,6 @@ class CelValidationRuleTest {
         assertThat(error.getAffectedOffences()).hasSize(3);
         assertThat(error.getAffectedOffences()).extracting(o -> o.getOffenceId())
                 .containsExactlyInAnyOrder("off1", "off2", "off3");
-        assertThat(error.getAffectedDefendants()).hasSize(1);
-        assertThat(error.getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
     }
 
     /**

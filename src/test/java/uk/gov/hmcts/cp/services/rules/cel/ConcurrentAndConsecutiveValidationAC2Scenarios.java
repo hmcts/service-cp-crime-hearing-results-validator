@@ -107,8 +107,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
 
@@ -133,8 +132,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
 
     }
 
@@ -160,8 +158,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
 
     }
 
@@ -209,8 +206,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -236,8 +232,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -298,8 +293,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
-        assertThat(issues.getFirst().getAffectedDefendants()).hasSize(1);
-        assertThat(issues.getFirst().getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
