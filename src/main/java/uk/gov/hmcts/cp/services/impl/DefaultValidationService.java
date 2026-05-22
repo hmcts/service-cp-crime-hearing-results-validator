@@ -28,6 +28,8 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 @Slf4j
 public class DefaultValidationService implements ValidationService {
 
+    private static final int SINGLE_DEFENDANT = 1;
+
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
 
@@ -44,7 +46,7 @@ public class DefaultValidationService implements ValidationService {
     public DraftValidationResponse validate(final DraftValidationRequest request) {
         final DraftValidationResponse response;
 
-            if (isFeatureActive()) {
+        if (isFeatureActive()) {
             response = evaluateRules(request);
         } else {
             log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
@@ -54,7 +56,8 @@ public class DefaultValidationService implements ValidationService {
         return response;
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
+    @SuppressWarnings({"PMD.AvoidCatchingGenericException",
+        "PMD.AvoidInstantiatingObjectsInLoops"}) // computeIfAbsent only allocates when key absent
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
@@ -148,10 +151,13 @@ public class DefaultValidationService implements ValidationService {
     }
 
     private static String formatDefendantNames(final List<String> names) {
-        if (names.size() == 1) {
-            return names.get(0);
+        final String result;
+        if (names.size() == SINGLE_DEFENDANT) {
+            result = names.get(0);
+        } else {
+            result = String.join(", ", names.subList(0, names.size() - 1))
+                    + " and " + names.get(names.size() - 1);
         }
-        return String.join(", ", names.subList(0, names.size() - 1))
-                + " and " + names.get(names.size() - 1);
+        return result;
     }
 }

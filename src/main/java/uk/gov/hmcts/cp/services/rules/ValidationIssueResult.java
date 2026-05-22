@@ -16,7 +16,7 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 public record ValidationIssueResult(ValidationIssue issue, String errorMessage, String affectedDefendantName) {
 
     /** Convenience factory for issues that carry no top-level error message (WARNING severity). */
-    public static ValidationIssueResult of(final ValidationIssue issue) {
+    public static ValidationIssueResult withIssueOnly(final ValidationIssue issue) {
         return new ValidationIssueResult(issue, null, null);
     }
 }

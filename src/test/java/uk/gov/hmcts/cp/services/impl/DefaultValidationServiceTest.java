@@ -78,7 +78,7 @@ class DefaultValidationServiceTest {
     @Test
     void rule_with_warning_should_return_valid_response() {
         ValidationRule warningRule = stubRule("RULE-002",
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-002")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
@@ -110,7 +110,7 @@ class DefaultValidationServiceTest {
                                 .build(),
                         "Error from rule 1", null)));
         ValidationRule rule2 = stubRule("RULE-002",
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-002")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
@@ -151,7 +151,7 @@ class DefaultValidationServiceTest {
     @Test
     void rule_that_throws_should_not_prevent_other_rules() {
         ValidationRule rule1 = stubRule("RULE-001",
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
@@ -186,19 +186,19 @@ class DefaultValidationServiceTest {
     @Test
     void rules_should_execute_in_provided_order() {
         ValidationRule lowPriority = stubRule("RULE-LOW", 1000,
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-LOW")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
                                 .build())));
         ValidationRule highPriority = stubRule("RULE-HIGH", 100,
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-HIGH")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
                                 .build())));
         ValidationRule medPriority = stubRule("RULE-MED", 500,
-                List.of(ValidationIssueResult.of(
+                List.of(ValidationIssueResult.withIssueOnly(
                         ValidationIssue.builder()
                                 .ruleId("RULE-MED")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
