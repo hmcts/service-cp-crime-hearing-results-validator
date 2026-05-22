@@ -86,10 +86,7 @@ public class CelValidationRule implements ValidationRule {
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
-            for (final Map.Entry<String, ? extends RuleEvaluationContext> contextEntry
-                    : contexts.entrySet()) {
-                final String defendantId = contextEntry.getKey();
-                final RuleEvaluationContext context = contextEntry.getValue();
+            for (final RuleEvaluationContext context : contexts.values()) {
                 final Map<String, Long> celContext = context.toCelContext();
 
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
