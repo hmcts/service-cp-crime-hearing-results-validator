@@ -56,8 +56,7 @@ public class DefaultValidationService implements ValidationService {
         return response;
     }
 
-    @SuppressWarnings({"PMD.AvoidCatchingGenericException",
-        "PMD.AvoidInstantiatingObjectsInLoops"}) // computeIfAbsent only allocates on first access
+    @SuppressWarnings({"PMD.AvoidCatchingGenericException", "PMD.AvoidInstantiatingObjectsInLoops"}) // rule failures must not abort; computeIfAbsent allocates lazily, not on every iteration
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
