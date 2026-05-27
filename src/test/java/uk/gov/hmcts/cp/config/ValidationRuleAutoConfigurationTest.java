@@ -7,6 +7,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.CurfewPeriodPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
@@ -32,7 +33,8 @@ class ValidationRuleAutoConfigurationTest {
             new CustodialPreprocessor(),
             new DisqualificationExtendedTestPreprocessor(),
             new CtlMissingPreprocessor(),
-            new CommunityOrderEndDatePreprocessor()));
+            new CommunityOrderEndDatePreprocessor(),
+            new CurfewPeriodPreprocessor()));
 
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
@@ -62,10 +64,10 @@ class ValidationRuleAutoConfigurationTest {
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class));
 
-        assertThat(rules).hasSize(4);
+        assertThat(rules).hasSize(5);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001");
+                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001", "DR-COEW-002");
     }
 
     /**

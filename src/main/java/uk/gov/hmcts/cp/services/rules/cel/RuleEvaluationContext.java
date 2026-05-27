@@ -59,6 +59,30 @@ public interface RuleEvaluationContext {
     }
 
     /**
+     * Returns a map of arbitrary string values resolved as {@code ${key}} placeholders by
+     * {@link MessageTemplateResolver}. Default returns an empty map — existing implementations
+     * inherit this default and are unaffected.
+     *
+     * @return map of placeholder-key → replacement-value pairs; never {@code null}
+     */
+    default Map<String, String> stringVariables() {
+        return Map.of();
+    }
+
+    /**
+     * Controls whether {@link CelValidationRule} should populate {@code affectedDefendants} on
+     * OFFENCE-level ERROR issues emitted by this context. Defaults to {@code false} for full
+     * backward compatibility with existing contexts — only contexts that explicitly need per-
+     * defendant scoping on OFFENCE-level errors (e.g. {@code CurfewPeriodContext}) override this
+     * to return {@code true}.
+     *
+     * @return {@code true} if {@code affectedDefendants} should be set using {@link #defendantId()}
+     */
+    default boolean populateAffectedDefendantsOnOffenceError() {
+        return false;
+    }
+
+    /**
      * Returns the defendant-id list named by a YAML condition's {@code affectedDefendantSet} field.
      * Mirrors {@link #getOffenceIdSet(String)} for DEFENDANT-level conditions.
      *

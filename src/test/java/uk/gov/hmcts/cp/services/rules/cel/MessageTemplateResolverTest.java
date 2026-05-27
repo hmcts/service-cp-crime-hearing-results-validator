@@ -215,6 +215,103 @@ class MessageTemplateResolverTest {
         assertThat(result).isEqualTo(" have issues");
     }
 
+    // ── stringVariables() resolution tests (T005) ────────────────────────────
+
+    /**
+     * Verifies that a single string variable is substituted into the template when the 6-arg
+     * overload is called.
+     */
+    @Test
+    void resolve_should_substitute_single_string_variable() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+        Map<String, String> stringVars = Map.of("expectedEndDate", "30/07/2026");
+
+        String result = resolver.resolve(
+                "End date based on entered period: ${expectedEndDate}",
+                null,
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS,
+                stringVars);
+
+        assertThat(result).isEqualTo("End date based on entered period: 30/07/2026");
+    }
+
+    /**
+     * Verifies that multiple string variables are all substituted in a single call.
+     */
+    @Test
+    void resolve_should_substitute_multiple_string_variables() {
+        Map<String, String> stringVars = Map.of(
+                "expectedEndDate", "30/07/2026",
+                "ruleCode", "CUR");
+
+        String result = resolver.resolve(
+                "Rule ${ruleCode}: end date ${expectedEndDate}",
+                null,
+                List.of(),
+                Map.of(),
+                ALL_OFFENCE_IDS,
+                stringVars);
+
+        assertThat(result).isEqualTo("Rule CUR: end date 30/07/2026");
+    }
+
+    /**
+     * Verifies that a template without any {@code ${key}} tokens is returned unchanged when
+     * string variables are provided.
+     */
+    @Test
+    void resolve_with_no_placeholders_should_return_unchanged_even_with_string_variables() {
+        Map<String, String> stringVars = Map.of("expectedEndDate", "30/07/2026");
+
+        String result = resolver.resolve(
+                "No placeholders here",
+                null,
+                List.of(),
+                Map.of(),
+                ALL_OFFENCE_IDS,
+                stringVars);
+
+        assertThat(result).isEqualTo("No placeholders here");
+    }
+
+    /**
+     * Verifies that an empty string-variables map leaves the template unchanged.
+     */
+    @Test
+    void resolve_with_empty_string_variables_should_leave_template_unchanged() {
+        String result = resolver.resolve(
+                "End date: ${expectedEndDate}",
+                null,
+                List.of(),
+                Map.of(),
+                ALL_OFFENCE_IDS,
+                Map.of());
+
+        assertThat(result).isEqualTo("End date: ${expectedEndDate}");
+    }
+
+    /**
+     * Verifies that string-variable substitutions are applied after the existing
+     * offenceNumber and defendantName substitutions, so all placeholders are resolved.
+     */
+    @Test
+    void resolve_should_apply_string_variables_after_existing_substitutions() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+        Map<String, String> stringVars = Map.of("expectedEndDate", "30/07/2026");
+
+        String result = resolver.resolve(
+                "${offenceNumber}: end date ${expectedEndDate}",
+                "John Smith",
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS,
+                stringVars);
+
+        assertThat(result).isEqualTo("Offence 1 (URN:32AH9105826): end date 30/07/2026");
+    }
+
     private static OffenceDto offence(String id, int orderIndex) {
         return OffenceDto.builder()
                 .id(id)

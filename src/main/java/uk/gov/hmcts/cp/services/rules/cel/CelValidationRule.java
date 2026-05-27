@@ -121,7 +121,8 @@ public class CelValidationRule implements ValidationRule {
                                     context.defendantName(),
                                     offenceIdsForTemplate,
                                     offenceMap,
-                                    context.allOffenceIds());
+                                    context.allOffenceIds(),
+                                    context.stringVariables());
                             issueBuilder.affectedDefendants(
                                     offenceDisplayHelper.buildAffectedDefendants(
                                             context.getDefendantIdSet(condition.getAffectedDefendantSet()),
@@ -136,7 +137,14 @@ public class CelValidationRule implements ValidationRule {
                                                     context.defendantName(),
                                                     List.of(id),
                                                     offenceMap,
-                                                    context.allOffenceIds())));
+                                                    context.allOffenceIds(),
+                                                    context.stringVariables())));
+                            if (isError && context.populateAffectedDefendantsOnOffenceError()
+                                    && context.defendantId() != null) {
+                                issueBuilder.affectedDefendants(
+                                        offenceDisplayHelper.buildAffectedDefendants(
+                                                List.of(context.defendantId()), null));
+                            }
                         }
 
                         final String errorMessage = (isError && condition.getErrorMessageTemplate() != null)
@@ -145,7 +153,8 @@ public class CelValidationRule implements ValidationRule {
                                         context.defendantName(),
                                         offenceIdsForTemplate,
                                         offenceMap,
-                                        context.allOffenceIds())
+                                        context.allOffenceIds(),
+                                        context.stringVariables())
                                 : null;
 
                         final String affectedDefendantName =

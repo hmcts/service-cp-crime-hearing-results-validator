@@ -39,7 +39,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private ResultLineDto orderLine(String id, String shortCode, String defId, String offId,
                                     String endDate) {
-        Prompt prompt = new Prompt("endDate", endDate);
+        Prompt prompt = Prompt.builder().promptRef("endDate").promptValue(endDate).build();
         ResultLineDto rl = new ResultLineDto();
         rl.setId(id);
         rl.setShortCode(shortCode);
@@ -51,7 +51,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private ResultLineDto requirementLine(String id, String shortCode, String defId, String offId,
                                            String promptRef, String promptValue) {
-        Prompt prompt = new Prompt(promptRef, promptValue);
+        Prompt prompt = Prompt.builder().promptRef(promptRef).promptValue(promptValue).build();
         ResultLineDto rl = new ResultLineDto();
         rl.setId(id);
         rl.setShortCode(shortCode);
@@ -317,7 +317,7 @@ class CommunityOrderEndDatePreprocessorTest {
         @Test
         void null_prompt_value_on_requirement_should_skip_gracefully_no_violation() {
             // CUR has null promptValue
-            Prompt blankPrompt = new Prompt("endDate", null);
+            Prompt blankPrompt = Prompt.builder().promptRef("endDate").build();
             ResultLineDto curLine = new ResultLineDto();
             curLine.setId("rl-cur");
             curLine.setShortCode("CUR");

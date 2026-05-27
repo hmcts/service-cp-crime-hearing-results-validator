@@ -23,6 +23,32 @@ public class MessageTemplateResolver {
         this.offenceDisplayHelper = offenceDisplayHelper;
     }
 
+    /**
+     * Resolves placeholders in the message template with defendant name, offence references,
+     * and arbitrary string variables supplied by the context.
+     *
+     * <p>Substitution order:
+     * <ol>
+     *   <li>{@code ${offenceNumber}} → formatted offence label(s)</li>
+     *   <li>{@code ${defendantName}} → defendant display name (when non-null)</li>
+     *   <li>{@code ${key}} → value from {@code stringVariables} for each key present</li>
+     * </ol>
+     *
+     * <p>Unknown {@code ${key}} tokens not present in {@code stringVariables} are left unchanged.
+     */
+    public String resolve(final String template,
+                          final String defendantName,
+                          final List<String> affectedOffenceIds,
+                          final Map<String, OffenceDto> offenceMap,
+                          final List<String> allOffenceIds,
+                          final Map<String, String> stringVariables) {
+        String result = resolve(template, defendantName, affectedOffenceIds, offenceMap, allOffenceIds);
+        for (final Map.Entry<String, String> entry : stringVariables.entrySet()) {
+            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
+    }
+
     /** Resolves placeholders in the message template with defendant and offence details. */
     public String resolve(final String template,
                           final String defendantName,

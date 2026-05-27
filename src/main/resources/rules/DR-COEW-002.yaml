@@ -1,0 +1,44 @@
+rule:
+  id: "DR-COEW-002"
+  title: "Curfew and Alcohol Abstinence Requirement Period End Date Validation"
+  description: >-
+    Validates that the end date recorded for a Curfew requirement (CUR, CURE, YRC2, YRC1)
+    equals the start date plus the entered period minus one day, and that the "Until" date
+    for an Alcohol Abstinence and Monitoring requirement (AAR) equals the hearing date plus
+    the number of abstinence days minus one day.
+  priority: 4500
+  enabled: true
+
+  preprocessing:
+    type: "curfew-period-check"
+    communityOrderShortCodes:
+      - COEW
+      - COS
+      - CONI
+    yroShortCodes:
+      - YROEW
+      - YRONI
+      - YROFEW
+      - YROISS
+      - YROINI
+    curfewShortCodes:
+      - CUR
+      - YRC2
+    curfewTagShortCodes:
+      - CURE
+      - YRC1
+    alcoholAbstinenceShortCodes:
+      - AAR
+
+  conditions:
+    - id: "AC1"
+      name: "Requirement end date does not match entered period"
+      expression: "violationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date does not match the period entered. End date based on
+        entered period: ${expectedEndDate}
+      errorMessageTemplate: >-
+        The end date does not match the period entered. End date based on
+        entered period: ${expectedEndDate}
+      affectedOffenceSet: "violatedOffenceIds"

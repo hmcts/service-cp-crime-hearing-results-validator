@@ -1,0 +1,422 @@
+{
+  "info": {
+    "name": "DR-COEW-002 — Curfew & AAR End-Date Validation",
+    "description": "Postman collection covering all 12 scenarios for DR-COEW-002.\n\nRule: Validates that the end date recorded for a Curfew requirement (CUR, CURE, YRC2, YRC1) equals startDate + period − 1 day, and that the 'Until' date for an AAR requirement equals hearingDate + abstinenceDays − 1 day.\n\nBase URL variable: {{baseUrl}} — defaults to http://localhost:4550",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4550",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Curfew (CUR / CURE / YRC2 / YRC1)",
+      "item": [
+        {
+          "name": "S1 — CUR day mismatch → ERROR (expects 30/07/2026)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s1\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"60\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-07-31\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "start=2026-06-01, 60 Days → expected=2026-07-30, actual=2026-07-31.\nExpect: DR-COEW-002 ERROR, message contains '30/07/2026', affectedDefendants[0].defendantId='d1'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"DR-COEW-002 error emitted\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"severity is ERROR\", () => pm.expect(issues[0].severity).to.eql('ERROR'));",
+                  "pm.test(\"message contains expected date\", () => pm.expect(issues[0].affectedOffences[0].message).to.include('30/07/2026'));",
+                  "pm.test(\"affectedDefendants contains d1\", () => pm.expect(issues[0].affectedDefendants[0].defendantId).to.eql('d1'));",
+                  "pm.test(\"affectedOffences contains off1\", () => pm.expect(issues[0].affectedOffences[0].offenceId).to.eql('off1'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S2 — CUR day exact match → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s2\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"60\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-07-30\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "start=2026-06-01, 60 Days → expected=2026-07-30, actual=2026-07-30 (correct).\nExpect: no DR-COEW-002 issue."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S3 — CURE week mismatch → ERROR (expects 28/06/2026)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s3\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cure\",\n      \"shortCode\": \"CURE\",\n      \"category\": \"I\",\n      \"label\": \"Curfew with electronic monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDateOfTagging\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewAndElectronicMonitoringPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Weeks\", \"promptValue\": \"4\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDateOfTagging\", \"promptValue\": \"2026-06-30\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "startDateOfTagging=2026-06-01, 4 Weeks → expected=2026-06-28, actual=2026-06-30.\nExpect: DR-COEW-002 ERROR, message contains '28/06/2026'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"DR-COEW-002 error emitted\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"message contains 28/06/2026\", () => pm.expect(issues[0].affectedOffences[0].message).to.include('28/06/2026'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S4 — YRC2 under YROEW mismatch → ERROR (expects 30/06/2026)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s4\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-yro\",\n      \"shortCode\": \"YROEW\",\n      \"category\": \"F\",\n      \"label\": \"Youth Rehabilitation Order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-yrc2\",\n      \"shortCode\": \"YRC2\",\n      \"category\": \"I\",\n      \"label\": \"YRO Curfew requirement\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"30\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-07-01\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "start=2026-06-01, 30 Days → expected=2026-06-30, actual=2026-07-01.\nExpect: DR-COEW-002 ERROR, message contains '30/06/2026'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"DR-COEW-002 error emitted\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"message contains 30/06/2026\", () => pm.expect(issues[0].affectedOffences[0].message).to.include('30/06/2026'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S5 — YRC1 under YROEW exact match → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s5\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-yro\",\n      \"shortCode\": \"YROEW\",\n      \"category\": \"F\",\n      \"label\": \"Youth Rehabilitation Order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-yrc1\",\n      \"shortCode\": \"YRC1\",\n      \"category\": \"I\",\n      \"label\": \"YRO Curfew with electronic monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDateOfTagging\", \"promptValue\": \"2026-07-10\"},\n        {\n          \"promptRef\": \"curfewAndElectronicMonitoringPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"14\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDateOfTagging\", \"promptValue\": \"2026-07-23\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "startDateOfTagging=2026-07-10, 14 Days → expected=2026-07-23, actual=2026-07-23 (correct).\nExpect: no DR-COEW-002 issue."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const issues = pm.response.json().errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S11 — CUR months correct → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s11\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Months\", \"promptValue\": \"3\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-08-31\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "start=2026-06-01, 3 Months → expected=2026-08-31, actual=2026-08-31 (correct).\nExpect: no DR-COEW-002 issue."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const issues = pm.response.json().errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S12 — CUR months mismatch → ERROR (expects 31/08/2026)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s12\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Months\", \"promptValue\": \"3\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-09-01\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "start=2026-06-01, 3 Months → expected=2026-08-31, actual=2026-09-01.\nExpect: DR-COEW-002 ERROR, message contains '31/08/2026'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"DR-COEW-002 error emitted\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"message contains 31/08/2026\", () => pm.expect(issues[0].affectedOffences[0].message).to.include('31/08/2026'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Alcohol Abstinence Monitoring (AAR)",
+      "item": [
+        {
+          "name": "S6 — AAR exact match under COEW → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s6\",\n  \"hearingDay\": \"2026-05-26\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Alcohol abstinence and monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"numberOfDaysToAbstainFromConsumingAnyAlcohol\", \"promptValue\": \"120\"},\n        {\"promptRef\": \"until\", \"promptValue\": \"2026-09-22\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "hearingDay=2026-05-26, 120 days → 2026-05-26+120=2026-09-23, -1=2026-09-22. until=2026-09-22 (correct).\nExpect: no DR-COEW-002 issue."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const issues = pm.response.json().errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S7 — AAR mismatch under COEW → ERROR (expects 22/09/2026)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s7\",\n  \"hearingDay\": \"2026-05-26\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Alcohol abstinence and monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"numberOfDaysToAbstainFromConsumingAnyAlcohol\", \"promptValue\": \"120\"},\n        {\"promptRef\": \"until\", \"promptValue\": \"2026-09-24\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "hearingDay=2026-05-26, 120 days → expected=2026-09-22, actual=2026-09-24.\nExpect: DR-COEW-002 ERROR, message contains '22/09/2026', affectedDefendants[0].defendantId='d1'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"DR-COEW-002 error emitted\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"severity is ERROR\", () => pm.expect(issues[0].severity).to.eql('ERROR'));",
+                  "pm.test(\"message contains 22/09/2026\", () => pm.expect(issues[0].affectedOffences[0].message).to.include('22/09/2026'));",
+                  "pm.test(\"affectedDefendants contains d1\", () => pm.expect(issues[0].affectedDefendants[0].defendantId).to.eql('d1'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S8 — AAR correct date under COS → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s8\",\n  \"hearingDay\": \"2026-05-26\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-order\",\n      \"shortCode\": \"COS\",\n      \"category\": \"F\",\n      \"label\": \"Community order (standalone)\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Alcohol abstinence and monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"numberOfDaysToAbstainFromConsumingAnyAlcohol\", \"promptValue\": \"30\"},\n        {\"promptRef\": \"until\", \"promptValue\": \"2026-06-24\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "hearingDay=2026-05-26, 30 days → 2026-06-25-1=2026-06-24. until=2026-06-24 (correct). Parent is COS.\nExpect: no DR-COEW-002 issue."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const issues = pm.response.json().errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "S9 — AAR under YROEW only (no CO) → no DR-COEW-002 error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s9\",\n  \"hearingDay\": \"2026-05-26\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-yro\",\n      \"shortCode\": \"YROEW\",\n      \"category\": \"F\",\n      \"label\": \"Youth Rehabilitation Order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-aar\",\n      \"shortCode\": \"AAR\",\n      \"category\": \"I\",\n      \"label\": \"Alcohol abstinence and monitoring\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"numberOfDaysToAbstainFromConsumingAnyAlcohol\", \"promptValue\": \"120\"},\n        {\"promptRef\": \"until\", \"promptValue\": \"2026-09-24\"}\n      ]\n    }\n  ],\n  \"defendants\": [{\"id\": \"d1\", \"firstName\": \"John\", \"lastName\": \"Smith\"}],\n  \"offences\": [{\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1}]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "AAR check is CO-only. Parent here is YROEW only — so AAR must NOT be validated.\nExpect: no DR-COEW-002 issue even though until date is wrong."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const issues = pm.response.json().errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"No DR-COEW-002 error (AAR is CO-only)\", () => pm.expect(issues).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Multi-defendant Scoping",
+      "item": [
+        {
+          "name": "S10 — Two defendants, only d2 violated → error scoped to d2",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "CJSCPPUID",    "value": "postman-user" },
+              { "key": "CPP-ACTION",   "value": "validation-service.validate" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/validation/validate", "host": ["{{baseUrl}}"], "path": ["api","validation","validate"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hearingId\": \"h-s10\",\n  \"hearingDay\": \"2026-01-01\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\n      \"id\": \"rl-co1\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur1\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d1\",\n      \"offenceId\": \"off1\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"60\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-07-30\"}\n      ]\n    },\n    {\n      \"id\": \"rl-co2\",\n      \"shortCode\": \"COEW\",\n      \"category\": \"F\",\n      \"label\": \"Community order\",\n      \"defendantId\": \"d2\",\n      \"offenceId\": \"off2\",\n      \"prompts\": [{\"promptRef\": \"endDate\", \"promptValue\": \"2026-12-31\"}]\n    },\n    {\n      \"id\": \"rl-cur2\",\n      \"shortCode\": \"CUR\",\n      \"category\": \"I\",\n      \"label\": \"Curfew\",\n      \"defendantId\": \"d2\",\n      \"offenceId\": \"off2\",\n      \"prompts\": [\n        {\"promptRef\": \"startDate\", \"promptValue\": \"2026-06-01\"},\n        {\n          \"promptRef\": \"curfewPeriod\",\n          \"type\": \"DURATION\",\n          \"childPrompts\": [{\"promptRef\": \"Days\", \"promptValue\": \"60\", \"type\": \"INT\"}]\n        },\n        {\"promptRef\": \"endDate\", \"promptValue\": \"2026-07-31\"}\n      ]\n    }\n  ],\n  \"defendants\": [\n    {\"id\": \"d1\", \"firstName\": \"Alice\", \"lastName\": \"Smith\"},\n    {\"id\": \"d2\", \"firstName\": \"Bob\",   \"lastName\": \"Jones\"}\n  ],\n  \"offences\": [\n    {\"id\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 1},\n    {\"id\": \"off2\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\", \"orderIndex\": 2}\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "d1: CUR correct (endDate=2026-07-30 = expected). d2: CUR wrong (endDate=2026-07-31, expected=2026-07-30).\nExpect: exactly 1 DR-COEW-002 error scoped to d2/off2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const issues = body.errors.validationIssues.filter(i => i.ruleId === 'DR-COEW-002');",
+                  "pm.test(\"Exactly 1 DR-COEW-002 error\", () => pm.expect(issues).to.have.lengthOf(1));",
+                  "pm.test(\"Error scoped to d2\", () => pm.expect(issues[0].affectedDefendants[0].defendantId).to.eql('d2'));",
+                  "pm.test(\"Error scoped to off2\", () => pm.expect(issues[0].affectedOffences[0].offenceId).to.eql('off2'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

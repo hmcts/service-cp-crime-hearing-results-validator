@@ -1,0 +1,19 @@
+rule:
+  id: "DR-TEST-CURFEW-STR-VAR"
+  title: "Test rule for string-variable and affectedDefendants framework changes"
+  priority: 9998
+  enabled: true
+
+  preprocessing:
+    type: "test-curfew-context"
+
+  conditions:
+    - id: "AC1"
+      name: "Violation count is positive"
+      expression: "violationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        End date based on entered period: ${expectedEndDate}
+      errorMessageTemplate: >-
+        End date based on entered period: ${expectedEndDate}
+      affectedOffenceSet: "violatedOffenceIds"
