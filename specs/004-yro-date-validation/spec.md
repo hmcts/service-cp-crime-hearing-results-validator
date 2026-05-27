@@ -54,7 +54,7 @@ A caseworker has added a YRO with an "Unpaid Work" requirement (YRUP1). The YRO 
 - What happens when multiple defendants each have a YRO, and only some have the end-date breach? Only the affected defendants should appear in the error; others should not be blocked.
 - What happens when a YRO has both a curfew requirement breach (AC2) and an unpaid work duration breach (AC3) simultaneously? Both errors should be surfaced independently.
 - What happens when YRC1, YRC2, and YRC3 are all present and all breach the YRO end date? All three requirement names must appear in the AC2 error message.
-- What constitutes "12 months"? The boundary condition is hearing date + 365 days (or + 366 in a leap year). "Less than 12 months - 1 day" means strictly before the anniversary date.
+- What constitutes "12 months"? The boundary is calculated as a calendar date anniversary using `LocalDate.plusMonths(12)` (e.g. 20/05/2026 → 20/05/2027). The minimum valid YRO end date is `hearingDay + 12 months − 1 day` (e.g. 19/05/2027 for a hearing on 20/05/2026); any end date strictly before that is an error.
 - What happens when the YRO has no curfew child results at all? AC2 does not apply; no error is raised for AC2.
 - What happens when the YRO has no YRUP1 child result? AC3 does not apply; no error is raised for AC3.
 
@@ -98,7 +98,7 @@ A caseworker has added a YRO with an "Unpaid Work" requirement (YRUP1). The YRO 
 ## Assumptions
 
 - The hearing date used for the AC3 12-month calculation is the date of the hearing session as stored in the draft validation request, not the date the result was entered.
-- "12 months" is calculated as a calendar date anniversary (e.g. 20/05/2026 → 20/05/2027). A YRO end date of exactly 20/05/2027 passes; 19/05/2027 fails.
+- "12 months" is calculated as a calendar date anniversary (e.g. 20/05/2026 → 20/05/2027). The minimum valid end date is `hearingDay + 12 months − 1 day` (e.g. 19/05/2027 passes; 18/05/2027 fails).
 - AC2 applies only to YRC1, YRC2, and YRC3 child requirements. Other requirement types with date fields are out of scope for this rule.
 - AC3 applies only when YRUP1 is present as a child result; the check is not triggered by any other requirement type.
 - Both rules apply at the defendant level — a defendant is only flagged if their own YRO/requirement data violates the rule.
