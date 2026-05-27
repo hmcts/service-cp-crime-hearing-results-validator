@@ -19,7 +19,8 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Preprocesses community order result lines into per-defendant
- * {@link CommunityOrderContext} summaries for the DR-COEW-001 rule.
+ * {@link CommunityOrderContext} summaries for rules that use the
+ * {@code community-order-end-date} preprocessing type (e.g. DR-COEW-001, DR-YRO-001).
  *
  * <p>AC2 — detects when any child requirement (CUR, CURE, CURA, AAR) on a community order
  * has a date strictly later than the parent order end date.
