@@ -187,7 +187,7 @@ jobs:
             JAR_FILENAME=${{ needs.Build.outputs.artefact_name }}.jar
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ needs.Artefact-Version.outputs.artefact_version }}
           format: 'table'
