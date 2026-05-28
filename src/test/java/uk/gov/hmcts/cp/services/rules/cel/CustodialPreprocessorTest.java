@@ -350,7 +350,7 @@ class CustodialPreprocessorTest {
     private static DefendantDto defendant(String id, String fullName, String masterDefendantId) {
         String[] parts = fullName.split(" ", 2);
         return DefendantDto.builder()
-                .id(id)
+                .defendantId(id)
                 .firstName(parts[0])
                 .lastName(parts.length > 1 ? parts[1] : null)
                 .masterDefendantId(masterDefendantId)
@@ -359,7 +359,7 @@ class CustodialPreprocessorTest {
 
     private static ResultLineDto resultLine(String id, String shortCode, String defendantId, String offenceId) {
         return ResultLineDto.builder()
-                .id(id)
+                .resultLineId(id)
                 .shortCode(shortCode)
                 .label(shortCode + " label")
                 .defendantId(defendantId)
