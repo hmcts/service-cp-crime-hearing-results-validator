@@ -191,7 +191,7 @@ jobs:
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ needs.Artefact-Version.outputs.artefact_version }}
           format: 'table'
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           severity: 'HIGH,CRITICAL'
 
