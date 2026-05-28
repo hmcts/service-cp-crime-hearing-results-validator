@@ -174,6 +174,36 @@ class YroDateValidationRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath(DR_YRO_ERRORS, empty()))
                     .andExpect(jsonPath("$.errors.validationIssues", empty()));
         }
+
+        @Test
+        @DisplayName("T008 — YRO with no curfew child requirements: no AC2 error")
+        void yroew_without_curfew_requirements_produces_no_ac2_error() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-yro-008",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"id": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]}
+                      ],
+                      "defendants": [{"id": "d1", "firstName": "No", "lastName": "Requirements"}],
+                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath(DR_YRO_ERRORS, empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()));
+        }
     }
 
     @Nested
@@ -313,8 +343,8 @@ class YroDateValidationRuleIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
-    @DisplayName("AC2 — Multi-defendant isolation and no-requirement case")
-    class Ac2MultiDefendantAndNoRequirement {
+    @DisplayName("AC2 — Multi-defendant isolation")
+    class Ac2MultiDefendant {
 
         @Test
         @DisplayName("T007 — Two defendants, only one with YRC2 breach; only that defendant in error")
@@ -368,36 +398,6 @@ class YroDateValidationRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
                             is(ERR_MSG_BASE_YRC2 + "Curfew Violator.")));
-        }
-
-        @Test
-        @DisplayName("T008 — YRO with no curfew child requirements: no AC2 error")
-        void yroew_without_curfew_requirements_produces_no_ac2_error() throws Exception {
-            String request = """
-                    {
-                      "hearingId": "h-yro-008",
-                      "hearingDay": "2026-01-01",
-                      "courtType": "MAGISTRATES",
-                      "resultLines": [
-                        {"id": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
-                         "defendantId": "d1", "offenceId": "off1",
-                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]}
-                      ],
-                      "defendants": [{"id": "d1", "firstName": "No", "lastName": "Requirements"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
-                    }
-                    """;
-
-            mockMvc.perform(post(VALIDATE_URL)
-                            .header("CJSCPPUID", "test-user")
-                            .header("CPP-ACTION", "validation-service.validate")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(request))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.warnings", empty()))
-                    .andExpect(jsonPath(DR_YRO_ERRORS, empty()))
-                    .andExpect(jsonPath("$.errors.validationIssues", empty()));
         }
     }
 
