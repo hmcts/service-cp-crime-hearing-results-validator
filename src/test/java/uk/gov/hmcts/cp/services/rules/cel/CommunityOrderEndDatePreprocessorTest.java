@@ -483,17 +483,14 @@ class CommunityOrderEndDatePreprocessorTest {
     @DisplayName("YRO configuration (DR-YRO-001 codes: YROEW/YRONI/YROFEW/YROISS/YROINI + YRC2/YRC1/YRC3/YRUP1)")
     class YroConfiguration {
 
-        @BeforeEach
-        void setUpYroConfig() {
-            config = PreprocessingDefinition.builder()
-                    .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
-                    .curfewShortCodes(List.of("YRC2"))
-                    .curfewTagShortCodes(List.of("YRC1"))
-                    .furtherCurfewShortCodes(List.of("YRC3"))
-                    .alcoholAbstinenceShortCodes(List.of())
-                    .unpaidWorkShortCodes(List.of("YRUP1"))
-                    .build();
-        }
+        private static final PreprocessingDefinition YRO_CONFIG = PreprocessingDefinition.builder()
+                .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
+                .curfewShortCodes(List.of("YRC2"))
+                .curfewTagShortCodes(List.of("YRC1"))
+                .furtherCurfewShortCodes(List.of("YRC3"))
+                .alcoholAbstinenceShortCodes(List.of())
+                .unpaidWorkShortCodes(List.of("YRUP1"))
+                .build();
 
         @Test
         @DisplayName("AC2a — YRC2 end date after YROEW end date produces curViolationCount 1")
@@ -506,7 +503,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isEqualTo(1L);
@@ -527,7 +524,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     ),
                     List.of(defendant("d1", "Jane", "Doe")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.cureViolationCount()).isEqualTo(1L);
@@ -546,7 +543,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     ),
                     List.of(defendant("d1", "Bob", "Brown")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curaViolationCount()).isEqualTo(1L);
@@ -563,7 +560,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     List.of(orderLine("rl-order", "YROISS", "d1", "off1", "2026-10-30")),
                     List.of(defendant("d1", "No", "Requirements")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isZero();
@@ -584,7 +581,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.upwrViolationCount()).isEqualTo(1L);
@@ -603,7 +600,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     ),
                     List.of(defendant("d1", "Boundary", "Pass")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
@@ -616,7 +613,7 @@ class CommunityOrderEndDatePreprocessorTest {
                     List.of(orderLine("rl-order", "YROINI", "d1", "off1", "2026-06-01")),
                     List.of(defendant("d1", "No", "Unpaid")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
