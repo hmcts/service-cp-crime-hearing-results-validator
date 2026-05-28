@@ -9,6 +9,7 @@ on:
     branches:
       - master
       - main
+      - 'team/**'
 
 jobs:
   ci-draft:
