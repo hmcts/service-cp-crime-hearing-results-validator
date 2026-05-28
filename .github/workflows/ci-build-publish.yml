@@ -186,9 +186,18 @@ jobs:
             BASE_IMAGE=eclipse-temurin:25
             JAR_FILENAME=${{ needs.Build.outputs.artefact_name }}.jar
 
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}:${{ needs.Artefact-Version.outputs.artefact_version }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'HIGH,CRITICAL'
+
   Deploy:
-    needs: [ Provider-Deploy, Build, Artefact-Version ]
-    if: ${{ inputs.trigger_deploy }}
+    needs: [ Provider-Deploy, Build, Artefact-Version, Build-Docker ]
+    if: ${{ inputs.trigger_deploy && (needs.Build-Docker.result == 'success' || needs.Build-Docker.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Extract repo name
