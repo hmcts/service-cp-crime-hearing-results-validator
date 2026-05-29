@@ -38,3 +38,4 @@ jobs:
       is_publish: true
       trigger_docker: true
       trigger_deploy: true
+      run_api_test: true
