@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,16 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class YouthRehabilitationPreprocessorTest {
 
-    private static final PreprocessingDefinition YRO_CONFIG = PreprocessingDefinition.builder()
-            .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
-            .curfewShortCodes(List.of("YRC2"))
-            .curfewTagShortCodes(List.of("YRC1"))
-            .furtherCurfewShortCodes(List.of("YRC3"))
-            .alcoholAbstinenceShortCodes(List.of())
-            .unpaidWorkShortCodes(List.of("YRUP1"))
-            .build();
-
+    private static PreprocessingDefinition yroConfig;
     private CommunityOrderEndDatePreprocessor preprocessor;
+
+    @BeforeAll
+    static void setUpConfig() {
+        yroConfig = PreprocessingDefinition.builder()
+                .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
+                .curfewShortCodes(List.of("YRC2"))
+                .curfewTagShortCodes(List.of("YRC1"))
+                .furtherCurfewShortCodes(List.of("YRC3"))
+                .alcoholAbstinenceShortCodes(List.of())
+                .unpaidWorkShortCodes(List.of("YRUP1"))
+                .build();
+    }
 
     @BeforeEach
     void setUp() {
@@ -107,7 +112,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isEqualTo(1L);
@@ -133,7 +138,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Jane", "Doe")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.cureViolationCount()).isEqualTo(1L);
@@ -157,7 +162,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Bob", "Brown")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curaViolationCount()).isEqualTo(1L);
@@ -179,7 +184,7 @@ class YouthRehabilitationPreprocessorTest {
                     List.of(orderLine("rl-order", "YROISS", "d1", "off1", "2026-10-30")),
                     List.of(defendant("d1", "No", "Requirements")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isZero();
@@ -205,7 +210,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             CommunityOrderContext ctx = result.get("d1");
             assertThat(ctx.upwrViolationCount()).isEqualTo(1L);
@@ -224,7 +229,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Boundary", "Pass")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
@@ -237,7 +242,7 @@ class YouthRehabilitationPreprocessorTest {
                     List.of(orderLine("rl-order", "YROINI", "d1", "off1", "2026-06-01")),
                     List.of(defendant("d1", "No", "Unpaid")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, YRO_CONFIG);
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
