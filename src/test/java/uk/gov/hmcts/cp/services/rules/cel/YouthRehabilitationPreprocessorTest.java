@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link CommunityOrderEndDatePreprocessor} with DR-YRO-001 configuration
  * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew; YRUP1 unpaid work).
  */
-class CommunityOrderEndDatePreprocessorYroConfigTest {
+class YouthRehabilitationPreprocessorTest {
 
     private static final PreprocessingDefinition YRO_CONFIG = PreprocessingDefinition.builder()
             .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
