@@ -16,13 +16,13 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link CommunityOrderEndDatePreprocessor} with DR-YRO-001 configuration
+ * Unit tests for {@link YouthRehabilitationPreprocessor} with DR-YRO-001 configuration
  * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew; YRUP1 unpaid work).
  */
 class YouthRehabilitationPreprocessorTest {
 
     private static PreprocessingDefinition yroConfig;
-    private CommunityOrderEndDatePreprocessor preprocessor;
+    private YouthRehabilitationPreprocessor preprocessor;
 
     @BeforeAll
     static void setUpConfig() {
@@ -38,7 +38,7 @@ class YouthRehabilitationPreprocessorTest {
 
     @BeforeEach
     void setUp() {
-        preprocessor = new CommunityOrderEndDatePreprocessor();
+        preprocessor = new YouthRehabilitationPreprocessor();
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -95,7 +95,95 @@ class YouthRehabilitationPreprocessorTest {
         return req;
     }
 
+    // ── type qualifier ────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("type() returns youth-rehabilitation-order qualifier")
+    void type_returns_youth_rehabilitation_order_qualifier() {
+        assertThat(preprocessor.type()).isEqualTo("youth-rehabilitation-order");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("AC1 — YRO end date in the past (on or before hearing date)")
+    class Ac1PastEndDate {
+
+        @Test
+        @DisplayName("Order end date equal to hearing date produces pastEndDateCount 1")
+        void order_end_date_equal_to_hearing_date_should_produce_pastEndDateCount_1() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 5, 20),
+                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-20")),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
+            assertThat(ctx.pastEndDateOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        @DisplayName("Order end date before hearing date produces pastEndDateCount 1")
+        void order_end_date_before_hearing_date_should_produce_pastEndDateCount_1() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 5, 20),
+                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-19")),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").pastEndDateCount()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("Order end date after hearing date produces pastEndDateCount 0")
+        void order_end_date_after_hearing_date_should_produce_pastEndDateCount_0() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 5, 20),
+                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-21")),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").pastEndDateCount()).isZero();
+            assertThat(result.get("d1").pastEndDateOffenceIds()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Null hearingDay skips AC1 check: pastEndDateCount 0")
+        void null_hearing_day_skips_ac1_check() {
+            DraftValidationRequest req = request(
+                    null,
+                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-19")),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").pastEndDateCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("Multiple offences: only past-date offence counted")
+        void multiple_offences_only_past_date_offence_counted() {
+            // off1: endDate before hearing → AC1
+            // off2: endDate after hearing → no AC1
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 5, 20),
+                    List.of(
+                            orderLine("rl-o1", "YROEW", "d1", "off1", "2026-05-19"),
+                            orderLine("rl-o2", "YROEW", "d1", "off2", "2027-05-19")
+                    ),
+                    List.of(defendant("d1", "Sarah", "Jones")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
+            assertThat(ctx.pastEndDateOffenceIds()).containsExactly("off1");
+        }
+    }
 
     @Nested
     @DisplayName("AC2a — YRC2 (Curfew) end date after YRO end date")
@@ -112,14 +200,31 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
-            CommunityOrderContext ctx = result.get("d1");
+            YouthRehabilitationContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isEqualTo(1L);
             assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
             assertThat(ctx.upwrViolationCount()).isZero();
+            assertThat(ctx.pastEndDateCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("YRC2 end date equal to YROEW end date: no violation")
+        void yrc2_end_date_equal_to_order_should_not_violate() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-11-30"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-11-30")
+                    ),
+                    List.of(defendant("d1", "Equal", "Date")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curViolationCount()).isZero();
         }
     }
 
@@ -138,9 +243,9 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Jane", "Doe")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
-            CommunityOrderContext ctx = result.get("d1");
+            YouthRehabilitationContext ctx = result.get("d1");
             assertThat(ctx.cureViolationCount()).isEqualTo(1L);
             assertThat(ctx.cureViolationOffenceIds()).containsExactly("off1");
             assertThat(ctx.curViolationCount()).isZero();
@@ -162,9 +267,9 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Bob", "Brown")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
-            CommunityOrderContext ctx = result.get("d1");
+            YouthRehabilitationContext ctx = result.get("d1");
             assertThat(ctx.curaViolationCount()).isEqualTo(1L);
             assertThat(ctx.curaViolationOffenceIds()).containsExactly("off1");
             assertThat(ctx.curViolationCount()).isZero();
@@ -177,16 +282,16 @@ class YouthRehabilitationPreprocessorTest {
     class Ac2NoCurfewRequirements {
 
         @Test
-        @DisplayName("YROISS with no curfew child requirements: all violation counts zero")
-        void yroiss_without_curfew_requirements_produces_all_zero_counts() {
+        @DisplayName("YROISS with no curfew child requirements: all AC2 violation counts zero")
+        void yroiss_without_curfew_requirements_produces_all_zero_ac2_counts() {
             DraftValidationRequest req = request(
                     LocalDate.of(2026, 1, 1),
                     List.of(orderLine("rl-order", "YROISS", "d1", "off1", "2026-10-30")),
                     List.of(defendant("d1", "No", "Requirements")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
-            CommunityOrderContext ctx = result.get("d1");
+            YouthRehabilitationContext ctx = result.get("d1");
             assertThat(ctx.curViolationCount()).isZero();
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
@@ -210,9 +315,9 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "John", "Smith")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
-            CommunityOrderContext ctx = result.get("d1");
+            YouthRehabilitationContext ctx = result.get("d1");
             assertThat(ctx.upwrViolationCount()).isEqualTo(1L);
             assertThat(ctx.upwrViolationOffenceIds()).containsExactly("off1");
         }
@@ -229,7 +334,7 @@ class YouthRehabilitationPreprocessorTest {
                     ),
                     List.of(defendant("d1", "Boundary", "Pass")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
@@ -242,9 +347,30 @@ class YouthRehabilitationPreprocessorTest {
                     List.of(orderLine("rl-order", "YROINI", "d1", "off1", "2026-06-01")),
                     List.of(defendant("d1", "No", "Unpaid")));
 
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, yroConfig);
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
 
             assertThat(result.get("d1").upwrViolationCount()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("Defendant isolation — only defendants with YRO lines are included")
+    class DefendantIsolation {
+
+        @Test
+        @DisplayName("Defendant with no YRO result line is excluded from context map")
+        void defendant_without_yro_line_is_excluded_from_context() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 5, 20),
+                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2027-06-01")),
+                    List.of(
+                            defendant("d1", "Has", "Yro"),
+                            defendant("d2", "No", "Yro")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result).containsKey("d1");
+            assertThat(result).doesNotContainKey("d2");
         }
     }
 }
