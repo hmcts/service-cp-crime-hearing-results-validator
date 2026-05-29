@@ -23,7 +23,6 @@ rule:
       - YRC1
     furtherCurfewShortCodes:
       - YRC3
-    alcoholAbstinenceShortCodes: []
     unpaidWorkShortCodes:
       - YRUP1
 
