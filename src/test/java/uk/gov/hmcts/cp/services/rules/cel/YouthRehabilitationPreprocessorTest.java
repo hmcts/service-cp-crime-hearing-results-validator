@@ -41,59 +41,6 @@ class YouthRehabilitationPreprocessorTest {
         preprocessor = new YouthRehabilitationPreprocessor();
     }
 
-    // ── helpers ──────────────────────────────────────────────────────────────
-
-    private ResultLineDto orderLine(String id, String shortCode, String defId, String offId,
-                                    String endDate) {
-        Prompt prompt = new Prompt("endDate", endDate);
-        ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
-        rl.setShortCode(shortCode);
-        rl.setDefendantId(defId);
-        rl.setOffenceId(offId);
-        rl.setPrompts(List.of(prompt));
-        return rl;
-    }
-
-    private ResultLineDto requirementLine(String id, String shortCode, String defId, String offId,
-                                           String promptRef, String promptValue) {
-        Prompt prompt = new Prompt(promptRef, promptValue);
-        ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
-        rl.setShortCode(shortCode);
-        rl.setDefendantId(defId);
-        rl.setOffenceId(offId);
-        rl.setPrompts(List.of(prompt));
-        return rl;
-    }
-
-    private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
-        ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
-        rl.setShortCode(shortCode);
-        rl.setDefendantId(defId);
-        rl.setOffenceId(offId);
-        return rl;
-    }
-
-    private DefendantDto defendant(String id, String first, String last) {
-        DefendantDto d = new DefendantDto();
-        d.setId(id);
-        d.setFirstName(first);
-        d.setLastName(last);
-        return d;
-    }
-
-    private DraftValidationRequest request(LocalDate hearingDay,
-                                            List<ResultLineDto> lines,
-                                            List<DefendantDto> defendants) {
-        DraftValidationRequest req = new DraftValidationRequest();
-        req.setHearingId("h1");
-        req.setHearingDay(hearingDay);
-        req.setResultLines(lines);
-        req.setDefendants(defendants);
-        return req;
-    }
 
     // ── type qualifier ────────────────────────────────────────────────────────
 
@@ -372,5 +319,60 @@ class YouthRehabilitationPreprocessorTest {
             assertThat(result).containsKey("d1");
             assertThat(result).doesNotContainKey("d2");
         }
+    }
+
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private ResultLineDto orderLine(String id, String shortCode, String defId, String offId,
+                                    String endDate) {
+        Prompt prompt = new Prompt("endDate", endDate);
+        ResultLineDto rl = new ResultLineDto();
+        rl.setId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        rl.setPrompts(List.of(prompt));
+        return rl;
+    }
+
+    private ResultLineDto requirementLine(String id, String shortCode, String defId, String offId,
+                                          String promptRef, String promptValue) {
+        Prompt prompt = new Prompt(promptRef, promptValue);
+        ResultLineDto rl = new ResultLineDto();
+        rl.setId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        rl.setPrompts(List.of(prompt));
+        return rl;
+    }
+
+    private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
+        ResultLineDto rl = new ResultLineDto();
+        rl.setId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        return rl;
+    }
+
+    private DefendantDto defendant(String id, String first, String last) {
+        DefendantDto d = new DefendantDto();
+        d.setId(id);
+        d.setFirstName(first);
+        d.setLastName(last);
+        return d;
+    }
+
+    private DraftValidationRequest request(LocalDate hearingDay,
+                                           List<ResultLineDto> lines,
+                                           List<DefendantDto> defendants) {
+        DraftValidationRequest req = new DraftValidationRequest();
+        req.setHearingId("h1");
+        req.setHearingDay(hearingDay);
+        req.setResultLines(lines);
+        req.setDefendants(defendants);
+        return req;
     }
 }
