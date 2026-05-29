@@ -43,13 +43,13 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(4);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(4);
-        assertThat(json.get("rules")).hasSize(4);
+        assertThat(json.get("count").asInt()).isEqualTo(5);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(5);
+        assertThat(json.get("rules")).hasSize(5);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
         assertThat(ruleIds).containsExactlyInAnyOrder(
-                "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001");
+                "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001", "DR-YRO-001");
     }
 
     /**
