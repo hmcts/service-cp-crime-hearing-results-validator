@@ -125,7 +125,7 @@ public class CustodialPreprocessor {
             for (final DefendantDto d : request.getDefendants()) {
                 final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
                         ? d.getMasterDefendantId()
-                        : d.getId();
+                        : d.getDefendantId();
                 names.putIfAbsent(groupKey, buildFullName(d));
             }
         }
@@ -152,8 +152,8 @@ public class CustodialPreprocessor {
             for (final DefendantDto d : request.getDefendants()) {
                 final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
                         ? d.getMasterDefendantId()
-                        : d.getId();
-                grouping.put(d.getId(), groupKey);
+                        : d.getDefendantId();
+                grouping.put(d.getDefendantId(), groupKey);
             }
         }
         return grouping;
