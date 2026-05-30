@@ -6,7 +6,14 @@
 
 ## Decision 1: Preprocessor reuse vs. new preprocessor
 
-**Decision**: Reuse the existing `community-order-end-date` preprocessor type (`CommunityOrderEndDatePreprocessor`) with YRO short codes declared in the new YAML file. No new Java code is required.
+> **⚠️ Superseded during implementation.** This decision (reuse `community-order-end-date`, no new
+> Java) was reversed once **AC1 (YRO end date must be in the future)** was added — the community-order
+> preprocessor has no future-date check. A dedicated `youth-rehabilitation-order` preprocessor
+> (`YouthRehabilitationPreprocessor`) and `YouthRehabilitationContext` were introduced, and the logic
+> the two preprocessors would otherwise duplicate was extracted into the shared `PreprocessorHelper`
+> (see Decision 7). The original rationale below is retained for history.
+
+**Original decision**: Reuse the existing `community-order-end-date` preprocessor type (`CommunityOrderEndDatePreprocessor`) with YRO short codes declared in the new YAML file. No new Java code is required.
 
 **Rationale**:
 `CommunityOrderEndDatePreprocessor` is fully code-list driven — it reads `communityOrderShortCodes`, `curfewShortCodes`, `curfewTagShortCodes`, `furtherCurfewShortCodes`, `alcoholAbstinenceShortCodes`, and `unpaidWorkShortCodes` from `PreprocessingDefinition` (which is populated directly from YAML). The prompt ref keys (`endDate`, `endDateOfTagging`) are stable API-contract values from `api-cp-crime-hearing-results-validator` and match the fields on YRC1, YRC2, and YRC3 requirement result lines. The YRO short codes map cleanly onto the existing config fields:
@@ -38,9 +45,9 @@ The `CommunityOrderContext` variables (`curViolationCount`, `cureViolationCount`
 
 ---
 
-## Decision 3: Condition structure (3 separate AC2 conditions)
+## Decision 3: Condition structure (separate per-requirement conditions)
 
-**Decision**: Four conditions — `AC2a` (YRC2), `AC2b` (YRC1), `AC2c` (YRC3), `AC3` (YRUP1) — mirroring the DR-COEW-001 pattern.
+**Decision**: Five conditions — `AC1` (past end date), `AC2a` (YRC2), `AC2b` (YRC1), `AC2c` (YRC3), `AC3` (YRUP1) — mirroring (and extending) the DR-COEW-001 pattern. AC1 was added after the original plan.
 
 **Rationale**: Each curfew requirement type has a distinct display name that must appear in the error message ("Youth Rehabilitation Requirement: Curfew" vs "…Curfew with electronic monitoring" vs "…Further curfew requirement made"). A single combined CEL condition (`(curViolationCount + cureViolationCount + curaViolationCount) > 0`) cannot produce per-requirement error messages. Separate conditions fire independently, allowing each to scope its `affectedOffenceSet` and message template to the specific breaching requirement.
 
@@ -72,11 +79,20 @@ The minimum valid end date is therefore `hearingDay + 12 months − 1 day` (not 
 
 ---
 
-## Decision 6: No new Java source files
+## Decision 6: New Java source files (revised)
 
-**Decision**: This feature delivers one new file only: `src/main/resources/rules/DR-YRO-001.yaml`. The integration test (`YroDateValidationRuleIntegrationTest.java`) is also new but is a test class, not a production class.
+> **⚠️ Revised during implementation.** The original plan delivered only `DR-YRO-001.yaml`. Adding AC1
+> required Java, so this feature delivers: `YouthRehabilitationPreprocessor`, `YouthRehabilitationContext`,
+> and the shared `PreprocessorHelper` (production), plus `YroEndDateValidationIntegrationTest`,
+> `YouthRehabilitationPreprocessorTest`, `YouthRehabilitationContextTest`, and `PreprocessorHelperTest`
+> (tests). `ValidationRuleAutoConfiguration` still discovers the YAML at startup and the new preprocessor
+> registers via `PreprocessorRegistry` on `preprocessing.type: "youth-rehabilitation-order"`.
 
-**Rationale**: Full compliance with Constitution Principle I. The preprocessor, context record, rule runner, registry, and auto-configuration all handle DR-YRO-001 transparently. `ValidationRuleAutoConfiguration` discovers the new YAML file at startup via `classpath*:rules/DR-*.yaml` — no registration step needed.
+## Decision 7: Share duplicated preprocessor logic via `PreprocessorHelper`
+
+**Decision**: Extract the helpers duplicated across preprocessors — short-code normalisation (`upperSet`/`upperOrNull`), matching (`hasUpperCode`/`anyShortCodeIn`), result-line grouping (`groupByDefendant`/`groupResultsByOffence`), defendant-name assembly (`buildDefendantNames`/`buildFullName`), and prompt-date handling (`parsePromptDate`/`isRequirementViolated`) — into a stateless static utility `PreprocessorHelper`, and migrate all five preprocessors (COEW, YRO, Custodial, Disqualification, CtlMissing) to use it.
+
+**Rationale**: `YouthRehabilitationPreprocessor` would otherwise be a ~95% copy of `CommunityOrderEndDatePreprocessor`, and the same helpers were independently duplicated in the custodial/disqualification/CTL preprocessors. A static utility (mirroring the `SeverityCeiling` precedent) keeps the preprocessors' no-arg constructors intact (no DI churn in tests) while removing the duplication. Each preprocessor retains only its distinct orchestration and context shape.
 
 ---
 

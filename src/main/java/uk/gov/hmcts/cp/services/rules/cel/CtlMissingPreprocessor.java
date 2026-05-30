@@ -1,12 +1,9 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -27,7 +24,8 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  *   <li>The offence is not convicted ({@code isConvicted} is null or false).</li>
  * </ol>
  *
- * <p>All short-code comparisons are case-insensitive (normalised to upper case).
+ * <p>All short-code comparisons are case-insensitive (normalised to upper case via
+ * {@link PreprocessorHelper}).
  */
 @Component
 public class CtlMissingPreprocessor implements ValidationPreprocessor {
@@ -43,10 +41,11 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
     @Override
     public Map<String, CtlOffenceContext> preprocess(final DraftValidationRequest request,
                                                       final PreprocessingDefinition config) {
-        final Set<String> remandCodes = upperSet(config.getRemandShortCodes());
-        final Set<String> ctlCodes = upperSet(config.getCtlShortCodes());
+        final Set<String> remandCodes = PreprocessorHelper.upperSet(config.getRemandShortCodes());
+        final Set<String> ctlCodes = PreprocessorHelper.upperSet(config.getCtlShortCodes());
 
-        final Map<String, List<ResultLineDto>> resultsByOffence = groupResultsByOffence(request);
+        final Map<String, List<ResultLineDto>> resultsByOffence =
+                PreprocessorHelper.groupResultsByOffence(request);
         final Map<String, CtlOffenceContext> result = new LinkedHashMap<>();
 
         if (request.getOffences() != null) {
@@ -66,9 +65,9 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
         final String offenceId = offence.getId();
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
 
-        final boolean hasRemandResult = anyShortCodeIn(lines, remandCodes);
+        final boolean hasRemandResult = PreprocessorHelper.anyShortCodeIn(lines, remandCodes);
         final boolean hasExistingCtl = Boolean.TRUE.equals(offence.getHasExistingCtlRecord());
-        final boolean hasCtlResult = anyShortCodeIn(lines, ctlCodes);
+        final boolean hasCtlResult = PreprocessorHelper.anyShortCodeIn(lines, ctlCodes);
         final boolean isConvicted = Boolean.TRUE.equals(offence.getIsConvicted());
 
         final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !isConvicted;
@@ -78,38 +77,5 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
                 ctlWarning ? 1L : 0L,
                 ctlWarning ? List.of(offenceId) : List.of(),
                 List.of(offenceId));
-    }
-
-    private static Set<String> upperSet(final List<String> values) {
-        final List<String> source = values == null ? List.of() : values;
-        return source.stream()
-                .map(s -> s.toUpperCase(Locale.ROOT))
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    private static Map<String, List<ResultLineDto>> groupResultsByOffence(
-            final DraftValidationRequest request) {
-        final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
-        if (request.getResultLines() != null) {
-            for (final ResultLineDto rl : request.getResultLines()) {
-                if (rl.getOffenceId() != null) {
-                    grouped.computeIfAbsent(rl.getOffenceId(), k -> new ArrayList<>()).add(rl);
-                }
-            }
-        }
-        return grouped;
-    }
-
-    private static boolean anyShortCodeIn(final List<ResultLineDto> lines,
-                                           final Set<String> upperCodes) {
-        return lines.stream().anyMatch(rl -> {
-            final String upper = upperOrNull(rl.getShortCode());
-            return upper != null && upperCodes.contains(upper);
-        });
-    }
-
-    private static String upperOrNull(final String value) {
-        return value == null ? null : value.toUpperCase(Locale.ROOT);
     }
 }

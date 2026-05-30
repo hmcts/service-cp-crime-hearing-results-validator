@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,9 +38,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, DefendantContext> preprocess(final DraftValidationRequest request,
                                                      final PreprocessingDefinition config) {
-        final Set<String> shortCodes = config.getFilterShortCodes().stream()
-                .map(s -> s.toUpperCase(Locale.ROOT))
-                .collect(Collectors.toUnmodifiableSet());
+        final Set<String> shortCodes = PreprocessorHelper.upperSet(config.getFilterShortCodes());
 
         final Map<String, String> defendantGrouping = buildDefendantGrouping(request);
         final Map<String, String> defendantNames = buildDefendantNames(request);
@@ -59,8 +56,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
             final List<ResultLineDto> groupLines = groupEntry.getValue();
 
             final List<ResultLineDto> custodialLines = groupLines.stream()
-                    .filter(rl -> rl.getShortCode() != null
-                            && shortCodes.contains(rl.getShortCode().toUpperCase(Locale.ROOT)))
+                    .filter(rl -> PreprocessorHelper.hasUpperCode(rl, shortCodes))
                     .toList();
 
             if (custodialLines.isEmpty()) {
@@ -136,24 +132,10 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
                 final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
                         ? d.getMasterDefendantId()
                         : d.getId();
-                names.putIfAbsent(groupKey, buildFullName(d));
+                names.putIfAbsent(groupKey, PreprocessorHelper.buildFullName(d));
             }
         }
         return names;
-    }
-
-    private String buildFullName(final DefendantDto defendant) {
-        final String first = defendant.getFirstName();
-        final String last = defendant.getLastName();
-        final String name;
-        if (first != null && last != null) {
-            name = first + " " + last;
-        } else if (first != null) {
-            name = first;
-        } else {
-            name = last;
-        }
-        return name;
     }
 
     private Map<String, String> buildDefendantGrouping(final DraftValidationRequest request) {

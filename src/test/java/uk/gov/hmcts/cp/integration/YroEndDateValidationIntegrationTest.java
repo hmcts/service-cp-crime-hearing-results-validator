@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>AC5 — Multiple errors shown above the same result or across separate offences</li>
  * </ul>
  */
-class YroEndDateValidationIT extends IntegrationTestBase {
+class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_YRO_ERRORS =

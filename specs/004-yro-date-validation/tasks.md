@@ -6,9 +6,23 @@
 
 **TDD mandate (Constitution Principle VIII)**: Failing tests MUST be confirmed before any YAML condition that satisfies them is created.
 
-**Deliverables** (two files only — no new Java production classes):
-- `src/test/java/uk/gov/hmcts/cp/integration/YroDateValidationRuleIntegrationTest.java` (new)
+**Deliverables** (as actually shipped — see the reconciliation note below):
 - `src/main/resources/rules/DR-YRO-001.yaml` (new)
+- `src/main/java/uk/gov/hmcts/cp/services/rules/cel/YouthRehabilitationPreprocessor.java` (new)
+- `src/main/java/uk/gov/hmcts/cp/services/rules/cel/YouthRehabilitationContext.java` (new)
+- `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessorHelper.java` (new — shared by all preprocessors)
+- `src/test/java/uk/gov/hmcts/cp/integration/YroEndDateValidationIntegrationTest.java` (new)
+- `YouthRehabilitationPreprocessorTest`, `YouthRehabilitationContextTest`, `PreprocessorHelperTest` (new unit tests)
+
+> **⚠️ Reconciliation note (post-implementation).** The task list below was authored against the
+> original plan (reuse `community-order-end-date`, two files only, IT named
+> `YroDateValidationRuleIntegrationTest`). During implementation: **AC1** (YRO end date must be in the
+> future) was added, which required a new `youth-rehabilitation-order` preprocessor + context (Java);
+> the duplicated helper logic was extracted into `PreprocessorHelper`; and the integration test was
+> consolidated into the Jira-aligned `YroEndDateValidationIntegrationTest` (the original
+> `YroDateValidationRuleIntegrationTest` was removed). Task references to "two files only",
+> `community-order-end-date`, and `YroDateValidationRuleIntegrationTest` below are therefore historical
+> — see `plan.md`, `research.md` (Decisions 1/6/7), and `data-model.md` for the current design.
 
 ## Format: `[ID] [P?] [Story?] Description`
 
