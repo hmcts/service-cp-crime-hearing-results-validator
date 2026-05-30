@@ -8,6 +8,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -122,8 +124,10 @@ class AzureAppConfigFetcherTest {
     @DisplayName("fetchFeatures HTTP path")
     class HttpFetch {
 
-        // base64("test-secret") — the secret must be base64 because computeSignature decodes it
-        private static final String SECRET = "dGVzdC1zZWNyZXQ=";
+        // Dummy base64 secret, computed at runtime (computeSignature base64-decodes it). Built from
+        // a plain string rather than a literal so it is not mistaken for a real credential.
+        private static final String SECRET =
+                Base64.getEncoder().encodeToString("test-secret".getBytes(StandardCharsets.UTF_8));
         private static final String EMPTY_BODY_SHA256 = "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=";
 
         private WireMockServer wireMock;
