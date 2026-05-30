@@ -87,6 +87,7 @@ class RuleDefinitionTest {
     @Test
     void loadFromYaml_without_rule_key_should_throw() {
         assertThatThrownBy(() -> RuleDefinitionLoader.load("rules/no-rule-key.yaml"))
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must contain a top-level 'rule' key");
     }
 }
