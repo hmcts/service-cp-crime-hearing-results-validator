@@ -1,5 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.anyShortCodeIn;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupResultsByOffence;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperOrNull;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -45,12 +50,12 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
     @Override
     public Map<String, DisqualificationContext> preprocess(final DraftValidationRequest request,
                                                             final PreprocessingDefinition config) {
-        final Set<String> relevantCodes = PreprocessorHelper.upperSet(config.getRelevantOffenceCodes());
-        final Set<String> excludedShortCodes = PreprocessorHelper.upperSet(config.getExcludedFinalShortCodes());
-        final Set<String> extendedTestShortCodes = PreprocessorHelper.upperSet(config.getExtendedTestShortCodes());
+        final Set<String> relevantCodes = upperSet(config.getRelevantOffenceCodes());
+        final Set<String> excludedShortCodes = upperSet(config.getExcludedFinalShortCodes());
+        final Set<String> extendedTestShortCodes = upperSet(config.getExtendedTestShortCodes());
 
         final Map<String, List<ResultLineDto>> resultsByOffence =
-                PreprocessorHelper.groupResultsByOffence(request);
+                groupResultsByOffence(request);
         final Map<String, DisqualificationContext> result = new LinkedHashMap<>();
 
         if (request.getOffences() != null) {
@@ -93,14 +98,14 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
         final long finalCategoryCount = finalLines.size();
         final long excludedFinalCount = finalLines.stream()
                 .filter(rl -> {
-                    final String upper = PreprocessorHelper.upperOrNull(rl.getShortCode());
+                    final String upper = upperOrNull(rl.getShortCode());
                     return upper != null && excludedShortCodes.contains(upper);
                 }).count();
         final boolean finalNonExcluded = finalLines.stream().anyMatch(rl -> {
-            final String upper = PreprocessorHelper.upperOrNull(rl.getShortCode());
+            final String upper = upperOrNull(rl.getShortCode());
             return upper != null && !excludedShortCodes.contains(upper);
         });
-        final boolean disqExtTest = PreprocessorHelper.anyShortCodeIn(lines, extendedTestShortCodes);
+        final boolean disqExtTest = anyShortCodeIn(lines, extendedTestShortCodes);
 
         final boolean qualifying = relevant && finalNonExcluded && !disqExtTest;
 

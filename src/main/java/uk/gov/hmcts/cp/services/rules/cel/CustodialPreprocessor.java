@@ -1,5 +1,9 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildFullName;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -38,7 +42,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, DefendantContext> preprocess(final DraftValidationRequest request,
                                                      final PreprocessingDefinition config) {
-        final Set<String> shortCodes = PreprocessorHelper.upperSet(config.getFilterShortCodes());
+        final Set<String> shortCodes = upperSet(config.getFilterShortCodes());
 
         final Map<String, String> defendantGrouping = buildDefendantGrouping(request);
         final Map<String, String> defendantNames = buildDefendantNames(request);
@@ -56,7 +60,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
             final List<ResultLineDto> groupLines = groupEntry.getValue();
 
             final List<ResultLineDto> custodialLines = groupLines.stream()
-                    .filter(rl -> PreprocessorHelper.hasUpperCode(rl, shortCodes))
+                    .filter(rl -> hasUpperCode(rl, shortCodes))
                     .toList();
 
             if (custodialLines.isEmpty()) {
@@ -132,7 +136,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
                 final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
                         ? d.getMasterDefendantId()
                         : d.getId();
-                names.putIfAbsent(groupKey, PreprocessorHelper.buildFullName(d));
+                names.putIfAbsent(groupKey, buildFullName(d));
             }
         }
         return names;

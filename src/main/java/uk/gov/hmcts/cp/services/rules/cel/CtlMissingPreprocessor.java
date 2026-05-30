@@ -1,5 +1,9 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.anyShortCodeIn;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupResultsByOffence;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +45,11 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
     @Override
     public Map<String, CtlOffenceContext> preprocess(final DraftValidationRequest request,
                                                       final PreprocessingDefinition config) {
-        final Set<String> remandCodes = PreprocessorHelper.upperSet(config.getRemandShortCodes());
-        final Set<String> ctlCodes = PreprocessorHelper.upperSet(config.getCtlShortCodes());
+        final Set<String> remandCodes = upperSet(config.getRemandShortCodes());
+        final Set<String> ctlCodes = upperSet(config.getCtlShortCodes());
 
         final Map<String, List<ResultLineDto>> resultsByOffence =
-                PreprocessorHelper.groupResultsByOffence(request);
+                groupResultsByOffence(request);
         final Map<String, CtlOffenceContext> result = new LinkedHashMap<>();
 
         if (request.getOffences() != null) {
@@ -65,9 +69,9 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
         final String offenceId = offence.getId();
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
 
-        final boolean hasRemandResult = PreprocessorHelper.anyShortCodeIn(lines, remandCodes);
+        final boolean hasRemandResult = anyShortCodeIn(lines, remandCodes);
         final boolean hasExistingCtl = Boolean.TRUE.equals(offence.getHasExistingCtlRecord());
-        final boolean hasCtlResult = PreprocessorHelper.anyShortCodeIn(lines, ctlCodes);
+        final boolean hasCtlResult = anyShortCodeIn(lines, ctlCodes);
         final boolean isConvicted = Boolean.TRUE.equals(offence.getIsConvicted());
 
         final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !isConvicted;

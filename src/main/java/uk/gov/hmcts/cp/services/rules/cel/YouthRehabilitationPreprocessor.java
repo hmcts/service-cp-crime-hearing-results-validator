@@ -1,5 +1,12 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByDefendant;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.isRequirementViolated;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.parsePromptDate;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -53,15 +60,14 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, YouthRehabilitationContext> preprocess(final DraftValidationRequest request,
                                                                final PreprocessingDefinition config) {
-        final Set<String> orderCodes = PreprocessorHelper.upperSet(config.getCommunityOrderShortCodes());
-        final Set<String> curCodes = PreprocessorHelper.upperSet(config.getCurfewShortCodes());
-        final Set<String> cureCodes = PreprocessorHelper.upperSet(config.getCurfewTagShortCodes());
-        final Set<String> curaCodes = PreprocessorHelper.upperSet(config.getFurtherCurfewShortCodes());
-        final Set<String> upwrCodes = PreprocessorHelper.upperSet(config.getUnpaidWorkShortCodes());
+        final Set<String> orderCodes = upperSet(config.getCommunityOrderShortCodes());
+        final Set<String> curCodes = upperSet(config.getCurfewShortCodes());
+        final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
+        final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
+        final Set<String> upwrCodes = upperSet(config.getUnpaidWorkShortCodes());
 
-        final Map<String, String> defendantNames = PreprocessorHelper.buildDefendantNames(request);
-        final Map<String, List<ResultLineDto>> linesByDefendant =
-                PreprocessorHelper.groupByDefendant(request);
+        final Map<String, String> defendantNames = buildDefendantNames(request);
+        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
 
         final Map<String, YouthRehabilitationContext> result = new LinkedHashMap<>();
 
@@ -69,7 +75,7 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
             final String defendantId = entry.getKey();
             final List<ResultLineDto> lines = entry.getValue();
 
-            final boolean hasYro = lines.stream().anyMatch(rl -> PreprocessorHelper.hasUpperCode(rl, orderCodes));
+            final boolean hasYro = lines.stream().anyMatch(rl -> hasUpperCode(rl, orderCodes));
             if (!hasYro) {
                 continue;
             }
@@ -95,8 +101,8 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                 allOffenceIds.add(offenceId);
 
                 final LocalDate orderEndDate = offenceLines.stream()
-                        .filter(rl -> PreprocessorHelper.hasUpperCode(rl, orderCodes))
-                        .map(rl -> PreprocessorHelper.parsePromptDate(rl, PROMPT_END_DATE, offenceId))
+                        .filter(rl -> hasUpperCode(rl, orderCodes))
+                        .map(rl -> parsePromptDate(rl, PROMPT_END_DATE, offenceId))
                         .filter(d -> d != null)
                         .findFirst()
                         .orElse(null);
@@ -111,26 +117,26 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                 }
 
                 // AC2a — YRC2: curfew end date after YRO end date
-                if (PreprocessorHelper.isRequirementViolated(offenceLines, curCodes,
+                if (isRequirementViolated(offenceLines, curCodes,
                         PROMPT_END_DATE, orderEndDate, offenceId)) {
                     curViolationIds.add(offenceId);
                 }
 
                 // AC2b — YRC1: end-of-tagging date after YRO end date
-                if (PreprocessorHelper.isRequirementViolated(offenceLines, cureCodes,
+                if (isRequirementViolated(offenceLines, cureCodes,
                         PROMPT_END_DATE_OF_TAG, orderEndDate, offenceId)) {
                     cureViolationIds.add(offenceId);
                 }
 
                 // AC2c — YRC3: further curfew end date after YRO end date
-                if (PreprocessorHelper.isRequirementViolated(offenceLines, curaCodes,
+                if (isRequirementViolated(offenceLines, curaCodes,
                         PROMPT_END_DATE, orderEndDate, offenceId)) {
                     curaViolationIds.add(offenceId);
                 }
 
                 // AC3 — YRUP1: order shorter than hearingDay + 12m − 1d
                 final boolean hasUpwr = offenceLines.stream()
-                        .anyMatch(rl -> PreprocessorHelper.hasUpperCode(rl, upwrCodes));
+                        .anyMatch(rl -> hasUpperCode(rl, upwrCodes));
                 if (hasUpwr && request.getHearingDay() != null) {
                     final LocalDate minEndDate = request.getHearingDay().plusMonths(12).minusDays(1);
                     if (orderEndDate.isBefore(minEndDate)) {
