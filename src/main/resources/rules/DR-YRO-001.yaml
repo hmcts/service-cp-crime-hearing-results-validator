@@ -1,0 +1,86 @@
+rule:
+  id: "DR-YRO-001"
+  title: "Youth Rehabilitation Order End Date Validation"
+  description: >-
+    Validates that a Youth Rehabilitation Order's end date is in the future (AC1), is not earlier
+    than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3), and that an order
+    containing an unpaid work requirement (AC3: YRUP1) is at least 12 calendar months from the
+    hearing date.
+  priority: 5000
+  enabled: true
+
+  preprocessing:
+    type: "youth-rehabilitation-order"
+    communityOrderShortCodes:
+      - YROEW
+      - YRONI
+      - YROFEW
+      - YROISS
+      - YROINI
+    curfewShortCodes:
+      - YRC2
+    curfewTagShortCodes:
+      - YRC1
+    furtherCurfewShortCodes:
+      - YRC3
+    unpaidWorkShortCodes:
+      - YRUP1
+
+  conditions:
+    - id: "AC1"
+      name: "YRO end date is not in the future"
+      expression: "pastEndDateCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date must be in the future
+      errorMessageTemplate: >-
+        The end date of the Youth rehabilitation order must be in the future. This affects ${defendantNames}.
+      affectedOffenceSet: "pastEndDateOffenceIds"
+
+    - id: "AC2a"
+      name: "Curfew requirement exceeds YRO end date"
+      expression: "curViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Curfew
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Curfew. This affects ${defendantNames}.
+      affectedOffenceSet: "curViolationOffenceIds"
+
+    - id: "AC2b"
+      name: "Curfew with electronic monitoring requirement exceeds YRO end date"
+      expression: "cureViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Curfew with electronic monitoring
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Curfew with electronic monitoring. This affects ${defendantNames}.
+      affectedOffenceSet: "cureViolationOffenceIds"
+
+    - id: "AC2c"
+      name: "Further curfew requirement exceeds YRO end date"
+      expression: "curaViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Further curfew requirement made
+      errorMessageTemplate: >-
+        The end date of the order must match or be longer than the end date of
+        Youth Rehabilitation Requirement: Further curfew requirement made. This affects ${defendantNames}.
+      affectedOffenceSet: "curaViolationOffenceIds"
+
+    - id: "AC3"
+      name: "Unpaid work order shorter than 12 months"
+      expression: "upwrViolationCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date of the order must be at least 12 months as it includes an
+        unpaid work requirement
+      errorMessageTemplate: >-
+        The end date of the order must be at least 12 months as it includes an
+        unpaid work requirement. This affects ${defendantNames}.
+      affectedOffenceSet: "upwrViolationOffenceIds"

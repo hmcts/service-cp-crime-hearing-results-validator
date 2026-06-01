@@ -5,6 +5,13 @@ on:
     branches:
       - master
       - main
+      - 'team/**'
+
+  push:
+    branches:
+      - master
+      - main
+      - 'team/**'
 
   schedule:
     - cron: '36 5 * * 4'
@@ -49,7 +56,7 @@ jobs:
 
       - name: Gradle Build
         run: |
-          ./gradlew build cyclonedxBom -x test
+          ./gradlew build cyclonedxBom -x test -x api
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
@@ -90,7 +97,7 @@ jobs:
           gradle-version: current
 
       - name: Gradle Build
-        run: ./gradlew build -x test
+        run: ./gradlew build -x test -x api
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4

@@ -478,4 +478,5 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(result.get("d2").upwrViolationCount()).isZero();
         }
     }
+
 }
