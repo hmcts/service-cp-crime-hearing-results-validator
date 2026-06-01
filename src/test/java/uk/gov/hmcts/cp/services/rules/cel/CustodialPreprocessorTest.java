@@ -347,6 +347,104 @@ class CustodialPreprocessorTest {
         assertThat(result).isEmpty();
     }
 
+    /**
+     * Verifies result lines with a null short code are filtered out before offence grouping, without
+     * causing a failure.
+     */
+    @Test
+    void should_skip_result_lines_with_null_short_code() {
+        ResultLineDto nullShortCode = ResultLineDto.builder()
+                .resultLineId("rlx")
+                .defendantId("d1")
+                .offenceId("off9")
+                .build();
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2"),
+                        nullShortCode),
+                List.of());
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        DefendantContext ctx = result.get("d1");
+        assertThat(ctx.totalOffences()).isEqualTo(2);
+        assertThat(ctx.allOffenceIds()).containsExactly("off1", "off2");
+    }
+
+    /**
+     * Verifies a null defendants list is tolerated: grouping falls back to the raw defendant id and
+     * the display name defaults to {@code Unknown}.
+     */
+    @Test
+    void should_handle_null_defendants_list() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                null);
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).containsKey("d1");
+        assertThat(result.get("d1").defendantName()).isEqualTo("Unknown");
+    }
+
+    /**
+     * Verifies a blank (non-null) master defendant id falls back to the raw defendant id for
+     * grouping.
+     */
+    @Test
+    void should_fall_back_to_defendantId_when_masterDefendantId_blank() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                List.of(DefendantDto.builder()
+                        .defendantId("d1").firstName("John").lastName("Smith").masterDefendantId("   ").build()));
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).containsKey("d1");
+        assertThat(result.get("d1").defendantName()).isEqualTo("John Smith");
+    }
+
+    /**
+     * Verifies the display name is built from the last name alone when the first name is null.
+     */
+    @Test
+    void should_build_name_from_last_name_only_when_first_name_null() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                List.of(DefendantDto.builder().defendantId("d1").firstName(null).lastName("Smith").build()));
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result.get("d1").defendantName()).isEqualTo("Smith");
+    }
+
+    /**
+     * Verifies the display name is built from the first name alone when the last name is null.
+     */
+    @Test
+    void should_build_name_from_first_name_only_when_last_name_null() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")),
+                List.of(),
+                List.of(DefendantDto.builder().defendantId("d1").firstName("John").lastName(null).build()));
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result.get("d1").defendantName()).isEqualTo("John");
+    }
+
     private static DefendantDto defendant(String id, String fullName, String masterDefendantId) {
         String[] parts = fullName.split(" ", 2);
         return DefendantDto.builder()
