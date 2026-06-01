@@ -39,7 +39,7 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
    - `MessageTemplateResolver` expands `${placeholder}` tokens in message templates
 5. `RuleOverrideService` checks the `validation_rule` DB table for runtime overrides (enable/disable, severity ceiling), cached via Caffeine with configurable TTL
 
-**Adding a new rule:** Create a `DR-<category>-<number>.yaml` in `src/main/resources/rules/` -- no Java code needed. The auto-configuration discovers it.
+**Adding a new rule:** Create a `DR-<category>-<number>.yaml` in `src/main/resources/rules/` -- the auto-configuration discovers it. "No Java code needed" holds only for **custodial-shaped** rules: `CelValidationRule` is currently wired directly to the single `CustodialPreprocessor`, and the YAML `preprocessing.type` field is **not yet dispatched**. A rule needing a different context shape requires the preprocessor-registry refactor (see `.claude/rules/design_rules.md` → *Known limitations*).
 
 ### Severity Ceiling Model
 
