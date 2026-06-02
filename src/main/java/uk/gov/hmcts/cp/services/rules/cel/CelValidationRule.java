@@ -23,13 +23,12 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
-    private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
-    final ValidationPreprocessor preprocessor;
+    private final ValidationPreprocessor preprocessor;
 
     /**
      * Constructs the rule from a YAML path and the required collaborators. Fails fast at
@@ -44,7 +43,6 @@ public class CelValidationRule implements ValidationRule {
                              final OffenceDisplayHelper offenceDisplayHelper,
                              final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
-        this.preprocessorRegistry = preprocessorRegistry;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
