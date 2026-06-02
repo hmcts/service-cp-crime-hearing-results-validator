@@ -47,7 +47,7 @@ public class CelValidationRule implements ValidationRule {
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
-        preprocessor= preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
+        preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
     @Override
