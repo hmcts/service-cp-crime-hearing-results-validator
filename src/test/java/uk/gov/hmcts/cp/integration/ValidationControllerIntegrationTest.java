@@ -50,7 +50,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.mode", is("advisory")))
                 .andExpect(jsonPath("$.errors", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
-                .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002")));
+                .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002", "DR-DISQ-001")));
     }
 
     /**

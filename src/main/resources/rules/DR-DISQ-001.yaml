@@ -1,0 +1,42 @@
+rule:
+  id: "DR-DISQ-001"
+  title: "Extended test disqualification check"
+  description: >-
+    Warns when a relevant Road Traffic Act 1988 offence has a non-excluded final
+    result and no DDOTE or DDOTEL extended-test disqualification recorded against
+    it.
+  priority: 2000
+  enabled: true
+
+  preprocessing:
+    type: "disqualification-extended-test"
+    relevantOffenceCodes:
+      - RT88046   # s.1   — causing death by dangerous driving
+      - RT88526   # s.1A  — causing serious injury by dangerous driving
+      - RT88026   # s.2   — dangerous driving
+      - RT88530   # s.3ZC — causing death by driving: disqualified drivers
+      - RT88531   # s.3ZD — causing serious injury by driving: disqualified drivers
+    excludedFinalShortCodes:
+      - wdrn      # withdrawn
+      - WDRNOFF   # withdrawn in favour of another offence
+      - dism      # dismissed
+      - dine      # dismissed (no evidence)
+      - dini      # dismissed (insufficient)
+      - disch     # discharged
+      - disc      # discontinued
+      - ctrof     # count to remain on file
+      - iremfile  # indictment to remain on file
+    extendedTestShortCodes:
+      - DDOTE     # obligatory disqualification with extended test
+      - DDOTEL    # obligatory disqualification for life with extended test
+
+  conditions:
+    - id: "AC1"
+      name: "Relevant offence missing extended test disqualification"
+      expression: "qualifyingCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Check whether you need to add extended test disqualification with DDOTE
+        (disqualification and extended test) or DDOTEL (disqualification for life
+        and extended test)
+      affectedOffenceSet: "qualifyingOffenceIds"

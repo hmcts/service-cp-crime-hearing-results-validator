@@ -41,7 +41,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
      */
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule("rules/DR-SENT-002.yaml",
-            new CustodialPreprocessor(),
+            new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,

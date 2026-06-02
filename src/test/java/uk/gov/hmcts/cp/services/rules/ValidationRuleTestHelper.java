@@ -52,6 +52,17 @@ public final class ValidationRuleTestHelper {
                 .build();
     }
 
+    public static OffenceDto offenceWithCode(String id, int countNumber, String title,
+                                              String offenceCode) {
+        return OffenceDto.builder()
+                .id(id)
+                .offenceCode(offenceCode)
+                .offenceTitle(title)
+                .orderIndex(countNumber)
+                .caseUrn("32AH9105826")
+                .build();
+    }
+
     public static DefendantDto defendant(String id, String firstName, String lastName) {
         return DefendantDto.builder()
                 .id(id)
