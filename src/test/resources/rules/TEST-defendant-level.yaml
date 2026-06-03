@@ -1,0 +1,21 @@
+rule:
+  id: "DR-TEST-DEFENDANT-001"
+  title: "Defendant-level test rule"
+  priority: 9999
+  enabled: true
+
+  preprocessing:
+    type: "custodial-concurrent-consecutive"
+    filterShortCodes:
+      - IMP
+    groupBy: "defendant-then-offence"
+    skipWhenGroupCount: 1
+
+  conditions:
+    - id: "AC1"
+      name: "Defendant has conflicting sentence relationships"
+      expression: "hasBothCount > 0"
+      severity: WARNING
+      messageTemplate: "Defendant ${defendantName} has conflicting sentencing relationships"
+      affectedDefendantSet: "defendantId"
+      validationLevel: DEFENDANT

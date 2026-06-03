@@ -38,7 +38,7 @@ before any second preprocessor type ships — see Constitution Principle III.
 | Defendant            | A person charged. Has an `id`, optional `masterDefendantId`, and a name.                                     |
 | Result line          | A recorded outcome on an offence. Carries a `shortCode` (e.g. `IMP`, `COEW`, `DDOTE`, `wdrn`) and offence linkage. |
 | Validation rule      | A YAML file `DR-*.yaml` containing rule metadata, a `preprocessing` block, and one or more `conditions` (each a CEL expression with a severity and a message template). |
-| Validation issue     | An `ERROR` or `WARNING` produced by a triggered condition. Errors block sharing; warnings advise.            |
+| Validation issue     | An `ERROR` or `WARNING` produced by a triggered condition. Carries `message`, `affectedOffences` (scoped to the specific violation), and `affectedDefendants` (`[{ defendantId }]` for the defendant whose context triggered it). Errors block sharing; warnings advise. |
 | Severity ceiling     | DB row in `validation_rule` (id, enabled, severity) that caps a rule's runtime severity downward. Never promotes. |
 
 ## Rule Engine Flow
@@ -48,9 +48,10 @@ before any second preprocessor type ships — see Constitution Principle III.
 3. `DefaultValidationService.validate()` iterates rules and calls `rule.evaluate(request)`.
 4. `CelValidationRule.evaluate()`:
    - Looks up the preprocessor via the registry using `preprocessing.type`.
-   - Calls `preprocessor.preprocess(request, preprocessingDefinition)` → `Map<String, ContextRecord>`.
+   - Calls `preprocessor.preprocess(request, preprocessingDefinition)` → `Map<defendantId, ContextRecord>` (keyed by defendant ID).
+   - Iterates `entrySet()` — capturing both `defendantId` (key) and context (value).
    - For each context, evaluates every `conditions[].expression` via `CelExpressionEvaluator`.
-   - For triggered conditions, expands `messageTemplate` placeholders via `MessageTemplateResolver` and resolves the named `affectedOffenceSet`.
+   - For triggered conditions, expands `messageTemplate` placeholders via `MessageTemplateResolver`, resolves the named `affectedOffenceSet`, and emits a `ValidationIssue` with `affectedDefendants: [{ defendantId }]` for the triggering defendant.
 5. `RuleOverrideService` checks the `validation_rule` DB table (Caffeine-cached) and applies `SeverityCeiling.resolve()` — capping severity downward only.
 
 ## YAML Rule Schema (summary)
@@ -83,6 +84,24 @@ rule:
    - Add a corresponding context record (extending or sibling to `DefendantContext`) with a `toCelContext()` returning `Map<String, Long>`
    - Add unit tests for the preprocessor and the rule (TDD: write tests first — Constitution Principle VIII)
 3. **Test the YAML:** the `spec-validator` agent compiles every CEL expression, validates the schema, and confirms the `preprocessing.type` resolves to a registered bean.
+
+## Test the framework once, not the rule again (severity ceiling / runtime overrides)
+
+The runtime-override mechanism (`validation_rule` table → `RuleOverrideService` → Caffeine cache → `SeverityCeiling.resolve()` → `CelValidationRule`) is **rule-agnostic**. The same code path executes for every rule. Therefore: **per-rule integration tests of override / severity-ceiling behaviour are duplicative and should be rejected by reviewers.** The mechanism is proven once, against `DR-SENT-002`, in `ValidationRuleOverrideIntegrationTest.java`. New rules (current or future) inherit that coverage without their own override IT.
+
+What a new rule's integration test SHOULD cover:
+
+- Rule-specific input → expected output (the rule's actual logic)
+- Edge cases unique to that rule's preprocessor
+
+What it SHOULD NOT cover (already proven framework-level):
+
+- Inserting a `validation_rule` row with `enabled=false` and asserting suppression.
+- DB severity ceiling capping the YAML severity downward.
+- Severity ceiling refusing to promote.
+- Cache invalidation across runtime row changes.
+
+If the framework-level IT is missing a scenario you need, **extend `ValidationRuleOverrideIntegrationTest.java`** rather than copying it into a new per-rule IT.
 
 ## Out-of-Scope (do not add)
 

@@ -10,6 +10,7 @@ import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +50,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -75,7 +76,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -100,7 +101,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -116,7 +117,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isEmpty();
     }
@@ -131,7 +132,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -147,7 +148,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -164,7 +165,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -180,7 +181,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -202,7 +203,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -219,7 +220,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues).allSatisfy(issue ->
@@ -241,7 +242,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -257,7 +258,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -279,7 +280,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -295,7 +296,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -316,7 +317,7 @@ class CelValidationRuleOverrideTest {
 
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
@@ -334,7 +335,7 @@ class CelValidationRuleOverrideTest {
     void getRuleDetail_should_fallback_to_yaml_when_no_override() {
         CelValidationRule rule = new CelValidationRule(
                 "rules/DR-SENT-002.yaml",
-                new CustodialPreprocessor(),
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,

@@ -28,7 +28,7 @@ class MessageTemplateResolverTest {
                 "off2", offence("off2", 2));
 
         String result = resolver.resolve(
-                "${offenceNumbers} have issues",
+                "${offenceNumber} have issues",
                 "John Smith",
                 List.of("off1", "off2"),
                 offenceMap,
@@ -45,7 +45,7 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
         String result = resolver.resolve(
-                "${defendantName} ${offenceNumbers} have issues",
+                "${defendantName} ${offenceNumber} have issues",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
@@ -63,7 +63,7 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off2", offence("off2", 2));
 
         String result = resolver.resolve(
-                "${offenceNumbers} show issues",
+                "${offenceNumber} show issues",
                 "Jane Doe",
                 List.of("off2"),
                 offenceMap,
@@ -82,7 +82,7 @@ class MessageTemplateResolverTest {
                 "off2", offenceWithUrn("off2", 1, "32AH9105999"));
 
         String result = resolver.resolve(
-                "${offenceNumbers} have issues",
+                "${offenceNumber} have issues",
                 "John Smith",
                 List.of("off1", "off2"),
                 offenceMap,
@@ -102,7 +102,7 @@ class MessageTemplateResolverTest {
                         .offenceTitle("Theft").build());
 
         String result = resolver.resolve(
-                "${offenceNumbers} missing",
+                "${offenceNumber} missing",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
@@ -130,7 +130,7 @@ class MessageTemplateResolverTest {
     @Test
     void resolve_should_use_id_when_offence_not_in_map_and_not_in_list() {
         String result = resolver.resolve(
-                "${offenceNumbers} unknown",
+                "${offenceNumber} unknown",
                 "John Smith",
                 List.of("unknown-id"),
                 Map.of(),
@@ -148,7 +148,7 @@ class MessageTemplateResolverTest {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
         String result = resolver.resolve(
-                "${defendantName} ${offenceNumbers} have issues",
+                "${defendantName} ${offenceNumber} have issues",
                 null,
                 List.of("off1"),
                 offenceMap,
@@ -169,7 +169,7 @@ class MessageTemplateResolverTest {
                 "off3", offence("off3", 3));
 
         String result = resolver.resolve(
-                "${offenceNumbers} have issues",
+                "${offenceNumber} have issues",
                 "John Smith",
                 List.of("off1", "off2", "off3"),
                 offenceMap,
@@ -190,7 +190,7 @@ class MessageTemplateResolverTest {
                 "off2", offence("off2", 2));
 
         String result = resolver.resolve(
-                "${offenceNumbers} have issues",
+                "${offenceNumber} have issues",
                 "John Smith",
                 List.of("off10", "off2"),
                 offenceMap,
@@ -206,7 +206,7 @@ class MessageTemplateResolverTest {
     @Test
     void resolve_should_handle_empty_offence_list() {
         String result = resolver.resolve(
-                "${offenceNumbers} have issues",
+                "${offenceNumber} have issues",
                 "John Smith",
                 List.of(),
                 Map.of(),
