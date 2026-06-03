@@ -17,7 +17,15 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * Preprocesses custodial result lines into per-defendant summaries consumed by CEL conditions.
  */
 @Component
-public class CustodialPreprocessor {
+public class CustodialPreprocessor implements ValidationPreprocessor {
+
+    /** YAML {@code preprocessing.type} qualifier for this preprocessor. */
+    public static final String QUALIFIER = "custodial-concurrent-consecutive";
+
+    @Override
+    public String type() {
+        return QUALIFIER;
+    }
 
     /**
      * Groups custodial result lines by defendant (or master defendant) and derives the offence
@@ -27,6 +35,7 @@ public class CustodialPreprocessor {
      * @param config preprocessing configuration loaded from YAML
      * @return map of defendant grouping key to derived context
      */
+    @Override
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, DefendantContext> preprocess(final DraftValidationRequest request,
                                                      final PreprocessingDefinition config) {

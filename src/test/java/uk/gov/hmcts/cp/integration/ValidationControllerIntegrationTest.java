@@ -50,7 +50,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.mode", is("advisory")))
                 .andExpect(jsonPath("$.errors", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
-                .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002")));
+                .andExpect(jsonPath("$.rulesEvaluated", contains("DR-SENT-002", "DR-DISQ-001")));
     }
 
     /**
@@ -235,5 +235,28 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("not valid json"))
                 .andExpect(status().isBadRequest());
+    }
+    private static final String NO_HEARING_ID_ARRAYS_REQUEST = """
+            {
+               "caseId": "c1",
+              "hearingDay": "2026-03-11",
+              "courtType": "MAGISTRATES",
+              "resultLines": [],
+              "defendants": [],
+              "offences": []
+            }
+            """;
+
+    /**
+     * Verifies invalid JSON with missing field is translated into the standard bad-request response.
+     */
+    @Test
+    void validate_should_return_400_when_no_hearing_id_json() throws Exception {
+        mockMvc.perform(post(VALIDATE_URL)
+                .header("CJSCPPUID", "test-user")
+                .header("CPP-ACTION", "validation-service.validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(NO_HEARING_ID_ARRAYS_REQUEST))
+            .andExpect(status().isBadRequest());
     }
 }
