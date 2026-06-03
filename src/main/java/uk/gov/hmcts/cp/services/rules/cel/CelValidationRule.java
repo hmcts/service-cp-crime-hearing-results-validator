@@ -78,7 +78,7 @@ public class CelValidationRule implements ValidationRule {
 
         if (override.enabled()) {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
-                    .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
+                    .collect(Collectors.toMap(OffenceDto::getOffenceId, o -> o, (a, b) -> a));
 
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());

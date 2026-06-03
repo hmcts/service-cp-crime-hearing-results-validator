@@ -26,7 +26,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_orderIndex_and_no_urn_should_use_order_index() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -40,7 +40,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_orderIndex_and_urn_should_append_urn() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).caseUrn("32AH9105826").build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).caseUrn("32AH9105826").build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -53,7 +53,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_blank_urn_should_omit_urn() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).caseUrn("   ").build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).caseUrn("   ").build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -67,7 +67,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_without_orderIndex_should_fall_back_to_list_position() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off2", OffenceDto.builder().id("off2").build());
+                "off2", OffenceDto.builder().offenceId("off2").build());
 
         String result = helper.resolveDisplayNumber("off2", offenceMap, ALL_OFFENCE_IDS);
 
@@ -102,7 +102,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveOrderIndex_with_orderIndex_should_return_it() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(7).build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(7).build());
 
         assertThat(helper.resolveOrderIndex("off1", offenceMap, ALL_OFFENCE_IDS)).isEqualTo(7);
     }
@@ -113,7 +113,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveOrderIndex_without_orderIndex_should_fall_back_to_list_position() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off3", OffenceDto.builder().id("off3").build());
+                "off3", OffenceDto.builder().offenceId("off3").build());
 
         assertThat(helper.resolveOrderIndex("off3", offenceMap, ALL_OFFENCE_IDS)).isEqualTo(3);
     }
@@ -133,7 +133,7 @@ class OffenceDisplayHelperTest {
     @Test
     void buildAffectedOffences_with_known_offence_should_populate_title() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").offenceTitle("Theft").build());
+                "off1", OffenceDto.builder().offenceId("off1").offenceTitle("Theft").build());
 
         List<AffectedOffence> result = helper.buildAffectedOffences(List.of("off1"), offenceMap);
 
@@ -149,7 +149,7 @@ class OffenceDisplayHelperTest {
     @Test
     void buildAffectedOffences_with_unknown_offence_should_leave_title_null_and_keep_order() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").offenceTitle("Theft").build());
+                "off1", OffenceDto.builder().offenceId("off1").offenceTitle("Theft").build());
 
         List<AffectedOffence> result = helper.buildAffectedOffences(List.of("off1", "offX"), offenceMap);
 

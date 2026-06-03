@@ -55,7 +55,7 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
 
         if (request.getOffences() != null) {
             for (final OffenceDto offence : request.getOffences()) {
-                result.put(offence.getId(),
+                result.put(offence.getOffenceId(),
                         buildContext(offence, resultsByOffence, relevantCodes,
                                 excludedShortCodes, extendedTestShortCodes));
             }
@@ -69,7 +69,7 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
                                                   final Set<String> relevantCodes,
                                                   final Set<String> excludedShortCodes,
                                                   final Set<String> extendedTestShortCodes) {
-        final String offenceId = offence.getId();
+        final String offenceId = offence.getOffenceId();
         final boolean relevant = offence.getOffenceCode() != null
                 && relevantCodes.contains(offence.getOffenceCode().toUpperCase(Locale.ROOT));
 

@@ -54,12 +54,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -90,17 +90,17 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d2", "offenceId": "off1"}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "Alex", "lastName": "Driver"},
-                        {"id": "d2", "firstName": "Sam", "lastName": "Passenger"}
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                        {"defendantId": "d2", "firstName": "Sam", "lastName": "Passenger"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -128,12 +128,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1}
                       ]
                     }
@@ -163,12 +163,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
+                        {"resultLineId": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -193,15 +193,15 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTE", "category": "I",
+                        {"resultLineId": "rl2", "shortCode": "DDOTE", "category": "I",
                          "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -242,19 +242,19 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
+                        {"resultLineId": "rl1", "shortCode": "wdrn", "category": "F", "label": "Withdrawn",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                        {"resultLineId": "rl3", "shortCode": "DDOTE", "category": "I",
                          "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving",
                          "orderIndex": 2}
                       ]
@@ -279,13 +279,13 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "%s", "category": "F",
+                        {"resultLineId": "rl1", "shortCode": "%s", "category": "F",
                          "label": "Excluded outcome",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -315,15 +315,15 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTEL", "category": "I",
+                        {"resultLineId": "rl2", "shortCode": "DDOTEL", "category": "I",
                          "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -348,19 +348,19 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-25",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                        {"resultLineId": "rl3", "shortCode": "DDOTE", "category": "I",
                          "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving",
                          "orderIndex": 2}
                       ]
@@ -395,12 +395,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-28",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "ADJN", "category": "A",
+                        {"resultLineId": "rl1", "shortCode": "ADJN", "category": "A",
                          "label": "Adjourned", "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -426,12 +426,12 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-28",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW",
+                        {"resultLineId": "rl1", "shortCode": "COEW",
                          "label": "Convicted", "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1}
                       ]
                     }
@@ -476,21 +476,21 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off3"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88046",
+                        {"offenceId": "off1", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88526",
+                        {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
                          "orderIndex": 2},
-                        {"id": "off3", "offenceCode": "RT88530",
+                        {"offenceId": "off3", "offenceCode": "RT88530",
                          "offenceTitle": "Causing death by driving: disqualified drivers",
                          "orderIndex": 3}
                       ]
@@ -526,22 +526,22 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d2", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "DDOTE", "category": "I",
+                        {"resultLineId": "rl3", "shortCode": "DDOTE", "category": "I",
                          "label": "Disqual extended test",
                          "defendantId": "d2", "offenceId": "off2"}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "Alex", "lastName": "Driver"},
-                        {"id": "d2", "firstName": "Sam", "lastName": "Passenger"}
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                        {"defendantId": "d2", "firstName": "Sam", "lastName": "Passenger"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88526",
+                        {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
                          "orderIndex": 2}
                       ]
@@ -575,28 +575,28 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl2", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off3"},
-                        {"id": "rl4", "shortCode": "DDOTEL", "category": "I",
+                        {"resultLineId": "rl4", "shortCode": "DDOTEL", "category": "I",
                          "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off3"},
-                        {"id": "rl5", "shortCode": "DISM", "category": "F", "label": "Dismissed",
+                        {"resultLineId": "rl5", "shortCode": "DISM", "category": "F", "label": "Dismissed",
                          "defendantId": "d1", "offenceId": "off4"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving", "orderIndex": 2},
-                        {"id": "off3", "offenceCode": "RT88526",
+                        {"offenceId": "off3", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
                          "orderIndex": 3},
-                        {"id": "off4", "offenceCode": "RT88530",
+                        {"offenceId": "off4", "offenceCode": "RT88530",
                          "offenceTitle": "Causing death by driving: disqualified drivers",
                          "orderIndex": 4}
                       ]
@@ -628,22 +628,22 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "hearingDay": "2026-04-26",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "DDOTE", "category": "I",
+                        {"resultLineId": "rl2", "shortCode": "DDOTE", "category": "I",
                          "label": "Disqual extended test",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                        {"resultLineId": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                          "defendantId": "d1", "offenceId": "off2"},
-                        {"id": "rl4", "shortCode": "DDOTEL", "category": "I",
+                        {"resultLineId": "rl4", "shortCode": "DDOTEL", "category": "I",
                          "label": "Disqual life extended",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "RT88026",
+                        {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "RT88526",
+                        {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
                          "orderIndex": 2}
                       ]
