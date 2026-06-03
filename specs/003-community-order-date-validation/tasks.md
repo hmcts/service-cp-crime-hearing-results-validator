@@ -14,7 +14,7 @@
 
 **Purpose**: Confirm the build is green before any changes land so regressions are detectable immediately.
 
-- [X] T001 Run `./gradlew clean test` and confirm BUILD SUCCESSFUL with 3 rules (DR-SENT-002, DR-DISQ-001, DR-CTL-001) before any code changes
+- [X] T001 Run `./gradlew clean test` and confirm BUILD SUCCESSFUL with 1 rule (DR-SENT-002) before any code changes
 
 ---
 

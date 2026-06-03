@@ -6,9 +6,7 @@ import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
-import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
-import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 
@@ -30,8 +28,6 @@ class ValidationRuleAutoConfigurationTest {
 
     private final PreprocessorRegistry preprocessorRegistry = new PreprocessorRegistry(List.of(
             new CustodialPreprocessor(),
-            new DisqualificationExtendedTestPreprocessor(),
-            new CtlMissingPreprocessor(),
             new CommunityOrderEndDatePreprocessor()));
 
     /**
@@ -62,10 +58,10 @@ class ValidationRuleAutoConfigurationTest {
                 offenceDisplayHelper,
                 mock(RuleOverrideService.class));
 
-        assertThat(rules).hasSize(4);
+        assertThat(rules).hasSize(2);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001");
+                .containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001");
     }
 
     /**

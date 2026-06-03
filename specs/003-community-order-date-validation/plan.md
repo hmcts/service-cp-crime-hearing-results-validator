@@ -183,7 +183,7 @@ Add the 6 new `List<String>` fields. This is a pure data change; existing tests 
 ### Step 6 — Update `ValidationRuleAutoConfigurationTest`
 
 - Add `CommunityOrderEndDatePreprocessor` to the `PreprocessorRegistry` in the test
-- Update `should_create_one_rule_per_yaml_file` assertion: `hasSize(4)`, `containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001")`
+- Update `should_create_one_rule_per_yaml_file` assertion: `hasSize(2)`, `containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001")`
 
 ### Step 7 — Quality gates
 

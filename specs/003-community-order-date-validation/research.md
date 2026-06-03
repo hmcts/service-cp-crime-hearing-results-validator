@@ -13,7 +13,7 @@
 **Rationale**: The error summary says "This affects: Defendant X" — the unit of reporting is the defendant. Grouping per-defendant matches `CustodialPreprocessor`'s approach and allows the CEL variable map (violation counts) and affected offence-id sets to accumulate across all of a defendant's offences in a single pass.
 
 **Alternatives considered**:
-- *Per-offence grouping* (like `CtlMissingPreprocessor`): Rejected — the UI requires a defendant-level error that lists which defendants are affected, not one error per offence. Per-offence would produce up to N errors for N offences with the same violation type on the same defendant.
+- *Per-offence grouping* (Rejected — the UI requires a defendant-level error that lists which defendants are affected, not one error per offence. Per-offence would produce up to N errors for N offences with the same violation type on the same defendant.
 - *Per-(defendant, offence) grouping*: Rejected — adds complexity without gain; the defendant is still the natural error scope.
 
 ---
