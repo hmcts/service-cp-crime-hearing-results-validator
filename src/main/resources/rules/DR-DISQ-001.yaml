@@ -6,7 +6,7 @@ rule:
     result and no DDOTE or DDOTEL extended-test disqualification recorded against
     it.
   priority: 2000
-  enabled: false
+  enabled: true
 
   preprocessing:
     type: "disqualification-extended-test"
