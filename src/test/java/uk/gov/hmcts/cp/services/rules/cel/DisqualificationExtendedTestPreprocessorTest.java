@@ -221,6 +221,28 @@ class DisqualificationExtendedTestPreprocessorTest {
             assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
             assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
         }
+
+        @Test
+        void two_defendants_with_different_relevant_offences_both_missing_ddote_should_each_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d2", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(
+                            offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
+                            offenceWithCode("off2", 2, "Causing serious injury by dangerous driving",
+                                    "RT88526")));
+
+            Map<String, DisqualificationContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("off1", "off2");
+            assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off2").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off1").qualifyingOffenceIds()).containsExactly("off1");
+            assertThat(result.get("off2").qualifyingOffenceIds()).containsExactly("off2");
+        }
     }
 
     @Nested
