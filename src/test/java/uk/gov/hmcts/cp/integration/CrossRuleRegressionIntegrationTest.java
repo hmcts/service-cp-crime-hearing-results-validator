@@ -6,29 +6,28 @@ import org.springframework.http.MediaType;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Cross-rule regression coverage. Proves that DR-SENT-002 and DR-DISQ-001 evaluate
- * independently per Constitution Principle III and FR-011 — each produces its own issue on a
- * single hearing payload that triggers both rules, with no interference.
+ * independently per Constitution Principle III and FR-011.
  *
- * <p>Implements the scenario from {@code research.md} R10. Guards against a future preprocessor
- * dispatch refactor accidentally short-circuiting one rule when the other matches, and against
- * a YAML/CEL change in either rule that silently affects the other.
+ * <p>DR-DISQ-001 is currently disabled (enabled: false in YAML), so the payload includes an
+ * off5 trigger condition (RT88026 + no DDOTE) to confirm the rule is silenced — it must appear
+ * in rulesEvaluated but produce no warnings.
  */
 class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
 
     @Test
-    void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {
+    void hearing_with_sent002_trigger_and_disabled_disq001_should_emit_one_error_no_warnings()
+            throws Exception {
         // off1..off4 — IMP custodial sentences with off1 = primary (first noInfo), off2/off3 noInfo,
         //              off4 concurrent → triggers DR-SENT-002 AC2 ERROR.
-        // off5 — RT88026 + COEW + no DDOTE → triggers DR-DISQ-001 AC1 WARNING.
+        // off5 — RT88026 + COEW + no DDOTE → would trigger DR-DISQ-001 AC1, but rule is disabled.
         String request = """
                 {
                   "hearingId": "h-cross",
@@ -70,10 +69,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.errors", hasSize(1)))
                 .andExpect(jsonPath("$.errors[*].ruleId", contains("DR-SENT-002")))
-                .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[*].ruleId", contains("DR-DISQ-001")))
-                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off5")))
+                .andExpect(jsonPath("$.warnings", hasSize(0)))
                 .andExpect(jsonPath("$.rulesEvaluated",
                         containsInAnyOrder("DR-SENT-002", "DR-DISQ-001")));
     }
