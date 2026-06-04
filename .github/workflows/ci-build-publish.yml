@@ -103,12 +103,12 @@ jobs:
         with:
           gradle-version: current
 
-      - name: Gradle Build
+      - name: Gradle Assemble
         env:
           ARTEFACT_VERSION: ${{ needs.Artefact-Version.outputs.artefact_version }}
         run: |
-          echo "Building with ARTEFACT_VERSION=$ARTEFACT_VERSION"
-          ./gradlew build -x api -DARTEFACT_VERSION=$ARTEFACT_VERSION
+          echo "Assembling JAR with ARTEFACT_VERSION=$ARTEFACT_VERSION"
+          ./gradlew assemble -DARTEFACT_VERSION=$ARTEFACT_VERSION
 
       - name: Extract repo name
         id: repo_vars
@@ -122,6 +122,33 @@ jobs:
         with:
           name: app-jar
           path: build/libs/${{ steps.repo_vars.outputs.artefact_name }}.jar
+
+  Test:
+    needs: [ Artefact-Version ]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: current
+
+      - name: Gradle Check (unit + integration tests, checkstyle, PMD, coverage gate)
+        env:
+          ARTEFACT_VERSION: ${{ needs.Artefact-Version.outputs.artefact_version }}
+        run: |
+          echo "Running checks with ARTEFACT_VERSION=$ARTEFACT_VERSION"
+          ./gradlew check jacocoTestReport -x api -DARTEFACT_VERSION=$ARTEFACT_VERSION
 
       - name: Upload unit and integration test reports
         if: always()
@@ -172,7 +199,7 @@ jobs:
             build/test-results/api/
 
   Provider-Deploy:
-    needs: [ Artefact-Version, Build ]
+    needs: [ Artefact-Version, Build, Test, API-Test ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
