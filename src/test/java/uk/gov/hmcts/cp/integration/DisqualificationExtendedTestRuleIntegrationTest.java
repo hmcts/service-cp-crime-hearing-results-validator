@@ -1,6 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Element-shape assertions then use the regular index path on the pinned-size warnings
  * list. Negative scenarios assert all three are empty.
  */
-@Disabled("DR-DISQ-001 is disabled (enabled: false in YAML) — re-enable when the rule is turned back on")
 class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
