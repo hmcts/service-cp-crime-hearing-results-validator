@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Element-shape assertions then use the regular index path on the pinned-size warnings
  * list. Negative scenarios assert all three are empty.
  */
-class can    extends IntegrationTestBase {
+class DisqualificationExtendedTestRuleIntegrationTest    extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-001')]";
