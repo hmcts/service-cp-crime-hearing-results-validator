@@ -93,22 +93,22 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "hearingDay": "2026-04-26",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off1",
                      "isConcurrent": true, "consecutiveToOffence": "off2"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                    {"resultLineId": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d2", "offenceId": "off3"}
                   ],
                   "defendants": [
-                    {"id": "d1", "firstName": "Alice", "lastName": "Smith"},
-                    {"id": "d2", "firstName": "Bob", "lastName": "Jones"}
+                    {"defendantId": "d1", "firstName": "Alice", "lastName": "Smith"},
+                    {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3}
                   ]
                 }
                 """;
@@ -149,29 +149,29 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "hearingDay": "2026-04-26",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off1",
                      "isConcurrent": true, "consecutiveToOffence": "off2"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d2", "offenceId": "off3",
                      "isConcurrent": true, "consecutiveToOffence": "off4"},
-                    {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d2", "offenceId": "off4"},
-                    {"id": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                    {"resultLineId": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d2", "offenceId": "off5"}
                   ],
                   "defendants": [
-                    {"id": "d1", "firstName": "Alice", "lastName": "Smith"},
-                    {"id": "d2", "firstName": "Bob", "lastName": "Jones"}
+                    {"defendantId": "d1", "firstName": "Alice", "lastName": "Smith"},
+                    {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"id": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
-                    {"id": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
+                    {"offenceId": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5}
                   ]
                 }
                 """;

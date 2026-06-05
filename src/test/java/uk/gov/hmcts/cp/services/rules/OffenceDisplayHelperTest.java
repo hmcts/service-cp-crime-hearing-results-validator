@@ -52,7 +52,7 @@ class OffenceDisplayHelperTest {
         @Test
         void should_include_title_and_message_from_offence_map() {
             OffenceDto offence = OffenceDto.builder()
-                    .id("off1")
+                    .offenceId("off1")
                     .offenceTitle("Theft")
                     .build();
 
