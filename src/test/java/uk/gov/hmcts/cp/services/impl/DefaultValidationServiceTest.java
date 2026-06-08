@@ -51,7 +51,7 @@ class DefaultValidationServiceTest {
     @Test
     void rule_with_error_should_return_invalid_response() {
         ValidationRule errorRule = stubRule("RULE-001",
-                List.of(new ValidationIssueResult(
+                List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
@@ -103,7 +103,7 @@ class DefaultValidationServiceTest {
     @Test
     void multiple_rules_should_be_aggregated() {
         ValidationRule rule1 = stubRule("RULE-001",
-                List.of(new ValidationIssueResult(
+                List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
@@ -158,7 +158,7 @@ class DefaultValidationServiceTest {
                                 .build())));
         ValidationRule throwingRule = stubRule("RULE-002", null);
         ValidationRule rule3 = stubRule("RULE-003",
-                List.of(new ValidationIssueResult(
+                List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
                                 .ruleId("RULE-003")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
@@ -227,7 +227,7 @@ class DefaultValidationServiceTest {
     void validate_returns_disabled_response_when_feature_disabled() {
         FeatureToggleService disabled = featureName -> false;
         ValidationRule rule = stubRule("RULE-001",
-                List.of(new ValidationIssueResult(
+                List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
@@ -259,7 +259,7 @@ class DefaultValidationServiceTest {
     void validate_runs_rules_when_toggle_check_throws() {
         FeatureToggleService broken = featureName -> { throw new RuntimeException("Toggle broken"); };
         ValidationRule rule = stubRule("RULE-001",
-                List.of(new ValidationIssueResult(
+                List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
@@ -275,6 +275,73 @@ class DefaultValidationServiceTest {
         assertThat(response.getMode()).isEqualTo("advisory");
         assertThat(response.getErrors().getValidationIssues()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
+    }
+
+    /**
+     * Verifies that a single defendant name in an error message is rendered as-is (no joining).
+     */
+    @Test
+    void formatDefendantNames_single_name_should_appear_unjoined() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Affects ${defendantNames}.", "Alice")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice.");
+    }
+
+    /**
+     * Verifies two defendant names are joined with " and " and no comma.
+     */
+    @Test
+    void formatDefendantNames_two_names_should_be_joined_with_and() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Bob")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Bob.");
+    }
+
+    /**
+     * Verifies three+ defendant names are comma-separated with a trailing " and ".
+     */
+    @Test
+    void formatDefendantNames_three_names_should_be_comma_separated_with_and() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Bob"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Charlie")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Affects Alice, Bob and Charlie.");
+    }
+
+    private static DraftValidationRequest minimalRequest() {
+        return DraftValidationRequest.builder().hearingId("h1").build();
     }
 
     private static ValidationRule stubRule(String ruleId, List<ValidationIssueResult> results) {

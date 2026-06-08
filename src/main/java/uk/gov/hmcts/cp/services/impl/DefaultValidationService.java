@@ -56,7 +56,7 @@ public class DefaultValidationService implements ValidationService {
         return response;
     }
 
-    @SuppressWarnings({"PMD.AvoidCatchingGenericException", "PMD.AvoidInstantiatingObjectsInLoops"}) // rule failures must not abort; computeIfAbsent allocates lazily, not on every iteration
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
@@ -80,8 +80,7 @@ public class DefaultValidationService implements ValidationService {
                         if (result.errorMessage() != null) {
                             if (result.affectedDefendantName() != null) {
                                 errorBaseByRule.putIfAbsent(ruleId, result.errorMessage());
-                                errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>())
-                                        .add(result.affectedDefendantName());
+                                appendDefendantName(errorNamesByRule, ruleId, result.affectedDefendantName());
                             } else {
                                 standaloneMessages.add(result.errorMessage());
                             }
@@ -143,15 +142,26 @@ public class DefaultValidationService implements ValidationService {
                 .mode("disabled")
                 .rulesEvaluated(List.of())
                 .isValid(true)
-                .errors(ValidationErrors.builder().build())
+                .errors(ValidationErrors.builder()
+                        .validationIssues(List.of())
+                        .errorMessages(List.of())
+                        .build())
                 .warnings(List.of())
                 .processingTimeMs(0)
                 .build();
     }
 
+    private static void appendDefendantName(final Map<String, List<String>> errorNamesByRule,
+                                             final String ruleId,
+                                             final String name) {
+        errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>()).add(name);
+    }
+
     private static String formatDefendantNames(final List<String> names) {
         final String result;
-        if (names.size() == SINGLE_DEFENDANT) {
+        if (names.isEmpty()) {
+            result = "";
+        } else if (names.size() == SINGLE_DEFENDANT) {
             result = names.get(0);
         } else {
             result = String.join(", ", names.subList(0, names.size() - 1))

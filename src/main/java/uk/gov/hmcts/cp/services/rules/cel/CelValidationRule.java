@@ -90,7 +90,7 @@ public class CelValidationRule implements ValidationRule {
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
                     if (evaluator.evaluate(condition.getExpression(), celContext)) {
                         final boolean isDefendantLevel =
-                                "DEFENDANT".equalsIgnoreCase(condition.getValidationLevel());
+                                condition.getValidationLevel() == ValidationLevel.DEFENDANT;
 
                         final List<String> offenceIdsForTemplate =
                                 condition.getAffectedOffenceSet() != null
@@ -151,7 +151,7 @@ public class CelValidationRule implements ValidationRule {
                                         ? context.defendantName()
                                         : null;
 
-                        results.add(new ValidationIssueResult(issueBuilder.build(), errorMessage, affectedDefendantName));
+                        results.add(ValidationIssueResult.forError(issueBuilder.build(), errorMessage, affectedDefendantName));
                     }
                 }
             }

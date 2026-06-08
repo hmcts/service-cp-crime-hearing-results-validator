@@ -175,12 +175,12 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList).hasSize(1);
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
             assertThat(issueList.getFirst().getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
-            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(2);
+            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(1);
         }
 
         /**
-         * Scenario S6 verifies AC3 includes all offences for the defendant group when more than one
-         * offence is marked both concurrent and consecutive.
+         * Scenario S6 verifies AC3 includes only the offences that have both concurrent and
+         * consecutive flags set, not all offences for the defendant group.
          */
         @Test
         @DisplayName("S6: 3 offences – 2 have both → Warning AC3")
@@ -203,7 +203,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList).hasSize(1);
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
             assertThat(issueList.getFirst().getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
-            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(3);
+            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(2);
         }
     }
 
@@ -658,7 +658,7 @@ class CelValidationRuleScenarioTest {
                     .containsOnly(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList).flatExtracting(i -> i.getAffectedOffences()
                     .stream().map(o -> o.getOffenceId()).toList())
-                    .containsExactlyInAnyOrder("off1", "off2", "off3", "off4");
+                    .containsExactlyInAnyOrder("off1", "off3");
         }
     }
 }

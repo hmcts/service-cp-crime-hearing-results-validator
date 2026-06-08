@@ -125,7 +125,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 // DR-SENT-002 has priority 1000 so fires first → warnings[0]
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.warnings[0].validationLevel", is("OFFENCE")))
-                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(2)))
+                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
                 // DR-DISQ-001 has priority 2000 so fires second → warnings[1]
                 .andExpect(jsonPath("$.warnings[1].ruleId", is("DR-DISQ-001")))
