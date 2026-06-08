@@ -112,6 +112,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
             allNoInfoOffenceIds.addAll(noInfoOffenceIds);
 
             result.put(groupKey, new DefendantContext(
+                    groupKey,
                     defendantNames.getOrDefault(groupKey, "Unknown"),
                     noInfoOffenceIds.size(),
                     offencesWithInfo.size(),
