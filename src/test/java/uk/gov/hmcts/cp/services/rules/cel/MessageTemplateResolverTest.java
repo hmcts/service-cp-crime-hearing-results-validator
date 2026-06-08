@@ -215,6 +215,52 @@ class MessageTemplateResolverTest {
         assertThat(result).isEqualTo(" have issues");
     }
 
+    /**
+     * Verifies that a single defendant name in a ${defendantNames} template is rendered as-is.
+     */
+    @Test
+    void resolveDefendantNames_single_name_should_appear_unjoined() {
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice"));
+        assertThat(result).isEqualTo("Affects Alice.");
+    }
+
+    /**
+     * Verifies two names are joined with " and " and no comma.
+     */
+    @Test
+    void resolveDefendantNames_two_names_should_be_joined_with_and() {
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice", "Bob"));
+        assertThat(result).isEqualTo("Affects Alice and Bob.");
+    }
+
+    /**
+     * Verifies three+ names are comma-separated with a trailing " and ".
+     */
+    @Test
+    void resolveDefendantNames_three_names_should_be_comma_separated_with_and() {
+        String result = resolver.resolveDefendantNames(
+                "Affects ${defendantNames}.", List.of("Alice", "Bob", "Charlie"));
+        assertThat(result).isEqualTo("Affects Alice, Bob and Charlie.");
+    }
+
+    /**
+     * Verifies an empty list produces an empty string in place of the placeholder.
+     */
+    @Test
+    void resolveDefendantNames_empty_list_should_produce_empty_string() {
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of());
+        assertThat(result).isEqualTo("Affects .");
+    }
+
+    /**
+     * Verifies a template without the placeholder is returned unchanged.
+     */
+    @Test
+    void resolveDefendantNames_no_placeholder_should_return_unchanged() {
+        String template = "No placeholder here.";
+        assertThat(resolver.resolveDefendantNames(template, List.of("Alice"))).isEqualTo(template);
+    }
+
     private static OffenceDto offence(String id, int orderIndex) {
         return OffenceDto.builder()
                 .offenceId(id)

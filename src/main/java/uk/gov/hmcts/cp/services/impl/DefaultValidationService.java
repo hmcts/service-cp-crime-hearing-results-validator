@@ -20,6 +20,7 @@ import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
+import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
 /**
  * Runs every configured validation rule and aggregates their issues into the API response.
@@ -28,17 +29,18 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 @Slf4j
 public class DefaultValidationService implements ValidationService {
 
-    private static final int SINGLE_DEFENDANT = 1;
-
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
+    private final MessageTemplateResolver messageTemplateResolver;
 
-    /** Creates the service with the given rules and feature toggle. */
+    /** Creates the service with the given rules, feature toggle, and template resolver. */
     public DefaultValidationService(
             @Qualifier("validationRules") final List<ValidationRule> rules,
-            final FeatureToggleService featureToggleService) {
+            final FeatureToggleService featureToggleService,
+            final MessageTemplateResolver messageTemplateResolver) {
         this.rules = rules;
         this.featureToggleService = featureToggleService;
+        this.messageTemplateResolver = messageTemplateResolver;
     }
 
     @Override
@@ -100,8 +102,7 @@ public class DefaultValidationService implements ValidationService {
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
         for (final Map.Entry<String, String> entry : errorBaseByRule.entrySet()) {
             final List<String> names = errorNamesByRule.get(entry.getKey());
-            errorMessages.add(entry.getValue().replace(
-                    "${defendantNames}", formatDefendantNames(names)));
+            errorMessages.add(messageTemplateResolver.resolveDefendantNames(entry.getValue(), names));
         }
 
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
@@ -155,18 +156,5 @@ public class DefaultValidationService implements ValidationService {
                                              final String ruleId,
                                              final String name) {
         errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>()).add(name);
-    }
-
-    private static String formatDefendantNames(final List<String> names) {
-        final String result;
-        if (names.isEmpty()) {
-            result = "";
-        } else if (names.size() == SINGLE_DEFENDANT) {
-            result = names.get(0);
-        } else {
-            result = String.join(", ", names.subList(0, names.size() - 1))
-                    + " and " + names.get(names.size() - 1);
-        }
-        return result;
     }
 }
