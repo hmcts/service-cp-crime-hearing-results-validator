@@ -402,6 +402,25 @@ class CelValidationRuleTest {
     }
 
     /**
+     * Verifies that a rule YAML defining errorMessageTemplate on more than one condition is rejected
+     * at construction time. DefaultValidationService groups error messages by rule id using
+     * putIfAbsent semantics, so only one condition per rule may carry an errorMessageTemplate.
+     */
+    @Test
+    void constructor_should_throw_when_multiple_conditions_have_errorMessageTemplate() {
+        assertThatThrownBy(() -> new CelValidationRule(
+                "rules/TEST-duplicate-error-template.yaml",
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("DR-TEST-DUPLICATE-ERRTEMPLATE-001")
+                .hasMessageContaining("errorMessageTemplate");
+    }
+
+    /**
      * Verifies that a YAML rule referencing an unregistered preprocessor qualifier fails fast at
      * construction time rather than deferring the failure to the first validation request.
      */

@@ -81,6 +81,9 @@ public class DefaultValidationService implements ValidationService {
                         errorItemsList.add(result.issue());
                         if (result.errorMessage() != null) {
                             if (result.affectedDefendantName() != null) {
+                                // First-wins: CelValidationRule enforces at most one errorMessageTemplate
+                                // per rule at startup, so only one result per ruleId carries a non-null
+                                // errorMessage here. putIfAbsent is a safety net, not a design choice.
                                 errorBaseByRule.putIfAbsent(ruleId, result.errorMessage());
                                 appendDefendantName(errorNamesByRule, ruleId, result.affectedDefendantName());
                             } else {
