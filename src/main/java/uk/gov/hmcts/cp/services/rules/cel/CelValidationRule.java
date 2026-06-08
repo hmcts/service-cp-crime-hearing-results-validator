@@ -49,6 +49,20 @@ public class CelValidationRule implements ValidationRule {
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
         preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
+        validateAtMostOneErrorMessageTemplate(this.ruleDefinition);
+    }
+
+    private static void validateAtMostOneErrorMessageTemplate(final RuleDefinition definition) {
+        final long count = definition.getConditions().stream()
+                .filter(c -> c.getErrorMessageTemplate() != null)
+                .count();
+        if (count > 1) {
+            throw new IllegalStateException(
+                    "Rule " + definition.getId() + " defines errorMessageTemplate on " + count
+                            + " conditions. At most one condition per rule may use errorMessageTemplate"
+                            + " because DefaultValidationService groups error messages by rule id"
+                            + " and only the first base message is retained (putIfAbsent semantics).");
+        }
     }
 
     @Override
