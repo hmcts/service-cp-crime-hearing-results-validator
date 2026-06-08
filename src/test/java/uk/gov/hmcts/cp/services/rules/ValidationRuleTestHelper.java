@@ -24,7 +24,7 @@ public final class ValidationRuleTestHelper {
     public static ResultLineDto resultLine(String id, String shortCode,
                                             String defendantId, String offenceId) {
         return ResultLineDto.builder()
-                .id(id)
+                .resultLineId(id)
                 .shortCode(shortCode)
                 .label(shortCode + " label")
                 .defendantId(defendantId)
@@ -34,7 +34,7 @@ public final class ValidationRuleTestHelper {
 
     public static OffenceDto offence(String id, int countNumber, String title) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle(title)
                 .orderIndex(countNumber)
@@ -44,7 +44,7 @@ public final class ValidationRuleTestHelper {
 
     public static OffenceDto offence(String id, int countNumber, String title, String caseUrn) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle(title)
                 .orderIndex(countNumber)
@@ -54,7 +54,7 @@ public final class ValidationRuleTestHelper {
 
     public static DefendantDto defendant(String id, String firstName, String lastName) {
         return DefendantDto.builder()
-                .id(id)
+                .defendantId(id)
                 .firstName(firstName)
                 .lastName(lastName)
                 .build();
