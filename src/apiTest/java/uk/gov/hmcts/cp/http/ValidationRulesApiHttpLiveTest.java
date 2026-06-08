@@ -48,8 +48,7 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(json.get("rules")).hasSize(2);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
-        assertThat(ruleIds).containsExactlyInAnyOrder(
-                "DR-SENT-002", "DR-COEW-001");
+        assertThat(ruleIds).containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001");
     }
 
     /**

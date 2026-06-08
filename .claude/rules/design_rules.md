@@ -38,7 +38,7 @@ before any second preprocessor type ships — see Constitution Principle III.
 | Defendant            | A person charged. Has an `id`, optional `masterDefendantId`, and a name.                                     |
 | Result line          | A recorded outcome on an offence. Carries a `shortCode` (e.g. `IMP`, `COEW`, `DDOTE`, `wdrn`) and offence linkage. |
 | Validation rule      | A YAML file `DR-*.yaml` containing rule metadata, a `preprocessing` block, and one or more `conditions` (each a CEL expression with a severity and a message template). |
-| Validation issue     | An `ERROR` or `WARNING` produced by a triggered condition. Carries `message`, `affectedOffences` (scoped to the specific violation), and `affectedDefendants` (`[{ defendantId }]` for the defendant whose context triggered it). Errors block sharing; warnings advise. |
+| Validation issue     | An `ERROR` or `WARNING` produced by a triggered condition. Errors block sharing; warnings advise.            |
 | Severity ceiling     | DB row in `validation_rule` (id, enabled, severity) that caps a rule's runtime severity downward. Never promotes. |
 
 ## Rule Engine Flow
@@ -48,10 +48,9 @@ before any second preprocessor type ships — see Constitution Principle III.
 3. `DefaultValidationService.validate()` iterates rules and calls `rule.evaluate(request)`.
 4. `CelValidationRule.evaluate()`:
    - Looks up the preprocessor via the registry using `preprocessing.type`.
-   - Calls `preprocessor.preprocess(request, preprocessingDefinition)` → `Map<defendantId, ContextRecord>` (keyed by defendant ID).
-   - Iterates `entrySet()` — capturing both `defendantId` (key) and context (value).
+   - Calls `preprocessor.preprocess(request, preprocessingDefinition)` → `Map<String, ContextRecord>`.
    - For each context, evaluates every `conditions[].expression` via `CelExpressionEvaluator`.
-   - For triggered conditions, expands `messageTemplate` placeholders via `MessageTemplateResolver`, resolves the named `affectedOffenceSet`, and emits a `ValidationIssue` with `affectedDefendants: [{ defendantId }]` for the triggering defendant.
+   - For triggered conditions, expands `messageTemplate` placeholders via `MessageTemplateResolver` and resolves the named `affectedOffenceSet`.
 5. `RuleOverrideService` checks the `validation_rule` DB table (Caffeine-cached) and applies `SeverityCeiling.resolve()` — capping severity downward only.
 
 ## YAML Rule Schema (summary)

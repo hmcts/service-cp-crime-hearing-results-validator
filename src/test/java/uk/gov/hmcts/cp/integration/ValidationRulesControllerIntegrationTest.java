@@ -28,8 +28,7 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.count", is(2)))
                 .andExpect(jsonPath("$.enabledCount", is(2)))
                 .andExpect(jsonPath("$.rules", hasSize(2)))
-                .andExpect(jsonPath("$.rules[*].ruleId",
-                        contains("DR-SENT-002", "DR-COEW-001")));
+                .andExpect(jsonPath("$.rules[*].ruleId", contains("DR-SENT-002", "DR-COEW-001")));
     }
 
     /**

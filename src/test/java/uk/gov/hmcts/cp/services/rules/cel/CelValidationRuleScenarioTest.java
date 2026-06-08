@@ -553,8 +553,8 @@ class CelValidationRuleScenarioTest {
         /**
          * Scenario S20: AC2 fires for two separate defendants in the same hearing. Each defendant
          * has two custodial offences with no concurrent/consecutive info. This must produce two
-         * independent OFFENCE-level errors — one scoped to Def1, one scoped to Def2 — each
-         * carrying affectedOffences for their own defendant's offences and no affectedDefendants.
+         * independent DEFENDANT-level errors — one scoped to Def1, one scoped to Def2 — with no
+         * affectedOffences populated on either issue.
          */
         @Test
         @DisplayName("S20: Def1 off1+off2 all no-info, Def2 off3+off4 all no-info → 2 independent AC2 errors, validationLevel DEFENDANT")

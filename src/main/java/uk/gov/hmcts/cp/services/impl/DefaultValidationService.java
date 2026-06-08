@@ -62,9 +62,7 @@ public class DefaultValidationService implements ValidationService {
         final long startNanos = System.nanoTime();
 
         final List<String> rulesEvaluated = new ArrayList<>();
-        // Keyed by the raw errorMessage template — each distinct template produces one
-        // combined summary line, with all triggering defendant names joined into ${defendantNames}.
-        final Map<String, List<String>> errorNamesByTemplate = new LinkedHashMap<>();
+        final Map<String, List<String>> namesByTemplate = new LinkedHashMap<>();
         final List<String> standaloneMessages = new ArrayList<>();
         final List<ValidationIssue> errorItemsList = new ArrayList<>();
         final List<ValidationIssue> warnings = new ArrayList<>();
@@ -80,7 +78,8 @@ public class DefaultValidationService implements ValidationService {
                         errorItemsList.add(result.issue());
                         if (result.errorMessage() != null) {
                             if (result.affectedDefendantName() != null) {
-                                errorNamesByTemplate.computeIfAbsent(result.errorMessage(), k -> new ArrayList<>())
+                                namesByTemplate
+                                        .computeIfAbsent(result.errorMessage(), k -> new ArrayList<>())
                                         .add(result.affectedDefendantName());
                             } else {
                                 standaloneMessages.add(result.errorMessage());
@@ -99,7 +98,7 @@ public class DefaultValidationService implements ValidationService {
         }
 
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
-        for (final Map.Entry<String, List<String>> entry : errorNamesByTemplate.entrySet()) {
+        for (final Map.Entry<String, List<String>> entry : namesByTemplate.entrySet()) {
             errorMessages.add(entry.getKey().replace(
                     "${defendantNames}", formatDefendantNames(entry.getValue())));
         }
@@ -149,13 +148,13 @@ public class DefaultValidationService implements ValidationService {
     }
 
     private static String formatDefendantNames(final List<String> names) {
-        final String formatted;
+        final String result;
         if (names.size() == SINGLE_DEFENDANT) {
-            formatted = names.get(0);
+            result = names.get(0);
         } else {
-            formatted = String.join(", ", names.subList(0, names.size() - 1))
+            result = String.join(", ", names.subList(0, names.size() - 1))
                     + " and " + names.get(names.size() - 1);
         }
-        return formatted;
+        return result;
     }
 }
