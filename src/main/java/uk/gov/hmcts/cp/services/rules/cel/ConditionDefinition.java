@@ -19,5 +19,8 @@ public class ConditionDefinition {
     private String expression;
     private String severity;
     private String messageTemplate;
+    private String errorMessageTemplate;
     private String affectedOffenceSet;
+    private String affectedDefendantSet;
+    private String validationLevel;
 }

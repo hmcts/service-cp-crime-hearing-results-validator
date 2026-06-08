@@ -44,12 +44,12 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                          "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                       ]
                     }
@@ -61,12 +61,12 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-CTL-001")))
                     .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
-                    .andExpect(jsonPath("$.warnings[0].message", is(EXPECTED_MESSAGE)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(EXPECTED_MESSAGE)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
@@ -84,12 +84,12 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                          "orderIndex": 1, "hasExistingCtlRecord": true, "isConvicted": false}
                       ]
                     }
@@ -101,7 +101,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -114,14 +114,14 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "CTL", "label": "Custody time limit",
+                        {"resultLineId": "rl2", "shortCode": "CTL", "label": "Custody time limit",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                          "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                       ]
                     }
@@ -133,7 +133,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -146,12 +146,12 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                          "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": true}
                       ]
                     }
@@ -163,7 +163,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -176,12 +176,12 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                        {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                          "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                       ]
                     }
@@ -193,7 +193,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
                     .andExpect(jsonPath("$.warnings", hasSize(0)));
         }
@@ -211,16 +211,16 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-06",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl2", "shortCode": "RI", "label": "Remand in custody",
+                        {"resultLineId": "rl2", "shortCode": "RI", "label": "Remand in custody",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft A",
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft A",
                          "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false},
-                        {"id": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft B",
+                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft B",
                          "orderIndex": 2, "hasExistingCtlRecord": true, "isConvicted": false}
                       ]
                     }
@@ -232,7 +232,7 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));

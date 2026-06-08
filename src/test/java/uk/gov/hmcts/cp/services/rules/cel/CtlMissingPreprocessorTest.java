@@ -182,7 +182,7 @@ class CtlMissingPreprocessorTest {
         @Test
         void null_hasExistingCtlRecord_should_default_to_false_and_not_suppress_warning() {
             OffenceDto offence = OffenceDto.builder()
-                    .id("off1")
+                    .offenceId("off1")
                     .offenceCode("TH68001")
                     .offenceTitle("Offence")
                     .orderIndex(1)
@@ -201,7 +201,7 @@ class CtlMissingPreprocessorTest {
         @Test
         void null_isConvicted_should_default_to_false_and_not_suppress_warning() {
             OffenceDto offence = OffenceDto.builder()
-                    .id("off1")
+                    .offenceId("off1")
                     .offenceCode("TH68001")
                     .offenceTitle("Offence")
                     .orderIndex(1)
