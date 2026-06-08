@@ -6,8 +6,10 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
+import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DefaultValidationServiceTest {
 
     private static final FeatureToggleService ALWAYS_ENABLED = featureName -> true;
+    private static final MessageTemplateResolver RESOLVER =
+            new MessageTemplateResolver(new OffenceDisplayHelper());
 
     /**
      * Verifies the baseline response when no rules are configured: the request is valid, no issues
@@ -27,7 +31,7 @@ class DefaultValidationServiceTest {
      */
     @Test
     void no_rules_should_return_valid_response() {
-        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -57,7 +61,7 @@ class DefaultValidationServiceTest {
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
                         "Test error", null)));
-        DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -83,7 +87,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-002")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
                                 .build())));
-        DefaultValidationService service = new DefaultValidationService(List.of(warningRule), ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(List.of(warningRule), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -115,7 +119,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-002")
                                 .severity(ValidationIssue.SeverityEnum.WARNING)
                                 .build())));
-        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(List.of(rule1, rule2), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -134,7 +138,7 @@ class DefaultValidationServiceTest {
      */
     @Test
     void validate_should_generate_unique_validation_ids() {
-        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -165,7 +169,7 @@ class DefaultValidationServiceTest {
                                 .build(),
                         "Error from rule 3", null)));
         DefaultValidationService service = new DefaultValidationService(
-                List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED);
+                List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -208,7 +212,7 @@ class DefaultValidationServiceTest {
         List<ValidationRule> sorted = new ArrayList<>(List.of(lowPriority, highPriority, medPriority));
         sorted.sort(java.util.Comparator.comparingInt(r -> r.getRuleDetail().getPriority()));
 
-        DefaultValidationService service = new DefaultValidationService(sorted, ALWAYS_ENABLED);
+        DefaultValidationService service = new DefaultValidationService(sorted, ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -233,7 +237,7 @@ class DefaultValidationServiceTest {
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
                         "Should not appear", null)));
-        DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled);
+        DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -265,7 +269,7 @@ class DefaultValidationServiceTest {
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
                         "Error found", null)));
-        DefaultValidationService service = new DefaultValidationService(List.of(rule), broken);
+        DefaultValidationService service = new DefaultValidationService(List.of(rule), broken, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
                 .build();
@@ -288,7 +292,7 @@ class DefaultValidationServiceTest {
                                 .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                         "Affects ${defendantNames}.", "Alice")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
         assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice.");
     }
@@ -309,7 +313,7 @@ class DefaultValidationServiceTest {
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                                 "Affects ${defendantNames}.", "Bob")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
         assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Bob.");
     }
@@ -334,7 +338,7 @@ class DefaultValidationServiceTest {
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                                 "Affects ${defendantNames}.", "Charlie")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
         assertThat(response.getErrors().getErrorMessages())
                 .containsExactly("Affects Alice, Bob and Charlie.");

@@ -364,6 +364,44 @@ class CelValidationRuleTest {
     }
 
     /**
+     * Verifies that a DEFENDANT-level condition with ERROR severity preserves the DEFENDANT
+     * validation level rather than silently demoting it to OFFENCE.
+     */
+    @Test
+    void defendant_level_error_condition_should_preserve_defendant_level() {
+        CelValidationRule defendantErrorRule = new CelValidationRule(
+                "rules/TEST-defendant-level-error.yaml",
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
+
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")
+                ),
+                List.of(
+                        offence("off1", 1, "Theft"),
+                        offence("off2", 2, "Assault")
+                )
+        );
+        request.getResultLines().get(1).setIsConcurrent(true);
+        request.getResultLines().get(1).setConsecutiveToOffence("off1");
+
+        List<ValidationIssueResult> results = defendantErrorRule.evaluate(request);
+
+        assertThat(results).hasSize(1);
+        ValidationIssue issue = results.getFirst().issue();
+        assertThat(issue.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issue.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.DEFENDANT);
+        assertThat(issue.getAffectedDefendants()).hasSize(1);
+        assertThat(issue.getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issue.getAffectedOffences()).isNullOrEmpty();
+    }
+
+    /**
      * Verifies that a YAML rule referencing an unregistered preprocessor qualifier fails fast at
      * construction time rather than deferring the failure to the first validation request.
      */
