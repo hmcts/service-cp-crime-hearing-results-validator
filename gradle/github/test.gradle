@@ -25,6 +25,7 @@ tasks.named('test') {
 
 tasks.named('jacocoTestReport') {
   dependsOn tasks.named('test')
+  mustRunAfter tasks.named('api')
   executionData fileTree(
     dir: layout.buildDirectory.dir("jacoco").get().asFile,
     include: ["*.exec"]
@@ -42,6 +43,7 @@ tasks.named('jacocoTestReport') {
 // them as coverage improves.
 tasks.named('jacocoTestCoverageVerification') {
   dependsOn tasks.named('test')
+  mustRunAfter tasks.named('api')
   executionData fileTree(
     dir: layout.buildDirectory.dir("jacoco").get().asFile,
     include: ["*.exec"]
