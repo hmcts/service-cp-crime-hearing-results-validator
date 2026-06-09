@@ -344,6 +344,30 @@ class DefaultValidationServiceTest {
                 .containsExactly("Affects Alice, Bob and Charlie.");
     }
 
+    /**
+     * Verifies that two conditions on the same rule, each with a distinct errorMessageTemplate,
+     * each produce their own error message independently. Previously putIfAbsent keyed by ruleId
+     * silently dropped the second template's message.
+     */
+    @Test
+    void rule_with_two_different_errorMessageTemplates_should_produce_separate_error_messages() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Condition A affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Condition B affects ${defendantNames}.", "Bob")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Condition A affects Alice.", "Condition B affects Bob.");
+    }
+
     private static DraftValidationRequest minimalRequest() {
         return DraftValidationRequest.builder().hearingId("h1").build();
     }
