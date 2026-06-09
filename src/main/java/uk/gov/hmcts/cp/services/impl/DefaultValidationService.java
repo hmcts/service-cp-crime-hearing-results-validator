@@ -64,8 +64,8 @@ public class DefaultValidationService implements ValidationService {
         final long startNanos = System.nanoTime();
 
         final List<String> rulesEvaluated = new ArrayList<>();
-        final Map<String, String> errorBaseByRule = new LinkedHashMap<>();
-        final Map<String, List<String>> errorNamesByRule = new LinkedHashMap<>();
+        final Map<String, String> errorBaseByTemplate = new LinkedHashMap<>();
+        final Map<String, List<String>> errorNamesByTemplate = new LinkedHashMap<>();
         final List<String> standaloneMessages = new ArrayList<>();
         final List<ValidationIssue> errorItemsList = new ArrayList<>();
         final List<ValidationIssue> warnings = new ArrayList<>();
@@ -81,8 +81,9 @@ public class DefaultValidationService implements ValidationService {
                         errorItemsList.add(result.issue());
                         if (result.errorMessage() != null) {
                             if (result.affectedDefendantName() != null) {
-                                errorBaseByRule.putIfAbsent(ruleId, result.errorMessage());
-                                appendDefendantName(errorNamesByRule, ruleId, result.affectedDefendantName());
+                                final String templateKey = ruleId + "::" + result.errorMessage();
+                                errorBaseByTemplate.putIfAbsent(templateKey, result.errorMessage());
+                                appendDefendantName(errorNamesByTemplate, templateKey, result.affectedDefendantName());
                             } else {
                                 standaloneMessages.add(result.errorMessage());
                             }
@@ -100,8 +101,8 @@ public class DefaultValidationService implements ValidationService {
         }
 
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
-        for (final Map.Entry<String, String> entry : errorBaseByRule.entrySet()) {
-            final List<String> names = errorNamesByRule.get(entry.getKey());
+        for (final Map.Entry<String, String> entry : errorBaseByTemplate.entrySet()) {
+            final List<String> names = errorNamesByTemplate.get(entry.getKey());
             errorMessages.add(messageTemplateResolver.resolveDefendantNames(entry.getValue(), names));
         }
 
