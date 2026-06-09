@@ -34,8 +34,8 @@ public class CelValidationRule implements ValidationRule {
     /**
      * Constructs the rule from a YAML path and the required collaborators. Fails fast at
      * construction time if the YAML's {@code preprocessing.type} qualifier does not resolve in
-     * the registry, surfacing the misconfiguration at application boot rather than on the first
-     * validation request.
+     * the registry or if any condition is missing its {@code id} field, surfacing
+     * misconfigurations at application boot rather than on the first validation request.
      */
     public CelValidationRule(final String rulePath,
                              final PreprocessorRegistry preprocessorRegistry,
@@ -44,6 +44,15 @@ public class CelValidationRule implements ValidationRule {
                              final OffenceDisplayHelper offenceDisplayHelper,
                              final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
+        if (ruleDefinition.getConditions() != null) {
+            for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
+                if (condition.getId() == null || condition.getId().isBlank()) {
+                    throw new IllegalArgumentException(
+                            "Rule " + ruleDefinition.getId()
+                                    + " has a condition with a missing or blank id in: " + rulePath);
+                }
+            }
+        }
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
@@ -120,10 +129,11 @@ public class CelValidationRule implements ValidationRule {
                                     offenceIdsForTemplate,
                                     offenceMap,
                                     context.allOffenceIds());
+                            final List<String> defendantIds = condition.getAffectedDefendantSet() != null
+                                    ? context.getDefendantIdSet(condition.getAffectedDefendantSet())
+                                    : List.of();
                             issueBuilder.affectedDefendants(
-                                    offenceDisplayHelper.buildAffectedDefendants(
-                                            context.getDefendantIdSet(condition.getAffectedDefendantSet()),
-                                            message));
+                                    offenceDisplayHelper.buildAffectedDefendants(defendantIds, message));
                         } else {
                             issueBuilder.affectedOffences(
                                     offenceDisplayHelper.buildAffectedOffences(
@@ -152,7 +162,8 @@ public class CelValidationRule implements ValidationRule {
                                         : null;
 
                         if (isError) {
-                            results.add(ValidationIssueResult.forError(issueBuilder.build(), errorMessage, affectedDefendantName));
+                            results.add(ValidationIssueResult.forError(
+                                    issueBuilder.build(), errorMessage, affectedDefendantName, condition.getId()));
                         } else {
                             results.add(ValidationIssueResult.forWarning(issueBuilder.build()));
                         }

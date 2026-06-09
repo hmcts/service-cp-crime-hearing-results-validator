@@ -402,6 +402,24 @@ class CelValidationRuleTest {
     }
 
     /**
+     * Verifies that a YAML rule whose condition omits the {@code id:} field fails fast at
+     * construction time. The condition id is the aggregation key in DefaultValidationService;
+     * a missing id would silently corrupt defendant-name grouping at request time.
+     */
+    @Test
+    void constructor_should_throw_when_condition_id_is_missing() {
+        assertThatThrownBy(() -> new CelValidationRule(
+                "rules/TEST-missing-condition-id.yaml",
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("missing or blank id");
+    }
+
+    /**
      * Verifies that a YAML rule referencing an unregistered preprocessor qualifier fails fast at
      * construction time rather than deferring the failure to the first validation request.
      */

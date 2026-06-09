@@ -60,7 +60,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
-                        "Test error", null)));
+                        "Test error", null, null)));
         DefaultValidationService service = new DefaultValidationService(List.of(errorRule), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -112,7 +112,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
-                        "Error from rule 1", null)));
+                        "Error from rule 1", null, null)));
         ValidationRule rule2 = stubRule("RULE-002",
                 List.of(ValidationIssueResult.forWarning(
                         ValidationIssue.builder()
@@ -167,7 +167,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-003")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
-                        "Error from rule 3", null)));
+                        "Error from rule 3", null, null)));
         DefaultValidationService service = new DefaultValidationService(
                 List.of(rule1, throwingRule, rule3), ALWAYS_ENABLED, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
@@ -236,7 +236,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
-                        "Should not appear", null)));
+                        "Should not appear", null, null)));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), disabled, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -268,7 +268,7 @@ class DefaultValidationServiceTest {
                                 .ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR)
                                 .build(),
-                        "Error found", null)));
+                        "Error found", null, null)));
         DefaultValidationService service = new DefaultValidationService(List.of(rule), broken, RESOLVER);
         DraftValidationRequest request = DraftValidationRequest.builder()
                 .hearingId("h1")
@@ -290,7 +290,7 @@ class DefaultValidationServiceTest {
                 List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder().ruleId("RULE-001")
                                 .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                        "Affects ${defendantNames}.", "Alice")));
+                        "Affects ${defendantNames}.", "Alice", "AC1")));
         DraftValidationResponse response = new DefaultValidationService(
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
@@ -307,11 +307,11 @@ class DefaultValidationServiceTest {
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Alice"),
+                                "Affects ${defendantNames}.", "Alice", "AC1"),
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Bob")));
+                                "Affects ${defendantNames}.", "Bob", "AC1")));
         DraftValidationResponse response = new DefaultValidationService(
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
@@ -328,15 +328,15 @@ class DefaultValidationServiceTest {
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Alice"),
+                                "Affects ${defendantNames}.", "Alice", "AC1"),
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Bob"),
+                                "Affects ${defendantNames}.", "Bob", "AC1"),
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Charlie")));
+                                "Affects ${defendantNames}.", "Charlie", "AC1")));
         DraftValidationResponse response = new DefaultValidationService(
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 
@@ -356,11 +356,11 @@ class DefaultValidationServiceTest {
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Condition A affects ${defendantNames}.", "Alice"),
+                                "Condition A affects ${defendantNames}.", "Alice", "AC1"),
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Condition B affects ${defendantNames}.", "Bob")));
+                                "Condition B affects ${defendantNames}.", "Bob", "AC2")));
         DraftValidationResponse response = new DefaultValidationService(
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
 

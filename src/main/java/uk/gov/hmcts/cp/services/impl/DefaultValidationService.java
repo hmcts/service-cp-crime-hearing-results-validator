@@ -81,7 +81,7 @@ public class DefaultValidationService implements ValidationService {
                         errorItemsList.add(result.issue());
                         if (result.errorMessage() != null) {
                             if (result.affectedDefendantName() != null) {
-                                final String templateKey = ruleId + "::" + result.errorMessage();
+                                final String templateKey = ruleId + "::" + result.conditionId();
                                 errorBaseByTemplate.putIfAbsent(templateKey, result.errorMessage());
                                 appendDefendantName(errorNamesByTemplate, templateKey, result.affectedDefendantName());
                             } else {
