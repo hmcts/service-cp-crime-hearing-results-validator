@@ -159,7 +159,7 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(1).get("message").asText())
+        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
                 .startsWith("John Doe")
                 .contains("Offence 2").contains("concurrent").contains("consecutive");
     }
