@@ -30,7 +30,7 @@ rule:
       severity: WARNING
       messageTemplate: >-
         ${defendantName} ${offenceNumber} — This offence has both concurrent and consecutive information. Check this is correct before sharing
-      affectedOffenceSet: "allOffenceIds"
+      affectedOffenceSet: "hasBothOffenceIds"
       validationLevel: OFFENCE
 
     - id: "AC2"
