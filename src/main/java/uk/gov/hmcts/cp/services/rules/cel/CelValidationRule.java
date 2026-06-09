@@ -23,8 +23,6 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 @Slf4j
 public class CelValidationRule implements ValidationRule {
 
-    private static final long MAX_ERROR_MESSAGE_TEMPLATES = 1;
-
     private final RuleDefinition ruleDefinition;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
@@ -51,20 +49,6 @@ public class CelValidationRule implements ValidationRule {
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
         preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
-        validateAtMostOneErrorMessageTemplate(this.ruleDefinition);
-    }
-
-    private static void validateAtMostOneErrorMessageTemplate(final RuleDefinition definition) {
-        final long count = definition.getConditions().stream()
-                .filter(c -> c.getErrorMessageTemplate() != null)
-                .count();
-        if (count > MAX_ERROR_MESSAGE_TEMPLATES) {
-            throw new IllegalStateException(
-                    "Rule " + definition.getId() + " defines errorMessageTemplate on " + count
-                            + " conditions. At most one condition per rule may use errorMessageTemplate"
-                            + " because DefaultValidationService groups error messages by rule id"
-                            + " and only the first base message is retained (putIfAbsent semantics).");
-        }
     }
 
     @Override
