@@ -98,7 +98,7 @@ class MessageTemplateResolverTest {
     @Test
     void resolve_should_use_position_fallback_when_orderIndex_missing() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").offenceCode("TH68001")
+                "off1", OffenceDto.builder().offenceId("off1").offenceCode("TH68001")
                         .offenceTitle("Theft").build());
 
         String result = resolver.resolve(
@@ -217,7 +217,7 @@ class MessageTemplateResolverTest {
 
     private static OffenceDto offence(String id, int orderIndex) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle("Test offence")
                 .orderIndex(orderIndex)
@@ -227,7 +227,7 @@ class MessageTemplateResolverTest {
 
     private static OffenceDto offenceWithUrn(String id, int orderIndex, String caseUrn) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle("Test offence")
                 .orderIndex(orderIndex)

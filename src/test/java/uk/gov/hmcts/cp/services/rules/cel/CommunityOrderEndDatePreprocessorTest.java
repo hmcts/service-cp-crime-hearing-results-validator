@@ -41,7 +41,7 @@ class CommunityOrderEndDatePreprocessorTest {
                                     String endDate) {
         Prompt prompt = new Prompt("endDate", endDate);
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -53,7 +53,7 @@ class CommunityOrderEndDatePreprocessorTest {
                                            String promptRef, String promptValue) {
         Prompt prompt = new Prompt(promptRef, promptValue);
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -63,7 +63,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -72,7 +72,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private DefendantDto defendant(String id, String first, String last) {
         DefendantDto d = new DefendantDto();
-        d.setId(id);
+        d.setDefendantId(id);
         d.setFirstName(first);
         d.setLastName(last);
         return d;
@@ -319,7 +319,7 @@ class CommunityOrderEndDatePreprocessorTest {
             // CUR has null promptValue
             Prompt blankPrompt = new Prompt("endDate", null);
             ResultLineDto curLine = new ResultLineDto();
-            curLine.setId("rl-cur");
+            curLine.setResultLineId("rl-cur");
             curLine.setShortCode("CUR");
             curLine.setDefendantId("d1");
             curLine.setOffenceId("off1");
