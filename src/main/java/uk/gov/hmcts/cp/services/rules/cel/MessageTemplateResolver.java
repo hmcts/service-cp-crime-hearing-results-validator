@@ -48,14 +48,16 @@ public class MessageTemplateResolver {
     }
 
     private static String formatDefendantNames(final List<String> names) {
+        final String result;
         if (names.isEmpty()) {
-            return "";
-        }
-        if (names.size() == SINGLE_ELEMENT) {
-            return names.get(0);
-        }
-        return String.join(", ", names.subList(0, names.size() - 1))
+            result = "";
+        } else if (names.size() == SINGLE_ELEMENT) {
+            result = names.get(0);
+        } else {
+            result = String.join(", ", names.subList(0, names.size() - 1))
                 + " and " + names.get(names.size() - 1);
+        }
+        return result;
     }
 
     private String formatOffenceNumbers(final List<String> offenceIds,
