@@ -51,7 +51,7 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
 
         if (request.getOffences() != null) {
             for (final OffenceDto offence : request.getOffences()) {
-                result.put(offence.getId(),
+                result.put(offence.getOffenceId(),
                         buildContext(offence, resultsByOffence, remandCodes, ctlCodes));
             }
         }
@@ -63,7 +63,7 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
                                             final Map<String, List<ResultLineDto>> resultsByOffence,
                                             final Set<String> remandCodes,
                                             final Set<String> ctlCodes) {
-        final String offenceId = offence.getId();
+        final String offenceId = offence.getOffenceId();
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
 
         final boolean hasRemandResult = anyShortCodeIn(lines, remandCodes);

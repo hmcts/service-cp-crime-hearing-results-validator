@@ -24,7 +24,7 @@ public final class ValidationRuleTestHelper {
     public static ResultLineDto resultLine(String id, String shortCode,
                                             String defendantId, String offenceId) {
         return ResultLineDto.builder()
-                .id(id)
+                .resultLineId(id)
                 .shortCode(shortCode)
                 .label(shortCode + " label")
                 .defendantId(defendantId)
@@ -34,7 +34,7 @@ public final class ValidationRuleTestHelper {
 
     public static OffenceDto offence(String id, int countNumber, String title) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle(title)
                 .orderIndex(countNumber)
@@ -44,7 +44,7 @@ public final class ValidationRuleTestHelper {
 
     public static OffenceDto offence(String id, int countNumber, String title, String caseUrn) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle(title)
                 .orderIndex(countNumber)
@@ -52,12 +52,11 @@ public final class ValidationRuleTestHelper {
                 .build();
     }
 
-
     public static OffenceDto offenceWithCtlFlags(String id, int countNumber, String title,
                                                   boolean hasExistingCtlRecord,
                                                   boolean isConvicted) {
         return OffenceDto.builder()
-                .id(id)
+                .offenceId(id)
                 .offenceCode("TH68001")
                 .offenceTitle(title)
                 .orderIndex(countNumber)
@@ -67,10 +66,20 @@ public final class ValidationRuleTestHelper {
                 .build();
     }
 
+    public static OffenceDto offenceWithCode(String id, int countNumber, String title,
+                                              String offenceCode) {
+        return OffenceDto.builder()
+                .offenceId(id)
+                .offenceCode(offenceCode)
+                .offenceTitle(title)
+                .orderIndex(countNumber)
+                .caseUrn("32AH9105826")
+                .build();
+    }
 
     public static DefendantDto defendant(String id, String firstName, String lastName) {
         return DefendantDto.builder()
-                .id(id)
+                .defendantId(id)
                 .firstName(firstName)
                 .lastName(lastName)
                 .build();

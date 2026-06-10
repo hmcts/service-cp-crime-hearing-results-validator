@@ -29,6 +29,7 @@ Rule files are located in `src/main/resources/rules/`.
 | Rule ID | Description |
 |---------|-------------|
 | DR-SENT-002 | Custodial sentence concurrent/consecutive check |
+| DR-DISQ-001 | Extended test disqualification check |
 
 ### Adding a New Rule
 

@@ -1,0 +1,20 @@
+rule:
+  id: "DR-TEST-MISSING-ID"
+  title: "Test rule with a condition that has no id"
+  priority: 9999
+  enabled: true
+
+  preprocessing:
+    type: "custodial-concurrent-consecutive"
+    filterShortCodes:
+      - IMP
+    groupBy: "defendant-then-offence"
+    skipWhenGroupCount: 1
+
+  conditions:
+    - name: "Condition without an id"
+      expression: "noInfoCount > 0"
+      severity: ERROR
+      messageTemplate: "Missing id test"
+      affectedOffenceSet: "allNoInfoOffenceIds"
+      validationLevel: OFFENCE
