@@ -26,6 +26,8 @@ class ValidationApiHttpLiveTest {
     private static final String RULES_EVALUATED = "rulesEvaluated";
     private static final String RULE_ID = "DR-SENT-002";
     private static final String CTL_RULE_ID = "DR-CTL-001";
+    private static final String RULE_ID_FIELD = "ruleId";
+    private static final String AFFECTED_OFFENCES = "affectedOffences";
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -122,9 +124,9 @@ class ValidationApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(3);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(AFFECTED_OFFENCES)).hasSize(3);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .startsWith("Some offences do not include details")
                 .contains("John Doe");
@@ -158,9 +160,9 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(WARNINGS).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("message").asText())
                 .startsWith("John Doe")
                 .contains("Offence 2").contains("concurrent").contains("consecutive");
     }
@@ -193,7 +195,7 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(WARNINGS).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("affectedDefendants").get(0).get("message").asText())
                 .startsWith("John Doe")
                 .contains("All offences include details")
@@ -228,13 +230,13 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(CTL_RULE_ID);
+        assertThat(json.get(WARNINGS).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(CTL_RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
         assertThat(json.get(WARNINGS).get(0).get("validationLevel").asText()).isEqualTo("OFFENCE");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences")).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("offenceId").asText())
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("message").asText())
                 .isEqualTo("This offence does not have a CTL. If the trial has started a CTL is not"
                         + " needed. It is your responsibility to check and confirm.");
     }
