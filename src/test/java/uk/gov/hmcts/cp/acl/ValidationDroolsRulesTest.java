@@ -46,13 +46,18 @@ class ValidationDroolsRulesTest {
     }
 
     private static boolean fireRule(String action, String simulatedUserGroup) {
+        return fireRuleWithGroups(action, simulatedUserGroup);
+    }
+
+    private static boolean fireRuleWithGroups(String action, String... userGroups) {
         KieSession session = kieContainer.newKieSession();
         try {
             UserAndGroupProvider provider = mock(UserAndGroupProvider.class);
             when(provider.isMemberOfAnyOfTheSuppliedGroups(any(Action.class), any(String[].class)))
                     .thenAnswer(inv -> {
-                        String[] groups = (String[]) inv.getRawArguments()[1];
-                        return Arrays.asList(groups).contains(simulatedUserGroup);
+                        String[] allowedGroups = (String[]) inv.getRawArguments()[1];
+                        return Arrays.stream(userGroups)
+                                .anyMatch(Arrays.asList(allowedGroups)::contains);
                     });
             session.setGlobal("userAndGroupProvider", provider);
             Outcome outcome = new Outcome();
@@ -122,8 +127,8 @@ class ValidationDroolsRulesTest {
         }
 
         @Test
-        void validate_rule_should_deny_access_to_other_groups() {
-            assertThat(fireRule("validation-service.validate", "Some Other Group")).isFalse();
+        void validate_rule_should_deny_access_to_unknown_group() {
+            assertThat(fireRule("validation-service.validate", "Unknown Group")).isFalse();
         }
     }
 
@@ -194,6 +199,51 @@ class ValidationDroolsRulesTest {
         @Test
         void rules_detail_rule_should_deny_access_to_court_administrators() {
             assertThat(fireRule("validation-service.rules-detail", "Court Administrators")).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Unrecognised action name")
+    class UnrecognisedAction {
+
+        @Test
+        void unrecognised_action_with_allowed_group_should_deny() {
+            assertThat(fireRule("validation-service.unknown", "System Users")).isFalse();
+        }
+
+        @Test
+        void unrecognised_action_with_unknown_group_should_deny() {
+            assertThat(fireRule("validation-service.unknown", "Unknown Group")).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Multi-group membership")
+    class MultiGroupMembership {
+
+        @Test
+        void validate_rule_should_grant_access_when_one_of_multiple_groups_is_allowed() {
+            assertThat(fireRuleWithGroups("validation-service.validate", "Unknown Group", "Court Clerks")).isTrue();
+        }
+
+        @Test
+        void rules_rule_should_grant_access_when_one_of_multiple_groups_is_allowed() {
+            assertThat(fireRuleWithGroups("validation-service.rules", "Listing Officers", "Court Clerks")).isTrue();
+        }
+
+        @Test
+        void rules_rule_should_deny_access_when_all_groups_are_denied() {
+            assertThat(fireRuleWithGroups("validation-service.rules", "Court Associate", "Court Administrators")).isFalse();
+        }
+
+        @Test
+        void rules_detail_rule_should_grant_access_when_one_of_multiple_groups_is_allowed() {
+            assertThat(fireRuleWithGroups("validation-service.rules-detail", "Listing Officers", "Legal Advisers")).isTrue();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_when_all_groups_are_denied() {
+            assertThat(fireRuleWithGroups("validation-service.rules-detail", "Court Associate", "Court Administrators")).isFalse();
         }
     }
 }

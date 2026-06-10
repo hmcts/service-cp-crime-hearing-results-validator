@@ -37,7 +37,11 @@ public class ActionHeaderFilter extends OncePerRequestFilter {
     protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
                                     final FilterChain filterChain) throws ServletException, IOException {
 
-        final String action = resolveAction(request.getServletPath());
+        final String servletPath = request.getServletPath();
+        final String path = (servletPath == null || servletPath.isEmpty())
+                ? request.getRequestURI()
+                : servletPath;
+        final String action = resolveAction(path);
         if (request.getHeader(ACTION_HEADER) == null && action != null) {
             filterChain.doFilter(new ActionHeaderRequestWrapper(request, action), response);
         } else {
