@@ -7,7 +7,7 @@ rule "Allow – validate"
 when
   $o: Outcome()
   $a: Action(name == "validation-service.validate")
-  eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($a, "Legal Advisers", "Court Clerks", "System Users"))
+ eval(userAndGroupProvider.isMemberOfAnyOfTheSuppliedGroups($a,"Listing Officers","Court Clerks", "Legal Advisers", "Court Associate", "Court Administrators", "System Users"))
 then
   $o.setSuccess(true);
 end
