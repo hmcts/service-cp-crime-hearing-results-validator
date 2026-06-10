@@ -4,22 +4,64 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.kie.api.KieServices;
+import org.kie.api.builder.KieFileSystem;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import uk.gov.moj.cpp.authz.drools.Action;
+import uk.gov.moj.cpp.authz.drools.Outcome;
+import uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider;
 
 class ValidationDroolsRulesTest {
 
     private static final String DRL_PATH = "/acl/validation-rules.drl";
     private static String drlContent;
+    private static KieContainer kieContainer;
 
     @BeforeAll
-    static void loadDrl() throws Exception {
+    static void setUp() throws Exception {
         try (InputStream stream = ValidationDroolsRulesTest.class.getResourceAsStream(DRL_PATH)) {
             assertThat(stream).as("DRL file must exist on classpath at %s", DRL_PATH).isNotNull();
             drlContent = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        KieServices ks = KieServices.Factory.get();
+        KieFileSystem kfs = ks.newKieFileSystem();
+        kfs.write(ks.getResources()
+                .newClassPathResource("acl/validation-rules.drl").setResourceType(ResourceType.DRL));
+        ks.newKieBuilder(kfs).buildAll();
+        kieContainer = ks.newKieContainer(ks.getRepository().getDefaultReleaseId());
+    }
+
+    private static boolean fireRule(String action, String simulatedUserGroup) {
+        KieSession session = kieContainer.newKieSession();
+        try {
+            UserAndGroupProvider provider = mock(UserAndGroupProvider.class);
+            when(provider.isMemberOfAnyOfTheSuppliedGroups(any(Action.class), any(String[].class)))
+                    .thenAnswer(inv -> {
+                        String[] groups = (String[]) inv.getRawArguments()[1];
+                        return Arrays.asList(groups).contains(simulatedUserGroup);
+                    });
+            session.setGlobal("userAndGroupProvider", provider);
+            Outcome outcome = new Outcome();
+            session.insert(outcome);
+            session.insert(new Action(action, Map.of()));
+            session.fireAllRules();
+            return outcome.isSuccess();
+        } finally {
+            session.dispose();
         }
     }
 
@@ -45,98 +87,113 @@ class ValidationDroolsRulesTest {
         assertThat(drlContent).contains("System Users");
     }
 
-    @Test
-    void drl_file_should_import_required_drools_types() {
-        assertThat(drlContent).contains("import uk.gov.moj.cpp.authz.drools.Outcome");
-        assertThat(drlContent).contains("import uk.gov.moj.cpp.authz.drools.Action");
-        assertThat(drlContent).contains("global uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider userAndGroupProvider");
-    }
-
     @Nested
     @DisplayName("Allow – validate rule")
     class ValidateRule {
 
-        private String block() {
-            return extractRuleBlock(drlContent, "Allow – validate");
-        }
-
-        @Test
-        void validate_rule_should_map_to_correct_action_name() {
-            assertThat(block()).contains("validation-service.validate");
-        }
-
         @Test
         void validate_rule_should_grant_access_to_listing_officers() {
-            assertThat(block()).contains("Listing Officers");
+            assertThat(fireRule("validation-service.validate", "Listing Officers")).isTrue();
         }
 
         @Test
         void validate_rule_should_grant_access_to_court_clerks() {
-            assertThat(block()).contains("Court Clerks");
+            assertThat(fireRule("validation-service.validate", "Court Clerks")).isTrue();
         }
 
         @Test
         void validate_rule_should_grant_access_to_legal_advisers() {
-            assertThat(block()).contains("Legal Advisers");
+            assertThat(fireRule("validation-service.validate", "Legal Advisers")).isTrue();
         }
 
         @Test
         void validate_rule_should_grant_access_to_court_associate() {
-            assertThat(block()).contains("Court Associate");
+            assertThat(fireRule("validation-service.validate", "Court Associate")).isTrue();
         }
 
         @Test
         void validate_rule_should_grant_access_to_court_administrators() {
-            assertThat(block()).contains("Court Administrators");
+            assertThat(fireRule("validation-service.validate", "Court Administrators")).isTrue();
         }
 
         @Test
         void validate_rule_should_grant_access_to_system_users() {
-            assertThat(block()).contains("System Users");
+            assertThat(fireRule("validation-service.validate", "System Users")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_deny_access_to_other_groups() {
+            assertThat(fireRule("validation-service.validate", "Some Other Group")).isFalse();
         }
     }
 
     @Nested
-    @DisplayName("Validate-only groups must not appear in rules or rules-detail")
-    class ValidateOnlyGroupIsolation {
+    @DisplayName("Allow – rules rule")
+    class RulesRule {
 
         @Test
-        void listing_officers_should_not_appear_in_rules_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules")).doesNotContain("Listing Officers");
+        void rules_rule_should_grant_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.rules", "Court Clerks")).isTrue();
         }
 
         @Test
-        void court_associate_should_not_appear_in_rules_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules")).doesNotContain("Court Associate");
+        void rules_rule_should_grant_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.rules", "Legal Advisers")).isTrue();
         }
 
         @Test
-        void court_administrators_should_not_appear_in_rules_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules")).doesNotContain("Court Administrators");
+        void rules_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.rules", "System Users")).isTrue();
         }
 
         @Test
-        void listing_officers_should_not_appear_in_rules_detail_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules-detail")).doesNotContain("Listing Officers");
+        void rules_rule_should_deny_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.rules", "Listing Officers")).isFalse();
         }
 
         @Test
-        void court_associate_should_not_appear_in_rules_detail_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules-detail")).doesNotContain("Court Associate");
+        void rules_rule_should_deny_access_to_court_associate() {
+            assertThat(fireRule("validation-service.rules", "Court Associate")).isFalse();
         }
 
         @Test
-        void court_administrators_should_not_appear_in_rules_detail_rule() {
-            assertThat(extractRuleBlock(drlContent, "Allow – rules-detail")).doesNotContain("Court Administrators");
+        void rules_rule_should_deny_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.rules", "Court Administrators")).isFalse();
         }
     }
 
-    private static String extractRuleBlock(String content, String ruleName) {
-        String marker = "rule \"" + ruleName + "\"";
-        int start = content.indexOf(marker);
-        assertThat(start).as("Rule '%s' not found in DRL", ruleName).isNotNegative();
-        int endIdx = content.indexOf("\nend", start);
-        assertThat(endIdx).as("No closing 'end' token found for rule '%s'", ruleName).isNotNegative();
-        return content.substring(start, endIdx + "\nend".length());
+    @Nested
+    @DisplayName("Allow – rules-detail rule")
+    class RulesDetailRule {
+
+        @Test
+        void rules_detail_rule_should_grant_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Clerks")).isTrue();
+        }
+
+        @Test
+        void rules_detail_rule_should_grant_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.rules-detail", "Legal Advisers")).isTrue();
+        }
+
+        @Test
+        void rules_detail_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.rules-detail", "System Users")).isTrue();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.rules-detail", "Listing Officers")).isFalse();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_court_associate() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Associate")).isFalse();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Administrators")).isFalse();
+        }
     }
 }
