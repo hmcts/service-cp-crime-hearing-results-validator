@@ -120,6 +120,11 @@ class ValidationDroolsRulesTest {
         void validate_rule_should_grant_access_to_system_users() {
             assertThat(fireRule("validation-service.validate", "System Users")).isTrue();
         }
+
+        @Test
+        void validate_rule_should_deny_access_to_other_groups() {
+            assertThat(fireRule("validation-service.validate", "Some Other Group")).isFalse();
+        }
     }
 
     @Nested
