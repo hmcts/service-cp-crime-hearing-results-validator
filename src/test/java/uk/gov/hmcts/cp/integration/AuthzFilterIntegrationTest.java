@@ -66,6 +66,70 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
     }
 
     /**
+     * Verifies a user resolved into the Listing Officers group can call the validation endpoint.
+     */
+    @Test
+    void request_with_listing_officers_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Listing Officers");
+
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "listing-officer-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(EMPTY_REQUEST))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies a user resolved into the Court Associate group can call the validation endpoint.
+     */
+    @Test
+    void request_with_court_associate_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Associate");
+
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "court-associate-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(EMPTY_REQUEST))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies a user resolved into the Court Administrators group can call the validation endpoint.
+     */
+    @Test
+    void request_with_court_administrators_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Administrators");
+
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "court-admin-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(EMPTY_REQUEST))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies a user resolved into the System Users group can call the validation endpoint.
+     */
+    @Test
+    void request_with_system_users_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(EMPTY_REQUEST))
+                .andExpect(status().isOk());
+    }
+
+    /**
      * Verifies users outside the allowed groups are rejected with HTTP 403.
      */
     @Test
