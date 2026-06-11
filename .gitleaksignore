@@ -1,0 +1,11 @@
+# Gitleaks allowlist — historical false positives.
+#
+# Each entry is a gitleaks fingerprint (commit:file:rule:line) for a finding that
+# has been reviewed and confirmed NOT to be a real credential.
+#
+# AzureAppConfigFetcherTest: a dummy base64 test secret was introduced as a string
+# literal in commit 4097362 and the generic-api-key rule flagged it. It was fixed in
+# the following commit (4a638de) to compute the value at runtime, but gitleaks scans
+# commit-history diffs, so the historical introduction is re-flagged whenever that
+# commit falls in a scan range. The value is a throwaway test fixture, not a secret.
+4097362a880aada19fde9cdcc7529246cf38636e:src/test/java/uk/gov/hmcts/cp/services/feature/AzureAppConfigFetcherTest.java:generic-api-key:126

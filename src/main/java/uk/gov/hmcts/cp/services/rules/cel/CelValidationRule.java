@@ -24,7 +24,6 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
-    private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
@@ -45,7 +44,6 @@ public class CelValidationRule implements ValidationRule {
                              final OffenceDisplayHelper offenceDisplayHelper,
                              final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
-        this.preprocessorRegistry = preprocessorRegistry;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
@@ -81,7 +79,7 @@ public class CelValidationRule implements ValidationRule {
 
         if (override.enabled()) {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
-                    .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
+                    .collect(Collectors.toMap(OffenceDto::getOffenceId, o -> o, (a, b) -> a));
 
             final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
@@ -92,7 +90,7 @@ public class CelValidationRule implements ValidationRule {
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
                     if (evaluator.evaluate(condition.getExpression(), celContext)) {
                         final boolean isDefendantLevel =
-                                "DEFENDANT".equalsIgnoreCase(condition.getValidationLevel());
+                                condition.getValidationLevel() == ValidationLevel.DEFENDANT;
 
                         final List<String> offenceIdsForTemplate =
                                 condition.getAffectedOffenceSet() != null
@@ -106,7 +104,7 @@ public class CelValidationRule implements ValidationRule {
                                 .orElse("ERROR");
 
                         final boolean isError = "ERROR".equalsIgnoreCase(normalizedSeverity);
-                        final ValidationIssue.ValidationLevelEnum level = (isDefendantLevel && !isError)
+                        final ValidationIssue.ValidationLevelEnum level = isDefendantLevel
                                 ? ValidationIssue.ValidationLevelEnum.DEFENDANT
                                 : ValidationIssue.ValidationLevelEnum.OFFENCE;
 
@@ -115,7 +113,7 @@ public class CelValidationRule implements ValidationRule {
                                 .severity(ValidationIssue.SeverityEnum.valueOf(normalizedSeverity))
                                 .validationLevel(level);
 
-                        if (isDefendantLevel && !isError) {
+                        if (isDefendantLevel) {
                             final String message = messageResolver.resolve(
                                     condition.getMessageTemplate(),
                                     context.defendantName(),
@@ -153,7 +151,11 @@ public class CelValidationRule implements ValidationRule {
                                         ? context.defendantName()
                                         : null;
 
-                        results.add(new ValidationIssueResult(issueBuilder.build(), errorMessage, affectedDefendantName));
+                        if (isError) {
+                            results.add(ValidationIssueResult.forError(issueBuilder.build(), errorMessage, affectedDefendantName));
+                        } else {
+                            results.add(ValidationIssueResult.forWarning(issueBuilder.build()));
+                        }
                     }
                 }
             }

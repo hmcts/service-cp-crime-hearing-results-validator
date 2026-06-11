@@ -259,7 +259,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         final Map<String, String> names = new LinkedHashMap<>();
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
-                names.put(d.getId(), buildFullName(d));
+                names.put(d.getDefendantId(), buildFullName(d));
             }
         }
         return names;
