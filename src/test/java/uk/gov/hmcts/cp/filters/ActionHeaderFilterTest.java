@@ -2,6 +2,7 @@ package uk.gov.hmcts.cp.filters;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -105,5 +106,86 @@ class ActionHeaderFilterTest {
         ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
         verify(filterChain).doFilter(captor.capture(), any());
         assertThat(captor.getValue().getHeader("CPP-ACTION")).isNull();
+    }
+
+    /**
+     * Verifies the injected action is accessible via getHeaders() (plural) as used by some
+     * frameworks when iterating multi-valued headers.
+     */
+    @Test
+    void should_expose_injected_action_via_get_headers() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
+        request.setServletPath("/api/validation/validate");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(Collections.list(captor.getValue().getHeaders("CPP-ACTION")))
+                .containsExactly("validation-service.validate");
+    }
+
+    /**
+     * Verifies CPP-ACTION appears in the header name enumeration so frameworks that iterate
+     * getHeaderNames() can discover the synthetic header.
+     */
+    @Test
+    void should_include_action_header_name_in_header_names() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
+        request.setServletPath("/api/validation/validate");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(Collections.list(captor.getValue().getHeaderNames()))
+                .contains("CPP-ACTION");
+    }
+
+    /**
+     * Verifies getHeader() on the wrapper is case-insensitive, matching the Servlet spec.
+     */
+    @Test
+    void should_return_injected_action_header_case_insensitively() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
+        request.setServletPath("/api/validation/validate");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("cpp-action")).isEqualTo("validation-service.validate");
+    }
+
+    /**
+     * Verifies a deep sub-path beyond the rule id still maps to rules-detail because the
+     * startsWith(RULES_DETAIL_PREFIX) check matches any path under /api/validation/rules/.
+     */
+    @Test
+    void should_set_rules_detail_action_for_deep_sub_path() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002/extra");
+        request.setServletPath("/api/validation/rules/DR-SENT-002/extra");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-detail");
+    }
+
+    /**
+     * Verifies a path with a trailing slash and no rule-id segment is classified as rules-detail,
+     * since it still matches the RULES_DETAIL_PREFIX startsWith check.
+     */
+    @Test
+    void should_set_rules_detail_action_for_rules_trailing_slash_path() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/");
+        request.setServletPath("/api/validation/rules/");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-detail");
     }
 }
