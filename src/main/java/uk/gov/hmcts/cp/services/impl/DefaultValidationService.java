@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -23,6 +24,9 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 @Service
 @Slf4j
 public class DefaultValidationService implements ValidationService {
+
+    /** MDC key carrying the per-call validation id into structured logs (incl. issue logs). */
+    private static final String MDC_VALIDATION_ID = "validationId";
 
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
@@ -50,8 +54,24 @@ public class DefaultValidationService implements ValidationService {
         return response;
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
+        final String validationId = "val-" + UUID.randomUUID();
+        final String previousValidationId = MDC.get(MDC_VALIDATION_ID);
+        MDC.put(MDC_VALIDATION_ID, validationId);
+        try {
+            return evaluateRulesWithMdc(request, validationId);
+        } finally {
+            if (previousValidationId == null) {
+                MDC.remove(MDC_VALIDATION_ID);
+            } else {
+                MDC.put(MDC_VALIDATION_ID, previousValidationId);
+            }
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
+    private DraftValidationResponse evaluateRulesWithMdc(final DraftValidationRequest request,
+                                                         final String validationId) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
 
@@ -83,7 +103,7 @@ public class DefaultValidationService implements ValidationService {
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
 
         return DraftValidationResponse.builder()
-                .validationId("val-" + UUID.randomUUID())
+                .validationId(validationId)
                 .timestamp(Instant.now())
                 .mode("advisory")
                 .rulesEvaluated(rulesEvaluated)

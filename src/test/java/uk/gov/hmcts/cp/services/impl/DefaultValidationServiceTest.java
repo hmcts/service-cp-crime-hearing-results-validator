@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.impl;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
@@ -10,6 +12,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,6 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DefaultValidationServiceTest {
 
     private static final FeatureToggleService ALWAYS_ENABLED = featureName -> true;
+
+    private static final String MDC_VALIDATION_ID = "validationId";
+
+    @AfterEach
+    void clearMdc() {
+        MDC.remove(MDC_VALIDATION_ID);
+    }
 
     /**
      * Verifies the baseline response when no rules are configured: the request is valid, no issues
@@ -266,6 +276,74 @@ class DefaultValidationServiceTest {
         assertThat(response.getMode()).isEqualTo("advisory");
         assertThat(response.getErrors()).hasSize(1);
         assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
+    }
+
+    /**
+     * Verifies the generated validation id is visible in the MDC while rules evaluate (so issue
+     * logs can carry it) and is removed once evaluation completes.
+     */
+    @Test
+    void validate_should_expose_validationId_in_mdc_during_evaluation_and_remove_after() {
+        AtomicReference<String> mdcDuringEvaluation = new AtomicReference<>();
+        ValidationRule capturingRule = capturingRule("RULE-001", mdcDuringEvaluation);
+        DefaultValidationService service = new DefaultValidationService(List.of(capturingRule), ALWAYS_ENABLED);
+        DraftValidationRequest request = DraftValidationRequest.builder().hearingId("h1").build();
+
+        DraftValidationResponse response = service.validate(request);
+
+        assertThat(mdcDuringEvaluation.get())
+                .startsWith("val-")
+                .isEqualTo(response.getValidationId());
+        assertThat(MDC.get(MDC_VALIDATION_ID)).isNull();
+    }
+
+    /**
+     * Verifies any pre-existing MDC validation id is restored after evaluation rather than removed.
+     */
+    @Test
+    void validate_should_restore_previous_validationId_after_evaluation() {
+        MDC.put(MDC_VALIDATION_ID, "pre-existing");
+        DefaultValidationService service = new DefaultValidationService(List.of(), ALWAYS_ENABLED);
+        DraftValidationRequest request = DraftValidationRequest.builder().hearingId("h1").build();
+
+        service.validate(request);
+
+        assertThat(MDC.get(MDC_VALIDATION_ID)).isEqualTo("pre-existing");
+    }
+
+    /**
+     * Verifies the MDC validation id is cleaned up even when a rule throws during evaluation.
+     */
+    @Test
+    void validate_should_remove_validationId_from_mdc_even_when_rule_throws() {
+        ValidationRule throwingRule = stubRule("RULE-001", null);
+        DefaultValidationService service = new DefaultValidationService(List.of(throwingRule), ALWAYS_ENABLED);
+        DraftValidationRequest request = DraftValidationRequest.builder().hearingId("h1").build();
+
+        service.validate(request);
+
+        assertThat(MDC.get(MDC_VALIDATION_ID)).isNull();
+    }
+
+    private static ValidationRule capturingRule(String ruleId, AtomicReference<String> mdcHolder) {
+        return new ValidationRule() {
+            @Override
+            public RuleDetailResponse getRuleDetail() {
+                return RuleDetailResponse.builder()
+                        .ruleId(ruleId)
+                        .title("Capturing rule " + ruleId)
+                        .priority(1000)
+                        .severity(RuleDetailResponse.SeverityEnum.ERROR)
+                        .enabled(true)
+                        .build();
+            }
+
+            @Override
+            public List<ValidationIssue> evaluate(DraftValidationRequest request) {
+                mdcHolder.set(MDC.get(MDC_VALIDATION_ID));
+                return List.of();
+            }
+        };
     }
 
     private static ValidationRule stubRule(String ruleId, List<ValidationIssue> issues) {

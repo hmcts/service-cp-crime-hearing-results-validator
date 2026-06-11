@@ -11,6 +11,9 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.util.List;
 
@@ -45,7 +48,8 @@ And I have to resolve the error before I can share the result (i.e sharing is no
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(RuleOverrideService.class));
+            mock(RuleOverrideService.class),
+            new ValidationIssueRecorder(new SimpleMeterRegistry()));
 
     /**
      * Verifies a single custodial offence is treated as the lone primary sentence and does not
