@@ -1,8 +1,10 @@
 package uk.gov.hmcts.cp.config;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
@@ -30,6 +32,9 @@ class ValidationRuleAutoConfigurationTest {
             new CustodialPreprocessor(),
             new DisqualificationExtendedTestPreprocessor()));
 
+    private final ValidationIssueRecorder issueRecorder =
+            new ValidationIssueRecorder(new SimpleMeterRegistry());
+
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
      */
@@ -40,7 +45,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                issueRecorder);
 
         assertThat(rules).isNotEmpty();
         assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
@@ -56,7 +62,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                issueRecorder);
 
         assertThat(rules).hasSize(2);
         assertThat(rules)
@@ -82,7 +89,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class)))
+                mock(RuleOverrideService.class),
+                issueRecorder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No preprocessor registered for type:");
     }
