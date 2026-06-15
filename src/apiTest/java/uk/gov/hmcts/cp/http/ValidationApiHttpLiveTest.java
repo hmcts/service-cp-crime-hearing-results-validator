@@ -125,8 +125,11 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(3);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .startsWith("Some offences do not include details")
-                .contains("John Doe");
+                .isEqualToIgnoringWhitespace(
+                        "Some offences do not include details of whether they are concurrent or"
+                                + " consecutive. There should be only one primary sentence for each"
+                                + " defendant, therefore one result without concurrent or consecutive"
+                                + " information. This affects John Doe.");
     }
 
     /**
@@ -160,8 +163,9 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
         assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
-                .startsWith("John Doe")
-                .contains("Offence 2").contains("concurrent").contains("consecutive");
+                .isEqualToIgnoringWhitespace(
+                        "This offence has both concurrent and consecutive information."
+                                + " Check this is correct before sharing");
     }
 
     /**
@@ -194,9 +198,9 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("affectedDefendants").get(0).get("message").asText())
-                .startsWith("John Doe")
-                .contains("All offences include details")
-                .contains("no primary sentence");
+                .isEqualToIgnoringWhitespace(
+                        "All offences include details of being concurrent or consecutive with no"
+                                + " primary sentence. Check that this is correct before sharing");
     }
 
     private JsonNode postValidate(final String body) throws Exception {

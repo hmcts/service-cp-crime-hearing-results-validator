@@ -99,7 +99,11 @@ class CelValidationRuleTest {
         ValidationIssue error = result.issue();
         assertThat(error.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(error.getRuleId()).isEqualTo("DR-SENT-002");
-        assertThat(result.errorMessage()).contains("Some offences do not include details");
+        assertThat(result.errorMessage()).isEqualTo(
+                "Some offences do not include details of whether they are concurrent or"
+                        + " consecutive. There should be only one primary sentence for each"
+                        + " defendant, therefore one result without concurrent or consecutive"
+                        + " information. This affects ${defendantNames}.");
         assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
         assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);
@@ -135,9 +139,9 @@ class CelValidationRuleTest {
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
         assertThat(result.errorMessage()).isNull();
         assertThat(warning.getAffectedOffences()).hasSize(1);
-        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("John Smith");
-        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
-        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("Offence 2 (URN:32AH9105826)");
+        assertThat(warning.getAffectedOffences().get(0).getMessage()).isEqualTo(
+                "This offence has both concurrent and consecutive information."
+                        + " Check this is correct before sharing");
     }
 
     /**
@@ -166,7 +170,9 @@ class CelValidationRuleTest {
         ValidationIssue warning = result.issue();
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
         assertThat(result.errorMessage()).isNull();
-        assertThat(warning.getAffectedDefendants().get(0).getMessage()).contains("no primary sentence");
+        assertThat(warning.getAffectedDefendants().get(0).getMessage()).isEqualTo(
+                "All offences include details of being concurrent or consecutive with no"
+                        + " primary sentence. Check that this is correct before sharing");
     }
 
     /**
