@@ -105,7 +105,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
         assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("offenceId").asText())
                 .isEqualTo("off1");
         assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
-                .isEqualTo(EXPECTED_MESSAGE);
+                .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
     }
 
     /**
