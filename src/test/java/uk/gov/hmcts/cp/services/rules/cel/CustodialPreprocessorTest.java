@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -142,6 +144,26 @@ class CustodialPreprocessorTest {
         DefendantContext ctx = result.get("d1");
         assertThat(ctx.totalOffences()).isEqualTo(2);
         assertThat(ctx.allOffenceIds()).containsExactly("off1", "off3");
+    }
+
+    /**
+     * Verifies each custodial short code in the filter list is recognised and counted towards the
+     * defendant's total offence count, confirming the code is not silently excluded by the filter.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd"})
+    void each_custodial_short_code_should_be_treated_as_custodial(final String code) {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", code, "d1", "off1"),
+                        resultLine("rl2", code, "d1", "off2")),
+                List.of());
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).as("short code %s should be treated as custodial", code).containsKey("d1");
+        assertThat(result.get("d1").totalOffences()).isEqualTo(2);
+        assertThat(result.get("d1").allOffenceIds()).containsExactly("off1", "off2");
     }
 
     /**
