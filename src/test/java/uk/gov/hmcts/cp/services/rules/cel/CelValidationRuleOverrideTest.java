@@ -11,6 +11,7 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 
 import java.time.Instant;
@@ -124,7 +125,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isEmpty();
     }
@@ -156,7 +157,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -190,7 +191,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -230,7 +231,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues).allSatisfy(issue ->
@@ -269,7 +270,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -308,7 +309,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);

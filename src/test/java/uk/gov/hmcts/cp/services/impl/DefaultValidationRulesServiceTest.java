@@ -5,7 +5,7 @@ import org.springframework.web.server.ResponseStatusException;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
-import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 import java.util.List;
@@ -76,7 +76,7 @@ class DefaultValidationRulesServiceTest {
             }
 
             @Override
-            public List<ValidationIssue> evaluate(DraftValidationRequest request) {
+            public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
                 return List.of();
             }
         };
