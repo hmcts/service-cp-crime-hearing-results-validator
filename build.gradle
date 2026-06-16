@@ -43,6 +43,18 @@ apply {
 configurations {
   apiSpec
   implementation.extendsFrom apiSpec
+
+  all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+      // cel-generated-pb:0.6.1 was compiled with protobuf gencode 4.35.1; the Spring Boot BOM
+      // and opentelemetry-proto pull protobuf-java to 4.34.x, which fails at runtime with
+      // ProtobufRuntimeVersionException. Force the higher version across all configurations.
+      if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protobuf-java') {
+        details.useVersion '4.35.1'
+        details.because 'cel-generated-pb:0.6.1 requires protobuf gencode >= 4.35.1'
+      }
+    }
+  }
 }
 
 springBoot {

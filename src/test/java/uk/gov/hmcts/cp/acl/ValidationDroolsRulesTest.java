@@ -1,76 +1,199 @@
 package uk.gov.hmcts.cp.acl;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.kie.api.KieServices;
+import org.kie.api.builder.KieFileSystem;
+import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/**
- * Smoke tests for the Drools ACL rules file packaged with the service.
- */
+import uk.gov.moj.cpp.authz.drools.Action;
+import uk.gov.moj.cpp.authz.drools.Outcome;
+import uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider;
+
 class ValidationDroolsRulesTest {
 
     private static final String DRL_PATH = "/acl/validation-rules.drl";
+    private static String drlContent;
+    private static KieContainer kieContainer;
 
-    /**
-     * Verifies the ACL rules file is packaged on the classpath and can be opened by tests.
-     */
+    @BeforeAll
+    static void setUp() throws Exception {
+        try (InputStream stream = ValidationDroolsRulesTest.class.getResourceAsStream(DRL_PATH)) {
+            assertThat(stream).as("DRL file must exist on classpath at %s", DRL_PATH).isNotNull();
+            drlContent = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        KieServices ks = KieServices.Factory.get();
+        KieFileSystem kfs = ks.newKieFileSystem();
+        kfs.write(ks.getResources()
+                .newClassPathResource("acl/validation-rules.drl").setResourceType(ResourceType.DRL));
+        ks.newKieBuilder(kfs).buildAll();
+        kieContainer = ks.newKieContainer(ks.getRepository().getDefaultReleaseId());
+    }
+
+    private static boolean fireRule(String action, String simulatedUserGroup) {
+        KieSession session = kieContainer.newKieSession();
+        try {
+            UserAndGroupProvider provider = mock(UserAndGroupProvider.class);
+            when(provider.isMemberOfAnyOfTheSuppliedGroups(any(Action.class), any(String[].class)))
+                    .thenAnswer(inv -> {
+                        String[] groups = (String[]) inv.getRawArguments()[1];
+                        return Arrays.asList(groups).contains(simulatedUserGroup);
+                    });
+            session.setGlobal("userAndGroupProvider", provider);
+            Outcome outcome = new Outcome();
+            session.insert(outcome);
+            session.insert(new Action(action, Map.of()));
+            session.fireAllRules();
+            return outcome.isSuccess();
+        } finally {
+            session.dispose();
+        }
+    }
+
     @Test
     void drl_file_should_be_loadable_from_classpath() {
-        try (InputStream stream = getClass().getResourceAsStream(DRL_PATH)) {
-            assertThat(stream).as("DRL file should exist on classpath at %s", DRL_PATH).isNotNull();
-        } catch (Exception e) {
-            throw new AssertionError("Failed to read DRL file", e);
+        assertThat(drlContent).isNotEmpty();
+    }
+
+    @Test
+    void drl_file_should_contain_expected_action_names() {
+        assertThat(drlContent).contains("validation-service.validate");
+        assertThat(drlContent).contains("validation-service.rules");
+        assertThat(drlContent).contains("validation-service.rules-detail");
+    }
+
+    @Test
+    void drl_file_should_reference_expected_groups() {
+        assertThat(drlContent).contains("Listing Officers");
+        assertThat(drlContent).contains("Court Clerks");
+        assertThat(drlContent).contains("Legal Advisers");
+        assertThat(drlContent).contains("Court Associate");
+        assertThat(drlContent).contains("Court Administrators");
+        assertThat(drlContent).contains("System Users");
+    }
+
+    @Nested
+    @DisplayName("Allow – validate rule")
+    class ValidateRule {
+
+        @Test
+        void validate_rule_should_grant_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.validate", "Listing Officers")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_grant_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.validate", "Court Clerks")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_grant_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.validate", "Legal Advisers")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_grant_access_to_court_associate() {
+            assertThat(fireRule("validation-service.validate", "Court Associate")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_grant_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.validate", "Court Administrators")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.validate", "System Users")).isTrue();
+        }
+
+        @Test
+        void validate_rule_should_deny_access_to_other_groups() {
+            assertThat(fireRule("validation-service.validate", "Some Other Group")).isFalse();
         }
     }
 
-    /**
-     * Verifies the ACL rules reference each application action name exposed by the HTTP layer.
-     */
-    @Test
-    void drl_file_should_contain_expected_action_names() throws Exception {
-        String content;
-        try (InputStream stream = getClass().getResourceAsStream(DRL_PATH)) {
-            assertThat(stream).isNotNull();
-            content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    @Nested
+    @DisplayName("Allow – rules rule")
+    class RulesRule {
+
+        @Test
+        void rules_rule_should_grant_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.rules", "Court Clerks")).isTrue();
         }
 
-        assertThat(content).contains("validation-service.validate");
-        assertThat(content).contains("validation-service.rules");
-        assertThat(content).contains("validation-service.rules-detail");
+        @Test
+        void rules_rule_should_grant_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.rules", "Legal Advisers")).isTrue();
+        }
+
+        @Test
+        void rules_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.rules", "System Users")).isTrue();
+        }
+
+        @Test
+        void rules_rule_should_deny_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.rules", "Listing Officers")).isFalse();
+        }
+
+        @Test
+        void rules_rule_should_deny_access_to_court_associate() {
+            assertThat(fireRule("validation-service.rules", "Court Associate")).isFalse();
+        }
+
+        @Test
+        void rules_rule_should_deny_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.rules", "Court Administrators")).isFalse();
+        }
     }
 
-    /**
-     * Verifies the ACL rules mention the expected allowed identity groups.
-     */
-    @Test
-    void drl_file_should_reference_expected_groups() throws Exception {
-        String content;
-        try (InputStream stream = getClass().getResourceAsStream(DRL_PATH)) {
-            assertThat(stream).isNotNull();
-            content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+    @Nested
+    @DisplayName("Allow – rules-detail rule")
+    class RulesDetailRule {
+
+        @Test
+        void rules_detail_rule_should_grant_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Clerks")).isTrue();
         }
 
-        assertThat(content).contains("Legal Advisers");
-        assertThat(content).contains("Court Clerks");
-        assertThat(content).contains("System Users");
-    }
-
-    /**
-     * Verifies the ACL rules import the Drools types and globals required at runtime.
-     */
-    @Test
-    void drl_file_should_import_required_drools_types() throws Exception {
-        String content;
-        try (InputStream stream = getClass().getResourceAsStream(DRL_PATH)) {
-            assertThat(stream).isNotNull();
-            content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        @Test
+        void rules_detail_rule_should_grant_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.rules-detail", "Legal Advisers")).isTrue();
         }
 
-        assertThat(content).contains("import uk.gov.moj.cpp.authz.drools.Outcome");
-        assertThat(content).contains("import uk.gov.moj.cpp.authz.drools.Action");
-        assertThat(content).contains("global uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider userAndGroupProvider");
+        @Test
+        void rules_detail_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.rules-detail", "System Users")).isTrue();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.rules-detail", "Listing Officers")).isFalse();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_court_associate() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Associate")).isFalse();
+        }
+
+        @Test
+        void rules_detail_rule_should_deny_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.rules-detail", "Court Administrators")).isFalse();
+        }
     }
 }
