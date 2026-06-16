@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -32,6 +35,11 @@ class DisqualificationExtendedTestApiHttpLiveTest {
             "Check whether you need to add extended test disqualification with DDOTE "
                     + "(disqualification and extended test) or DDOTEL (disqualification for "
                     + "life and extended test)";
+
+    private static final String DB_URL =
+            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
+    private static final String DB_USER = "postgres";
+    private static final String DB_PASSWORD = "postgres";
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -73,10 +81,10 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     /**
      * Covers AC1 where a relevant Road Traffic Act 1988 offence (RT88026 — dangerous driving)
      * has a non-excluded final result and no DDOTE or DDOTEL extended-test disqualification
-     * recorded. DR-DISQ-001 must fire a single non-blocking warning against that offence.
+     * recorded. DR-DISQ-001 is seeded as disabled, so no warning must be produced.
      */
     @Test
-    void ac1_relevant_offence_without_ddote_should_produce_warning() throws Exception {
+    void ac1_relevant_offence_without_ddote_should_not_produce_warning_when_rule_disabled() throws Exception {
         final String body = """
                 {
                   "hearingId": "h2",
@@ -98,14 +106,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
-        assertThat(json.get(WARNINGS)).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
-        assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences")).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("offenceId").asText())
-                .isEqualTo("off1");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
+        assertThat(json.get(WARNINGS)).isEmpty();
     }
 
     /**
@@ -168,6 +169,62 @@ class DisqualificationExtendedTestApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * Covers AC1 where DR-DISQ-001 is enabled at runtime: a relevant Road Traffic Act 1988
+     * offence with a non-excluded final result and no DDOTE must produce a single non-blocking
+     * warning. The rule is enabled via JDBC for this test and restored to disabled in a
+     * finally block; a 2-second sleep ensures the 1-second Caffeine cache TTL has expired
+     * before the validate call is made.
+     */
+    @Test
+    void ac1_relevant_offence_without_ddote_should_produce_warning_when_rule_enabled() throws Exception {
+        setRuleEnabled(true);
+        try {
+            Thread.sleep(2000);
+
+            final String body = """
+                    {
+                      "hearingId": "h5",
+                      "hearingDay": "2026-04-25",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+                         "label": "Convicted", "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "RT88026",
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                      ]
+                    }
+                    """;
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+            assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+            assertThat(json.get(WARNINGS)).hasSize(1);
+            assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+            assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
+            assertThat(json.get(WARNINGS).get(0).get("affectedOffences")).hasSize(1);
+            assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("offenceId").asText())
+                    .isEqualTo("off1");
+            assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
+                    .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
+        } finally {
+            setRuleEnabled(false);
+        }
+    }
+
+    private void setRuleEnabled(final boolean enabled) throws Exception {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(
+                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-DISQ-001'")) {
+            ps.setBoolean(1, enabled);
+            ps.executeUpdate();
+        }
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {
