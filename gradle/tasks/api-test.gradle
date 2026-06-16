@@ -17,6 +17,8 @@ tasks.register('api', Test) {
     def dbInfo = dockerCompose.servicesInfos.db.firstContainer
     systemProperty 'db.url',
         "jdbc:postgresql://${dbInfo.host}:${dbInfo.tcpPorts[5432]}/results-validator-db"
+    systemProperty 'db.username', "postgres"
+    systemProperty 'db.password', "postgres"
   }
 
   jvmArgs = ['-Xshare:off']

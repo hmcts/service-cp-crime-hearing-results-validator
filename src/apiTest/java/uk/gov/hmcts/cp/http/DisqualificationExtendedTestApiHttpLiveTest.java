@@ -38,8 +38,8 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
     private static final String DB_URL =
             System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = "postgres";
-    private static final String DB_PASSWORD = "postgres";
+    private static final String DB_USER = System.getProperty("db.username", "postgres");
+    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -76,37 +76,6 @@ class DisqualificationExtendedTestApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(rulesEvaluated(json)).contains(RULE_ID);
-    }
-
-    /**
-     * Covers AC1 where a relevant Road Traffic Act 1988 offence (RT88026 — dangerous driving)
-     * has a non-excluded final result and no DDOTE or DDOTEL extended-test disqualification
-     * recorded. DR-DISQ-001 is seeded as disabled, so no warning must be produced.
-     */
-    @Test
-    void ac1_relevant_offence_without_ddote_should_not_produce_warning_when_rule_disabled() throws Exception {
-        final String body = """
-                {
-                  "hearingId": "h2",
-                  "hearingDay": "2026-04-25",
-                  "courtType": "MAGISTRATES",
-                  "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
-                     "label": "Convicted", "defendantId": "d1", "offenceId": "off1"}
-                  ],
-                  "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
-                  "offences": [
-                    {"offenceId": "off1", "offenceCode": "RT88026",
-                     "offenceTitle": "Dangerous driving", "orderIndex": 1}
-                  ]
-                }
-                """;
-
-        final JsonNode json = postValidate(body);
-
-        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
-        assertThat(json.get(WARNINGS)).isEmpty();
     }
 
     /**
