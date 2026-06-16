@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -37,7 +39,6 @@ class CustodialPreprocessorTest {
                 List.of());
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
-
         assertThat(result).isEmpty();
     }
 
@@ -146,6 +147,26 @@ class CustodialPreprocessorTest {
     }
 
     /**
+     * Verifies each custodial short code in the filter list is recognised and counted towards the
+     * defendant's total offence count, confirming the code is not silently excluded by the filter.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd"})
+    void each_custodial_short_code_should_be_treated_as_custodial(final String code) {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", code, "d1", "off1"),
+                        resultLine("rl2", code, "d1", "off2")),
+                List.of());
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).as("short code %s should be treated as custodial", code).containsKey("d1");
+        assertThat(result.get("d1").totalOffences()).isEqualTo(2);
+        assertThat(result.get("d1").allOffenceIds()).containsExactly("off1", "off2");
+    }
+
+    /**
      * Verifies the preprocessor populates the defendant display name from the supplied defendant
      * record.
      */
@@ -208,7 +229,7 @@ class CustodialPreprocessorTest {
     @Test
     void toCelContext_should_return_count_map() {
         DefendantContext ctx = new DefendantContext(
-                "John", 2, 1, 0, 0, 3,
+                "d1", "John", 2, 1, 0, 0, 3,
                 List.of(), List.of(), List.of(), List.of(), List.of());
 
         Map<String, Long> celCtx = ctx.toCelContext();
@@ -225,7 +246,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_return_correct_list() {
         DefendantContext ctx = new DefendantContext(
-                "John", 0, 0, 0, 0, 0,
+                "d1", "John", 0, 0, 0, 0, 0,
                 List.of("a"), List.of("b"), List.of("c"), List.of("a", "b", "c"), List.of("a"));
 
         assertThat(ctx.getOffenceIdSet("noInfoOffenceIds")).containsExactly("a");
@@ -241,7 +262,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_throw_for_unknown_set_name() {
         DefendantContext ctx = new DefendantContext(
-                "John", 0, 0, 0, 0, 0,
+                "d1", "John", 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of(), List.of(), List.of());
 
         assertThatThrownBy(() -> ctx.getOffenceIdSet("bogus"))

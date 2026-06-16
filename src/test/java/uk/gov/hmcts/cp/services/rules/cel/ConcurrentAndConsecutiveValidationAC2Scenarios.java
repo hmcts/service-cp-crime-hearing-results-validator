@@ -11,6 +11,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -63,7 +64,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         DraftValidationRequest request = buildRequest(lines, List.of(
                 offence("off1", 1, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).isEmpty();
     }
 
@@ -83,7 +84,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                 offence("off2", 1, "Burglary")
         ));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).isEmpty();
     }
 
@@ -105,10 +106,12 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                 offence("off3", 3, "Burglary")
         ));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
 
@@ -128,10 +131,12 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                 offence("off2", 2, "Assault"),
                 offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
 
     }
 
@@ -152,10 +157,12 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                 offence("off3", 3, "Burglary")));
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
 
     }
 
@@ -176,7 +183,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         request.getResultLines().get(1).setIsConcurrent(true);
         request.getResultLines().get(2).setIsConcurrent(true);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
         assertThat(issues).hasSize(0);
     }
 
@@ -197,11 +204,13 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -221,11 +230,13 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                         offence("off2", 2, "Theft"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -245,7 +256,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                         offence("off2", 2, "Theft"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(0);
     }
@@ -280,11 +291,13 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         request.getResultLines().get(1).setIsConcurrent(null);
         request.getResultLines().get(1).setConsecutiveToOffence(null);
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(issues.getFirst().getAffectedOffences()).hasSize(2);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
     }
 
     /**
@@ -311,7 +324,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
                         offence("off5", 5, "Assault"),
                         offence("off6", 6, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(0);
     }
