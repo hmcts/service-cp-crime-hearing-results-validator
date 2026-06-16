@@ -1,7 +1,15 @@
 package uk.gov.hmcts.cp.integration;
 
+import jakarta.annotation.Resource;
+import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -24,6 +32,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+    private static final String DISQ_RULE_ID = "DR-DISQ-001";
+
+    @Resource
+    private ValidationRuleRepository repository;
+
+    @Resource
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    void enableDisqRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(DISQ_RULE_ID)
+                .enabled(true)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-setup")
+                .build());
+        evictOverrideCache(DISQ_RULE_ID);
+    }
+
+    @AfterEach
+    void restoreDisqRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(DISQ_RULE_ID)
+                .enabled(false)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-teardown")
+                .build());
+        evictOverrideCache(DISQ_RULE_ID);
+    }
+
+    private void evictOverrideCache(final String ruleId) {
+        Cache cache = cacheManager.getCache("ruleOverrides");
+        if (cache != null) {
+            cache.evict(ruleId);
+        }
+    }
 
     @Test
     void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {
