@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
 import org.slf4j.MDC;
@@ -72,6 +73,8 @@ public class TracingFilter extends OncePerRequestFilter {
         }
         if (request.getHeader(CORRELATION_HEADER) != null) {
             MDC.put(CLIENT_CORRELATION_ID, request.getHeader(CORRELATION_HEADER));
+        } else {
+            MDC.put(CLIENT_CORRELATION_ID, UUID.randomUUID().toString());
         }
         filterChain.doFilter(request, response);
     }

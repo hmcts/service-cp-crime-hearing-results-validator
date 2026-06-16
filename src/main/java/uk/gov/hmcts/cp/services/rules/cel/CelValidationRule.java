@@ -15,6 +15,7 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.SeverityCeiling;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 /**
@@ -28,6 +29,7 @@ public class CelValidationRule implements ValidationRule {
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
+    private final ValidationIssueRecorder issueRecorder;
 
     private final ValidationPreprocessor preprocessor;
 
@@ -42,12 +44,14 @@ public class CelValidationRule implements ValidationRule {
                              final CelExpressionEvaluator evaluator,
                              final MessageTemplateResolver messageResolver,
                              final OffenceDisplayHelper offenceDisplayHelper,
-                             final RuleOverrideService ruleOverrideService) {
+                             final RuleOverrideService ruleOverrideService,
+                             final ValidationIssueRecorder issueRecorder) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
+        this.issueRecorder = issueRecorder;
         preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
@@ -164,6 +168,22 @@ public class CelValidationRule implements ValidationRule {
         }
 
         return results;
+    }
+
+    /**
+     * Records the triggered issue for monitoring, isolated behind a call-site guard so a recorder
+     * failure can never escape into the evaluate loop and cause the rule's issues to be discarded.
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // observability must never suppress an issue
+    private void recordIssue(final String conditionId,
+                             final ValidationIssue.SeverityEnum severity,
+                             final String hearingId) {
+        try {
+            issueRecorder.record(ruleDefinition.getId(), conditionId, severity, hearingId);
+        } catch (Exception e) {
+            log.warn("Validation issue recorder failed for ruleId={} conditionId={}: {}",
+                    ruleDefinition.getId(), conditionId, e.getMessage());
+        }
     }
 
     /**

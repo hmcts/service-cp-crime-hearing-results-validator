@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -28,6 +29,9 @@ import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 @Service
 @Slf4j
 public class DefaultValidationService implements ValidationService {
+
+    /** MDC key carrying the per-call validation id into structured logs (incl. issue logs). */
+    private static final String MDC_VALIDATION_ID = "validationId";
 
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
@@ -60,6 +64,23 @@ public class DefaultValidationService implements ValidationService {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
+        final String validationId = "val-" + UUID.randomUUID();
+        final String previousValidationId = MDC.get(MDC_VALIDATION_ID);
+        MDC.put(MDC_VALIDATION_ID, validationId);
+        try {
+            return evaluateRulesWithMdc(request, validationId);
+        } finally {
+            if (previousValidationId == null) {
+                MDC.remove(MDC_VALIDATION_ID);
+            } else {
+                MDC.put(MDC_VALIDATION_ID, previousValidationId);
+            }
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
+    private DraftValidationResponse evaluateRulesWithMdc(final DraftValidationRequest request,
+                                                         final String validationId) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
 
@@ -114,7 +135,7 @@ public class DefaultValidationService implements ValidationService {
                 .build();
 
         return DraftValidationResponse.builder()
-                .validationId("val-" + UUID.randomUUID())
+                .validationId(validationId)
                 .timestamp(Instant.now())
                 .mode("advisory")
                 .rulesEvaluated(rulesEvaluated)

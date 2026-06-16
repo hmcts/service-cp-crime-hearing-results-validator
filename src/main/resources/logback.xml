@@ -3,6 +3,7 @@
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
                 <mdc/>
+                <arguments/>
                 <timestamp>
                     <fieldName>timestamp</fieldName>
                     <pattern>yyyy-MM-dd' 'HH:mm:ss.SSS</pattern>

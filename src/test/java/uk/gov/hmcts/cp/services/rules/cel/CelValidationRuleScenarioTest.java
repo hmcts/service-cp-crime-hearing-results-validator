@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 
 import java.util.List;
 
@@ -32,7 +34,8 @@ class CelValidationRuleScenarioTest {
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
+            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+            new ValidationIssueRecorder(new SimpleMeterRegistry()));
 
     private static List<ValidationIssue> issues(CelValidationRule rule, DraftValidationRequest request) {
         return rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
