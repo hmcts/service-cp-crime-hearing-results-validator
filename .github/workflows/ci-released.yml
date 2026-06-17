@@ -4,11 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    branches:
-      - main
 
 jobs:
   validate-api-spec-version:
+    # Releases run on the published tag; manual dispatch is restricted to main.
+    if: ${{ github.event_name == 'release' || github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -36,7 +36,7 @@ jobs:
       HMCTS_ADO_PAT: ${{ secrets.HMCTS_CP_ADO_PAT }}
     with:
       environment: dev
-      is_release: true
+      is_release: ${{ github.event_name == 'release' }}
       is_publish: true
       trigger_docker: true
       trigger_deploy: true
