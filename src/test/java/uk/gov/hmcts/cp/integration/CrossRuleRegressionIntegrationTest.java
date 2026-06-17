@@ -1,7 +1,15 @@
 package uk.gov.hmcts.cp.integration;
 
+import jakarta.annotation.Resource;
+import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -24,6 +32,44 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+    private static final String DISQ_RULE_ID = "DR-DISQ-001";
+
+    @Resource
+    private ValidationRuleRepository repository;
+
+    @Resource
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    void enableDisqRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(DISQ_RULE_ID)
+                .enabled(true)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-setup")
+                .build());
+        evictOverrideCache(DISQ_RULE_ID);
+    }
+
+    @AfterEach
+    void restoreDisqRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(DISQ_RULE_ID)
+                .enabled(false)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-teardown")
+                .build());
+        evictOverrideCache(DISQ_RULE_ID);
+    }
+
+    private void evictOverrideCache(final String ruleId) {
+        Cache cache = cacheManager.getCache("ruleOverrides");
+        if (cache != null) {
+            cache.evict(ruleId);
+        }
+    }
 
     @Test
     void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {
@@ -36,28 +82,28 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "hearingDay": "2026-04-26",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off1"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off3"},
-                    {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off4", "isConcurrent": true},
-                    {"id": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                    {"resultLineId": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d1", "offenceId": "off5"}
                   ],
-                  "defendants": [{"id": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                  "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault",
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault",
                      "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary",
+                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary",
                      "orderIndex": 3},
-                    {"id": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery",
+                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery",
                      "orderIndex": 4},
-                    {"id": "off5", "offenceCode": "RT88026",
+                    {"offenceId": "off5", "offenceCode": "RT88026",
                      "offenceTitle": "Dangerous driving", "orderIndex": 5}
                   ]
                 }
@@ -76,8 +122,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off5")))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        containsInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001",
-                                "DR-YRO-001")));
+                        containsInAnyOrder("DR-SENT-002", "DR-DISQ-001")));
     }
 
     /**
@@ -94,22 +139,22 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "hearingDay": "2026-04-26",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off1",
                      "isConcurrent": true, "consecutiveToOffence": "off2"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                    {"resultLineId": "rl3", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d2", "offenceId": "off3"}
                   ],
                   "defendants": [
-                    {"id": "d1", "firstName": "Alice", "lastName": "Smith"},
-                    {"id": "d2", "firstName": "Bob", "lastName": "Jones"}
+                    {"defendantId": "d1", "firstName": "Alice", "lastName": "Smith"},
+                    {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3}
                   ]
                 }
                 """;
@@ -126,7 +171,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 // DR-SENT-002 has priority 1000 so fires first → warnings[0]
                 .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
                 .andExpect(jsonPath("$.warnings[0].validationLevel", is("OFFENCE")))
-                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(2)))
+                .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
                 // DR-DISQ-001 has priority 2000 so fires second → warnings[1]
                 .andExpect(jsonPath("$.warnings[1].ruleId", is("DR-DISQ-001")))
@@ -150,29 +195,29 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "hearingDay": "2026-04-26",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off1",
                      "isConcurrent": true, "consecutiveToOffence": "off2"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d2", "offenceId": "off3",
                      "isConcurrent": true, "consecutiveToOffence": "off4"},
-                    {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment",
                      "defendantId": "d2", "offenceId": "off4"},
-                    {"id": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                    {"resultLineId": "rl5", "shortCode": "COEW", "category": "F", "label": "Convicted",
                      "defendantId": "d2", "offenceId": "off5"}
                   ],
                   "defendants": [
-                    {"id": "d1", "firstName": "Alice", "lastName": "Smith"},
-                    {"id": "d2", "firstName": "Bob", "lastName": "Jones"}
+                    {"defendantId": "d1", "firstName": "Alice", "lastName": "Smith"},
+                    {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"id": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
-                    {"id": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
+                    {"offenceId": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5}
                   ]
                 }
                 """;

@@ -35,7 +35,12 @@ Rule files are located in `src/main/resources/rules/`.
 
 1. Create a YAML rule file named `DR-<category>-<number>.yaml` in `src/main/resources/rules/`
 2. Define the preprocessing configuration, CEL conditions, and message templates
-3. The rule is auto-discovered at startup by `ValidationRuleAutoConfiguration` (no Java code needed)
+3. The rule is auto-discovered at startup by `ValidationRuleAutoConfiguration`
+
+> **Note:** "no Java code needed" currently holds only for **custodial-shaped** rules. The service
+> today ships a single hard-wired `CustodialPreprocessor`; the YAML `preprocessing.type` field is
+> not yet dispatched. A rule that needs a different preprocessing/context shape requires the
+> preprocessor-registry refactor (planned). See `.claude/rules/design_rules.md` → *Known limitations*.
 
 ### Runtime Rule Overrides
 

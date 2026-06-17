@@ -1,17 +1,16 @@
 package uk.gov.hmcts.cp.config;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
-import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
-import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
-import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
 import java.io.IOException;
 import java.util.List;
@@ -31,10 +30,10 @@ class ValidationRuleAutoConfigurationTest {
 
     private final PreprocessorRegistry preprocessorRegistry = new PreprocessorRegistry(List.of(
             new CustodialPreprocessor(),
-            new DisqualificationExtendedTestPreprocessor(),
-            new CtlMissingPreprocessor(),
-            new CommunityOrderEndDatePreprocessor(),
-            new YouthRehabilitationPreprocessor()));
+            new DisqualificationExtendedTestPreprocessor()));
+
+    private final ValidationIssueRecorder issueRecorder =
+            new ValidationIssueRecorder(new SimpleMeterRegistry());
 
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
@@ -46,7 +45,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                issueRecorder);
 
         assertThat(rules).isNotEmpty();
         assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
@@ -62,6 +62,37 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
+                mock(RuleOverrideService.class),
+                issueRecorder);
+
+        assertThat(rules).hasSize(2);
+        assertThat(rules)
+                .extracting(r -> r.getRuleDetail().getRuleId())
+                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001");
+    }
+
+    /**
+     * Verifies the bean factory propagates a missing-preprocessor failure so application
+     * boot fails fast. The constructor-level check in {@code CelValidationRule} is exercised
+     * by {@code CelValidationRuleTest}; this test pins the discovery path that Spring walks
+     * when wiring the rule list bean. The specific qualifier in the message is not asserted —
+     * which YAML rule is loaded first is not API-guaranteed by
+     * {@code PathMatchingResourcePatternResolver}, so the qualifier in the message could be
+     * either of the bundled rules' preprocessing.type values.
+     */
+    @Test
+    void validationRules_should_throw_when_preprocessor_qualifier_unknown() {
+        PreprocessorRegistry emptyRegistry = new PreprocessorRegistry(List.of());
+
+        assertThatThrownBy(() -> config.validationRules(
+                emptyRegistry,
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(RuleOverrideService.class),
+                issueRecorder))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No preprocessor registered for type:");
                 mock(RuleOverrideService.class));
 
         assertThat(rules).hasSize(5);

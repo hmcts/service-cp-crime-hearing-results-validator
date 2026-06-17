@@ -103,12 +103,12 @@ jobs:
         with:
           gradle-version: current
 
-      - name: Gradle Build
+      - name: Gradle Assemble
         env:
           ARTEFACT_VERSION: ${{ needs.Artefact-Version.outputs.artefact_version }}
         run: |
-          echo "Building with ARTEFACT_VERSION=$ARTEFACT_VERSION"
-          ./gradlew build -x api -DARTEFACT_VERSION=$ARTEFACT_VERSION
+          echo "Assembling JAR with ARTEFACT_VERSION=$ARTEFACT_VERSION"
+          ./gradlew assemble -DARTEFACT_VERSION=$ARTEFACT_VERSION
 
       - name: Extract repo name
         id: repo_vars
@@ -123,19 +123,11 @@ jobs:
           name: app-jar
           path: build/libs/${{ steps.repo_vars.outputs.artefact_name }}.jar
 
-      - name: Upload unit and integration test reports
-        if: always()
-        uses: ./.github/actions/upload-test-reports
-        with:
-          artifact_name: unit-integration-test-reports
-          path: |
-            build/reports/tests/test/
-            build/test-results/test/
-
-  API-Test:
-    needs: [ Build, Artefact-Version ]
-    if: ${{ inputs.run_api_test }}
+  Test:
+    needs: [ Artefact-Version ]
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -151,28 +143,24 @@ jobs:
         with:
           gradle-version: current
 
-      - name: Download JAR Artefact
-        uses: actions/download-artifact@v8
-        with:
-          name: app-jar
-          path: build/libs
-
-      - name: Run API tests
+      - name: Gradle Check (unit + integration tests, checkstyle, PMD, coverage gate)
         env:
           ARTEFACT_VERSION: ${{ needs.Artefact-Version.outputs.artefact_version }}
-        run: ./gradlew api -DARTEFACT_VERSION=$ARTEFACT_VERSION
+        run: |
+          echo "Running checks with ARTEFACT_VERSION=$ARTEFACT_VERSION"
+          ./gradlew check jacocoTestReport -x api -DARTEFACT_VERSION=$ARTEFACT_VERSION
 
-      - name: Upload API test reports
+      - name: Upload unit and integration test reports
         if: always()
         uses: ./.github/actions/upload-test-reports
         with:
-          artifact_name: api-test-reports
+          artifact_name: unit-integration-test-reports
           path: |
-            build/reports/tests/api/
-            build/test-results/api/
+            build/reports/tests/test/
+            build/test-results/test/
 
   Provider-Deploy:
-    needs: [ Artefact-Version, Build ]
+    needs: [ Artefact-Version, Build, Test, API-Test ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
@@ -206,7 +194,7 @@ jobs:
           fi
 
           echo "Publishing artefact for version: $ARTEFACT_VERSION"
-          
+
           ./gradlew publish \
             -DARTEFACT_VERSION=$ARTEFACT_VERSION \
             -DGITHUB_REPOSITORY=${{ github.repository }} \

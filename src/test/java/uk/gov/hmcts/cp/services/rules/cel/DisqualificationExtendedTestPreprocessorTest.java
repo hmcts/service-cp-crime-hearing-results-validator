@@ -21,7 +21,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 class DisqualificationExtendedTestPreprocessorTest {
 
     private static final List<String> RELEVANT_CODES = List.of(
-            "RT88046", "RT88526", "RT88026", "RT88530", "RT88531");
+            "RT88046", "RT88526", "RT88526A", "RT88526B", "RT88026", "RT88026B", "RT88530", "RT88531");
     private static final List<String> EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile");
     private static final List<String> EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
@@ -75,6 +75,57 @@ class DisqualificationExtendedTestPreprocessorTest {
                         .as("offenceCode=%s should qualify when COEW is present", code)
                         .isEqualTo(1L);
             }
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"RT88526A", "RT88526B", "RT88026B", "RT88530", "RT88531"})
+        void remaining_relevant_offence_codes_should_qualify_with_non_excluded_final_result(final String code) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "COEW", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Relevant offence", code)));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).as("offenceCode=%s should qualify", code).isEqualTo(1L);
+            assertThat(ctx.relevantCount()).isEqualTo(1L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(0L);
+            assertThat(ctx.qualifyingOffenceIds()).containsExactly("off1");
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"RT88526A", "RT88526B", "RT88026B", "RT88530", "RT88531"})
+        void remaining_relevant_offence_codes_should_be_suppressed_by_ddote(final String code) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DDOTE", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.I)),
+                    List.of(offenceWithCode("off1", 1, "Relevant offence", code)));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).as("offenceCode=%s should be suppressed by DDOTE", code).isEqualTo(0L);
+            assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"RT88526A", "RT88526B", "RT88026B", "RT88530", "RT88531"})
+        void remaining_relevant_offence_codes_should_be_suppressed_by_excluded_final_result(final String code) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "wdrn", "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Relevant offence", code)));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).as("offenceCode=%s should be suppressed by wdrn", code).isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
         }
 
         @Test
@@ -220,6 +271,28 @@ class DisqualificationExtendedTestPreprocessorTest {
             assertThat(result).containsOnlyKeys("off1", "off2");
             assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
             assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void two_defendants_with_different_relevant_offences_both_missing_ddote_should_each_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d2", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(
+                            offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
+                            offenceWithCode("off2", 2, "Causing serious injury by dangerous driving",
+                                    "RT88526")));
+
+            Map<String, DisqualificationContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("off1", "off2");
+            assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off2").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off1").qualifyingOffenceIds()).containsExactly("off1");
+            assertThat(result.get("off2").qualifyingOffenceIds()).containsExactly("off2");
         }
     }
 

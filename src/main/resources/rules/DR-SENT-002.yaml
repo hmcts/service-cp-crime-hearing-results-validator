@@ -29,8 +29,8 @@ rule:
       expression: "hasBothCount > 0"
       severity: WARNING
       messageTemplate: >-
-        ${defendantName} ${offenceNumber} — This offence has both concurrent and consecutive information. Check this is correct before sharing
-      affectedOffenceSet: "allOffenceIds"
+        This offence has both concurrent and consecutive information. Check this is correct before sharing
+      affectedOffenceSet: "hasBothOffenceIds"
       validationLevel: OFFENCE
 
     - id: "AC2"
@@ -38,12 +38,10 @@ rule:
       expression: "noInfoCount > 0"
       severity: ERROR
       messageTemplate: >-
-        Check if this is the primary offence. If it is not, you must add concurrent or consecutive information.
-      errorMessageTemplate: >-
-        Some offences do not include details of whether they are concurrent or
-        consecutive. There should be only one primary sentence for each
-        defendant, therefore one result without concurrent or consecutive
-        information. This affects ${defendantNames}.
+        ${defendantName} ${offenceNumbers} do not include details of whether
+        they are concurrent or consecutive. There should be only one primary
+        sentence, therefore one result without concurrent or consecutive
+        information
       affectedOffenceSet: "allNoInfoOffenceIds"
       affectedDefendantSet: "defendantId"
       validationLevel: OFFENCE
@@ -53,7 +51,7 @@ rule:
       expression: "noInfoCount == 0 && hasPrimaryCount == 0"
       severity: WARNING
       messageTemplate: >-
-        ${defendantName} — All offences include details of being concurrent or consecutive with no primary sentence. Check that this is correct before sharing
+        All offences include details of being concurrent or consecutive with no primary sentence. Check that this is correct before sharing
       affectedOffenceSet: "allOffenceIds"
       affectedDefendantSet: "defendantId"
       validationLevel: DEFENDANT

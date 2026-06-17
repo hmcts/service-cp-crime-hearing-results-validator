@@ -1,9 +1,23 @@
 package uk.gov.hmcts.cp.services.feature;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -99,5 +113,86 @@ class AzureAppConfigFetcherTest {
         Map<String, Boolean> features = fetcher.fetchFeatures("STE86");
 
         assertThat(features).isEmpty();
+    }
+
+    /**
+     * Exercises the live HTTP path against a stubbed Azure App Configuration endpoint, covering the
+     * HMAC-signed request construction and the success/failure response handling that the static
+     * parsing tests above cannot reach.
+     */
+    @Nested
+    @DisplayName("fetchFeatures HTTP path")
+    class HttpFetch {
+
+        // Dummy base64 secret, computed at runtime (computeSignature base64-decodes it). Built from
+        // a plain string rather than a literal so it is not mistaken for a real credential.
+        private static final String SECRET =
+                Base64.getEncoder().encodeToString("test-secret".getBytes(StandardCharsets.UTF_8));
+        private static final String EMPTY_BODY_SHA256 = "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=";
+
+        private WireMockServer wireMock;
+        private String connectionString;
+
+        @BeforeEach
+        void startServer() {
+            wireMock = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+            wireMock.start();
+            connectionString = "Endpoint=http://localhost:" + wireMock.port()
+                    + ";Id=test-id;Secret=" + SECRET;
+        }
+
+        @AfterEach
+        void stopServer() {
+            wireMock.stop();
+        }
+
+        /**
+         * Verifies that a configured fetcher signs the request (HMAC-SHA256 authorization, date and
+         * content-hash headers) and returns the parsed feature flags on an HTTP 200 response.
+         */
+        @Test
+        void fetchFeatures_with_valid_connection_should_sign_request_and_return_features() {
+            String body = """
+                    {
+                      "items": [
+                        {
+                          "key": ".appconfig.featureflag/ResultsValidation",
+                          "value": "{\\"id\\":\\"ResultsValidation\\",\\"enabled\\":true}",
+                          "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                          "label": "STE86"
+                        }
+                      ]
+                    }
+                    """;
+            wireMock.stubFor(get(urlPathEqualTo("/kv"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(body)));
+
+            AzureAppConfigFetcher fetcher = new AzureAppConfigFetcher(connectionString);
+
+            Map<String, Boolean> features = fetcher.fetchFeatures("STE86");
+
+            assertThat(features).containsEntry("ResultsValidation", true);
+            wireMock.verify(getRequestedFor(urlPathEqualTo("/kv"))
+                    .withHeader("Authorization", matching("HMAC-SHA256 Credential=test-id.*Signature=.+"))
+                    .withHeader("x-ms-content-sha256", equalTo(EMPTY_BODY_SHA256))
+                    .withHeader("x-ms-date", matching(".+")));
+        }
+
+        /**
+         * Verifies a non-200 response from Azure App Configuration is handled gracefully and yields
+         * an empty feature map rather than propagating an error.
+         */
+        @Test
+        void fetchFeatures_with_non_200_response_should_return_empty_map() {
+            wireMock.stubFor(get(urlPathEqualTo("/kv"))
+                    .willReturn(aResponse().withStatus(500)));
+
+            AzureAppConfigFetcher fetcher = new AzureAppConfigFetcher(connectionString);
+
+            assertThat(fetcher.fetchFeatures("STE86")).isEmpty();
+        }
     }
 }
