@@ -68,7 +68,7 @@ jobs:
         run: |
           SHORT_SHA="${GITHUB_SHA:0:7}"
           if [ "$IS_RELEASE" = "true" ]; then
-            VERSION="$RELEASE_VERSION"
+            VERSION="${RELEASE_VERSION//\//-}"
           elif [[ "$REF_NAME" == team/* ]]; then
             BRANCH="${REF_NAME#team/}"
             BRANCH="${BRANCH//\//-}"
