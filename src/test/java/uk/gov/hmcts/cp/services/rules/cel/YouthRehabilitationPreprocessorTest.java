@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link YouthRehabilitationPreprocessor} with DR-YRO-001 configuration
- * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew; YRUP1 unpaid work).
+ * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew).
  */
 class YouthRehabilitationPreprocessorTest {
 
@@ -34,7 +34,6 @@ class YouthRehabilitationPreprocessorTest {
                 .curfewTagShortCodes(List.of("YRC1"))
                 .furtherCurfewShortCodes(List.of("YRC3"))
                 .alcoholAbstinenceShortCodes(List.of())
-                .unpaidWorkShortCodes(List.of("YRUP1"))
                 .build();
     }
 
@@ -156,7 +155,6 @@ class YouthRehabilitationPreprocessorTest {
             assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
-            assertThat(ctx.upwrViolationCount()).isZero();
             assertThat(ctx.pastEndDateCount()).isZero();
         }
 
@@ -244,61 +242,6 @@ class YouthRehabilitationPreprocessorTest {
             assertThat(ctx.curViolationCount()).isZero();
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
-            assertThat(ctx.upwrViolationCount()).isZero();
-        }
-    }
-
-    @Nested
-    @DisplayName("AC3 — YRUP1 (Unpaid work) 12-month minimum")
-    class Ac3Yrup1 {
-
-        @Test
-        @DisplayName("YRUP1 with order under 12 months produces upwrViolationCount 1")
-        void yrup1_order_under_12_months_should_produce_upwrViolationCount_1() {
-            // hearing 20/05/2026, minEndDate = 19/05/2027, orderEnd = 18/05/2027 → violation
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(
-                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-05-18"),
-                            noPromptLine("rl-yrup1", "YRUP1", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            YouthRehabilitationContext ctx = result.get("d1");
-            assertThat(ctx.upwrViolationCount()).isEqualTo(1L);
-            assertThat(ctx.upwrViolationOffenceIds()).containsExactly("off1");
-        }
-
-        @Test
-        @DisplayName("YRUP1 at boundary (hearingDay + 12m − 1d = 2027-05-19): no violation")
-        void yrup1_at_boundary_12_months_minus_1_day_should_not_violate() {
-            // hearing 20/05/2026, minEndDate = 19/05/2027, orderEnd = 19/05/2027 → pass
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(
-                            orderLine("rl-order", "YRONI", "d1", "off1", "2027-05-19"),
-                            noPromptLine("rl-yrup1", "YRUP1", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "Boundary", "Pass")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
-        }
-
-        @Test
-        @DisplayName("YROINI without YRUP1: upwrViolationCount is zero")
-        void yroini_without_yrup1_should_produce_upwrViolationCount_0() {
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(orderLine("rl-order", "YROINI", "d1", "off1", "2026-06-01")),
-                    List.of(defendant("d1", "No", "Unpaid")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
     }
 
@@ -347,15 +290,6 @@ class YouthRehabilitationPreprocessorTest {
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
         rl.setPrompts(List.of(prompt));
-        return rl;
-    }
-
-    private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
-        ResultLineDto rl = new ResultLineDto();
-        rl.setResultLineId(id);
-        rl.setShortCode(shortCode);
-        rl.setDefendantId(defId);
-        rl.setOffenceId(offId);
         return rl;
     }
 

@@ -2,10 +2,8 @@ rule:
   id: "DR-YRO-001"
   title: "Youth Rehabilitation Order End Date Validation"
   description: >-
-    Validates that a Youth Rehabilitation Order's end date is in the future (AC1), is not earlier
-    than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3), and that an order
-    containing an unpaid work requirement (AC3: YRUP1) is at least 12 calendar months from the
-    hearing date.
+    Validates that a Youth Rehabilitation Order's end date is in the future (AC1) and is not earlier
+    than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3).
   priority: 5000
   enabled: false
 
@@ -23,8 +21,6 @@ rule:
       - YRC1
     furtherCurfewShortCodes:
       - YRC3
-    unpaidWorkShortCodes:
-      - YRUP1
 
   conditions:
     - id: "AC1"
@@ -72,15 +68,3 @@ rule:
         The end date of the order must match or be longer than the end date of
         Youth Rehabilitation Requirement: Further curfew requirement made. This affects ${defendantNames}.
       affectedOffenceSet: "curaViolationOffenceIds"
-
-    - id: "AC3"
-      name: "Unpaid work order shorter than 12 months"
-      expression: "upwrViolationCount > 0"
-      severity: ERROR
-      messageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
-        unpaid work requirement
-      errorMessageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
-        unpaid work requirement. This affects ${defendantNames}.
-      affectedOffenceSet: "upwrViolationOffenceIds"

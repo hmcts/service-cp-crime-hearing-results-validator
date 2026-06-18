@@ -30,9 +30,6 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * <p>AC2 — detects when any curfew requirement (YRC2, YRC1, YRC3) has a date strictly later
  * than the parent YRO end date.
  *
- * <p>AC3 — detects when a YRO containing a YRUP1 (unpaid work) requirement has an end date
- * less than 12 calendar months from the hearing date
- * ({@code orderEndDate.isBefore(hearingDay.plusMonths(12).minusDays(1))}).
  */
 @Component
 public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
@@ -65,7 +62,6 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
         final Set<String> curCodes = upperSet(config.getCurfewShortCodes());
         final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
         final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
-        final Set<String> upwrCodes = upperSet(config.getUnpaidWorkShortCodes());
 
         final Map<String, String> defendantNames = buildDefendantNames(request);
         final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
@@ -85,7 +81,6 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
             final List<String> curViolationIds = new ArrayList<>();
             final List<String> cureViolationIds = new ArrayList<>();
             final List<String> curaViolationIds = new ArrayList<>();
-            final List<String> upwrViolationIds = new ArrayList<>();
 
             final Map<String, List<ResultLineDto>> linesByOffence = lines.stream()
                     .collect(Collectors.groupingBy(
@@ -135,15 +130,6 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                     curaViolationIds.add(offenceId);
                 }
 
-                // AC3 — YRUP1: order shorter than hearingDay + 12m − 1d
-                final boolean hasUpwr = offenceLines.stream()
-                        .anyMatch(rl -> hasUpperCode(rl, upwrCodes));
-                if (hasUpwr && request.getHearingDay() != null) {
-                    final LocalDate minEndDate = request.getHearingDay().plusMonths(12).minusDays(1);
-                    if (orderEndDate.isBefore(minEndDate)) {
-                        upwrViolationIds.add(offenceId);
-                    }
-                }
             }
 
             result.put(defendantId, new YouthRehabilitationContext(
@@ -152,12 +138,10 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                     curViolationIds.size(),
                     cureViolationIds.size(),
                     curaViolationIds.size(),
-                    upwrViolationIds.size(),
                     List.copyOf(pastEndDateIds),
                     List.copyOf(curViolationIds),
                     List.copyOf(cureViolationIds),
                     List.copyOf(curaViolationIds),
-                    List.copyOf(upwrViolationIds),
                     List.copyOf(allOffenceIds)));
         }
 

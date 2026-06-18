@@ -15,7 +15,6 @@ import java.util.Map;
  *   <li>AC2a — YRC2 (Curfew) end date exceeds YRO end date</li>
  *   <li>AC2b — YRC1 (Curfew with electronic monitoring) end-of-tag exceeds YRO end date</li>
  *   <li>AC2c — YRC3 (Further curfew requirement made) end date exceeds YRO end date</li>
- *   <li>AC3 — YRUP1 (Unpaid work) present; YRO end date less than hearingDay + 12m − 1d</li>
  * </ul>
  */
 public record YouthRehabilitationContext(
@@ -24,17 +23,15 @@ public record YouthRehabilitationContext(
         long curViolationCount,
         long cureViolationCount,
         long curaViolationCount,
-        long upwrViolationCount,
         List<String> pastEndDateOffenceIds,
         List<String> curViolationOffenceIds,
         List<String> cureViolationOffenceIds,
         List<String> curaViolationOffenceIds,
-        List<String> upwrViolationOffenceIds,
         List<String> allOffenceIds
 ) implements RuleEvaluationContext {
 
     /**
-     * Returns the AC1/AC2/AC3 violation counts as the CEL variable map.
+     * Returns the AC1/AC2 violation counts as the CEL variable map.
      *
      * @return CEL variable map keyed by expression variable name
      */
@@ -44,8 +41,7 @@ public record YouthRehabilitationContext(
                 "pastEndDateCount", pastEndDateCount,
                 "curViolationCount", curViolationCount,
                 "cureViolationCount", cureViolationCount,
-                "curaViolationCount", curaViolationCount,
-                "upwrViolationCount", upwrViolationCount
+                "curaViolationCount", curaViolationCount
         );
     }
 
@@ -63,7 +59,6 @@ public record YouthRehabilitationContext(
             case "curViolationOffenceIds" -> curViolationOffenceIds;
             case "cureViolationOffenceIds" -> cureViolationOffenceIds;
             case "curaViolationOffenceIds" -> curaViolationOffenceIds;
-            case "upwrViolationOffenceIds" -> upwrViolationOffenceIds;
             case "allOffenceIds" -> allOffenceIds;
             default -> throw new IllegalArgumentException("Unknown offence set: " + setName);
         };

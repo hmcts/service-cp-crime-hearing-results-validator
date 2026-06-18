@@ -28,7 +28,6 @@ import org.springframework.web.client.RestTemplate;
  *   <li>Happy path — valid YRO with a future end date and no requirement violations</li>
  *   <li>AC1 — YRO end date on or before the hearing date → ERROR</li>
  *   <li>AC2a — YRC2 (curfew) end date strictly after YRO end date → ERROR</li>
- *   <li>AC3 — YRUP1 (unpaid work) present; YRO end date less than 12 months from hearing → ERROR</li>
  * </ul>
  */
 class YroEndDateApiHttpLiveTest {
@@ -45,10 +44,6 @@ class YroEndDateApiHttpLiveTest {
     private static final String MSG_YRC2 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Curfew";
-    private static final String MSG_YRUP1 =
-            "The end date of the order must be at least 12 months as it includes an "
-                    + "unpaid work requirement";
-
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -257,87 +252,6 @@ class YroEndDateApiHttpLiveTest {
                      "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Fiona", "lastName": "Hart"}],
-                  "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
-                  ]
-                }
-                """;
-
-        final JsonNode json = postValidate(body);
-
-        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
-        assertThat(json.get(WARNINGS)).isEmpty();
-    }
-
-    /**
-     * AC3 — YRUP1 (unpaid work) present; YRO end date is less than 12 calendar months from the
-     * hearing date. DR-YRO-001 must produce a single ERROR.
-     *
-     * <p>Hearing date: 2026-06-17. Minimum end date: 2027-06-16 (hearingDay + 12m − 1d).
-     * Order end date: 2027-06-15 (one day short) → violation.
-     */
-    @Test
-    void ac3_yrup1_order_under_12_months_should_produce_error() throws Exception {
-        final String body = """
-                {
-                  "hearingId": "yro-h7",
-                  "hearingDay": "2026-06-17",
-                  "courtType": "MAGISTRATES",
-                  "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
-                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-15"}]},
-                    {"resultLineId": "rl2", "shortCode": "YRUP1", "category": "I",
-                     "label": "Unpaid work", "defendantId": "d1", "offenceId": "off1"}
-                  ],
-                  "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
-                  "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
-                  ]
-                }
-                """;
-
-        final JsonNode json = postValidate(body);
-
-        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
-        assertThat(json.get(WARNINGS)).isEmpty();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
-                .isEqualTo(RULE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
-                .isEqualTo("ERROR");
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("offenceId").asText())
-                .isEqualTo("off1");
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("message").asText())
-                .isEqualToIgnoringWhitespace(MSG_YRUP1);
-    }
-
-    /**
-     * AC3 boundary — YRUP1 present; YRO end date exactly equals the minimum (hearingDay + 12m − 1d).
-     * DR-YRO-001 must not fire because the order meets the 12-month requirement.
-     *
-     * <p>Hearing date: 2026-06-17. Minimum end date: 2027-06-16. Order end date: 2027-06-16 → PASS.
-     */
-    @Test
-    void ac3_yrup1_order_exactly_at_12_month_boundary_should_not_produce_error() throws Exception {
-        final String body = """
-                {
-                  "hearingId": "yro-h8",
-                  "hearingDay": "2026-06-17",
-                  "courtType": "MAGISTRATES",
-                  "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
-                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-16"}]},
-                    {"resultLineId": "rl2", "shortCode": "YRUP1", "category": "I",
-                     "label": "Unpaid work", "defendantId": "d1", "offenceId": "off1"}
-                  ],
-                  "defendants": [{"defendantId": "d1", "firstName": "Hannah", "lastName": "Iris"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1}
