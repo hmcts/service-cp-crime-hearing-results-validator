@@ -34,6 +34,5 @@
 All checklist items pass. Specification is ready for `/speckit-clarify` or `/speckit-plan`.
 
 Key design decisions captured as assumptions:
-- A-001: 12-month boundary for UPWR uses calendar months (confirmed by Scenario 15 boundary case)
-- A-002: Requirement end date equal to order end date is valid (AC2 only triggers on strict less-than)
-- A-004: AC1 scenarios (1–5) included for completeness; may already exist in codebase — verify before implementing
+- A-001: Requirement end date equal to order end date is valid (AC2 only triggers on strict less-than)
+- A-002: AC1 scenarios (1–5) included for completeness; may already exist in codebase — verify before implementing

@@ -134,12 +134,10 @@ class CelValidationRuleTest {
         ValidationIssue warning = result.issue();
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
         assertThat(result.errorMessage()).isNull();
-        assertThat(warning.getAffectedOffences()).hasSize(2);
-        assertThat(warning.getAffectedOffences()).allSatisfy(ao -> {
-            assertThat(ao.getMessage()).contains("John Smith");
-            assertThat(ao.getMessage()).contains("both concurrent and consecutive");
-        });
-        assertThat(warning.getAffectedOffences().get(1).getMessage()).contains("Offence 2 (URN:32AH9105826)");
+        assertThat(warning.getAffectedOffences()).hasSize(1);
+        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("John Smith");
+        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
+        assertThat(warning.getAffectedOffences().get(0).getMessage()).contains("Offence 2 (URN:32AH9105826)");
     }
 
     /**
@@ -359,6 +357,44 @@ class CelValidationRuleTest {
 
         assertThat(results).hasSize(1);
         ValidationIssue issue = results.getFirst().issue();
+        assertThat(issue.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.DEFENDANT);
+        assertThat(issue.getAffectedDefendants()).hasSize(1);
+        assertThat(issue.getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");
+        assertThat(issue.getAffectedOffences()).isNullOrEmpty();
+    }
+
+    /**
+     * Verifies that a DEFENDANT-level condition with ERROR severity preserves the DEFENDANT
+     * validation level rather than silently demoting it to OFFENCE.
+     */
+    @Test
+    void defendant_level_error_condition_should_preserve_defendant_level() {
+        CelValidationRule defendantErrorRule = new CelValidationRule(
+                "rules/TEST-defendant-level-error.yaml",
+                new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
+
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d1", "off2")
+                ),
+                List.of(
+                        offence("off1", 1, "Theft"),
+                        offence("off2", 2, "Assault")
+                )
+        );
+        request.getResultLines().get(1).setIsConcurrent(true);
+        request.getResultLines().get(1).setConsecutiveToOffence("off1");
+
+        List<ValidationIssueResult> results = defendantErrorRule.evaluate(request);
+
+        assertThat(results).hasSize(1);
+        ValidationIssue issue = results.getFirst().issue();
+        assertThat(issue.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
         assertThat(issue.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.DEFENDANT);
         assertThat(issue.getAffectedDefendants()).hasSize(1);
         assertThat(issue.getAffectedDefendants().getFirst().getDefendantId()).isEqualTo("d1");

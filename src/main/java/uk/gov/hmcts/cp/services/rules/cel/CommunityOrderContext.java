@@ -15,17 +15,15 @@ public record CommunityOrderContext(
         long cureViolationCount,
         long curaViolationCount,
         long aarViolationCount,
-        long upwrViolationCount,
         List<String> curViolationOffenceIds,
         List<String> cureViolationOffenceIds,
         List<String> curaViolationOffenceIds,
         List<String> aarViolationOffenceIds,
-        List<String> upwrViolationOffenceIds,
         List<String> allOffenceIds
 ) implements RuleEvaluationContext {
 
     /**
-     * Returns the five AC2/AC3 violation counts as the CEL variable map.
+     * Returns the four AC2 violation counts as the CEL variable map.
      *
      * @return CEL variable map keyed by expression variable name
      */
@@ -35,8 +33,7 @@ public record CommunityOrderContext(
                 "curViolationCount", curViolationCount,
                 "cureViolationCount", cureViolationCount,
                 "curaViolationCount", curaViolationCount,
-                "aarViolationCount", aarViolationCount,
-                "upwrViolationCount", upwrViolationCount
+                "aarViolationCount", aarViolationCount
         );
     }
 
@@ -54,7 +51,6 @@ public record CommunityOrderContext(
             case "cureViolationOffenceIds" -> cureViolationOffenceIds;
             case "curaViolationOffenceIds" -> curaViolationOffenceIds;
             case "aarViolationOffenceIds" -> aarViolationOffenceIds;
-            case "upwrViolationOffenceIds" -> upwrViolationOffenceIds;
             case "allOffenceIds" -> allOffenceIds;
             default -> throw new IllegalArgumentException("Unknown offence set: " + setName);
         };

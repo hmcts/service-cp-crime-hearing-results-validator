@@ -58,7 +58,8 @@ class RuleDefinitionTest {
         assertThat(ac3.getSeverity()).isEqualTo("WARNING");
         assertThat(ac3.getMessageTemplate()).contains("both concurrent and consecutive");
         assertThat(ac3.getErrorMessageTemplate()).isNull();
-        assertThat(ac3.getAffectedOffenceSet()).isEqualTo("allOffenceIds");
+        assertThat(ac3.getAffectedOffenceSet()).isEqualTo("hasBothOffenceIds");
+        assertThat(ac3.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
 
         ConditionDefinition ac2 = rule.getConditions().get(1);
         assertThat(ac2.getId()).isEqualTo("AC2");
@@ -66,11 +67,13 @@ class RuleDefinitionTest {
         assertThat(ac2.getSeverity()).isEqualTo("ERROR");
         assertThat(ac2.getErrorMessageTemplate()).contains("Some offences do not include details");
         assertThat(ac2.getAffectedOffenceSet()).isEqualTo("allNoInfoOffenceIds");
+        assertThat(ac2.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
 
         ConditionDefinition ac4 = rule.getConditions().get(2);
         assertThat(ac4.getId()).isEqualTo("AC4");
         assertThat(ac4.getExpression()).isEqualTo("noInfoCount == 0 && hasPrimaryCount == 0");
         assertThat(ac4.getSeverity()).isEqualTo("WARNING");
+        assertThat(ac4.getValidationLevel()).isEqualTo(ValidationLevel.DEFENDANT);
     }
 
     /**

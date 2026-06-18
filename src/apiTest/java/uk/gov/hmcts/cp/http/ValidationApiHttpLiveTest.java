@@ -72,13 +72,13 @@ class ValidationApiHttpLiveTest {
                   "hearingDay": "2026-03-11",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true}
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true}
                   ],
-                  "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -102,17 +102,17 @@ class ValidationApiHttpLiveTest {
                   "hearingDay": "2026-03-11",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
-                    {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
-                    {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off4", "isConcurrent": true}
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off4", "isConcurrent": true}
                   ],
-                  "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"id": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"id": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
                   ]
                 }
                 """;
@@ -141,13 +141,13 @@ class ValidationApiHttpLiveTest {
                   "hearingDay": "2026-03-11",
                   "courtType": "CROWN",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
                   ],
-                  "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -159,7 +159,7 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
         assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(1).get("message").asText())
+        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
                 .startsWith("John Doe")
                 .contains("Offence 2").contains("concurrent").contains("consecutive");
     }
@@ -176,13 +176,13 @@ class ValidationApiHttpLiveTest {
                   "hearingDay": "2026-03-11",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1", "isConcurrent": true},
-                    {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "consecutiveToOffence": "off1"}
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1", "isConcurrent": true},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "consecutiveToOffence": "off1"}
                   ],
-                  "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;

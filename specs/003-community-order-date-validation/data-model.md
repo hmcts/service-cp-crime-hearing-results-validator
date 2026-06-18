@@ -12,7 +12,7 @@
 | Field | Type | Notes |
 |-------|------|-------|
 | `hearingId` | `String` | Required |
-| `hearingDay` | `LocalDate` | **Used by AC3** — reference point for 12-month UPWR check |
+| `hearingDay` | `LocalDate` | Reference point for AC1 (out of scope) |
 | `resultLines` | `List<ResultLineDto>` | Flat list of all result lines across all defendants/offences |
 | `defendants` | `List<DefendantDto>` | For display name lookup |
 | `offences` | `List<OffenceDto>` | For offence display ordering |
@@ -46,7 +46,6 @@
 | CURE | `"endDateOfTagging"` | Curfew with tag — end date of tag |
 | CURA | `"endDate"` | Further curfew end date |
 | AAR | `"until"` | Alcohol abstinence until date |
-| UPWR | *(no date prompt)* | Presence alone triggers AC3 |
 
 ---
 
@@ -54,7 +53,7 @@
 
 ### `PreprocessingDefinition` — new fields (modified existing class)
 
-Six new `List<String>` fields added alongside the existing ones:
+Five new `List<String>` fields added alongside the existing ones:
 
 | New Field | YAML Key | Example values |
 |-----------|----------|----------------|
@@ -63,7 +62,6 @@ Six new `List<String>` fields added alongside the existing ones:
 | `curfewTagShortCodes` | `curfewTagShortCodes` | `[CURE]` |
 | `furtherCurfewShortCodes` | `furtherCurfewShortCodes` | `[CURA]` |
 | `alcoholAbstinenceShortCodes` | `alcoholAbstinenceShortCodes` | `[AAR]` |
-| `unpaidWorkShortCodes` | `unpaidWorkShortCodes` | `[UPWR]` |
 
 These fields are only populated when `preprocessing.type = "community-order-end-date"`. Other preprocessors leave them null/empty.
 
@@ -80,12 +78,10 @@ CommunityOrderContext
   ├── cureViolationCount: long        — offences where CURE end date of tag > order end date
   ├── curaViolationCount: long        — offences where CURA end date > order end date
   ├── aarViolationCount: long         — offences where AAR until date > order end date
-  ├── upwrViolationCount: long        — offences with UPWR where order < hearingDay + 12m - 1d
   ├── curViolationOffenceIds: List<String>   — offence IDs for AC2a (CUR) violations
   ├── cureViolationOffenceIds: List<String>  — offence IDs for AC2b (CURE) violations
   ├── curaViolationOffenceIds: List<String>  — offence IDs for AC2c (CURA) violations
   ├── aarViolationOffenceIds: List<String>   — offence IDs for AC2d (AAR) violations
-  ├── upwrViolationOffenceIds: List<String>  — offence IDs for AC3 (UPWR) violations
   └── allOffenceIds: List<String>            — all offence IDs for this defendant
 ```
 
@@ -97,7 +93,6 @@ CommunityOrderContext
 | `cureViolationCount` | `Long` | AC2b: `cureViolationCount > 0` |
 | `curaViolationCount` | `Long` | AC2c: `curaViolationCount > 0` |
 | `aarViolationCount` | `Long` | AC2d: `aarViolationCount > 0` |
-| `upwrViolationCount` | `Long` | AC3: `upwrViolationCount > 0` |
 
 **Named offence-id sets** (`getOffenceIdSet(setName)`):
 
@@ -107,7 +102,6 @@ CommunityOrderContext
 | `"cureViolationOffenceIds"` | `cureViolationOffenceIds` |
 | `"curaViolationOffenceIds"` | `curaViolationOffenceIds` |
 | `"aarViolationOffenceIds"` | `aarViolationOffenceIds` |
-| `"upwrViolationOffenceIds"` | `upwrViolationOffenceIds` |
 | `"allOffenceIds"` | `allOffenceIds` |
 
 ---
@@ -136,15 +130,12 @@ Output: Map<String, CommunityOrderContext>  (key = defendantId)
           CURE lines → parse "endDateOfTag"      → if > orderEndDate: add to cureViolationIds
           CURA lines → parse "endDate"           → if > orderEndDate: add to curaViolationIds
           AAR lines  → parse "until"             → if > orderEndDate: add to aarViolationIds
-          UPWR lines → check orderEndDate.isBefore(hearingDay.plusMonths(12).minusDays(1))
-                       → if true: add offenceId to upwrViolationIds
    c. Build CommunityOrderContext with accumulated counts and id sets
 5. Return map (includes defendants with all-zero counts; CEL conditions won't fire for them)
 ```
 
 **Date comparison semantics**:
 - AC2 (requirement end date check): violation when `requirementDate.isAfter(orderEndDate)` — equal is valid.
-- AC3 (UPWR minimum duration): violation when `orderEndDate.isBefore(hearingDay.plusMonths(12).minusDays(1))`.
 
 ---
 
@@ -180,7 +171,6 @@ rule:
     curfewTagShortCodes:       [CURE]
     furtherCurfewShortCodes:   [CURA]
     alcoholAbstinenceShortCodes: [AAR]
-    unpaidWorkShortCodes:      [UPWR]
 
   conditions:
     - id: "AC2a"
@@ -214,14 +204,6 @@ rule:
       messageTemplate: >-
         The end date of the order must match or be longer than the end date of Alcohol abstinence and monitoring
       affectedOffenceSet: "aarViolationOffenceIds"
-
-    - id: "AC3"
-      name: "Unpaid work order shorter than 12 months"
-      expression: "upwrViolationCount > 0"
-      severity: ERROR
-      messageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an unpaid work requirement
-      affectedOffenceSet: "upwrViolationOffenceIds"
 ```
 
 ---
@@ -230,24 +212,23 @@ rule:
 
 ```
 DraftValidationRequest
-  ├── hearingDay ──────────────────────── used by CommunityOrderEndDatePreprocessor (AC3)
   ├── resultLines: List<ResultLineDto>
   │     └── prompts: List<Prompt>
   │           ├── promptRef / promptValue ─── parsed by preprocessor for dates
   └── defendants: List<DefendantDto> ────── display name lookup
 
 CommunityOrderEndDatePreprocessor
-  ├── reads: DraftValidationRequest (hearingDay + resultLines + defendants)
-  ├── config: PreprocessingDefinition (6 new short-code list fields)
+  ├── reads: DraftValidationRequest (resultLines + defendants)
+  ├── config: PreprocessingDefinition (5 new short-code list fields)
   └── produces: Map<defendantId, CommunityOrderContext>
 
 CommunityOrderContext  (one per defendant with ≥1 community order)
-  ├── 5 violation counts  ──→ CEL variable map (toCelContext())
-  ├── 5 violation offence-id sets ──→ getOffenceIdSet(name) per YAML condition
+  ├── 4 violation counts  ──→ CEL variable map (toCelContext())
+  ├── 4 violation offence-id sets ──→ getOffenceIdSet(name) per YAML condition
   └── allOffenceIds ──→ message template resolver ordering
 
 DR-COEW-001.yaml
-  └── 5 conditions → CelValidationRule → ValidationIssue (ERROR) per triggered condition
+  └── 4 conditions → CelValidationRule → ValidationIssue (ERROR) per triggered condition
         ├── affectedOffences  ── scoped to violation offence-id set
         └── affectedDefendants ── [{ defendantId }] for the triggering defendant
 ```
