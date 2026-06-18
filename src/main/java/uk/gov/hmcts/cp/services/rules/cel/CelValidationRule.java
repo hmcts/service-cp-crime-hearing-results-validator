@@ -14,6 +14,7 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.SeverityCeiling;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 /**
@@ -23,25 +24,31 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
-    private final CustodialPreprocessor preprocessor;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
     private final RuleOverrideService ruleOverrideService;
 
-    /** Constructs the rule from a YAML path and the required collaborators. */
+    private final ValidationPreprocessor preprocessor;
+
+    /**
+     * Constructs the rule from a YAML path and the required collaborators. Fails fast at
+     * construction time if the YAML's {@code preprocessing.type} qualifier does not resolve in
+     * the registry, surfacing the misconfiguration at application boot rather than on the first
+     * validation request.
+     */
     public CelValidationRule(final String rulePath,
-                             final CustodialPreprocessor preprocessor,
+                             final PreprocessorRegistry preprocessorRegistry,
                              final CelExpressionEvaluator evaluator,
                              final MessageTemplateResolver messageResolver,
                              final OffenceDisplayHelper offenceDisplayHelper,
                              final RuleOverrideService ruleOverrideService) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
-        this.preprocessor = preprocessor;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
         this.ruleOverrideService = ruleOverrideService;
+        preprocessor = preprocessorRegistry.require(ruleDefinition.getPreprocessing().getType());
     }
 
     @Override
@@ -65,44 +72,90 @@ public class CelValidationRule implements ValidationRule {
     }
 
     @Override
-    public List<ValidationIssue> evaluate(final DraftValidationRequest request) {
+    public List<ValidationIssueResult> evaluate(final DraftValidationRequest request) {
         final ResolvedOverride override = resolveOverride();
 
-        final List<ValidationIssue> issues = new ArrayList<>();
+        final List<ValidationIssueResult> results = new ArrayList<>();
 
         if (override.enabled()) {
             final Map<String, OffenceDto> offenceMap = request.getOffences().stream()
-                    .collect(Collectors.toMap(OffenceDto::getId, o -> o, (a, b) -> a));
+                    .collect(Collectors.toMap(OffenceDto::getOffenceId, o -> o, (a, b) -> a));
 
-            final Map<String, DefendantContext> defendantContexts =
+            final Map<String, ? extends RuleEvaluationContext> contexts =
                     preprocessor.preprocess(request, ruleDefinition.getPreprocessing());
 
-            for (final DefendantContext context : defendantContexts.values()) {
+            for (final RuleEvaluationContext context : contexts.values()) {
                 final Map<String, Long> celContext = context.toCelContext();
 
                 for (final ConditionDefinition condition : ruleDefinition.getConditions()) {
                     if (evaluator.evaluate(condition.getExpression(), celContext)) {
-                        final List<String> affectedIds = context.getOffenceIdSet(
-                                condition.getAffectedOffenceSet());
+                        final boolean isDefendantLevel =
+                                condition.getValidationLevel() == ValidationLevel.DEFENDANT;
 
-                        final String message = messageResolver.resolve(
-                                condition.getMessageTemplate(),
-                                context.defendantName(),
-                                affectedIds,
-                                offenceMap,
-                                context.allOffenceIds());
+                        final List<String> offenceIdsForTemplate =
+                                condition.getAffectedOffenceSet() != null
+                                        ? context.getOffenceIdSet(condition.getAffectedOffenceSet())
+                                        : List.of();
 
-                        final String effectiveSeverity = SeverityCeiling.resolve(
-                                condition.getSeverity(), override.dbSeverity());
                         final String normalizedSeverity = Optional
-                                .ofNullable(SeverityCeiling.normalize(effectiveSeverity))
+                                .ofNullable(SeverityCeiling.normalize(
+                                        SeverityCeiling.resolve(
+                                                condition.getSeverity(), override.dbSeverity())))
                                 .orElse("ERROR");
-                        issues.add(ValidationIssue.builder()
+
+                        final boolean isError = "ERROR".equalsIgnoreCase(normalizedSeverity);
+                        final ValidationIssue.ValidationLevelEnum level = isDefendantLevel
+                                ? ValidationIssue.ValidationLevelEnum.DEFENDANT
+                                : ValidationIssue.ValidationLevelEnum.OFFENCE;
+
+                        final ValidationIssue.ValidationIssueBuilder issueBuilder = ValidationIssue.builder()
                                 .ruleId(ruleDefinition.getId())
                                 .severity(ValidationIssue.SeverityEnum.valueOf(normalizedSeverity))
-                                .message(message)
-                                .affectedOffences(offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap))
-                                .build());
+                                .validationLevel(level);
+
+                        if (isDefendantLevel) {
+                            final String message = messageResolver.resolve(
+                                    condition.getMessageTemplate(),
+                                    context.defendantName(),
+                                    offenceIdsForTemplate,
+                                    offenceMap,
+                                    context.allOffenceIds());
+                            issueBuilder.affectedDefendants(
+                                    offenceDisplayHelper.buildAffectedDefendants(
+                                            context.getDefendantIdSet(condition.getAffectedDefendantSet()),
+                                            message));
+                        } else {
+                            issueBuilder.affectedOffences(
+                                    offenceDisplayHelper.buildAffectedOffences(
+                                            offenceIdsForTemplate,
+                                            offenceMap,
+                                            id -> messageResolver.resolve(
+                                                    condition.getMessageTemplate(),
+                                                    context.defendantName(),
+                                                    List.of(id),
+                                                    offenceMap,
+                                                    context.allOffenceIds())));
+                        }
+
+                        final String errorMessage = (isError && condition.getErrorMessageTemplate() != null)
+                                ? messageResolver.resolve(
+                                        condition.getErrorMessageTemplate(),
+                                        context.defendantName(),
+                                        offenceIdsForTemplate,
+                                        offenceMap,
+                                        context.allOffenceIds())
+                                : null;
+
+                        final String affectedDefendantName =
+                                (isError && condition.getErrorMessageTemplate() != null)
+                                        ? context.defendantName()
+                                        : null;
+
+                        if (isError) {
+                            results.add(ValidationIssueResult.forError(issueBuilder.build(), errorMessage, affectedDefendantName));
+                        } else {
+                            results.add(ValidationIssueResult.forWarning(issueBuilder.build()));
+                        }
                     }
                 }
             }
@@ -110,7 +163,7 @@ public class CelValidationRule implements ValidationRule {
             log.debug("Rule {} is disabled via database override", ruleDefinition.getId());
         }
 
-        return issues;
+        return results;
     }
 
     /**

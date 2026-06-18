@@ -3,7 +3,9 @@ package uk.gov.hmcts.cp.services.impl;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +13,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationErrors;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.ValidationService;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
+import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 
 /**
  * Runs every configured validation rule and aggregates their issues into the API response.
@@ -26,13 +31,16 @@ public class DefaultValidationService implements ValidationService {
 
     private final List<ValidationRule> rules;
     private final FeatureToggleService featureToggleService;
+    private final MessageTemplateResolver messageTemplateResolver;
 
-    /** Creates the service with the given rules and feature toggle. */
+    /** Creates the service with the given rules, feature toggle, and template resolver. */
     public DefaultValidationService(
             @Qualifier("validationRules") final List<ValidationRule> rules,
-            final FeatureToggleService featureToggleService) {
+            final FeatureToggleService featureToggleService,
+            final MessageTemplateResolver messageTemplateResolver) {
         this.rules = rules;
         this.featureToggleService = featureToggleService;
+        this.messageTemplateResolver = messageTemplateResolver;
     }
 
     @Override
@@ -50,13 +58,16 @@ public class DefaultValidationService implements ValidationService {
         return response;
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());
         final long startNanos = System.nanoTime();
 
         final List<String> rulesEvaluated = new ArrayList<>();
-        final List<ValidationIssue> errors = new ArrayList<>();
+        final Map<String, String> errorBaseByTemplate = new LinkedHashMap<>();
+        final Map<String, List<String>> errorNamesByTemplate = new LinkedHashMap<>();
+        final List<String> standaloneMessages = new ArrayList<>();
+        final List<ValidationIssue> errorItemsList = new ArrayList<>();
         final List<ValidationIssue> warnings = new ArrayList<>();
 
         for (final ValidationRule rule : rules) {
@@ -64,12 +75,21 @@ public class DefaultValidationService implements ValidationService {
             try {
                 ruleId = rule.getRuleDetail().getRuleId();
 
-                final List<ValidationIssue> issues = rule.evaluate(request);
-                for (final ValidationIssue issue : issues) {
-                    if (issue.getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
-                        errors.add(issue);
+                final List<ValidationIssueResult> results = rule.evaluate(request);
+                for (final ValidationIssueResult result : results) {
+                    if (result.issue().getSeverity() == ValidationIssue.SeverityEnum.ERROR) {
+                        errorItemsList.add(result.issue());
+                        if (result.errorMessage() != null) {
+                            if (result.affectedDefendantName() != null) {
+                                final String templateKey = ruleId + "::" + result.errorMessage();
+                                errorBaseByTemplate.putIfAbsent(templateKey, result.errorMessage());
+                                appendDefendantName(errorNamesByTemplate, templateKey, result.affectedDefendantName());
+                            } else {
+                                standaloneMessages.add(result.errorMessage());
+                            }
+                        }
                     } else {
-                        warnings.add(issue);
+                        warnings.add(result.issue());
                     }
                 }
 
@@ -80,14 +100,25 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
+        final List<String> errorMessages = new ArrayList<>(standaloneMessages);
+        for (final Map.Entry<String, String> entry : errorBaseByTemplate.entrySet()) {
+            final List<String> names = errorNamesByTemplate.get(entry.getKey());
+            errorMessages.add(messageTemplateResolver.resolveDefendantNames(entry.getValue(), names));
+        }
+
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+
+        final ValidationErrors errors = ValidationErrors.builder()
+                .errorMessages(errorMessages)
+                .validationIssues(errorItemsList)
+                .build();
 
         return DraftValidationResponse.builder()
                 .validationId("val-" + UUID.randomUUID())
                 .timestamp(Instant.now())
                 .mode("advisory")
                 .rulesEvaluated(rulesEvaluated)
-                .isValid(errors.isEmpty())
+                .isValid(errorItemsList.isEmpty())
                 .errors(errors)
                 .warnings(warnings)
                 .processingTimeMs((int) processingTimeMs)
@@ -113,9 +144,18 @@ public class DefaultValidationService implements ValidationService {
                 .mode("disabled")
                 .rulesEvaluated(List.of())
                 .isValid(true)
-                .errors(List.of())
+                .errors(ValidationErrors.builder()
+                        .validationIssues(List.of())
+                        .errorMessages(List.of())
+                        .build())
                 .warnings(List.of())
                 .processingTimeMs(0)
                 .build();
+    }
+
+    private static void appendDefendantName(final Map<String, List<String>> errorNamesByRule,
+                                             final String ruleId,
+                                             final String name) {
+        errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>()).add(name);
     }
 }

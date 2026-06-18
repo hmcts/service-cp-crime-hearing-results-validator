@@ -19,4 +19,9 @@ public class PreprocessingDefinition {
     private List<String> filterShortCodes;
     private String groupBy;
     private int skipWhenGroupCount;
+    private List<String> communityOrderShortCodes;
+    private List<String> curfewShortCodes;
+    private List<String> curfewTagShortCodes;
+    private List<String> furtherCurfewShortCodes;
+    private List<String> alcoholAbstinenceShortCodes;
 }

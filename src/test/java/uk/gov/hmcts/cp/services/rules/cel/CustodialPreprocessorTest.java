@@ -37,7 +37,6 @@ class CustodialPreprocessorTest {
                 List.of());
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
-
         assertThat(result).isEmpty();
     }
 
@@ -208,7 +207,7 @@ class CustodialPreprocessorTest {
     @Test
     void toCelContext_should_return_count_map() {
         DefendantContext ctx = new DefendantContext(
-                "John", 2, 1, 0, 0, 3,
+                "d1", "John", 2, 1, 0, 0, 3,
                 List.of(), List.of(), List.of(), List.of(), List.of());
 
         Map<String, Long> celCtx = ctx.toCelContext();
@@ -225,7 +224,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_return_correct_list() {
         DefendantContext ctx = new DefendantContext(
-                "John", 0, 0, 0, 0, 0,
+                "d1", "John", 0, 0, 0, 0, 0,
                 List.of("a"), List.of("b"), List.of("c"), List.of("a", "b", "c"), List.of("a"));
 
         assertThat(ctx.getOffenceIdSet("noInfoOffenceIds")).containsExactly("a");
@@ -241,7 +240,7 @@ class CustodialPreprocessorTest {
     @Test
     void getOffenceIdSet_should_throw_for_unknown_set_name() {
         DefendantContext ctx = new DefendantContext(
-                "John", 0, 0, 0, 0, 0,
+                "d1", "John", 0, 0, 0, 0, 0,
                 List.of(), List.of(), List.of(), List.of(), List.of());
 
         assertThatThrownBy(() -> ctx.getOffenceIdSet("bogus"))
@@ -354,7 +353,7 @@ class CustodialPreprocessorTest {
     @Test
     void should_skip_result_lines_with_null_short_code() {
         ResultLineDto nullShortCode = ResultLineDto.builder()
-                .id("rlx")
+                .resultLineId("rlx")
                 .defendantId("d1")
                 .offenceId("off9")
                 .build();
@@ -402,7 +401,7 @@ class CustodialPreprocessorTest {
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
                 List.of(DefendantDto.builder()
-                        .id("d1").firstName("John").lastName("Smith").masterDefendantId("   ").build()));
+                        .defendantId("d1").firstName("John").lastName("Smith").masterDefendantId("   ").build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -420,7 +419,7 @@ class CustodialPreprocessorTest {
                 List.of(resultLine("rl1", "IMP", "d1", "off1"),
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
-                List.of(DefendantDto.builder().id("d1").firstName(null).lastName("Smith").build()));
+                List.of(DefendantDto.builder().defendantId("d1").firstName(null).lastName("Smith").build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -437,7 +436,7 @@ class CustodialPreprocessorTest {
                 List.of(resultLine("rl1", "IMP", "d1", "off1"),
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
-                List.of(DefendantDto.builder().id("d1").firstName("John").lastName(null).build()));
+                List.of(DefendantDto.builder().defendantId("d1").firstName("John").lastName(null).build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -448,7 +447,7 @@ class CustodialPreprocessorTest {
     private static DefendantDto defendant(String id, String fullName, String masterDefendantId) {
         String[] parts = fullName.split(" ", 2);
         return DefendantDto.builder()
-                .id(id)
+                .defendantId(id)
                 .firstName(parts[0])
                 .lastName(parts.length > 1 ? parts[1] : null)
                 .masterDefendantId(masterDefendantId)
@@ -457,7 +456,7 @@ class CustodialPreprocessorTest {
 
     private static ResultLineDto resultLine(String id, String shortCode, String defendantId, String offenceId) {
         return ResultLineDto.builder()
-                .id(id)
+                .resultLineId(id)
                 .shortCode(shortCode)
                 .label(shortCode + " label")
                 .defendantId(defendantId)

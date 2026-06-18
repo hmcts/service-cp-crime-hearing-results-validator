@@ -3,13 +3,18 @@ package uk.gov.hmcts.cp.controllers;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.TraceContext;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -164,6 +169,114 @@ class GlobalExceptionHandlerTest {
         assertEquals(500, problem.getStatus());
         assertEquals("Internal server error", problem.getDetail());
         assertEquals("test-trace-id", problem.getProperties().get("traceId"));
+        assertNotNull(problem.getProperties().get("timestamp"));
+    }
+
+    /**
+     * Verifies that bean-validation failures are collected into a semicolon-separated detail string
+     * and returned as a 400 Problem Detail with {@code application/problem+json} content type.
+     */
+    @Test
+    void handle_method_argument_not_valid_with_field_errors_should_return_400_problem_detail() {
+        // Arrange
+        final Tracer tracer = mock(Tracer.class);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-abc");
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final BindingResult bindingResult = mock(BindingResult.class);
+        when(bindingResult.getFieldErrors()).thenReturn(List.of(
+                new FieldError("request", "hearingId", "must not be blank"),
+                new FieldError("request", "offences", "must not be empty")
+        ));
+
+        final MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
+        when(exception.getBindingResult()).thenReturn(bindingResult);
+
+        // Act
+        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(400, problem.getStatus());
+        assertEquals("Bad Request", problem.getTitle());
+        assertThat(problem.getDetail()).contains("hearingId: must not be blank");
+        assertThat(problem.getDetail()).contains("offences: must not be empty");
+        assertEquals("trace-abc", problem.getProperties().get("traceId"));
+        assertNotNull(problem.getProperties().get("timestamp"));
+    }
+
+    /**
+     * Verifies that when there are no field errors the detail falls back to "Validation failed".
+     */
+    @Test
+    void handle_method_argument_not_valid_with_no_field_errors_should_return_validation_failed_detail() {
+        // Arrange
+        final Tracer tracer = mock(Tracer.class);
+        when(tracer.currentSpan()).thenReturn(null);
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final BindingResult bindingResult = mock(BindingResult.class);
+        when(bindingResult.getFieldErrors()).thenReturn(List.of());
+
+        final MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
+        when(exception.getBindingResult()).thenReturn(bindingResult);
+
+        // Act
+        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(400, problem.getStatus());
+        assertEquals("Validation failed", problem.getDetail());
+        assertEquals("no-trace", problem.getProperties().get("traceId"));
+    }
+
+    /**
+     * Verifies that a malformed request body is returned as a 400 Problem Detail with the
+     * fixed detail text "Malformed request body".
+     */
+    @Test
+    void handle_http_message_not_readable_should_return_400_with_malformed_body_detail() {
+        // Arrange
+        final Tracer tracer = mock(Tracer.class);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-xyz");
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
+
+        // Act
+        final ResponseEntity<ProblemDetail> response = handler.handleHttpMessageNotReadable(exception);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+
+        final ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(400, problem.getStatus());
+        assertEquals("Bad Request", problem.getTitle());
+        assertEquals("Malformed request body", problem.getDetail());
+        assertEquals("trace-xyz", problem.getProperties().get("traceId"));
         assertNotNull(problem.getProperties().get("timestamp"));
     }
 

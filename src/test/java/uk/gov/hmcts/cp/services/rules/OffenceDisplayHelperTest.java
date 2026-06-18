@@ -1,17 +1,19 @@
 package uk.gov.hmcts.cp.services.rules;
 
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
-import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
+import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link OffenceDisplayHelper}, covering display-number resolution, order-index
- * fallback, and affected-offence payload construction.
+ * fallback, and affected-offence/defendant payload construction.
  */
 class OffenceDisplayHelperTest {
 
@@ -26,7 +28,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_orderIndex_and_no_urn_should_use_order_index() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -40,7 +42,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_orderIndex_and_urn_should_append_urn() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).caseUrn("32AH9105826").build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).caseUrn("32AH9105826").build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -53,7 +55,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_with_blank_urn_should_omit_urn() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(3).caseUrn("   ").build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(3).caseUrn("   ").build());
 
         String result = helper.resolveDisplayNumber("off1", offenceMap, ALL_OFFENCE_IDS);
 
@@ -67,7 +69,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveDisplayNumber_without_orderIndex_should_fall_back_to_list_position() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off2", OffenceDto.builder().id("off2").build());
+                "off2", OffenceDto.builder().offenceId("off2").build());
 
         String result = helper.resolveDisplayNumber("off2", offenceMap, ALL_OFFENCE_IDS);
 
@@ -102,7 +104,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveOrderIndex_with_orderIndex_should_return_it() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").orderIndex(7).build());
+                "off1", OffenceDto.builder().offenceId("off1").orderIndex(7).build());
 
         assertThat(helper.resolveOrderIndex("off1", offenceMap, ALL_OFFENCE_IDS)).isEqualTo(7);
     }
@@ -113,7 +115,7 @@ class OffenceDisplayHelperTest {
     @Test
     void resolveOrderIndex_without_orderIndex_should_fall_back_to_list_position() {
         Map<String, OffenceDto> offenceMap = Map.of(
-                "off3", OffenceDto.builder().id("off3").build());
+                "off3", OffenceDto.builder().offenceId("off3").build());
 
         assertThat(helper.resolveOrderIndex("off3", offenceMap, ALL_OFFENCE_IDS)).isEqualTo(3);
     }
@@ -127,36 +129,173 @@ class OffenceDisplayHelperTest {
                 .isEqualTo(Integer.MAX_VALUE);
     }
 
-    /**
-     * Verifies affected-offence entries carry the offence title when the offence is known.
-     */
-    @Test
-    void buildAffectedOffences_with_known_offence_should_populate_title() {
-        Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").offenceTitle("Theft").build());
+    @Nested
+    @DisplayName("resolveDisplayNumber")
+    class ResolveDisplayNumber {
 
-        List<AffectedOffence> result = helper.buildAffectedOffences(List.of("off1"), offenceMap);
+        @Test
+        void resolveDisplayNumber_withOrderIndexAndUrn_should_returnFormattedOffenceWithUrn() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1").orderIndex(3).caseUrn("32AH9105826").build();
+            Map<String, OffenceDto> map = Map.of("off1", offence);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.getFirst().getOffenceId()).isEqualTo("off1");
-        assertThat(result.getFirst().getOffenceTitle()).isEqualTo("Theft");
+            String result = helper.resolveDisplayNumber("off1", map, List.of("off1"));
+
+            assertThat(result).isEqualTo("Offence 3 (URN:32AH9105826)");
+        }
+
+        @Test
+        void resolveDisplayNumber_withOrderIndexAndNoUrn_should_returnOffenceNumberOnly() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1").orderIndex(2).build();
+            Map<String, OffenceDto> map = Map.of("off1", offence);
+
+            String result = helper.resolveDisplayNumber("off1", map, List.of("off1"));
+
+            assertThat(result).isEqualTo("Offence 2");
+        }
+
+        @Test
+        void resolveDisplayNumber_withBlankUrn_should_returnOffenceNumberOnly() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1").orderIndex(1).caseUrn("   ").build();
+            Map<String, OffenceDto> map = Map.of("off1", offence);
+
+            String result = helper.resolveDisplayNumber("off1", map, List.of("off1"));
+
+            assertThat(result).isEqualTo("Offence 1");
+        }
+
+        @Test
+        void resolveDisplayNumber_notInOffenceMap_should_usePositionalIndexFromAllOffenceIds() {
+            List<String> all = List.of("off1", "off2", "off3");
+
+            String result = helper.resolveDisplayNumber("off2", Map.of(), all);
+
+            assertThat(result).isEqualTo("Offence 2");
+        }
+
+        @Test
+        void resolveDisplayNumber_notInMapOrAllOffenceIds_should_returnOffencePrefixedId() {
+            String result = helper.resolveDisplayNumber("unknown-id", Map.of(), List.of("off1"));
+
+            assertThat(result).isEqualTo("Offence unknown-id");
+        }
+
+        @Test
+        void resolveDisplayNumber_withNullOrderIndex_should_fallBackToPositionalIndex() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off2").orderIndex(null).build();
+            Map<String, OffenceDto> map = Map.of("off2", offence);
+            List<String> all = List.of("off1", "off2", "off3");
+
+            String result = helper.resolveDisplayNumber("off2", map, all);
+
+            assertThat(result).isEqualTo("Offence 2");
+        }
     }
 
-    /**
-     * Verifies affected-offence entries leave the title null when the offence is unknown, and that
-     * the input order is preserved.
-     */
-    @Test
-    void buildAffectedOffences_with_unknown_offence_should_leave_title_null_and_keep_order() {
-        Map<String, OffenceDto> offenceMap = Map.of(
-                "off1", OffenceDto.builder().id("off1").offenceTitle("Theft").build());
+    @Nested
+    @DisplayName("resolveOrderIndex")
+    class ResolveOrderIndex {
 
-        List<AffectedOffence> result = helper.buildAffectedOffences(List.of("off1", "offX"), offenceMap);
+        @Test
+        void resolveOrderIndex_withOrderIndex_should_returnIt() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1").orderIndex(5).build();
+            Map<String, OffenceDto> map = Map.of("off1", offence);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).getOffenceId()).isEqualTo("off1");
-        assertThat(result.get(0).getOffenceTitle()).isEqualTo("Theft");
-        assertThat(result.get(1).getOffenceId()).isEqualTo("offX");
-        assertThat(result.get(1).getOffenceTitle()).isNull();
+            int result = helper.resolveOrderIndex("off1", map, List.of("off1"));
+
+            assertThat(result).isEqualTo(5);
+        }
+
+        @Test
+        void resolveOrderIndex_notInOffenceMap_should_usePositionalIndex() {
+            List<String> all = List.of("off1", "off2", "off3");
+
+            int result = helper.resolveOrderIndex("off3", Map.of(), all);
+
+            assertThat(result).isEqualTo(3);
+        }
+
+        @Test
+        void resolveOrderIndex_notInMapOrAllOffenceIds_should_returnMaxValue() {
+            int result = helper.resolveOrderIndex("ghost", Map.of(), List.of("off1"));
+
+            assertThat(result).isEqualTo(Integer.MAX_VALUE);
+        }
+
+        @Test
+        void resolveOrderIndex_withNullOrderIndex_should_fallBackToPositionalIndex() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off2").orderIndex(null).build();
+            Map<String, OffenceDto> map = Map.of("off2", offence);
+            List<String> all = List.of("off1", "off2");
+
+            int result = helper.resolveOrderIndex("off2", map, all);
+
+            assertThat(result).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    class BuildAffectedDefendants {
+
+        @Test
+        void should_return_empty_list_when_no_ids() {
+            List<AffectedDefendant> result = helper.buildAffectedDefendants(List.of(), "some message");
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void should_map_single_id_to_affected_defendant() {
+            List<AffectedDefendant> result = helper.buildAffectedDefendants(List.of("d1"), "issue message");
+
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getDefendantId()).isEqualTo("d1");
+            assertThat(result.getFirst().getMessage()).isEqualTo("issue message");
+        }
+
+        @Test
+        void should_map_multiple_ids_preserving_order() {
+            List<AffectedDefendant> result =
+                    helper.buildAffectedDefendants(List.of("d1", "master-2", "d3"), "issue message");
+
+            assertThat(result).extracting(AffectedDefendant::getDefendantId)
+                    .containsExactly("d1", "master-2", "d3");
+        }
+    }
+
+    @Nested
+    class BuildAffectedOffences {
+
+        @Test
+        void should_include_title_and_message_from_offence_map() {
+            OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1")
+                    .offenceTitle("Theft")
+                    .build();
+
+            List<AffectedOffence> result =
+                    helper.buildAffectedOffences(List.of("off1"), Map.of("off1", offence), id -> "No CTL found");
+
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getOffenceId()).isEqualTo("off1");
+            assertThat(result.getFirst().getOffenceTitle()).isEqualTo("Theft");
+            assertThat(result.getFirst().getMessage()).isEqualTo("No CTL found");
+        }
+
+        @Test
+        void should_set_null_title_when_offence_not_in_map() {
+            List<AffectedOffence> result =
+                    helper.buildAffectedOffences(List.of("off-unknown"), Map.of(), id -> "No CTL found");
+
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().getOffenceId()).isEqualTo("off-unknown");
+            assertThat(result.getFirst().getOffenceTitle()).isNull();
+            assertThat(result.getFirst().getMessage()).isEqualTo("No CTL found");
+        }
     }
 }

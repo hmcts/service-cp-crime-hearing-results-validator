@@ -31,6 +31,18 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     }
 
     /**
+     * Verifies the Flyway seed data can be read back for the bundled DR-COEW-001 override row.
+     */
+    @Test
+    void findById_should_return_seeded_rule_for_dr_coew_001() {
+        Optional<ValidationRuleEntity> result = repository.findById("DR-COEW-001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().isEnabled()).isFalse();
+        assertThat(result.get().getSeverity()).isEqualTo("ERROR");
+    }
+
+    /**
      * Verifies unknown identifiers are returned as empty optionals rather than errors.
      */
     @Test
