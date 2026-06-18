@@ -38,7 +38,7 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
         Optional<ValidationRuleEntity> result = repository.findById("DR-CTL-001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().isEnabled()).isTrue();
+        assertThat(result.get().isEnabled()).isFalse();
         assertThat(result.get().getSeverity()).isEqualTo("WARNING");
     }
 
