@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,8 +24,9 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-YRO-001 (Youth Rehabilitation Order end-date validation) against a
  * running service instance.
  *
- * <p>DR-YRO-001 is always enabled (no DB override row; YAML default {@code enabled: true}), so
- * these tests do not require any DB manipulation.
+ * <p>DR-YRO-001 is inserted into the {@code validation_rule} table as disabled by the Flyway
+ * migration. {@link #enableRule()} enables it via JDBC in {@code @BeforeAll} and sleeps 2 s to
+ * allow the Caffeine cache TTL to expire; {@link #disableRule()} restores it in {@code @AfterAll}.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -28,6 +34,7 @@ import org.springframework.web.client.RestTemplate;
  *   <li>Happy path — valid YRO with a future end date and no requirement violations</li>
  *   <li>AC1 — YRO end date on or before the hearing date → ERROR</li>
  *   <li>AC2a — YRC2 (curfew) end date strictly after YRO end date → ERROR</li>
+ *   <li>AC3 — YRUP1 (unpaid work) present; YRO end date less than 12 months from hearing → ERROR</li>
  * </ul>
  */
 class YroEndDateApiHttpLiveTest {
@@ -44,6 +51,15 @@ class YroEndDateApiHttpLiveTest {
     private static final String MSG_YRC2 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Curfew";
+    private static final String MSG_YRUP1 =
+            "The end date of the order must be at least 12 months as it includes an "
+                    + "unpaid work requirement";
+
+    private static final String DB_URL =
+            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
+    private static final String DB_USER = System.getProperty("db.username", "postgres");
+    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
+
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -264,6 +280,107 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * AC3 — YRUP1 (unpaid work) present; YRO end date is less than 12 calendar months from the
+     * hearing date. DR-YRO-001 must produce a single ERROR.
+     *
+     * <p>Hearing date: 2026-06-17. Minimum end date: 2027-06-16 (hearingDay + 12m − 1d).
+     * Order end date: 2027-06-15 (one day short) → violation.
+     */
+    @Test
+    void ac3_yrup1_order_under_12_months_should_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h7",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-15"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRUP1", "category": "I",
+                     "label": "Unpaid work", "defendantId": "d1", "offenceId": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(WARNINGS)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
+                .isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
+                .isEqualTo("ERROR");
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get("affectedOffences").get(0).get("offenceId").asText())
+                .isEqualTo("off1");
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get("affectedOffences").get(0).get("message").asText())
+                .isEqualToIgnoringWhitespace(MSG_YRUP1);
+    }
+
+    /**
+     * AC3 boundary — YRUP1 present; YRO end date exactly equals the minimum (hearingDay + 12m − 1d).
+     * DR-YRO-001 must not fire because the order meets the 12-month requirement.
+     *
+     * <p>Hearing date: 2026-06-17. Minimum end date: 2027-06-16. Order end date: 2027-06-16 → PASS.
+     */
+    @Test
+    void ac3_yrup1_order_exactly_at_12_month_boundary_should_not_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h8",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-16"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRUP1", "category": "I",
+                     "label": "Unpaid work", "defendantId": "d1", "offenceId": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Hannah", "lastName": "Iris"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    @BeforeAll
+    static void enableRule() throws Exception {
+        setRuleEnabled(true);
+        Thread.sleep(2000);
+    }
+
+    @AfterAll
+    static void disableRule() throws Exception {
+        setRuleEnabled(false);
+    }
+
+    private static void setRuleEnabled(final boolean enabled) throws Exception {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(
+                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-YRO-001'")) {
+            ps.setBoolean(1, enabled);
+            ps.executeUpdate();
+        }
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {
