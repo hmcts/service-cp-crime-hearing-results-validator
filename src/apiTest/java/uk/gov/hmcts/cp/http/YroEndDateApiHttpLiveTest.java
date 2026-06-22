@@ -46,6 +46,10 @@ class YroEndDateApiHttpLiveTest {
     private static final String RULES_EVALUATED = "rulesEvaluated";
     private static final String RULE_ID = "DR-YRO-001";
 
+    private static final String RULE_ID_FIELD = "ruleId";
+    private static final String AFFECTED_OFFENCES = "affectedOffences";
+    private static final String ISSUE_MESSAGE = "message";
+
     private static final String MSG_AC1 =
             "The end date must be in the future";
     private static final String MSG_YRC2 =
@@ -157,16 +161,16 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
                 .isEqualTo("ERROR");
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("offenceId").asText())
+                .get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("message").asText())
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_AC1);
     }
 
@@ -197,10 +201,10 @@ class YroEndDateApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("message").asText())
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_AC1);
     }
 
@@ -236,15 +240,15 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
                 .isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("offenceId").asText())
+                .get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("message").asText())
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRC2);
     }
 
@@ -316,15 +320,15 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText())
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
                 .isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("offenceId").asText())
+                .get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get("affectedOffences").get(0).get("message").asText())
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRUP1);
     }
 
