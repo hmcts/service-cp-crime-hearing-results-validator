@@ -290,7 +290,7 @@ class YroEndDateApiHttpLiveTest {
      * Order end date: 2027-06-15 (one day short) → violation.
      */
     @Test
-    void ac3_yrup1_order_under_12_months_should_produce_error() throws Exception {
+    void ac3_yrup1_order_under_twelve_months_should_produce_error() throws Exception {
         final String body = """
                 {
                   "hearingId": "yro-h7",
@@ -335,7 +335,7 @@ class YroEndDateApiHttpLiveTest {
      * <p>Hearing date: 2026-06-17. Minimum end date: 2027-06-16. Order end date: 2027-06-16 → PASS.
      */
     @Test
-    void ac3_yrup1_order_exactly_at_12_month_boundary_should_not_produce_error() throws Exception {
+    void ac3_yrup1_order_exactly_at_twelve_month_boundary_should_not_produce_error() throws Exception {
         final String body = """
                 {
                   "hearingId": "yro-h8",
