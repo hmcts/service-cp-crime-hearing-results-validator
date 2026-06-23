@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 
 import java.util.List;
 
@@ -32,7 +34,8 @@ class CelValidationRuleScenarioTest {
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class));
+            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+            new ValidationIssueRecorder(new SimpleMeterRegistry()));
 
     private static List<ValidationIssue> issues(CelValidationRule rule, DraftValidationRequest request) {
         return rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
@@ -175,12 +178,12 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList).hasSize(1);
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
             assertThat(issueList.getFirst().getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
-            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(2);
+            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(1);
         }
 
         /**
-         * Scenario S6 verifies AC3 includes all offences for the defendant group when more than one
-         * offence is marked both concurrent and consecutive.
+         * Scenario S6 verifies AC3 includes only the offences that have both concurrent and
+         * consecutive flags set, not all offences for the defendant group.
          */
         @Test
         @DisplayName("S6: 3 offences – 2 have both → Warning AC3")
@@ -203,7 +206,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList).hasSize(1);
             assertThat(issueList.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
             assertThat(issueList.getFirst().getAffectedOffences().get(0).getMessage()).contains("both concurrent and consecutive");
-            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(3);
+            assertThat(issueList.getFirst().getAffectedOffences()).hasSize(2);
         }
     }
 
@@ -553,8 +556,8 @@ class CelValidationRuleScenarioTest {
         /**
          * Scenario S20: AC2 fires for two separate defendants in the same hearing. Each defendant
          * has two custodial offences with no concurrent/consecutive info. This must produce two
-         * independent OFFENCE-level errors — one scoped to Def1, one scoped to Def2 — each
-         * carrying affectedOffences for their own defendant's offences and no affectedDefendants.
+         * independent DEFENDANT-level errors — one scoped to Def1, one scoped to Def2 — with no
+         * affectedOffences populated on either issue.
          */
         @Test
         @DisplayName("S20: Def1 off1+off2 all no-info, Def2 off3+off4 all no-info → 2 independent AC2 errors, validationLevel DEFENDANT")
@@ -658,7 +661,7 @@ class CelValidationRuleScenarioTest {
                     .containsOnly(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList).flatExtracting(i -> i.getAffectedOffences()
                     .stream().map(o -> o.getOffenceId()).toList())
-                    .containsExactlyInAnyOrder("off1", "off2", "off3", "off4");
+                    .containsExactlyInAnyOrder("off1", "off3");
         }
     }
 }

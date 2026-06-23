@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -142,6 +144,26 @@ class CustodialPreprocessorTest {
         DefendantContext ctx = result.get("d1");
         assertThat(ctx.totalOffences()).isEqualTo(2);
         assertThat(ctx.allOffenceIds()).containsExactly("off1", "off3");
+    }
+
+    /**
+     * Verifies each custodial short code in the filter list is recognised and counted towards the
+     * defendant's total offence count, confirming the code is not silently excluded by the filter.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd"})
+    void each_custodial_short_code_should_be_treated_as_custodial(final String code) {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", code, "d1", "off1"),
+                        resultLine("rl2", code, "d1", "off2")),
+                List.of());
+        request.getResultLines().get(1).setIsConcurrent(true);
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).as("short code %s should be treated as custodial", code).containsKey("d1");
+        assertThat(result.get("d1").totalOffences()).isEqualTo(2);
+        assertThat(result.get("d1").allOffenceIds()).containsExactly("off1", "off2");
     }
 
     /**
@@ -353,7 +375,7 @@ class CustodialPreprocessorTest {
     @Test
     void should_skip_result_lines_with_null_short_code() {
         ResultLineDto nullShortCode = ResultLineDto.builder()
-                .id("rlx")
+                .resultLineId("rlx")
                 .defendantId("d1")
                 .offenceId("off9")
                 .build();
@@ -401,7 +423,7 @@ class CustodialPreprocessorTest {
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
                 List.of(DefendantDto.builder()
-                        .id("d1").firstName("John").lastName("Smith").masterDefendantId("   ").build()));
+                        .defendantId("d1").firstName("John").lastName("Smith").masterDefendantId("   ").build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -419,7 +441,7 @@ class CustodialPreprocessorTest {
                 List.of(resultLine("rl1", "IMP", "d1", "off1"),
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
-                List.of(DefendantDto.builder().id("d1").firstName(null).lastName("Smith").build()));
+                List.of(DefendantDto.builder().defendantId("d1").firstName(null).lastName("Smith").build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -436,7 +458,7 @@ class CustodialPreprocessorTest {
                 List.of(resultLine("rl1", "IMP", "d1", "off1"),
                         resultLine("rl2", "IMP", "d1", "off2")),
                 List.of(),
-                List.of(DefendantDto.builder().id("d1").firstName("John").lastName(null).build()));
+                List.of(DefendantDto.builder().defendantId("d1").firstName("John").lastName(null).build()));
         request.getResultLines().get(1).setIsConcurrent(true);
 
         Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
@@ -447,7 +469,7 @@ class CustodialPreprocessorTest {
     private static DefendantDto defendant(String id, String fullName, String masterDefendantId) {
         String[] parts = fullName.split(" ", 2);
         return DefendantDto.builder()
-                .id(id)
+                .defendantId(id)
                 .firstName(parts[0])
                 .lastName(parts.length > 1 ? parts[1] : null)
                 .masterDefendantId(masterDefendantId)
@@ -456,7 +478,7 @@ class CustodialPreprocessorTest {
 
     private static ResultLineDto resultLine(String id, String shortCode, String defendantId, String offenceId) {
         return ResultLineDto.builder()
-                .id(id)
+                .resultLineId(id)
                 .shortCode(shortCode)
                 .label(shortCode + " label")
                 .defendantId(defendantId)
