@@ -4,30 +4,9 @@
 
 ---
 
-## Decision 1: Preprocessor reuse vs. new preprocessor
+## Decision 1: Preprocessor
 
-> **⚠️ Superseded during implementation.** This decision (reuse `community-order-end-date`, no new
-> Java) was reversed in favour of a dedicated `youth-rehabilitation-order` preprocessor
-> (`YouthRehabilitationPreprocessor`) and `YouthRehabilitationContext` for clean separation of
-> YRO-specific logic. The logic the two preprocessors would otherwise duplicate was extracted into the
-> shared `PreprocessorHelper` (see Decision 7). The original rationale below is retained for history.
-
-**Original decision**: Reuse the existing `community-order-end-date` preprocessor type (`CommunityOrderEndDatePreprocessor`) with YRO short codes declared in the new YAML file. No new Java code is required.
-
-**Rationale**:
-`CommunityOrderEndDatePreprocessor` is fully code-list driven — it reads `communityOrderShortCodes`, `curfewShortCodes`, `curfewTagShortCodes`, `furtherCurfewShortCodes`, `alcoholAbstinenceShortCodes`, and `unpaidWorkShortCodes` from `PreprocessingDefinition` (which is populated directly from YAML). The prompt ref keys (`endDate`, `endDateOfTagging`) are stable API-contract values from `api-cp-crime-hearing-results-validator` and match the fields on YRC1, YRC2, and YRC3 requirement result lines. The YRO short codes map cleanly onto the existing config fields:
-
-| YAML field | Community order codes | YRO codes |
-|---|---|---|
-| `communityOrderShortCodes` | COEW, COS, CONI | YROEW, YRONI, YROFEW, YROISS, YROINI |
-| `curfewShortCodes` | CUR | YRC2 |
-| `curfewTagShortCodes` | CURE | YRC1 |
-| `furtherCurfewShortCodes` | CURA | YRC3 |
-
-The `YouthRehabilitationContext` variables (`curViolationCount`, `cureViolationCount`, `curaViolationCount`) carry the violation counts; the YAML CEL conditions reference these variable names directly.
-
-**Alternatives considered**:
-- *New `YroEndDatePreprocessor` and `YroContext`* — rejected. Would duplicate ~280 lines of logic with zero behavioral difference; violates Constitution Principle I (adding a new rule must not require Java if an existing preprocessor fits) and Constitution Principle III (pluggable preprocessors must be generic).
+**Decision**: Dedicated `youth-rehabilitation-order` preprocessor (`YouthRehabilitationPreprocessor`) and `YouthRehabilitationContext` for clean separation of YRO-specific logic. Shared helpers are extracted into `PreprocessorHelper` (see Decision 6).
 
 ---
 
@@ -78,7 +57,7 @@ The `YouthRehabilitationContext` variables (`curViolationCount`, `cureViolationC
 
 ## Prompt ref keys (stable API-contract values)
 
-The following prompt refs are used by `CommunityOrderEndDatePreprocessor` and apply equally to YRO requirement result lines:
+The following prompt refs are used by `YouthRehabilitationPreprocessor` for YRO result lines:
 
 | Prompt ref | Used for | YRO requirement |
 |---|---|---|
