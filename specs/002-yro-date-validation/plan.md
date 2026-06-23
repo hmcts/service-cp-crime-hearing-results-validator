@@ -5,7 +5,7 @@
 
 ## Summary
 
-Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule covering **AC1** (YRO end date must be in the future — i.e. strictly after the hearing date), AC2 (YRO end date must not precede any linked curfew requirement end date), and AC3 (YRO containing an unpaid work requirement must span at least 12 calendar months from the hearing date).
+Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule covering **AC1** (YRO end date must be in the future — i.e. strictly after the hearing date) and AC2 (YRO end date must not precede any linked curfew requirement end date).
 
 > **Design note (supersedes the original plan).** The first revision proposed reusing the
 > `community-order-end-date` preprocessor with no new Java. That was reversed once **AC1** was added:
@@ -62,7 +62,7 @@ src/main/resources/rules/
 └── DR-YRO-001.yaml                                # NEW — YRO date validation rule
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
-├── YouthRehabilitationPreprocessor.java           # NEW — youth-rehabilitation-order preprocessor (AC1/AC2/AC3)
+├── YouthRehabilitationPreprocessor.java           # NEW — youth-rehabilitation-order preprocessor (AC1/AC2)
 ├── YouthRehabilitationContext.java                # NEW — CEL context record for the rule
 └── PreprocessorHelper.java                         # NEW — shared static helpers (used by all preprocessors)
 
@@ -89,13 +89,11 @@ src/test/java/uk/gov/hmcts/cp/services/rules/cel/
 
 ```yaml
 preprocessing:
-  type: "community-order-end-date"
+  type: "youth-rehabilitation-order"
   communityOrderShortCodes: [YROEW, YRONI, YROFEW, YROISS, YROINI]
   curfewShortCodes:          [YRC2]
   curfewTagShortCodes:       [YRC1]
   furtherCurfewShortCodes:   [YRC3]
-  alcoholAbstinenceShortCodes: []          # not applicable to YRO
-  unpaidWorkShortCodes:      [YRUP1]
 ```
 
 ### Conditions
@@ -106,7 +104,6 @@ preprocessing:
 | AC2a | `curViolationCount > 0` | ERROR | YRC2 end date after YRO end date |
 | AC2b | `cureViolationCount > 0` | ERROR | YRC1 end-of-tag after YRO end date |
 | AC2c | `curaViolationCount > 0` | ERROR | YRC3 end date after YRO end date |
-| AC3 | `upwrViolationCount > 0` | ERROR | YRUP1 present; YRO end date < hearingDay + 12m − 1d |
 
 ### Message templates
 
@@ -115,7 +112,6 @@ preprocessing:
 | AC2a | "The end date of the order must match or be longer than the end date of Youth Rehabilitation Requirement: Curfew" | Same + ". This affects ${defendantNames}." |
 | AC2b | "The end date of the order must match or be longer than the end date of Youth Rehabilitation Requirement: Curfew with electronic monitoring" | Same + ". This affects ${defendantNames}." |
 | AC2c | "The end date of the order must match or be longer than the end date of Youth Rehabilitation Requirement: Further curfew requirement made" | Same + ". This affects ${defendantNames}." |
-| AC3 | "The end date of the order must be at least 12 months as it includes an unpaid work requirement" | Same + ". This affects ${defendantNames}." |
 
 ### Rule priority
 
@@ -124,10 +120,10 @@ preprocessing:
 ## Test Plan (for `YroEndDateValidationIntegrationTest.java`)
 
 All tests extend `IntegrationTestBase`. The integration scenarios map directly onto the Jira DD-41654
-acceptance scenarios (Scenarios 1–14, covering AC1/AC2/AC3 plus the combined AC4/AC5 display cases).
-Preprocessor and shared-helper logic is additionally covered by `YouthRehabilitationPreprocessorTest`
-and `PreprocessorHelperTest`. (An earlier duplicate IT, `YroDateValidationRuleIntegrationTest`, covered
-only AC2/AC3 and was removed in favour of this superset.)
+acceptance scenarios covering AC1/AC2 plus combined display cases. Preprocessor and shared-helper
+logic is additionally covered by `YouthRehabilitationPreprocessorTest` and `PreprocessorHelperTest`.
+(An earlier duplicate IT, `YroDateValidationRuleIntegrationTest`, covered only AC2 and was removed
+in favour of this superset.)
 
 ### AC1 scenarios
 
@@ -151,24 +147,14 @@ only AC2/AC3 and was removed in favour of this superset.)
 | T007 | Two defendants; only one has curfew breach | Only affected defendant in error; other unaffected |
 | T008 | YRO with no curfew child requirements | No AC2 error |
 
-### AC3 scenarios
-
-| Test ID | Scenario | Expected |
-|---|---|---|
-| T009 | YRUP1 present; YRO end date < hearingDay + 12m − 1d | AC3 ERROR |
-| T010 | YRUP1 present; YRO end date = hearingDay + 12m − 1d | No error (boundary: equal is valid) |
-| T011 | YRUP1 present; YRO end date > hearingDay + 12m − 1d | No error |
-| T012 | YRO without YRUP1 and short end date | No AC3 error |
-| T013 | Two defendants; only one has YRUP1 with short duration | Only affected defendant in error |
-
 ### Combined and response-structure scenarios
 
 | Test ID | Scenario | Expected |
 |---|---|---|
-| T014 | Same defendant has both AC2a breach and AC3 breach | Both conditions fire; independent errors |
-| T015 | Error summary includes defendant name (${defendantNames} resolved) | `errorMessage` contains defendant full name |
-| T016 | Inline message scoped to violating offence only | `affectedOffences` in issue contains only the breaching offenceId |
-| T017 | Valid YRO with all curfew requirements within order end date and YRUP1 within 12m | `isValid: true`, no errors |
+| T009 | Same defendant has both AC1 and AC2a breach | Both conditions fire; independent errors |
+| T010 | Error summary includes defendant name (${defendantNames} resolved) | `errorMessage` contains defendant full name |
+| T011 | Inline message scoped to violating offence only | `affectedOffences` in issue contains only the breaching offenceId |
+| T012 | Valid YRO with all curfew requirements within order end date | `isValid: true`, no errors |
 
 ## Complexity Tracking
 

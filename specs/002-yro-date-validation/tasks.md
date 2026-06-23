@@ -28,7 +28,6 @@
 
 - **[P]**: Parallelizable (no inter-dependency at that point in execution)
 - **[US1]**: User Story 1 — AC2 curfew end-date validation (YRC1/YRC2/YRC3)
-- **[US2]**: User Story 2 — AC3 unpaid work 12-month validation (YRUP1)
 
 ---
 
@@ -46,7 +45,7 @@
 
 ⚠️ **CRITICAL (TDD)**: Tests must compile and produce assertion failures — not compilation errors. At this stage `DR-YRO-001.yaml` does not exist, so the service returns no YRO validation issues; assertions expecting errors will correctly fail.
 
-- [X] T002 Create `src/test/java/uk/gov/hmcts/cp/integration/YroDateValidationRuleIntegrationTest.java` extending `IntegrationTestBase` with: class-level `@DisplayName("DR-YRO-001 — YRO Date Validation")` annotation; two `@Nested` inner classes (`Ac2CurfewEndDate` and `Ac3UnpaidWorkDuration`); one `@Test` stub per scenario from plan.md Test Plan (T001–T017 in that plan) with descriptive `@DisplayName`; all stub bodies calling `Assertions.fail("not yet implemented")`. Do not create `DR-YRO-001.yaml` yet.
+- [X] T002 Create `src/test/java/uk/gov/hmcts/cp/integration/YroDateValidationRuleIntegrationTest.java` extending `IntegrationTestBase` with: class-level `@DisplayName("DR-YRO-001 — YRO Date Validation")` annotation; a `@Nested` inner class (`Ac2CurfewEndDate`); one `@Test` stub per scenario from plan.md Test Plan with descriptive `@DisplayName`; all stub bodies calling `Assertions.fail("not yet implemented")`. Do not create `DR-YRO-001.yaml` yet.
 - [X] T003 Run `gradle test --tests "uk.gov.hmcts.cp.integration.YroDateValidationRuleIntegrationTest"` and verify: (a) class compiles without errors; (b) every stub fails with an assertion error, not a compilation error. Record output. **Do not proceed until both conditions are confirmed.**
 
 ---
@@ -71,7 +70,7 @@
 
 - [X] T009 [US1] Create `src/main/resources/rules/DR-YRO-001.yaml` with the following content (see plan.md "Rule Design" for exact text):
   - `rule.id: "DR-YRO-001"`, `title: "Youth Rehabilitation Order End Date Validation"`, `priority: 5000`, `enabled: true`
-  - `preprocessing.type: "community-order-end-date"` with `communityOrderShortCodes: [YROEW, YRONI, YROFEW, YROISS, YROINI]`, `curfewShortCodes: [YRC2]`, `curfewTagShortCodes: [YRC1]`, `furtherCurfewShortCodes: [YRC3]`, `unpaidWorkShortCodes: [YRUP1]`
+  - `preprocessing.type: "youth-rehabilitation-order"` with `communityOrderShortCodes: [YROEW, YRONI, YROFEW, YROISS, YROINI]`, `curfewShortCodes: [YRC2]`, `curfewTagShortCodes: [YRC1]`, `furtherCurfewShortCodes: [YRC3]`
   - Condition AC2a: `expression: "curViolationCount > 0"`, `severity: ERROR`, `affectedOffenceSet: "curViolationOffenceIds"`, `messageTemplate` and `errorMessageTemplate` naming "Youth Rehabilitation Requirement: Curfew"
   - Condition AC2b: `expression: "cureViolationCount > 0"`, `affectedOffenceSet: "cureViolationOffenceIds"`, messages naming "Youth Rehabilitation Requirement: Curfew with electronic monitoring"
   - Condition AC2c: `expression: "curaViolationCount > 0"`, `affectedOffenceSet: "curaViolationOffenceIds"`, messages naming "Youth Rehabilitation Requirement: Further curfew requirement made"
@@ -81,52 +80,21 @@
 
 ---
 
-## Phase 4: User Story 2 — AC3 Unpaid Work Duration Validation (Priority: P2)
-
-**Goal**: Block sharing when a YRO containing a YRUP1 (unpaid work) requirement has an end date less than `hearingDay + 12 months − 1 day`.
-
-**Independent Test**: `POST /api/validation/validate` with hearing date 2026-05-20, YROEW end date 2027-05-18, and a YRUP1 child result. Expect `isValid: false`, message "The end date of the order must be at least 12 months as it includes an unpaid work requirement".
-
-### Tests for User Story 2
-
-> **Implement and confirm FAILING before adding the AC3 condition to DR-YRO-001.yaml (T013)**
-
-- [X] T011 [US2] In `YroDateValidationRuleIntegrationTest.java`, implement AC3 test bodies in `Ac3UnpaidWorkDuration`:
-  - YRUP1 present; YRO end date 2027-05-18 (hearing 2026-05-20) → AC3 ERROR (plan T009)
-  - YRUP1 present; YRO end date equals `hearingDay + 12m − 1d` (= 2027-05-19) → no error (plan T010)
-  - YRUP1 present; YRO end date beyond 12m → no error (plan T011)
-  - YRO without YRUP1 child result, short end date → no AC3 error (plan T012)
-  - Two defendants; only one has YRUP1 with short duration → only that defendant in error; `affectedDefendants` list contains only the violating defendant (plan T013)
-- [X] T012 [US2] Run `gradle test --tests "uk.gov.hmcts.cp.integration.YroDateValidationRuleIntegrationTest"` and confirm AC3 test methods fail with assertion failures (`DR-YRO-001.yaml` has AC2 conditions but no AC3 condition yet). **Do not proceed until confirmed.**
-
-### Implementation for User Story 2
-
-- [X] T013 [US2] Add the AC3 condition to `src/main/resources/rules/DR-YRO-001.yaml` after the AC2c entry:
-  - `id: "AC3"`, `name: "Unpaid work order shorter than 12 months"`, `expression: "upwrViolationCount > 0"`, `severity: ERROR`
-  - `messageTemplate: "The end date of the order must be at least 12 months as it includes an unpaid work requirement"`
-  - `errorMessageTemplate: "The end date of the order must be at least 12 months as it includes an unpaid work requirement. This affects ${defendantNames}."`
-  - `affectedOffenceSet: "upwrViolationOffenceIds"`
-- [X] T014 [US2] Run `gradle test --tests "uk.gov.hmcts.cp.integration.YroDateValidationRuleIntegrationTest"` and confirm all AC3 tests pass and all AC2 tests continue to pass.
-
-**Checkpoint**: AC2 and AC3 both fully functional and tested. The complete rule is in place.
-
----
-
 ## Phase 5: Polish & Cross-Cutting Concerns
 
 **Purpose**: Combined scenarios, full build validation, and build-loop agent review.
 
-- [X] T015 In `YroDateValidationRuleIntegrationTest.java`, replace the remaining `fail("not yet implemented")` stubs with full test bodies for combined and response-structure scenarios (plan.md T014–T017):
-  - Same defendant triggers both AC2a and AC3 simultaneously → both errors present in response, independently scoped
+- [X] T011 In `YroDateValidationRuleIntegrationTest.java`, replace the remaining `fail("not yet implemented")` stubs with full test bodies for combined and response-structure scenarios (plan.md T009–T012):
+  - Same defendant triggers both AC1 and AC2a simultaneously → both errors present in response, independently scoped
   - `errorMessageTemplate` expands `${defendantNames}` to the defendant's full name (`firstName + " " + lastName`)
   - Inline `messageTemplate` (per `affectedOffences` entry) is scoped to only the breaching offenceId, not all offences
-  - Fully valid YRO (all requirement dates within order date; YRUP1 order >= 12m) → `isValid: true`, no errors, `rulesEvaluated` contains `"DR-YRO-001"`
-- [X] T016 Run `gradle test` (full suite) and confirm: all 17 YRO scenarios pass; no pre-existing tests regress.
-- [X] T017 Run `gradle build` and confirm Checkstyle (Google style, `maxWarnings = 0`), PMD, and all tests pass clean.
-- [X] T018 [P] Spawn `spec-validator` agent (read-only) on `src/main/resources/rules/DR-YRO-001.yaml`: verify rule schema matches `RuleDefinition`, `preprocessing.type: "community-order-end-date"` resolves to a registered `ValidationPreprocessor` bean, all 4 CEL expressions (`curViolationCount > 0`, `cureViolationCount > 0`, `curaViolationCount > 0`, `upwrViolationCount > 0`) compile, all `affectedOffenceSet` names are valid in `CommunityOrderContext.getOffenceIdSet()`. Expect COMPLIANT.
-- [X] T019 [P] Spawn `code-reviewer` agent (read-only) on `src/main/resources/rules/DR-YRO-001.yaml` and `src/test/java/uk/gov/hmcts/cp/integration/YroDateValidationRuleIntegrationTest.java`: check for logic errors, severity-ceiling promotions, `System.out` usage, null-safety, and layering violations. Expect PASS.
-- [X] T020 Spawn `qa` agent: verify TDD discipline — commit history shows failing tests authored before YAML conditions; confirm test coverage spans all 17 plan scenarios; run `gradle test`. Expect PASS.
-- [X] T021 Resolve any NEEDS CHANGES or FAIL findings from T018–T020. Re-run the relevant agent until PASS/COMPLIANT. Repeat for each finding.
+  - Fully valid YRO (all requirement dates within order date) → `isValid: true`, no errors, `rulesEvaluated` contains `"DR-YRO-001"`
+- [X] T012 Run `gradle test` (full suite) and confirm all YRO scenarios pass; no pre-existing tests regress.
+- [X] T013 Run `gradle build` and confirm Checkstyle (Google style, `maxWarnings = 0`), PMD, and all tests pass clean.
+- [X] T014 [P] Spawn `spec-validator` agent (read-only) on `src/main/resources/rules/DR-YRO-001.yaml`: verify rule schema matches `RuleDefinition`, `preprocessing.type: "youth-rehabilitation-order"` resolves to a registered `ValidationPreprocessor` bean, all CEL expressions compile, all `affectedOffenceSet` names are valid. Expect COMPLIANT.
+- [X] T015 [P] Spawn `code-reviewer` agent (read-only) on `src/main/resources/rules/DR-YRO-001.yaml` and `src/test/java/uk/gov/hmcts/cp/integration/YroEndDateValidationIntegrationTest.java`: check for logic errors, severity-ceiling promotions, `System.out` usage, null-safety, and layering violations. Expect PASS.
+- [X] T016 Spawn `qa` agent: verify TDD discipline — commit history shows failing tests authored before YAML conditions; run `gradle test`. Expect PASS.
+- [X] T017 Resolve any NEEDS CHANGES or FAIL findings from T014–T016. Re-run the relevant agent until PASS/COMPLIANT. Repeat for each finding.
 
 ---
 
@@ -137,23 +105,20 @@
 - **Setup (Phase 1)**: No dependencies — start immediately
 - **Foundational (Phase 2)**: Depends on Phase 1 — BLOCKS all implementation
 - **US1 (Phase 3)**: Depends on Phase 2 — AC2 tests must be failing before YAML is written
-- **US2 (Phase 4)**: Depends on Phase 3 — YAML file must exist (from T009); AC3 condition is added incrementally
-- **Polish (Phase 5)**: Depends on Phase 4 — all 4 conditions in YAML and all tests green
+- **Polish (Phase 4)**: Depends on Phase 3 — all conditions in YAML and all tests green
 
 ### User Story Dependencies
 
 - **US1 (AC2)**: Can start after Foundation
-- **US2 (AC3)**: Depends on US1's YAML creation (T009); AC3 is added to the same file
 
 ### Within Each Phase (TDD discipline)
 
 - Tests for a condition MUST be confirmed failing before the YAML condition that satisfies them is added
 - AC2 tests (T004–T008) must fail before `DR-YRO-001.yaml` is created (T009)
-- AC3 tests (T011–T012) must fail before AC3 condition is added (T013)
 
 ### Parallel Opportunities
 
-- T018 (`spec-validator`) and T019 (`code-reviewer`) can run in parallel — both read-only agents
+- T014 (`spec-validator`) and T015 (`code-reviewer`) can run in parallel — both read-only agents
 
 ---
 
@@ -168,9 +133,9 @@ T007: Multi-defendant test bodies      — Ac2CurfewEndDate nested class
 
 # Note: all four modify the same file — coordinate to avoid edit conflicts if pairing.
 
-# T018 and T019 (Phase 5) run in parallel:
-T018: spec-validator agent
-T019: code-reviewer agent
+# T014 and T015 (Phase 4) run in parallel:
+T014: spec-validator agent
+T015: code-reviewer agent
 ```
 
 ---
@@ -189,15 +154,13 @@ T019: code-reviewer agent
 
 1. Phase 1–2: Foundation → failing test baseline
 2. Phase 3: AC2 → tests green → working increment
-3. Phase 4: AC3 added to same YAML → all tests green
+3. Phase 4: Polish → combined scenarios green → merge-ready
 4. Phase 5: Combined scenarios + build loop → merge-ready
 
 ---
 
 ## Notes
 
-- `DR-YRO-001.yaml` is built incrementally: AC2a/AC2b/AC2c first (T009), then AC3 (T013)
-- No Java production source files are created or modified — the only production deliverable is `DR-YRO-001.yaml`
+- `DR-YRO-001.yaml` covers AC1 and AC2a/AC2b/AC2c conditions
 - See plan.md "Rule Design — Message templates" for the exact `messageTemplate` and `errorMessageTemplate` strings
-- See plan.md "Test Plan" (T001–T017) for full test scenario specifications including request shapes and expected response fields
-- `alcoholAbstinenceShortCodes` need not appear in `DR-YRO-001.yaml` — the preprocessor handles a null/missing list as an empty set
+- See plan.md "Test Plan" for full test scenario specifications including request shapes and expected response fields

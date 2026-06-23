@@ -18,7 +18,6 @@
 | Youth Rehabilitation Requirement: Curfew | YRC2 | `endDate` | End date | AC2a |
 | Youth Rehabilitation Requirement: Curfew with electronic monitoring | YRC1 | `endDateOfTagging` | End date of tag | AC2b |
 | Youth Rehabilitation Requirement: Further curfew requirement made | YRC3 | `endDate` | End date | AC2c |
-| Youth Rehabilitation Requirement: Unpaid work | YRUP1 | *(no date prompt)* | *(presence-only)* | AC3 |
 
 ### Defendant
 
@@ -32,7 +31,7 @@ Defendant names are resolved via `firstName + " " + lastName` for use in `${defe
 
 ### Hearing day
 
-`DraftValidationRequest.getHearingDay()` (`LocalDate`) — used in AC3 to compute the minimum valid order end date.
+`DraftValidationRequest.getHearingDay()` (`LocalDate`) — used in AC1 to compare against the YRO end date.
 
 ---
 
@@ -60,18 +59,6 @@ Per defendant, per offence:
    - **YRC1**: parse `endDateOfTagging` prompt → `reqDate`; if `reqDate.isAfter(orderEndDate)` → add offenceId to `cureViolationOffenceIds`
    - **YRC3**: parse `endDate` prompt → `reqDate`; if `reqDate.isAfter(orderEndDate)` → add offenceId to `curaViolationOffenceIds`
 
-### AC3 — Unpaid work order shorter than 12 months
-
-Per defendant, per offence (evaluated after AC2 date check):
-
-1. Reuse `orderEndDate` from step 2 above.
-2. Check presence of YRUP1 on the same offence.
-3. If YRUP1 present and `hearingDay` non-null:
-   - `minEndDate = hearingDay.plusMonths(12).minusDays(1)`
-   - If `orderEndDate.isBefore(minEndDate)` → add offenceId to `upwrViolationOffenceIds`
-
-**Boundary example**: hearing date 20/05/2026 → `minEndDate` = 19/05/2027. End date 18/05/2027 → error; 19/05/2027 → valid.
-
 ---
 
 ## CEL context variables (from `YouthRehabilitationContext`)
@@ -84,7 +71,6 @@ These are the variables available in CEL condition expressions for DR-YRO-001:
 | `curViolationCount` | Number of offences where YRC2 end date exceeds YRO end date | AC2a |
 | `cureViolationCount` | Number of offences where YRC1 end-of-tag exceeds YRO end date | AC2b |
 | `curaViolationCount` | Number of offences where YRC3 end date exceeds YRO end date | AC2c |
-| `upwrViolationCount` | Number of offences with YRUP1 and YRO end date < 12 months | AC3 |
 
 ---
 
@@ -98,7 +84,6 @@ Resolved by `CelValidationRule` when building `ValidationIssue.affectedOffences`
 | `curViolationOffenceIds` | Offence IDs violating AC2a |
 | `cureViolationOffenceIds` | Offence IDs violating AC2b |
 | `curaViolationOffenceIds` | Offence IDs violating AC2c |
-| `upwrViolationOffenceIds` | Offence IDs violating AC3 |
 | `allOffenceIds` | All offence IDs for the defendant |
 
 ---
