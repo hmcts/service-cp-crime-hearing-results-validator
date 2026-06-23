@@ -51,88 +51,6 @@ class YouthRehabilitationPreprocessorTest {
         assertThat(preprocessor.type()).isEqualTo("youth-rehabilitation-order");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("AC1 — YRO end date in the past (on or before hearing date)")
-    class Ac1PastEndDate {
-
-        @Test
-        @DisplayName("Order end date equal to hearing date produces pastEndDateCount 1")
-        void order_end_date_equal_to_hearing_date_should_produce_pastEndDateCount_1() {
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-20")),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            YouthRehabilitationContext ctx = result.get("d1");
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-            assertThat(ctx.pastEndDateOffenceIds()).containsExactly("off1");
-        }
-
-        @Test
-        @DisplayName("Order end date before hearing date produces pastEndDateCount 1")
-        void order_end_date_before_hearing_date_should_produce_pastEndDateCount_1() {
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-19")),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            assertThat(result.get("d1").pastEndDateCount()).isEqualTo(1L);
-        }
-
-        @Test
-        @DisplayName("Order end date after hearing date produces pastEndDateCount 0")
-        void order_end_date_after_hearing_date_should_produce_pastEndDateCount_0() {
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-21")),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            assertThat(result.get("d1").pastEndDateCount()).isZero();
-            assertThat(result.get("d1").pastEndDateOffenceIds()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Null hearingDay skips AC1 check: pastEndDateCount 0")
-        void null_hearing_day_skips_ac1_check() {
-            DraftValidationRequest req = request(
-                    null,
-                    List.of(orderLine("rl-order", "YROEW", "d1", "off1", "2026-05-19")),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            assertThat(result.get("d1").pastEndDateCount()).isZero();
-        }
-
-        @Test
-        @DisplayName("Multiple offences: only past-date offence counted")
-        void multiple_offences_only_past_date_offence_counted() {
-            // off1: endDate before hearing → AC1
-            // off2: endDate after hearing → no AC1
-            DraftValidationRequest req = request(
-                    LocalDate.of(2026, 5, 20),
-                    List.of(
-                            orderLine("rl-o1", "YROEW", "d1", "off1", "2026-05-19"),
-                            orderLine("rl-o2", "YROEW", "d1", "off2", "2027-05-19")
-                    ),
-                    List.of(defendant("d1", "Sarah", "Jones")));
-
-            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
-
-            YouthRehabilitationContext ctx = result.get("d1");
-            assertThat(ctx.pastEndDateCount()).isEqualTo(1L);
-            assertThat(ctx.pastEndDateOffenceIds()).containsExactly("off1");
-        }
-    }
-
     @Nested
     @DisplayName("AC2a — YRC2 (Curfew) end date after YRO end date")
     class Ac2aYrc2 {
@@ -155,7 +73,6 @@ class YouthRehabilitationPreprocessorTest {
             assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
-            assertThat(ctx.pastEndDateCount()).isZero();
         }
 
         @Test

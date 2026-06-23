@@ -32,7 +32,6 @@ import org.springframework.web.client.RestTemplate;
  * <ul>
  *   <li>Happy path — no YRO result lines; rule evaluates but produces no issues</li>
  *   <li>Happy path — valid YRO with a future end date and no requirement violations</li>
- *   <li>AC1 — YRO end date on or before the hearing date → ERROR</li>
  *   <li>AC2a — YRC2 (curfew) end date strictly after YRO end date → ERROR</li>
  *   <li>AC2b — YRC1 (curfew with electronic monitoring) end date strictly after YRO end date → ERROR</li>
  *   <li>AC2c — YRC3 (further curfew) end date strictly after YRO end date → ERROR</li>
@@ -55,8 +54,6 @@ class YroEndDateApiHttpLiveTest {
     private static final String OFFENCE_ID_FIELD = "offenceId";
     private static final String TEST_OFFENCE_ID = "off1";
 
-    private static final String MSG_AC1 =
-            "The end date must be in the future";
     private static final String MSG_YRC2 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Curfew";
@@ -137,82 +134,6 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
-    }
-
-    /**
-     * AC1 — YRO end date equals the hearing date (not in the future). DR-YRO-001 must produce a
-     * single ERROR that is non-blocking for warnings but blocks sharing ({@code isValid=false}).
-     */
-    @Test
-    void ac1_yro_end_date_equal_to_hearing_date_should_produce_error() throws Exception {
-        final String body = """
-                {
-                  "hearingId": "yro-h3",
-                  "hearingDay": "2026-06-17",
-                  "courtType": "MAGISTRATES",
-                  "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
-                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-17"}]}
-                  ],
-                  "defendants": [{"defendantId": "d1", "firstName": "Chris", "lastName": "Day"}],
-                  "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
-                  ]
-                }
-                """;
-
-        final JsonNode json = postValidate(body);
-
-        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
-        assertThat(json.get(WARNINGS)).isEmpty();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
-                .isEqualTo(RULE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(SEVERITY_FIELD).asText())
-                .isEqualTo(SEVERITY_ERROR);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
-                .isEqualTo(TEST_OFFENCE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
-                .isEqualToIgnoringWhitespace(MSG_AC1);
-    }
-
-    /**
-     * AC1 — YRO end date strictly before the hearing date. DR-YRO-001 must produce an ERROR.
-     */
-    @Test
-    void ac1_yro_end_date_before_hearing_date_should_produce_error() throws Exception {
-        final String body = """
-                {
-                  "hearingId": "yro-h4",
-                  "hearingDay": "2026-06-17",
-                  "courtType": "MAGISTRATES",
-                  "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
-                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-16"}]}
-                  ],
-                  "defendants": [{"defendantId": "d1", "firstName": "Dana", "lastName": "Fox"}],
-                  "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
-                  ]
-                }
-                """;
-
-        final JsonNode json = postValidate(body);
-
-        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
-                .isEqualTo(RULE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
-                .isEqualToIgnoringWhitespace(MSG_AC1);
     }
 
     /**

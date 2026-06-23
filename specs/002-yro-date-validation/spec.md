@@ -29,22 +29,6 @@ A caseworker entering results has added a Youth Rehabilitation Order (YRO) to on
 
 ---
 
-### User Story 3 – YRO end date must be in the future (Priority: P1, Jira AC1)
-
-A caseworker entering results has added a Youth Rehabilitation Order and recorded its end date. If that end date is today's date (the hearing date) or any earlier date, the system must prevent saving and surface a clear error — a YRO cannot end on or before the day it is imposed.
-
-**Why this priority**: A YRO with an end date that is not in the future is invalid on its face; catching it at entry avoids an amend-and-reshare cycle.
-
-**Independent Test**: Submit a draft where the hearing date is 20/05/2026 and a YRO (e.g. YROEW) has an end date of 20/05/2026 (equal to the hearing date) — the system blocks saving with the error "The end date must be in the future". An end date of 21/05/2026 passes.
-
-**Acceptance Scenarios**:
-
-1. **Given** a YRO result (YROEW, YRONI, YROFEW, YROISS, YROINI) with all mandatory fields completed, **and** the recorded end date is the hearing date or earlier, **When** the caseworker saves the result details, **Then** saving is blocked, an inline error "The end date must be in the future" appears below the End date label, and the banner reads "The end date of the Youth rehabilitation order must be in the future" with "This affects: [defendant name(s)]".
-2. **Given** the end date is strictly after the hearing date, **When** the caseworker saves, **Then** no AC1 error is raised.
-3. **Given** the hearing was on an earlier date and the result is being entered/amended later, **When** the recorded end date is still after the *hearing* date (even if before today), **Then** no AC1 error is raised — the boundary is the hearing date, not the entry/amend date (Jira AC1A/AC1B).
-
----
-
 ### Edge Cases
 
 - What happens when multiple defendants each have a YRO, and only some have the end-date breach? Only the affected defendants should appear in the error; others should not be blocked.
@@ -62,15 +46,12 @@ A caseworker entering results has added a Youth Rehabilitation Order and recorde
 - **FR-005**: When a sharing-blocking error exists, the Share button MUST NOT be visible on the Manage Hearings screen regardless of how the caseworker navigates there.
 - **FR-006**: No error messages related to these rules MUST be displayed on the Manage Hearings screen itself — errors are surfaced only on the Enter Results screen.
 - **FR-007**: Once a caseworker corrects all violations and saves successfully, the errors MUST clear and sharing MUST become available.
-- **FR-008**: Validations MUST apply independently — a YRO can trigger AC1 and AC2 simultaneously, and all errors must be surfaced together.
-- **FR-009**: The system MUST detect when a YRO result (YROEW, YRONI, YROFEW, YROISS, YROINI) has an end date that is on or before the hearing date (i.e. not strictly in the future). *(Jira AC1)*
-- **FR-010**: When FR-009 is violated, the system MUST prevent saving and surface the inline error "The end date must be in the future" and the banner error "The end date of the Youth rehabilitation order must be in the future", listing the affected defendant(s). The boundary is the **hearing date**, not the result-entry/amend date. *(Jira AC1/AC1A/AC1B)*
+- **FR-008**: Validations MUST apply independently — a YRO can trigger multiple AC2 violations simultaneously, and all errors must be surfaced together.
 
 ### Requirement ↔ rule-condition mapping
 
 | Functional requirement | Jira AC | DR-YRO-001 condition | CEL expression |
 |---|---|---|---|
-| FR-009 / FR-010 | AC1 | AC1 | `pastEndDateCount > 0` |
 | FR-001 / FR-002 | AC2 | AC2a (YRC2) | `curViolationCount > 0` |
 | FR-001 / FR-002 | AC2 | AC2b (YRC1) | `cureViolationCount > 0` |
 | FR-001 / FR-002 | AC2 | AC2c (YRC3) | `curaViolationCount > 0` |
@@ -95,7 +76,6 @@ messages, affected offences, and affected defendants) that the UI consumes to dr
   - YRC2 – Youth Rehabilitation Requirement: Curfew (has "End date")
   - YRC1 – Youth Rehabilitation Requirement: Curfew with electronic monitoring (has "End date of tag")
   - YRC3 – Youth Rehabilitation Requirement: Further curfew requirement made (has "End date")
-- **Hearing date**: The date of the hearing session, compared against the YRO end date for AC1.
 - **Defendant**: A person charged. The error must identify which defendants are affected.
 - **Validation issue**: A blocking ERROR that prevents sharing when triggered.
 
@@ -105,7 +85,7 @@ messages, affected offences, and affected defendants) that the UI consumes to dr
 
 - **SC-001**: 100% of YRO results where the order end date precedes any linked curfew requirement end date are flagged as errors before the result can be shared.
 - **SC-002**: Caseworkers see the specific requirement name(s) causing the AC2 violation in the error message, enabling them to identify and fix the issue without additional guidance.
-- **SC-003**: The Share button is suppressed on Manage Hearings whenever an unresolved AC1 or AC2 error exists, with zero false negatives.
+- **SC-003**: The Share button is suppressed on Manage Hearings whenever an unresolved AC2 error exists, with zero false negatives.
 - **SC-004**: After correcting the violation and saving, caseworkers can proceed to share without needing to reload or re-navigate, with no residual error state.
 
 ## Assumptions
@@ -117,4 +97,3 @@ messages, affected offences, and affected defendants) that the UI consumes to dr
 - Multiple defendants can be affected simultaneously; all affected defendant names appear in the "This affects:" list.
 - These are ERROR-severity issues (blocking share), not warnings.
 - The service validates on every "Save and Continue" attempt; there is no deferred or async validation.
-- AC1 (end date in the future) compares the YRO end date against the **hearing date** held on the draft validation request, not the date the result is entered or amended. The end date must be strictly after the hearing date; equal to the hearing date is an error (Jira AC1/AC1A/AC1B).

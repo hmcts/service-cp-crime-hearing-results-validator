@@ -37,7 +37,6 @@ class YouthRehabilitationContextTest {
 
             Map<String, Long> cel = ctx.toCelContext();
 
-            assertThat(cel).containsEntry("pastEndDateCount", 1L);
             assertThat(cel).containsEntry("curViolationCount", 2L);
             assertThat(cel).containsEntry("cureViolationCount", 3L);
             assertThat(cel).containsEntry("curaViolationCount", 4L);
@@ -70,11 +69,6 @@ class YouthRehabilitationContextTest {
                 "Jane Doe", 1L, 1L, 1L, 1L,
                 List.of("past1"), List.of("cur1"), List.of("cure1"),
                 List.of("cura1"), List.of("all1", "all2"));
-
-        @Test
-        void getOffenceIdSet_pastEndDateOffenceIds_returns_correct_list() {
-            assertThat(ctx.getOffenceIdSet("pastEndDateOffenceIds")).containsExactly("past1");
-        }
 
         @Test
         void getOffenceIdSet_curViolationOffenceIds_returns_correct_list() {
