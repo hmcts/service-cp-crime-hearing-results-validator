@@ -20,7 +20,7 @@
 
 ## Decision 2 — Multiple AC2 Violations: Separate Conditions or Single Combined Condition
 
-**Decision**: Separate YAML `conditions` per requirement type (AC2a=CUR, AC2b=CURE, AC2c=CURA, AC2d=AAR, AC3=UPWR) — each fires its own `ValidationIssue` when the corresponding violation count > 0.
+**Decision**: Separate YAML `conditions` per requirement type (AC2a=CUR, AC2b=CURE, AC2c=CURA, AC2d=AAR) — each fires its own `ValidationIssue` when the corresponding violation count > 0.
 
 **Rationale**: The YAML+CEL engine produces one `ValidationIssue` per triggered `condition`. Separate conditions are the natural fit for the engine and give maximum rule configurability — each condition can be individually enabled/disabled or severity-capped via the `validation_rule` DB table. CEL cannot dynamically concatenate strings, so a "combined message" would require Java-side post-processing, violating Constitution Principle I. Spec FR-003, FR-004, A-005, and the Edge Cases section have been updated to reflect "one error per violated requirement type" semantics, matching this architectural decision.
 
@@ -43,32 +43,14 @@
 
 ---
 
-## Decision 4 — UPWR 12-Month Boundary Calculation
-
-**Decision**: Violation when `orderEndDate.isBefore(hearingDay.plusMonths(12).minusDays(1))`.
-
-**Rationale**: From Scenario 15 (hearing 14/05/2026, end date 13/05/2027 = PASS) and the spec Assumption A-001:
-- `hearingDay.plusMonths(12)` = 14/05/2027
-- Minimum passing end date = 13/05/2027 = `hearingDay.plusMonths(12).minusDays(1)`
-- Any end date before 13/05/2027 is a violation
-
-This uses `java.time.LocalDate` calendar-month arithmetic which correctly handles month-end edge cases (e.g., 31/01/2026 + 12 months = 31/01/2027; minimum passing = 30/01/2027).
-
-**Alternatives considered**:
-- *365-day fixed period*: Rejected — fails for leap years and does not match "12 calendar months" statutory language.
-- *`hearingDay.plusYears(1).minusDays(1)`*: Equivalent to the chosen approach for most dates (plusMonths(12) == plusYears(1) for all dates), but `plusMonths(12)` is more explicit about intent.
-
----
-
 ## Decision 5 — `PreprocessingDefinition` Extension
 
-**Decision**: Add six new `List<String>` fields to `PreprocessingDefinition`:
+**Decision**: Add five new `List<String>` fields to `PreprocessingDefinition`:
 - `communityOrderShortCodes`
 - `curfewShortCodes`
 - `curfewTagShortCodes`
 - `furtherCurfewShortCodes`
 - `alcoholAbstinenceShortCodes`
-- `unpaidWorkShortCodes`
 
 **Rationale**: `PreprocessingDefinition` is the YAML-to-Java bridge. Adding fields here keeps the YAML short-code lists authoritative (Constitution Principle I) and means a BA can change which short codes trigger the rule by editing YAML without touching Java. Each existing preprocessor adds its own fields here; this is the established pattern.
 
@@ -102,11 +84,9 @@ This uses `java.time.LocalDate` calendar-month arithmetic which correctly handle
 
 | # | Unknown | Resolution |
 |---|---------|------------|
-| 1 | Hearing date availability | `hearingDay: LocalDate` on `DraftValidationRequest` — confirmed in 0.1.6 |
-| 2 | Prompts field availability | `List<Prompt> prompts` on `ResultLineDto` — confirmed in 0.1.6; `Prompt.getPromptRef()` / `getPromptValue()` |
-| 3 | Prompt ref key names | Hardcoded: `endDate`, `endDateOfTag`, `until` |
-| 4 | 12-month boundary | `orderEndDate.isBefore(hearingDay.plusMonths(12).minusDays(1))` |
-| 5 | Multiple violations display | Separate condition per requirement type; UI groups them |
-| 6 | Share button scope | Hearing-level (hidden if any defendant has errors) |
-| 7 | AC1 scope | Out of scope; separate ticket |
-| 8 | Grouping unit | Per-defendant |
+| 1 | Prompts field availability | `List<Prompt> prompts` on `ResultLineDto` — confirmed in 0.1.6; `Prompt.getPromptRef()` / `getPromptValue()` |
+| 2 | Prompt ref key names | Hardcoded: `endDate`, `endDateOfTag`, `until` |
+| 3 | Multiple violations display | Separate condition per requirement type; UI groups them |
+| 4 | Share button scope | Hearing-level (hidden if any defendant has errors) |
+| 5 | AC1 scope | Out of scope; separate ticket |
+| 6 | Grouping unit | Per-defendant |

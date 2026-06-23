@@ -3,8 +3,7 @@ rule:
   title: "Community Order End Date Validation"
   description: >-
     Validates that a community order's end date is not earlier than the end date of any
-    attached requirement (AC2: CUR, CURE, CURA, AAR) and that an order containing an
-    unpaid work requirement (AC3: UPWR) is at least 12 calendar months from the hearing date.
+    attached requirement (AC2: CUR, CURE, CURA, AAR).
   priority: 4000
   enabled: true
 
@@ -22,8 +21,6 @@ rule:
       - CURA
     alcoholAbstinenceShortCodes:
       - AAR
-    unpaidWorkShortCodes:
-      - UPWR
 
   conditions:
     - id: "AC2a"
@@ -73,15 +70,3 @@ rule:
         The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "aarViolationOffenceIds"
-
-    - id: "AC3"
-      name: "Unpaid work order shorter than 12 months"
-      expression: "upwrViolationCount > 0"
-      severity: ERROR
-      messageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
-        unpaid work requirement
-      errorMessageTemplate: >-
-        The end date of the order must be at least 12 months as it includes an
-        unpaid work requirement. This affects ${defendantNames}.
-      affectedOffenceSet: "upwrViolationOffenceIds"
