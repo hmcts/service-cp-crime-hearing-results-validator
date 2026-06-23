@@ -86,15 +86,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "John", "lastName": "Smith"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -129,15 +129,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COS", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COS", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-01"}]},
-                        {"id": "rl-cure", "shortCode": "CURE", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cure", "shortCode": "CURE", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2026-12-15"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Jane", "lastName": "Doe"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -169,15 +169,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "CONI", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "CONI", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-01"}]},
-                        {"id": "rl-cura", "shortCode": "CURA", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cura", "shortCode": "CURA", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-15"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Bob", "lastName": "Brown"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Bob", "lastName": "Brown"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -209,15 +209,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-01"}]},
-                        {"id": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "until", "promptValue": "2027-06-15"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Sarah", "lastName": "Green"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -249,15 +249,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-30"}]},
-                        {"id": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Valid", "lastName": "Order"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Valid", "lastName": "Order"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -287,18 +287,18 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-01"}]},
-                        {"id": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-06-15"}]},
-                        {"id": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "until", "promptValue": "2027-06-25"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Multi", "lastName": "Violator"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Multi", "lastName": "Violator"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -330,36 +330,36 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-12-31"}]},
-                        {"id": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-d2-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d2-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-d3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d3", "offenceId": "off3",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-d3-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d3-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                          "defendantId": "d3", "offenceId": "off3",
                          "prompts": [{"promptRef": "until", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "Valid", "lastName": "Defendant"},
-                        {"id": "d2", "firstName": "Curfew", "lastName": "Violator"},
-                        {"id": "d3", "firstName": "Alcohol", "lastName": "Violator"}
+                        {"defendantId": "d1", "firstName": "Valid", "lastName": "Defendant"},
+                        {"defendantId": "d2", "firstName": "Curfew", "lastName": "Violator"},
+                        {"defendantId": "d3", "firstName": "Alcohol", "lastName": "Violator"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2},
-                        {"id": "off3", "offenceCode": "TH68001",
+                        {"offenceId": "off3", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 3}
                       ]
                     }
@@ -391,15 +391,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Share", "lastName": "Test"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Share", "lastName": "Test"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -430,14 +430,14 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-04-13"}]},
-                        {"id": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "John", "lastName": "Smith"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -471,14 +471,14 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COS", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COS", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-05-13"}]},
-                        {"id": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Boundary", "lastName": "Pass"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Boundary", "lastName": "Pass"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -507,14 +507,14 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "CONI", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "CONI", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-05-20"}]},
-                        {"id": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Valid", "lastName": "Duration"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "Valid", "lastName": "Duration"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -543,25 +543,25 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-04-13"}]},
-                        {"id": "rl-d1-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d1-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1"},
-                        {"id": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-05-13"}]},
-                        {"id": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d2", "offenceId": "off2"}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "Under", "lastName": "Minimum"},
-                        {"id": "d2", "firstName": "At", "lastName": "Minimum"}
+                        {"defendantId": "d1", "firstName": "Under", "lastName": "Minimum"},
+                        {"defendantId": "d2", "firstName": "At", "lastName": "Minimum"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2}
                       ]
                     }
@@ -594,35 +594,35 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-04-13"}]},
-                        {"id": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d2", "offenceId": "off2"},
-                        {"id": "rl-d3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d3", "offenceId": "off3",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2028-12-31"}]},
-                        {"id": "rl-d3-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d3-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d3", "offenceId": "off3",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-01"}]}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "CUR", "lastName": "Violator"},
-                        {"id": "d2", "firstName": "UPWR", "lastName": "Violator"},
-                        {"id": "d3", "firstName": "Valid", "lastName": "Defendant"}
+                        {"defendantId": "d1", "firstName": "CUR", "lastName": "Violator"},
+                        {"defendantId": "d2", "firstName": "UPWR", "lastName": "Violator"},
+                        {"defendantId": "d3", "firstName": "Valid", "lastName": "Defendant"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2},
-                        {"id": "off3", "offenceCode": "TH68001",
+                        {"offenceId": "off3", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 3}
                       ]
                     }
@@ -664,15 +664,15 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "John", "lastName": "Smith"}],
-                      "offences": [{"id": "off1", "offenceCode": "TH68001",
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1}]
                     }
                     """;
@@ -697,26 +697,26 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-04-13"}]},
-                        {"id": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-d2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d2", "offenceId": "off2"}
                       ],
                       "defendants": [
-                        {"id": "d1", "firstName": "AC2", "lastName": "Defendant"},
-                        {"id": "d2", "firstName": "AC3", "lastName": "Defendant"}
+                        {"defendantId": "d1", "firstName": "AC2", "lastName": "Defendant"},
+                        {"defendantId": "d2", "firstName": "AC3", "lastName": "Defendant"}
                       ],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2}
                       ]
                     }
@@ -764,32 +764,32 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-01-01",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-o1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-o1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-12-31"}]},
-                        {"id": "rl-o1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-o1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-o2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-o2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-o2-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-o2-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-o3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-o3-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off3",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-12-31"}]},
-                        {"id": "rl-o3-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-o3-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off3",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Scoping", "lastName": "Test"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Scoping", "lastName": "Test"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2},
-                        {"id": "off3", "offenceCode": "TH68001",
+                        {"offenceId": "off3", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 3}
                       ]
                     }
@@ -817,23 +817,23 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-05-14",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"id": "rl-o1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-o1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-30"}]},
-                        {"id": "rl-o1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-o1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]},
-                        {"id": "rl-o2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                        {"resultLineId": "rl-o2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
                          "defendantId": "d1", "offenceId": "off2",
                          "prompts": [{"promptRef": "endDate", "promptValue": "2027-04-13"}]},
-                        {"id": "rl-o2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
+                        {"resultLineId": "rl-o2-upwr", "shortCode": "UPWR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off2"}
                       ],
-                      "defendants": [{"id": "d1", "firstName": "Mixed", "lastName": "Scoping"}],
+                      "defendants": [{"defendantId": "d1", "firstName": "Mixed", "lastName": "Scoping"}],
                       "offences": [
-                        {"id": "off1", "offenceCode": "TH68001",
+                        {"offenceId": "off1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 1},
-                        {"id": "off2", "offenceCode": "TH68001",
+                        {"offenceId": "off2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2}
                       ]
                     }

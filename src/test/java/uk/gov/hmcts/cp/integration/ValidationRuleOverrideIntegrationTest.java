@@ -69,23 +69,6 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
             }
             """;
 
-    private static final String AC3_WARNING_REQUEST = """
-            {
-              "hearingId": "h1",
-              "hearingDay": "2026-03-11",
-              "courtType": "MAGISTRATES",
-              "resultLines": [
-                {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2",
-                 "isConcurrent": true, "consecutiveToOffence": "off1"}
-              ],
-              "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
-              "offences": [
-                {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
-              ]
-            }
-            """;
 
     @Resource
     private ValidationRuleRepository repository;

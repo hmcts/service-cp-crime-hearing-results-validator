@@ -84,6 +84,7 @@ dockerCompose {
   removeOrphans = true
   stopContainers = true
   removeContainers = true
+  removeVolumes = true
 
   useDockerComposeV2 = true
   dockerExecutable = 'docker'

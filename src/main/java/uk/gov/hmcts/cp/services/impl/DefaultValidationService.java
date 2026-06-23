@@ -77,7 +77,7 @@ public class DefaultValidationService implements ValidationService {
         }
     }
 
-    @SuppressWarnings({"PMD.AvoidCatchingGenericException", "PMD.AvoidInstantiatingObjectsInLoops"}) // rule failures must not abort; computeIfAbsent allocates lazily, not on every iteration
+    @SuppressWarnings("PMD.AvoidCatchingGenericException") // rule failures must not abort the whole validation run
     private DraftValidationResponse evaluateRulesWithMdc(final DraftValidationRequest request,
                                                          final String validationId) {
         log.info("Validating draft results for hearingId={}", request.getHearingId());

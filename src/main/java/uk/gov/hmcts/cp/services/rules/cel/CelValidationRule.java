@@ -108,7 +108,7 @@ public class CelValidationRule implements ValidationRule {
                                 .orElse("ERROR");
 
                         final boolean isError = "ERROR".equalsIgnoreCase(normalizedSeverity);
-                        final ValidationIssue.ValidationLevelEnum level = (isDefendantLevel && !isError)
+                        final ValidationIssue.ValidationLevelEnum level = isDefendantLevel
                                 ? ValidationIssue.ValidationLevelEnum.DEFENDANT
                                 : ValidationIssue.ValidationLevelEnum.OFFENCE;
 
@@ -117,7 +117,7 @@ public class CelValidationRule implements ValidationRule {
                                 .severity(ValidationIssue.SeverityEnum.valueOf(normalizedSeverity))
                                 .validationLevel(level);
 
-                        if (isDefendantLevel && !isError) {
+                        if (isDefendantLevel) {
                             final String message = messageResolver.resolve(
                                     condition.getMessageTemplate(),
                                     context.defendantName(),
