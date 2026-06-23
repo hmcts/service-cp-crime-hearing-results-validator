@@ -16,13 +16,13 @@
 
 > **⚠️ Reconciliation note (post-implementation).** The task list below was authored against the
 > original plan (reuse `community-order-end-date`, two files only, IT named
-> `YroDateValidationRuleIntegrationTest`). During implementation: **AC1** (YRO end date must be in the
-> future) was added, which required a new `youth-rehabilitation-order` preprocessor + context (Java);
-> the duplicated helper logic was extracted into `PreprocessorHelper`; and the integration test was
-> consolidated into the Jira-aligned `YroEndDateValidationIntegrationTest` (the original
-> `YroDateValidationRuleIntegrationTest` was removed). Task references to "two files only",
-> `community-order-end-date`, and `YroDateValidationRuleIntegrationTest` below are therefore historical
-> — see `plan.md`, `research.md` (Decisions 1/6/7), and `data-model.md` for the current design.
+> `YroDateValidationRuleIntegrationTest`). During implementation: a dedicated `youth-rehabilitation-order`
+> preprocessor + context (Java) were introduced for clean separation; the duplicated helper logic was
+> extracted into `PreprocessorHelper`; and the integration test was consolidated into the Jira-aligned
+> `YroEndDateValidationIntegrationTest` (the original `YroDateValidationRuleIntegrationTest` was removed).
+> Task references to "two files only", `community-order-end-date`, and `YroDateValidationRuleIntegrationTest`
+> below are therefore historical — see `plan.md`, `research.md` (Decisions 1/6/7), and `data-model.md`
+> for the current design.
 
 ## Format: `[ID] [P?] [Story?] Description`
 
@@ -85,7 +85,6 @@
 **Purpose**: Combined scenarios, full build validation, and build-loop agent review.
 
 - [X] T011 In `YroDateValidationRuleIntegrationTest.java`, replace the remaining `fail("not yet implemented")` stubs with full test bodies for combined and response-structure scenarios (plan.md T009–T012):
-  - Same defendant triggers both AC1 and AC2a simultaneously → both errors present in response, independently scoped
   - `errorMessageTemplate` expands `${defendantNames}` to the defendant's full name (`firstName + " " + lastName`)
   - Inline `messageTemplate` (per `affectedOffences` entry) is scoped to only the breaching offenceId, not all offences
   - Fully valid YRO (all requirement dates within order date) → `isValid: true`, no errors, `rulesEvaluated` contains `"DR-YRO-001"`
@@ -161,6 +160,6 @@ T015: code-reviewer agent
 
 ## Notes
 
-- `DR-YRO-001.yaml` covers AC1 and AC2a/AC2b/AC2c conditions
+- `DR-YRO-001.yaml` covers AC2a/AC2b/AC2c conditions
 - See plan.md "Rule Design — Message templates" for the exact `messageTemplate` and `errorMessageTemplate` strings
 - See plan.md "Test Plan" for full test scenario specifications including request shapes and expected response fields

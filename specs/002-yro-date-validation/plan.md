@@ -5,13 +5,12 @@
 
 ## Summary
 
-Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule covering **AC1** (YRO end date must be in the future — i.e. strictly after the hearing date) and AC2 (YRO end date must not precede any linked curfew requirement end date).
+Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule covering AC2 (YRO end date must not precede any linked curfew requirement end date).
 
 > **Design note (supersedes the original plan).** The first revision proposed reusing the
-> `community-order-end-date` preprocessor with no new Java. That was reversed once **AC1** was added:
-> the community-order preprocessor has no "end date in the future" check, so a dedicated
+> `community-order-end-date` preprocessor with no new Java. That was reversed in favour of a dedicated
 > `youth-rehabilitation-order` preprocessor (`YouthRehabilitationPreprocessor`) and context
-> (`YouthRehabilitationContext`) were introduced. To avoid duplication with
+> (`YouthRehabilitationContext`) for clean separation of YRO-specific logic. To avoid duplication with
 > `CommunityOrderEndDatePreprocessor`, the shared, stateless helpers (short-code normalisation/matching,
 > result-line grouping, defendant-name assembly, prompt-date parsing, requirement-date comparison) were
 > extracted into `PreprocessorHelper` and are now used by all preprocessors. So this feature **does add
@@ -27,14 +26,14 @@ Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule
 **Target Platform**: Azure-hosted Spring Boot service (local port 4550)
 **Project Type**: Web service (validation API)
 **Performance Goals**: Standard Spring Boot throughput; no rule-specific performance target
-**Constraints**: AC1 requires a future-date check absent from the community-order preprocessor, so a new `youth-rehabilitation-order` preprocessor was added; common logic is shared via `PreprocessorHelper`
+**Constraints**: Common logic is shared via `PreprocessorHelper`
 **Scale/Scope**: One new YAML rule file; one new preprocessor + context; one shared helper; unit + integration tests
 
 ## Constitution Check
 
 | Principle | Status | Notes |
 |---|---|---|
-| I — YAML/CEL Rule-First | ⚠️ PARTIAL | Not a pure-YAML addition: AC1's future-date check is not in the community-order preprocessor, so a new `youth-rehabilitation-order` preprocessor + `YouthRehabilitationContext` were added. New rule *conditions* remain YAML/CEL-driven |
+| I — YAML/CEL Rule-First | ⚠️ PARTIAL | Not a pure-YAML addition: a dedicated `youth-rehabilitation-order` preprocessor + `YouthRehabilitationContext` were added. New rule *conditions* remain YAML/CEL-driven |
 | II — Constructor Injection & Immutable DTOs | ✅ PASS | New context is a record; `PreprocessorHelper` is a stateless static utility (mirrors `SeverityCeiling`); no field injection |
 | III — Layered Architecture & Preprocessor Dispatch | ✅ PASS | New preprocessor registers via `preprocessing.type: "youth-rehabilitation-order"` and dispatches through `PreprocessorRegistry` |
 | IV — Spec-Driven Build Loop | ✅ PASS | Spec → Plan → Tasks → Implement → code-reviewer → qa → spec-validator loop applies |
@@ -62,7 +61,7 @@ src/main/resources/rules/
 └── DR-YRO-001.yaml                                # NEW — YRO date validation rule
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
-├── YouthRehabilitationPreprocessor.java           # NEW — youth-rehabilitation-order preprocessor (AC1/AC2)
+├── YouthRehabilitationPreprocessor.java           # NEW — youth-rehabilitation-order preprocessor (AC2)
 ├── YouthRehabilitationContext.java                # NEW — CEL context record for the rule
 └── PreprocessorHelper.java                         # NEW — shared static helpers (used by all preprocessors)
 
@@ -100,7 +99,6 @@ preprocessing:
 
 | Condition ID | CEL expression | Severity | Trigger |
 |---|---|---|---|
-| AC1 | `pastEndDateCount > 0` | ERROR | YRO end date on or before the hearing date (not in the future) |
 | AC2a | `curViolationCount > 0` | ERROR | YRC2 end date after YRO end date |
 | AC2b | `cureViolationCount > 0` | ERROR | YRC1 end-of-tag after YRO end date |
 | AC2c | `curaViolationCount > 0` | ERROR | YRC3 end date after YRO end date |
@@ -120,19 +118,10 @@ preprocessing:
 ## Test Plan (for `YroEndDateValidationIntegrationTest.java`)
 
 All tests extend `IntegrationTestBase`. The integration scenarios map directly onto the Jira DD-41654
-acceptance scenarios covering AC1/AC2 plus combined display cases. Preprocessor and shared-helper
+acceptance scenarios covering AC2 plus combined display cases. Preprocessor and shared-helper
 logic is additionally covered by `YouthRehabilitationPreprocessorTest` and `PreprocessorHelperTest`.
 (An earlier duplicate IT, `YroDateValidationRuleIntegrationTest`, covered only AC2 and was removed
 in favour of this superset.)
-
-### AC1 scenarios
-
-| Scenario | Expected |
-|---|---|
-| YRO end date equals the hearing date | AC1 ERROR (must be strictly after) |
-| YRO end date before the hearing date | AC1 ERROR |
-| YRO end date after the hearing date | No AC1 error |
-| Multiple offences/defendants — only past-date ones flagged | AC1 ERROR scoped to the breaching offence/defendant |
 
 ### AC2 scenarios
 
@@ -151,7 +140,6 @@ in favour of this superset.)
 
 | Test ID | Scenario | Expected |
 |---|---|---|
-| T009 | Same defendant has both AC1 and AC2a breach | Both conditions fire; independent errors |
 | T010 | Error summary includes defendant name (${defendantNames} resolved) | `errorMessage` contains defendant full name |
 | T011 | Inline message scoped to violating offence only | `affectedOffences` in issue contains only the breaching offenceId |
 | T012 | Valid YRO with all curfew requirements within order end date | `isValid: true`, no errors |

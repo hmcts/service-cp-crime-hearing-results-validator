@@ -29,23 +29,9 @@
 
 Defendant names are resolved via `firstName + " " + lastName` for use in `${defendantNames}` template expansion.
 
-### Hearing day
-
-`DraftValidationRequest.getHearingDay()` (`LocalDate`) — used in AC1 to compare against the YRO end date.
-
 ---
 
 ## Violation detection logic
-
-### AC1 — YRO end date not in the future
-
-Per defendant, per offence:
-
-1. Locate the YRO parent result line and parse its `endDate` prompt → `orderEndDate` (`LocalDate`).
-2. If `orderEndDate` is null (missing or unparseable) → skip this offence.
-3. If `hearingDay` is non-null and `!orderEndDate.isAfter(hearingDay)` (i.e. end date is on or before
-   the hearing date) → add offenceId to `pastEndDateOffenceIds`. The end date must be **strictly after**
-   the hearing date; equal to the hearing date is an error.
 
 ### AC2 — Curfew requirement end date exceeds order end date
 
@@ -67,7 +53,6 @@ These are the variables available in CEL condition expressions for DR-YRO-001:
 
 | CEL variable | Meaning for DR-YRO-001 | Used by condition |
 |---|---|---|
-| `pastEndDateCount` | Number of offences whose YRO end date is on or before the hearing date | AC1 |
 | `curViolationCount` | Number of offences where YRC2 end date exceeds YRO end date | AC2a |
 | `cureViolationCount` | Number of offences where YRC1 end-of-tag exceeds YRO end date | AC2b |
 | `curaViolationCount` | Number of offences where YRC3 end date exceeds YRO end date | AC2c |
@@ -80,7 +65,6 @@ Resolved by `CelValidationRule` when building `ValidationIssue.affectedOffences`
 
 | Set name | Contents |
 |---|---|
-| `pastEndDateOffenceIds` | Offence IDs violating AC1 |
 | `curViolationOffenceIds` | Offence IDs violating AC2a |
 | `cureViolationOffenceIds` | Offence IDs violating AC2b |
 | `curaViolationOffenceIds` | Offence IDs violating AC2c |
