@@ -34,6 +34,8 @@ import org.springframework.web.client.RestTemplate;
  *   <li>Happy path — valid YRO with a future end date and no requirement violations</li>
  *   <li>AC1 — YRO end date on or before the hearing date → ERROR</li>
  *   <li>AC2a — YRC2 (curfew) end date strictly after YRO end date → ERROR</li>
+ *   <li>AC2b — YRC1 (curfew with electronic monitoring) end date strictly after YRO end date → ERROR</li>
+ *   <li>AC2c — YRC3 (further curfew) end date strictly after YRO end date → ERROR</li>
  * </ul>
  */
 class YroEndDateApiHttpLiveTest {
@@ -48,12 +50,22 @@ class YroEndDateApiHttpLiveTest {
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String AFFECTED_OFFENCES = "affectedOffences";
     private static final String ISSUE_MESSAGE = "message";
+    private static final String SEVERITY_FIELD = "severity";
+    private static final String SEVERITY_ERROR = "ERROR";
+    private static final String OFFENCE_ID_FIELD = "offenceId";
+    private static final String TEST_OFFENCE_ID = "off1";
 
     private static final String MSG_AC1 =
             "The end date must be in the future";
     private static final String MSG_YRC2 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Curfew";
+    private static final String MSG_YRC1 =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Youth Rehabilitation Requirement: Curfew with electronic monitoring";
+    private static final String MSG_YRC3 =
+            "The end date of the order must match or be longer than the end date of "
+                    + "Youth Rehabilitation Requirement: Further curfew requirement made";
     private static final String DB_URL =
             System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
     private static final String DB_USER = System.getProperty("db.username", "postgres");
@@ -158,12 +170,12 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
-                .isEqualTo("ERROR");
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(SEVERITY_FIELD).asText())
+                .isEqualTo(SEVERITY_ERROR);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
-                .isEqualTo("off1");
+                .get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
+                .isEqualTo(TEST_OFFENCE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_AC1);
@@ -237,11 +249,11 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
                 .isEqualTo(RULE_ID);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText())
-                .isEqualTo("ERROR");
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(SEVERITY_FIELD).asText())
+                .isEqualTo(SEVERITY_ERROR);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
-                .get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
-                .isEqualTo("off1");
+                .get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
+                .isEqualTo(TEST_OFFENCE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRC2);
@@ -267,6 +279,166 @@ class YroEndDateApiHttpLiveTest {
                      "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Fiona", "lastName": "Hart"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * AC2b — YRC1 (curfew with electronic monitoring) end date is strictly after the YRO end date.
+     * DR-YRO-001 must produce a single ERROR.
+     */
+    @Test
+    void ac2b_yrc1_end_date_after_yro_end_date_should_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h7",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRC1", "category": "I",
+                     "label": "Curfew with electronic monitoring", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-31"}]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(WARNINGS)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
+                .isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(SEVERITY_FIELD).asText())
+                .isEqualTo(SEVERITY_ERROR);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
+                .isEqualTo(TEST_OFFENCE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
+                .isEqualToIgnoringWhitespace(MSG_YRC1);
+    }
+
+    /**
+     * AC2b suppression — YRC1 end date matches the YRO end date (equal, not later). DR-YRO-001
+     * must not fire.
+     */
+    @Test
+    void ac2b_yrc1_end_date_equal_to_yro_end_date_should_not_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h8",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRC1", "category": "I",
+                     "label": "Curfew with electronic monitoring", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Hannah", "lastName": "Iris"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * AC2c — YRC3 (further curfew) end date is strictly after the YRO end date.
+     * DR-YRO-001 must produce a single ERROR.
+     */
+    @Test
+    void ac2c_yrc3_end_date_after_yro_end_date_should_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h9",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRC3", "category": "I",
+                     "label": "Further curfew requirement made", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-31"}]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "James", "lastName": "King"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(WARNINGS)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
+                .isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(SEVERITY_FIELD).asText())
+                .isEqualTo(SEVERITY_ERROR);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
+                .isEqualTo(TEST_OFFENCE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
+                .isEqualToIgnoringWhitespace(MSG_YRC3);
+    }
+
+    /**
+     * AC2c suppression — YRC3 end date matches the YRO end date (equal, not later). DR-YRO-001
+     * must not fire.
+     */
+    @Test
+    void ac2c_yrc3_end_date_equal_to_yro_end_date_should_not_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h10",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRC3", "category": "I",
+                     "label": "Further curfew requirement made", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Laura", "lastName": "Moore"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1}
