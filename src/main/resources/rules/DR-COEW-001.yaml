@@ -34,6 +34,7 @@ rule:
         The end date of the order must match or be longer than the end date of
         Curfew (community requirement). This affects ${defendantNames}.
       affectedOffenceSet: "curViolationOffenceIds"
+      validationLevel: OFFENCE
 
     - id: "AC2b"
       name: "Curfew with tag requirement exceeds order end date"
@@ -46,6 +47,7 @@ rule:
         The end date of the order must match or be longer than the end date of
         Curfew with electronic monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "cureViolationOffenceIds"
+      validationLevel: OFFENCE
 
     - id: "AC2c"
       name: "Further curfew requirement exceeds order end date"
@@ -58,6 +60,7 @@ rule:
         The end date of the order must match or be longer than the end date of
         Further curfew requirement made. This affects ${defendantNames}.
       affectedOffenceSet: "curaViolationOffenceIds"
+      validationLevel: OFFENCE
 
     - id: "AC2d"
       name: "Alcohol abstinence requirement exceeds order end date"
@@ -70,3 +73,4 @@ rule:
         The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "aarViolationOffenceIds"
+      validationLevel: OFFENCE
