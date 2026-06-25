@@ -33,7 +33,6 @@ class YouthRehabilitationPreprocessorTest {
                 .curfewShortCodes(List.of("YRC2"))
                 .curfewTagShortCodes(List.of("YRC1"))
                 .furtherCurfewShortCodes(List.of("YRC3"))
-                .alcoholAbstinenceShortCodes(List.of())
                 .build();
     }
 

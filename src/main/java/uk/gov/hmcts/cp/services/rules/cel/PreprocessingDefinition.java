@@ -28,5 +28,4 @@ public class PreprocessingDefinition {
     private List<String> curfewShortCodes;
     private List<String> curfewTagShortCodes;
     private List<String> furtherCurfewShortCodes;
-    private List<String> alcoholAbstinenceShortCodes;
 }
