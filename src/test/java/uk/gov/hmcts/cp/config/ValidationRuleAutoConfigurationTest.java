@@ -1,12 +1,15 @@
 package uk.gov.hmcts.cp.config;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 
@@ -28,7 +31,11 @@ class ValidationRuleAutoConfigurationTest {
 
     private final PreprocessorRegistry preprocessorRegistry = new PreprocessorRegistry(List.of(
             new CustodialPreprocessor(),
-            new CommunityOrderEndDatePreprocessor()));
+            new CommunityOrderEndDatePreprocessor(),
+            new DisqualificationExtendedTestPreprocessor()));
+
+    private final ValidationIssueRecorder issueRecorder =
+            new ValidationIssueRecorder(new SimpleMeterRegistry());
 
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
@@ -40,7 +47,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                issueRecorder);
 
         assertThat(rules).isNotEmpty();
         assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
@@ -56,12 +64,13 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                issueRecorder);
 
-        assertThat(rules).hasSize(2);
+        assertThat(rules).hasSize(3);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001");
+                .containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001", "DR-DISQ-001");
     }
 
     /**
@@ -82,7 +91,8 @@ class ValidationRuleAutoConfigurationTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class)))
+                mock(RuleOverrideService.class),
+                issueRecorder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No preprocessor registered for type:");
     }

@@ -36,6 +36,7 @@ services:
       AUTHZ_ENABLED: "true"
       CP_BASE_URL: "http://wiremock:8080"
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0"
+      RULE_OVERRIDE_CACHE_TTL: 1
     mem_limit: 1g
     ports:
       - "4550:4550"

@@ -172,12 +172,12 @@ public final class PayloadBuilder {
 
     private static String defendant(String id, String firstName, String lastName) {
         return """
-            {"id": "%s", "firstName": "%s", "lastName": "%s"}""".formatted(id, firstName, lastName);
+            {"defendantId": "%s", "firstName": "%s", "lastName": "%s"}""".formatted(id, firstName, lastName);
     }
 
     private static String offence(String id, String code, String title, int orderIndex, String caseUrn) {
         return """
-            {"id": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, "caseUrn": "%s"}"""
+            {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, "caseUrn": "%s"}"""
             .formatted(id, code, title, orderIndex, caseUrn);
     }
 
@@ -185,7 +185,7 @@ public final class PayloadBuilder {
                                      String defendantId, String offenceId,
                                      Boolean isConcurrent, String consecutiveToOffence) {
         StringBuilder sb = new StringBuilder();
-        sb.append("{\"id\": \"").append(id).append("\"");
+        sb.append("{\"resultLineId\": \"").append(id).append("\"");
         sb.append(", \"shortCode\": \"").append(shortCode).append("\"");
         sb.append(", \"label\": \"").append(label).append("\"");
         sb.append(", \"defendantId\": \"").append(defendantId).append("\"");

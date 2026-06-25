@@ -19,4 +19,11 @@ public record ValidationIssueResult(ValidationIssue issue, String errorMessage, 
     public static ValidationIssueResult forWarning(final ValidationIssue issue) {
         return new ValidationIssueResult(issue, null, null);
     }
+
+    /** Convenience factory for ERROR issues carrying an error message and optional defendant name. */
+    public static ValidationIssueResult forError(final ValidationIssue issue,
+                                                  final String errorMessage,
+                                                  final String affectedDefendantName) {
+        return new ValidationIssueResult(issue, errorMessage, affectedDefendantName);
+    }
 }

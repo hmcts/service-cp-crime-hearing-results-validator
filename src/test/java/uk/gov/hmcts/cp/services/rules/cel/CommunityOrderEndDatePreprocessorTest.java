@@ -31,7 +31,6 @@ class CommunityOrderEndDatePreprocessorTest {
                 .curfewTagShortCodes(List.of("CURE"))
                 .furtherCurfewShortCodes(List.of("CURA"))
                 .alcoholAbstinenceShortCodes(List.of("AAR"))
-                .unpaidWorkShortCodes(List.of("UPWR"))
                 .build();
     }
 
@@ -41,7 +40,7 @@ class CommunityOrderEndDatePreprocessorTest {
                                     String endDate) {
         Prompt prompt = new Prompt("endDate", endDate);
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -53,7 +52,7 @@ class CommunityOrderEndDatePreprocessorTest {
                                            String promptRef, String promptValue) {
         Prompt prompt = new Prompt(promptRef, promptValue);
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -63,7 +62,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
         ResultLineDto rl = new ResultLineDto();
-        rl.setId(id);
+        rl.setResultLineId(id);
         rl.setShortCode(shortCode);
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
@@ -72,7 +71,7 @@ class CommunityOrderEndDatePreprocessorTest {
 
     private DefendantDto defendant(String id, String first, String last) {
         DefendantDto d = new DefendantDto();
-        d.setId(id);
+        d.setDefendantId(id);
         d.setFirstName(first);
         d.setLastName(last);
         return d;
@@ -115,7 +114,6 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
             assertThat(ctx.aarViolationCount()).isZero();
-            assertThat(ctx.upwrViolationCount()).isZero();
         }
 
         @Test
@@ -311,7 +309,6 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(result.get("d1").cureViolationCount()).isZero();
             assertThat(result.get("d1").curaViolationCount()).isZero();
             assertThat(result.get("d1").aarViolationCount()).isZero();
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
         }
 
         @Test
@@ -319,7 +316,7 @@ class CommunityOrderEndDatePreprocessorTest {
             // CUR has null promptValue
             Prompt blankPrompt = new Prompt("endDate", null);
             ResultLineDto curLine = new ResultLineDto();
-            curLine.setId("rl-cur");
+            curLine.setResultLineId("rl-cur");
             curLine.setShortCode("CUR");
             curLine.setDefendantId("d1");
             curLine.setOffenceId("off1");
@@ -370,112 +367,4 @@ class CommunityOrderEndDatePreprocessorTest {
         }
     }
 
-    @Nested
-    @DisplayName("AC3 — UPWR 12-month minimum")
-    class Ac3Upwr {
-
-        private static final LocalDate HEARING_DAY = LocalDate.of(2026, 5, 14);
-
-        @Test
-        void upwr_with_order_under_12_months_should_produce_upwrViolationCount_1() {
-            // Order ends 13/04/2027 — less than 12 months from 14/05/2026
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-order", "COEW", "d1", "off1", "2027-04-13"),
-                            noPromptLine("rl-upwr", "UPWR", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "John", "Smith")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            CommunityOrderContext ctx = result.get("d1");
-            assertThat(ctx.upwrViolationCount()).isEqualTo(1L);
-            assertThat(ctx.upwrViolationOffenceIds()).containsExactly("off1");
-        }
-
-        @Test
-        void upwr_boundary_pass_13_05_2027_hearing_14_05_2026_should_not_violate() {
-            // Order ends 13/05/2027 = hearingDay + 12m - 1d → pass (spec Scenario 15)
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-order", "COS", "d1", "off1", "2027-05-13"),
-                            noPromptLine("rl-upwr", "UPWR", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "Boundary", "Pass")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
-        }
-
-        @Test
-        void upwr_boundary_pass_14_05_2027_hearing_14_05_2026_should_not_violate() {
-            // Order ends 14/05/2027 → more than minimum → pass
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-order", "COEW", "d1", "off1", "2027-05-14"),
-                            noPromptLine("rl-upwr", "UPWR", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "Boundary", "PassPlus")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
-        }
-
-        @Test
-        void upwr_boundary_fail_12_05_2027_hearing_14_05_2026_should_violate() {
-            // Order ends 12/05/2027 — one day before minimum → fail
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-order", "COEW", "d1", "off1", "2027-05-12"),
-                            noPromptLine("rl-upwr", "UPWR", "d1", "off1")
-                    ),
-                    List.of(defendant("d1", "Boundary", "Fail")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            assertThat(result.get("d1").upwrViolationCount()).isEqualTo(1L);
-        }
-
-        @Test
-        void no_upwr_result_should_produce_upwrViolationCount_0() {
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-order", "COEW", "d1", "off1", "2027-04-13")
-                            // no UPWR
-                    ),
-                    List.of(defendant("d1", "No", "Upwr")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            assertThat(result.get("d1").upwrViolationCount()).isZero();
-        }
-
-        @Test
-        void two_defendants_both_with_upwr_only_one_under_12_months_should_produce_single_violation() {
-            // d1 → order ends 13/04/2027 (fail), d2 → order ends 13/05/2027 (pass)
-            DraftValidationRequest req = request(
-                    HEARING_DAY,
-                    List.of(
-                            orderLine("rl-d1-order", "COEW", "d1", "off1", "2027-04-13"),
-                            noPromptLine("rl-d1-upwr", "UPWR", "d1", "off1"),
-                            orderLine("rl-d2-order", "COEW", "d2", "off2", "2027-05-13"),
-                            noPromptLine("rl-d2-upwr", "UPWR", "d2", "off2")
-                    ),
-                    List.of(
-                            defendant("d1", "Under", "Minimum"),
-                            defendant("d2", "At", "Minimum")));
-
-            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
-
-            assertThat(result.get("d1").upwrViolationCount()).isEqualTo(1L);
-            assertThat(result.get("d2").upwrViolationCount()).isZero();
-        }
-    }
 }

@@ -3,8 +3,8 @@
 **Feature Branch**: `DD-41653-community-order-date-validation`  
 **Created**: 2026-05-20  
 **Status**: Draft  
-**Input**: User description: "Community order end date validation — AC2 (requirement end dates), AC3 (UPWR 12-month minimum), AC4/AC5 (error display patterns)"  
-**Scope**: AC2, AC3, AC4, AC5 only. AC1 ("end date must be in the future") is out of scope — handled by a separate ticket.
+**Input**: User description: "Community order end date validation — AC2 (requirement end dates), AC4/AC5 (error display patterns)"  
+**Scope**: AC2, AC4, AC5 only. AC1 ("end date must be in the future") is out of scope — handled by a separate ticket.
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### ~~User Story 1 — AC1: Community Order End Date Must Be In The Future~~ *(Out of scope — separate ticket)*
 
-> AC1 (Scenarios 1–5, "The end date must be in the future") is explicitly excluded from this ticket. It will be implemented and tested under a separate Jira ticket. This ticket covers AC2, AC3, AC4, and AC5 only.
+> AC1 (Scenarios 1–5, "The end date must be in the future") is explicitly excluded from this ticket. It will be implemented and tested under a separate Jira ticket. This ticket covers AC2, AC4, and AC5 only.
 
 ---
 
@@ -37,63 +37,45 @@ As a court clerk, when I try to navigate to Manage Hearings after entering resul
 
 ---
 
-### User Story 2 — Unpaid Work Requirement Demands a 12-Month Minimum Order Duration (Priority: P1)
-
-As a court clerk, when a community order includes an unpaid work requirement (UPWR), the system must detect if the order's end date is less than 12 months from the hearing date and block navigation to Manage Hearings — because unpaid work orders must by statute run for at least 12 months.
-
-**Why this priority**: Statutory obligation. A community order with UPWR shorter than 12 months cannot be legally valid; it must be caught and corrected before sharing.
-
-**Independent Test**: Add a community order result (COEW, COS, or CONI) with a UPWR child result and an order end date less than 12 months after the hearing date, then click "Save and continue". Navigation must be blocked with the correct error message.
-
-**Acceptance Scenarios**:
-
-1. **Given** a COEW order with UPWR and hearing date 14/05/2026, **When** the order end date is 13/04/2027 (less than 12 months from hearing), **Then** navigation is blocked and the error "The end date of the order must be at least 12 months as it includes an unpaid work requirement" is shown at the top of the screen and inline above the offence result.
-2. **Given** a COS order with UPWR and hearing date 14/05/2026, **When** the order end date is 13/05/2027 (exactly 12 months minus 1 day — the minimum passing boundary), **Then** no validation error is shown and the result can be shared.
-3. **Given** a CONI order with UPWR and hearing date 14/05/2026, **When** the order end date is 20/05/2027 (more than 12 months), **Then** the result passes validation successfully.
-4. **Given** two defendants both with UPWR where Defendant 1 has an order end date less than 12 months and Defendant 2 has an order end date exactly at the 12-month boundary, **When** the user selects "Save and continue", **Then** only Defendant 1 appears in the validation error and Defendant 2 passes validation.
-
----
-
-### User Story 3 — Error Summary Displayed at the Top of the Enter Results Screen (Priority: P2)
+### User Story 2 — Error Summary Displayed at the Top of the Enter Results Screen (Priority: P2)
 
 As a court clerk, when validation errors prevent me from navigating to Manage Hearings, I need a clear error summary box at the top of the Enter Results screen listing every error and which defendants it affects — so I know exactly what to correct before I can share results.
 
 **Why this priority**: Without a prominent, structured summary, court clerks may miss which defendants and offences require correction and may be unable to efficiently resolve all issues.
 
-**Independent Test**: Trigger any AC2 or AC3 validation error and click "Save and continue". Verify the top-of-page red error summary box appears with the correct heading, error text, and defendant list structure.
+**Independent Test**: Trigger any AC2 validation error and click "Save and continue". Verify the top-of-page red error summary box appears with the correct heading, error text, and defendant list structure.
 
 **Acceptance Scenarios**:
 
 1. **Given** one or more validation errors are triggered, **When** the user selects "Save and continue", **Then** the user remains on Enter Results, is navigated to the top of the screen, and sees a red box with the bold black heading "There is a Problem".
 2. **Given** the error summary is shown, **When** displaying each error, **Then** each error message is shown in bold red text and is followed on the next line by "This affects: <<defendant name>>, <<defendant name>>" in red text listing all defendants who triggered that specific error.
-3. **Given** multiple distinct validation errors are present (e.g. AC2 error for Defendant 1 and AC3 error for Defendant 2), **When** the summary is shown, **Then** each error is shown separately with its own "This affects:" line.
+3. **Given** multiple distinct validation errors are present (e.g. AC2 errors for different requirement types), **When** the summary is shown, **Then** each error is shown separately with its own "This affects:" line.
 4. **Given** validation errors exist, **When** the user manually navigates to Manage Hearings via the tab, **Then** the Share button is not visible on the Manage Hearings screen.
 
 ---
 
-### User Story 4 — Inline Error Shown Above Each Result That Triggered a Validation Error (Priority: P2)
+### User Story 3 — Inline Error Shown Above Each Result That Triggered a Validation Error (Priority: P2)
 
 As a court clerk, when I scroll through the Enter Results screen after a validation failure, I need to see the specific error message shown inline — above the offending result — for every offence that triggered a validation error, so I can locate and fix each issue without only relying on the top-level summary.
 
 **Why this priority**: Inline errors guide the clerk directly to each record requiring correction; without them, clerks would need to manually match summary errors to individual offences.
 
-**Independent Test**: Trigger any AC2 or AC3 validation error and scroll through the Enter Results screen. A red inline error with a vertical left border must appear above each offending result.
+**Independent Test**: Trigger any AC2 validation error and scroll through the Enter Results screen. A red inline error with a vertical left border must appear above each offending result.
 
 **Acceptance Scenarios**:
 
 1. **Given** a validation error is triggered by a result on a specific offence, **When** the user scrolls the Enter Results screen, **Then** a red error message with a vertical left border is displayed below the offence label and above the result for each affected offence.
-2. **Given** a result on a single offence triggers multiple validation errors (e.g. both AC2 and AC3), **When** the inline errors are shown, **Then** all errors for that offence are listed inline.
+2. **Given** a result on a single offence triggers multiple validation errors (e.g. both AC2a and AC2d), **When** the inline errors are shown, **Then** all errors for that offence are listed inline.
 
 ---
 
 ### Edge Cases
 
-- What happens when a community order has both a requirement that exceeds the order end date (AC2) and a UPWR duration shorter than 12 months (AC3)? Both distinct errors must appear independently in the summary and inline.
-- What happens when multiple defendants in a hearing have a mix of AC2 and AC3 failures alongside valid defendants? Only the defendants with each specific error type appear in that error's "This affects:" list; valid defendants are never listed.
+- What happens when multiple defendants in a hearing have AC2 failures alongside valid defendants? Only the defendants with each specific error type appear in that error's "This affects:" list; valid defendants are never listed.
 - What happens when a community order has multiple requirements simultaneously violating AC2 (e.g. both CUR and AAR exceed the order)? One separate error message is produced per violated requirement type — e.g. one for CUR and one for AAR — each naming the specific requirement. The YAML+CEL engine evaluates each requirement condition independently, so each fires its own `ValidationIssue` (AC2a=CUR, AC2b=CURE, AC2c=CURA, AC2d=AAR). This gives per-condition runtime configurability.
 - What happens when the requirement end date is exactly equal to the community order end date? This is valid — AC2 only triggers when the requirement end date is strictly later than the order end date.
 - What happens when the user navigates directly to Manage Hearings (bypassing "Save and continue") while unresolved validation errors exist? The Share button must not be visible; the Manage Hearings screen must not show any validation error messages.
-- What happens when the community order end date is null/missing? This should be caught by mandatory field validation before AC2/AC3 checks run.
+- What happens when the community order end date is null/missing? This should be caught by mandatory field validation before AC2 checks run.
 
 ---
 
@@ -101,27 +83,24 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 
 ### Functional Requirements
 
-- **FR-001** *(Out of scope — AC1 is handled by a separate ticket)*: ~~System MUST reject saving a community order result (COEW, COS, CONI) when the end date entered is on or before the hearing date, displaying the error "The end date must be in the future" at the field level and in the page-level error summary.~~ This ticket assumes AC1 is either already implemented or will be delivered separately; AC2 and AC3 checks at "Save and continue" assume the order end date is already a valid future date when they run.
+- **FR-001** *(Out of scope — AC1 is handled by a separate ticket)*: ~~System MUST reject saving a community order result (COEW, COS, CONI) when the end date entered is on or before the hearing date, displaying the error "The end date must be in the future" at the field level and in the page-level error summary.~~ This ticket assumes AC1 is either already implemented or will be delivered separately; AC2 checks at "Save and continue" assume the order end date is already a valid future date when they run.
 - **FR-002**: System MUST detect, at "Save and continue", when a community order's end date is strictly earlier than the end date, "End date of tag", or "Until" date of any of its child requirement results of type CUR, CURE, CURA, or AAR. These dates are supplied by the UI as `Prompt` entries in `ResultLineDto.prompts`, matched by `promptRef` (e.g. `"endDate"`, `"endDateOfTag"`, `"until"`) and read from `promptValue`.
 - **FR-003**: When FR-002 triggers, the validation service MUST emit one separate `ValidationIssue` per violated requirement type using these exact display names: "Curfew (community requirement)" (CUR), "Curfew with electronic monitoring" (CURE), "Further curfew requirement made" (CURA), "Alcohol abstinence and monitoring" (AAR). Each violation type maps to an independent YAML condition (AC2a=CUR, AC2b=CURE, AC2c=CURA, AC2d=AAR), enabling per-condition runtime enable/disable via the `validation_rule` table. If both CUR and AAR violate on the same order, two distinct `ValidationIssue` entries appear in the response — one per requirement type.
 - **FR-004**: Each AC2 `ValidationIssue` message MUST read: "The end date of the order must match or be longer than the end date of <<requirement display name>>" where `<<requirement display name>>` is the display name for that specific requirement type only (one requirement per message).
-- **FR-005**: System MUST detect, at "Save and continue", when a community order containing a UPWR child result has an end date that is fewer than 12 calendar months after the hearing date (i.e., strictly before `hearingDay + 12 months`; `hearingDay` is supplied on `DraftValidationRequest`). The community order end date is itself a prompt value on the parent `ResultLineDto` (COEW/COS/CONI result line).
-- **FR-006**: When FR-005 triggers, the error message MUST read: "The end date of the order must be at least 12 months as it includes an unpaid work requirement". This single `messageTemplate` is used for both the top-of-screen summary and inline above the offence.
-- **FR-007**: When one or more AC2 or AC3 validation errors block navigation to Manage Hearings, the system MUST keep the user on the Enter Results screen and scroll them to the top, displaying a red error summary box with the bold heading "There is a Problem".
+- **FR-007**: When one or more AC2 validation errors block navigation to Manage Hearings, the system MUST keep the user on the Enter Results screen and scroll them to the top, displaying a red error summary box with the bold heading "There is a Problem".
 - **FR-008**: Each distinct validation error in the summary MUST be shown in bold red text, followed by "This affects: <<defendant name(s)>>" in red, listing all defendants whose results triggered that specific error. The API delivers this via `affectedDefendants: [{ defendantId }]` on each `ValidationIssue`; the UI looks up the defendant display name from `defendantId`.
 - **FR-009**: When multiple distinct validation errors exist, ALL must appear in the summary.
 - **FR-010**: For every offence/result combination that triggered a validation error, an inline red error message with a vertical left border MUST appear below the offence label and above the result on the Enter Results screen.
 - **FR-011**: When multiple validation errors apply to a single offence/result, ALL errors for that result MUST be shown inline.
-- **FR-012**: When any validation errors exist (AC2 or AC3) for any defendant in the hearing, the Share button MUST NOT be visible on the Manage Hearings screen — the Share button is a single hearing-level control, hidden for the whole hearing regardless of which defendant(s) have errors, and regardless of whether the user reached Manage Hearings via "Save and continue" or by navigating directly.
+- **FR-012**: When any AC2 validation errors exist for any defendant in the hearing, the Share button MUST NOT be visible on the Manage Hearings screen — the Share button is a single hearing-level control, hidden for the whole hearing regardless of which defendant(s) have errors, and regardless of whether the user reached Manage Hearings via "Save and continue" or by navigating directly.
 - **FR-013**: The Manage Hearings screen MUST NOT display validation error messages; errors are surfaced exclusively on the Enter Results screen.
 - **FR-014**: Per-defendant isolation applies to error display only — inline errors and "This affects:" lists on the Enter Results screen MUST reference only the defendants whose results triggered each specific error. Valid defendants must never appear in an error's "This affects:" list. This does not imply independent per-defendant sharing; the Share button remains a single hearing-level control (see FR-012).
 
 ### Key Entities
 
 - **Community Order**: A sentencing result of type COEW, COS, or CONI. Represented as a `ResultLineDto` in `DraftValidationRequest.resultLines`. Its mandatory end date is carried as a named value in `ResultLineDto.prompts`.
-- **Requirement (child result)**: A sub-result attached to a community order, also represented as a `ResultLineDto`. The date field for each requirement type is carried as a named prompt value in `ResultLineDto.prompts`: CUR → `endDate`, CURE → `endDateOfTag`, CURA → `endDate`, AAR → `until`. UPWR carries no date prompt — its presence alone triggers the AC3 duration check.
+- **Requirement (child result)**: A sub-result attached to a community order, also represented as a `ResultLineDto`. The date field for each requirement type is carried as a named prompt value in `ResultLineDto.prompts`: CUR → `endDate`, CURE → `endDateOfTag`, CURA → `endDate`, AAR → `until`.
 - **`ResultLineDto.prompts`**: `List<Prompt>` — available from API library version `0.1.6` (now in use). Carries per-result named values entered by the clerk. Each `Prompt` has two `String` fields: `promptRef` (the prompt key, e.g. `"endDate"`, `"endDateOfTag"`, `"until"`) and `promptValue` (the entered value as a string, e.g. `"2026-11-30"`). Accessed via `getPromptRef()` and `getPromptValue()`.
-- **Hearing date**: The date of the court hearing. Supplied to the validation service as the `hearingDay` field on `DraftValidationRequest` — no upstream DTO change required. Used as the lower bound for AC1 (must be after) and as the reference point for the 12-month UPWR check (AC3).
 - **Validation error**: A blocking issue produced by the validation service that prevents result sharing. Carries a message text, the set of affected defendants, and linkage to the specific offences/results that triggered it.
 - **Defendant**: An individual in the hearing. A hearing may include multiple defendants; each defendant's results are validated independently.
 
@@ -133,24 +112,22 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 
 - **SC-001** *(AC1 — out of scope)*: ~~End date in-the-past check~~ — covered by a separate ticket (Scenarios 1–5 excluded from this ticket's acceptance test suite.
 - **SC-002**: 100% of community orders where any child requirement's date exceeds the order end date (AC2) are blocked at "Save and continue" with the requirement display name in the error message — zero missed violations.
-- **SC-003**: 100% of community orders with UPWR where the order duration is less than 12 months from the hearing date (AC3) are blocked at "Save and continue" — boundary condition (13/05/2027 for hearing 14/05/2026) passes; one day shorter fails.
 - **SC-004**: The Share button is hidden on the Manage Hearings screen in 100% of cases where unresolved validation errors exist — regardless of the navigation path taken.
 - **SC-005**: Error messages precisely identify only the defendants affected by each specific error — no defendant is incorrectly included or omitted from any "This affects:" list.
-- **SC-006**: All 13 in-scope acceptance scenarios (Scenarios 6–18 from the original feature description) pass automated regression tests. Scenarios 1–5 (AC1) are excluded from this ticket's test suite.
+- **SC-006**: All 8 in-scope acceptance scenarios (Scenarios 6–13 from the original feature description) pass automated regression tests. Scenarios 1–5 (AC1) are excluded from this ticket's test suite.
 - **SC-007**: Valid defendants are never listed in any error's "This affects:" line when other defendants in the same hearing have errors; however, the Share button is hidden for the whole hearing until all errors are resolved.
 
 ---
 
 ## Assumptions
 
-- **A-001**: The 12-month minimum for UPWR (AC3) uses calendar months. The passing boundary is an order end date of `hearing date + 12 months - 1 day` — Scenario 15 (13/05/2027 for hearing 14/05/2026) confirms this. Any date strictly before this boundary triggers the error.
 - **A-002**: For AC2, an order end date equal to the requirement end date is valid (the error triggers only when the order end date is strictly before the requirement end date). Scenario 10 confirms this boundary.
-- **A-003**: AC1 validation ("end date must be in the future") fires on "Save result details" and prevents saving the draft; AC2 and AC3 validations fire on "Save and continue" after all individual results are saved. Both surface errors in the page-level "There is a problem" summary.
-- **A-004**: AC1 (Scenarios 1–5, "The end date must be in the future") is **explicitly out of scope** for this ticket and will be delivered under a separate Jira ticket. AC2 and AC3 validations run at "Save and continue" and assume the order end date has already passed any prior field-level checks.
+- **A-003**: AC1 validation ("end date must be in the future") fires on "Save result details" and prevents saving the draft; AC2 validations fire on "Save and continue" after all individual results are saved. Both surface errors in the page-level "There is a problem" summary.
+- **A-004**: AC1 (Scenarios 1–5, "The end date must be in the future") is **explicitly out of scope** for this ticket and will be delivered under a separate Jira ticket. AC2 validations run at "Save and continue" and assume the order end date has already passed any prior field-level checks.
 - **A-005**: Multiple requirement violations on a single order (e.g. both CUR and AAR exceeding the order) each produce a separate error message — one per violated requirement type. Scenario 11 produces two `ValidationIssue` entries: one for CUR and one for AAR. The YAML+CEL engine evaluates each requirement condition independently; the UI renders them adjacently in the "There is a problem" summary.
 - **A-006**: The validation service operates on draft hearing result data and does not modify or persist the hearing record.
-- **A-007**: `ResultLineDto.prompts` (`List<Prompt>`, each with `promptRef: String` and `promptValue: String`) is available from upstream library version `0.1.6`, which is now the version in use. No upstream API change is required. `hearingDay` is already present on `DraftValidationRequest`. No new result codes or DB migrations are needed beyond the YAML rules and new preprocessor.
-- **A-008**: Short codes (COEW, COS, CONI, CUR, CURE, CURA, AAR, UPWR) are already defined in the result code dictionary and are not modified by this feature.
+- **A-007**: `ResultLineDto.prompts` (`List<Prompt>`, each with `promptRef: String` and `promptValue: String`) is available from upstream library version `0.1.6`, which is now the version in use. No upstream API change is required. No new result codes or DB migrations are needed beyond the YAML rules and new preprocessor.
+- **A-008**: Short codes (COEW, COS, CONI, CUR, CURE, CURA, AAR) are already defined in the result code dictionary and are not modified by this feature.
 - **A-009**: UI error display patterns (red box, bold heading, vertical border for inline errors) align with the existing GOV.UK Design System error summary and error message components already in use in the Enter Results screen.
 
 ---
@@ -162,6 +139,5 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - Q: Does `DraftValidationRequest` currently carry the hearing date, or would it need to be added to the upstream API DTO? → A: Hearing date is already present as the `hearingDay` field on `DraftValidationRequest` from the upstream API — no upstream DTO change is needed.
 - Q: When multiple requirements on one order violate AC2 simultaneously, how should the errors be emitted? → A: ~~One combined error message naming all violating requirements together (not separate messages per requirement).~~ **Revised (2026-05-20 post-analyze)**: Separate — one `ValidationIssue` per violated requirement type. The YAML+CEL engine evaluates each condition (AC2a=CUR, AC2b=CURE, AC2c=CURA, AC2d=AAR) independently; combined-message semantics require Java post-processing which violates Constitution Principle I. FR-003, FR-004, A-005, and Edge Cases updated to reflect this.
 - Q: Is the Share button a single hearing-level control or per-defendant? → A: Single Share button for the whole hearing — hidden if any defendant has unresolved errors. Per-defendant isolation applies to error display ("This affects:" lists) only, not to sharing.
-- Q: Is AC1 ("end date must be in the future") already implemented or new work for this ticket? → A: Out of scope — AC1 will be handled by a separate ticket. This ticket covers AC2, AC3, AC4, and AC5 only (Scenarios 6–18).
+- Q: Is AC1 ("end date must be in the future") already implemented or new work for this ticket? → A: Out of scope — AC1 will be handled by a separate ticket. This ticket covers AC2, AC4, and AC5 only (Scenarios 6–13).
 - Additional context: Child result end dates (for CUR, CURE, CURA, AAR) and the community order end date (for COEW/COS/CONI) are received as `promptRef`/`promptValue` pairs in `ResultLineDto.prompts` (`List<Prompt>`). Confirmed present in API library `0.1.6` (now in use). `Prompt` has `getPromptRef(): String` and `getPromptValue(): String`.
-- Q: For AC3, should the top-of-screen summary and the inline error use different message texts? → A: No — a single `messageTemplate` text is used for both: "The end date of the order must be at least 12 months as it includes an unpaid work requirement". FR-006 updated accordingly.

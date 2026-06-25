@@ -16,11 +16,11 @@ class CommunityOrderContextTest {
 
     private CommunityOrderContext context(
             String name,
-            long cur, long cure, long cura, long aar, long upwr,
+            long cur, long cure, long cura, long aar,
             List<String> curIds, List<String> cureIds, List<String> curaIds,
-            List<String> aarIds, List<String> upwrIds, List<String> allIds) {
-        return new CommunityOrderContext(name, cur, cure, cura, aar, upwr,
-                curIds, cureIds, curaIds, aarIds, upwrIds, allIds);
+            List<String> aarIds, List<String> allIds) {
+        return new CommunityOrderContext(name, cur, cure, cura, aar,
+                curIds, cureIds, curaIds, aarIds, allIds);
     }
 
     @Nested
@@ -28,11 +28,11 @@ class CommunityOrderContextTest {
     class ToCelContext {
 
         @Test
-        void toCelContext_should_return_all_five_violation_count_keys() {
+        void toCelContext_should_return_all_four_violation_count_keys() {
             CommunityOrderContext ctx = context(
-                    "John Smith", 1L, 2L, 3L, 4L, 5L,
+                    "John Smith", 1L, 2L, 3L, 4L,
                     List.of("off1"), List.of("off2"), List.of("off3"),
-                    List.of("off4"), List.of("off5"), List.of("off1", "off2", "off3", "off4", "off5"));
+                    List.of("off4"), List.of("off1", "off2", "off3", "off4"));
 
             Map<String, Long> cel = ctx.toCelContext();
 
@@ -40,23 +40,22 @@ class CommunityOrderContextTest {
             assertThat(cel).containsEntry("cureViolationCount", 2L);
             assertThat(cel).containsEntry("curaViolationCount", 3L);
             assertThat(cel).containsEntry("aarViolationCount", 4L);
-            assertThat(cel).containsEntry("upwrViolationCount", 5L);
         }
 
         @Test
-        void toCelContext_should_return_exactly_five_entries() {
+        void toCelContext_should_return_exactly_four_entries() {
             CommunityOrderContext ctx = context(
-                    "A", 0L, 0L, 0L, 0L, 0L,
-                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+                    "A", 0L, 0L, 0L, 0L,
+                    List.of(), List.of(), List.of(), List.of(), List.of());
 
-            assertThat(ctx.toCelContext()).hasSize(5);
+            assertThat(ctx.toCelContext()).hasSize(4);
         }
 
         @Test
         void toCelContext_all_zeros_when_no_violations() {
             CommunityOrderContext ctx = context(
-                    "B", 0L, 0L, 0L, 0L, 0L,
-                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+                    "B", 0L, 0L, 0L, 0L,
+                    List.of(), List.of(), List.of(), List.of(), List.of());
 
             Map<String, Long> cel = ctx.toCelContext();
 
@@ -69,9 +68,9 @@ class CommunityOrderContextTest {
     class GetOffenceIdSet {
 
         private final CommunityOrderContext ctx = context(
-                "Jane Doe", 1L, 1L, 1L, 1L, 1L,
+                "Jane Doe", 1L, 1L, 1L, 1L,
                 List.of("cur1"), List.of("cure1"), List.of("cura1"),
-                List.of("aar1"), List.of("upwr1"), List.of("all1", "all2"));
+                List.of("aar1"), List.of("all1", "all2"));
 
         @Test
         void getOffenceIdSet_curViolationOffenceIds_returns_correct_list() {
@@ -94,11 +93,6 @@ class CommunityOrderContextTest {
         }
 
         @Test
-        void getOffenceIdSet_upwrViolationOffenceIds_returns_correct_list() {
-            assertThat(ctx.getOffenceIdSet("upwrViolationOffenceIds")).containsExactly("upwr1");
-        }
-
-        @Test
         void getOffenceIdSet_allOffenceIds_returns_all_ids() {
             assertThat(ctx.getOffenceIdSet("allOffenceIds")).containsExactly("all1", "all2");
         }
@@ -118,8 +112,8 @@ class CommunityOrderContextTest {
         @Test
         void defendantName_and_allOffenceIds_are_accessible_from_record_components() {
             CommunityOrderContext ctx = context(
-                    "James Bond", 0L, 0L, 0L, 0L, 0L,
-                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of("off-x"));
+                    "James Bond", 0L, 0L, 0L, 0L,
+                    List.of(), List.of(), List.of(), List.of(), List.of("off-x"));
 
             assertThat(ctx.defendantName()).isEqualTo("James Bond");
             assertThat(ctx.allOffenceIds()).containsExactly("off-x");

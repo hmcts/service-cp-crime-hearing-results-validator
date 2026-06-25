@@ -36,17 +36,17 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
               "hearingDay": "2026-03-11",
               "courtType": "MAGISTRATES",
               "resultLines": [
-                {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
-                {"id": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
-                {"id": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off4", "isConcurrent": true}
+                {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
+                {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off4", "isConcurrent": true}
               ],
-              "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+              "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
               "offences": [
-                {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                {"id": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                {"id": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
               ]
             }
             """;
@@ -57,17 +57,18 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
               "hearingDay": "2026-03-11",
               "courtType": "MAGISTRATES",
               "resultLines": [
-                {"id": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
-                {"id": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2",
+                {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2",
                  "isConcurrent": true, "consecutiveToOffence": "off1"}
               ],
-              "defendants": [{"id": "d1", "firstName": "John", "lastName": "Doe"}],
+              "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
               "offences": [
-                {"id": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                {"id": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
               ]
             }
             """;
+
 
     @Resource
     private ValidationRuleRepository repository;

@@ -14,6 +14,11 @@ tasks.register('api', Test) {
   doFirst {
     def appInfo = dockerCompose.servicesInfos.app.firstContainer
     systemProperty 'app.baseUrl', "http://${appInfo.host}:${appInfo.tcpPorts[4550]}"
+    def dbInfo = dockerCompose.servicesInfos.db.firstContainer
+    systemProperty 'db.url',
+        "jdbc:postgresql://${dbInfo.host}:${dbInfo.tcpPorts[5432]}/results-validator-db"
+    systemProperty 'db.username', "postgres"
+    systemProperty 'db.password', "postgres"
   }
 
   jvmArgs = ['-Xshare:off']
@@ -79,6 +84,7 @@ dockerCompose {
   removeOrphans = true
   stopContainers = true
   removeContainers = true
+  removeVolumes = true
 
   useDockerComposeV2 = true
   dockerExecutable = 'docker'
