@@ -11,7 +11,6 @@ import java.util.Map;
  *
  * <p>Covers:
  * <ul>
- *   <li>AC1 — order end date is on or before the hearing date (not in the future)</li>
  *   <li>AC2a — YRC2 (Curfew) end date exceeds YRO end date</li>
  *   <li>AC2b — YRC1 (Curfew with electronic monitoring) end-of-tag exceeds YRO end date</li>
  *   <li>AC2c — YRC3 (Further curfew requirement made) end date exceeds YRO end date</li>
@@ -19,11 +18,9 @@ import java.util.Map;
  */
 public record YouthRehabilitationContext(
         String defendantName,
-        long pastEndDateCount,
         long curViolationCount,
         long cureViolationCount,
         long curaViolationCount,
-        List<String> pastEndDateOffenceIds,
         List<String> curViolationOffenceIds,
         List<String> cureViolationOffenceIds,
         List<String> curaViolationOffenceIds,
@@ -31,14 +28,13 @@ public record YouthRehabilitationContext(
 ) implements RuleEvaluationContext {
 
     /**
-     * Returns the AC1/AC2 violation counts as the CEL variable map.
+     * Returns the AC2 violation counts as the CEL variable map.
      *
      * @return CEL variable map keyed by expression variable name
      */
     @Override
     public Map<String, Long> toCelContext() {
         return Map.of(
-                "pastEndDateCount", pastEndDateCount,
                 "curViolationCount", curViolationCount,
                 "cureViolationCount", cureViolationCount,
                 "curaViolationCount", curaViolationCount
@@ -55,7 +51,6 @@ public record YouthRehabilitationContext(
     @Override
     public List<String> getOffenceIdSet(final String setName) {
         return switch (setName) {
-            case "pastEndDateOffenceIds" -> pastEndDateOffenceIds;
             case "curViolationOffenceIds" -> curViolationOffenceIds;
             case "cureViolationOffenceIds" -> cureViolationOffenceIds;
             case "curaViolationOffenceIds" -> curaViolationOffenceIds;

@@ -25,8 +25,6 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * short-code matching, defendant-name assembly, and prompt-date parsing live in
  * {@link PreprocessorHelper}.
  *
- * <p>AC1 — detects when a YRO end date is on or before the hearing date (not in the future).
- *
  * <p>AC2 — detects when any curfew requirement (YRC2, YRC1, YRC3) has a date strictly later
  * than the parent YRO end date.
  *
@@ -77,7 +75,6 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                 continue;
             }
 
-            final List<String> pastEndDateIds = new ArrayList<>();
             final List<String> curViolationIds = new ArrayList<>();
             final List<String> cureViolationIds = new ArrayList<>();
             final List<String> curaViolationIds = new ArrayList<>();
@@ -107,11 +104,6 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                     continue;
                 }
 
-                // AC1 — end date is on or before the hearing date (not in the future)
-                if (request.getHearingDay() != null && !orderEndDate.isAfter(request.getHearingDay())) {
-                    pastEndDateIds.add(offenceId);
-                }
-
                 // AC2a — YRC2: curfew end date after YRO end date
                 if (isRequirementViolated(offenceLines, curCodes,
                         PROMPT_END_DATE, orderEndDate, offenceId)) {
@@ -134,11 +126,9 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
 
             result.put(defendantId, new YouthRehabilitationContext(
                     defendantNames.getOrDefault(defendantId, "Unknown"),
-                    pastEndDateIds.size(),
                     curViolationIds.size(),
                     cureViolationIds.size(),
                     curaViolationIds.size(),
-                    List.copyOf(pastEndDateIds),
                     List.copyOf(curViolationIds),
                     List.copyOf(cureViolationIds),
                     List.copyOf(curaViolationIds),
