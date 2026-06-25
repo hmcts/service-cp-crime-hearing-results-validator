@@ -9,7 +9,7 @@ rule:
 
   preprocessing:
     type: "youth-rehabilitation-order"
-    communityOrderShortCodes:
+    yroOrderShortCodes:
       - YROEW
       - YRONI
       - YROFEW

@@ -56,7 +56,7 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
     public Map<String, YouthRehabilitationContext> preprocess(final DraftValidationRequest request,
                                                                final PreprocessingDefinition config) {
 
-        final Set<String> orderCodes = upperSet(config.getCommunityOrderShortCodes());
+        final Set<String> orderCodes = upperSet(config.getYroOrderShortCodes());
         final Set<String> curCodes = upperSet(config.getCurfewShortCodes());
         final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
         final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());

@@ -29,7 +29,7 @@ class YouthRehabilitationPreprocessorTest {
     @BeforeAll
     static void setUpConfig() {
         yroConfig = PreprocessingDefinition.builder()
-                .communityOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
+                .yroOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
                 .curfewShortCodes(List.of("YRC2"))
                 .curfewTagShortCodes(List.of("YRC1"))
                 .furtherCurfewShortCodes(List.of("YRC3"))
