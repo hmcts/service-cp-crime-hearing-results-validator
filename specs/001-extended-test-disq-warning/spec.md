@@ -123,7 +123,7 @@ When a relevant offence has only ancillary or intermediary lines recorded agains
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST identify a relevant offence as any offence whose Home Office offence code matches one of: `RT88046`, `RT88526`, `RT88026`, `RT88530`, `RT88531`.
+- **FR-001**: The system MUST identify a relevant offence as any offence whose Home Office offence code matches one of: `RT88046`, `RT88526`, `RT88526A`, `RT88526B`, `RT88026`, `RT88026B`, `RT88530`, `RT88531`.
 - **FR-002**: For each relevant offence, the system MUST identify a result line as the offence's **final result** by reading its `category` attribute and confirming it equals `'F'` (case-insensitive). The system MUST NOT infer final-result status from short-code-set membership. (Supersedes the original FR-002 wording.)
 - **FR-003**: The system MUST treat the following final result short codes as **excluded** (no warning, when they appear on a `'F'` line): `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`. Matching MUST be case-insensitive.
 - **FR-004**: For each relevant offence, the system MUST inspect the result short codes linked to that offence (regardless of `category`) and detect the presence of `DDOTE` or `DDOTEL`. Matching MUST be case-insensitive.

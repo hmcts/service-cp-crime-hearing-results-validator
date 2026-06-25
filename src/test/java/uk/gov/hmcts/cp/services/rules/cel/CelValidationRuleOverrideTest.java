@@ -8,8 +8,11 @@ import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 
 import java.time.Instant;
 import java.util.List;
@@ -33,6 +36,9 @@ class CelValidationRuleOverrideTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
 
+    private static final ValidationIssueRecorder NO_OP_RECORDER =
+            new ValidationIssueRecorder(new SimpleMeterRegistry());
+
     /**
      * Verifies that a persisted severity override changes the rule metadata exposed to clients
      * without disabling the rule.
@@ -53,7 +59,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.WARNING);
@@ -79,7 +86,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getEnabled()).isFalse();
@@ -104,7 +112,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -116,7 +125,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isEmpty();
     }
@@ -135,7 +144,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -147,7 +157,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -168,7 +178,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -180,7 +191,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).hasSize(1);
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -206,7 +217,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         // AC2 scenario: multiple custodial offences with no concurrent/consecutive info -> ERROR in YAML
         DraftValidationRequest request = buildRequest(
@@ -219,7 +231,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues).allSatisfy(issue ->
@@ -245,7 +257,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -257,7 +270,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -283,7 +296,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         DraftValidationRequest request = buildRequest(
                 List.of(
@@ -295,7 +309,7 @@ class CelValidationRuleOverrideTest {
                         offence("off2", 2, "Assault"),
                         offence("off3", 3, "Burglary")));
 
-        List<ValidationIssue> issues = rule.evaluate(request);
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
 
         assertThat(issues).isNotEmpty();
         assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
@@ -320,7 +334,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                ruleOverrideService);
+                ruleOverrideService,
+                NO_OP_RECORDER);
 
         RuleDetailResponse detail = rule.getRuleDetail();
 
@@ -338,7 +353,8 @@ class CelValidationRuleOverrideTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(RuleOverrideService.class));
+                mock(RuleOverrideService.class),
+                NO_OP_RECORDER);
         RuleDetailResponse detail = rule.getRuleDetail();
 
         assertThat(detail.getRuleId()).isEqualTo("DR-SENT-002");

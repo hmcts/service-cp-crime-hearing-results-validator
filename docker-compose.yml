@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   wiremock:
     image: wiremock/wiremock:3.13.0
@@ -20,14 +25,19 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - db
-      - wiremock
+      db:
+        condition: service_healthy
+      wiremock:
+        condition: service_started
     environment:
       APP_NAME_DATASOURCE_URL: jdbc:postgresql://db:5432/results-validator-db
       APP_NAME_DATASOURCE_USERNAME: postgres
       APP_NAME_DATASOURCE_PASSWORD: postgres
       AUTHZ_ENABLED: "true"
       CP_BASE_URL: "http://wiremock:8080"
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0"
+      RULE_OVERRIDE_CACHE_TTL: 1
+    mem_limit: 1g
     ports:
       - "4550:4550"
 

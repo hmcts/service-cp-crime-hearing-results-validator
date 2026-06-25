@@ -94,8 +94,7 @@ class TracingFilterTest {
     }
 
     /**
-     * Verifies that missing identity headers do not populate MDC fields, and that MDC is
-     * cleared after request processing.
+     * Verifies that a missing user header leaves the userId MDC field unset.
      */
     @Test
     void filter_should_not_set_userId_when_header_absent() throws ServletException, IOException {
@@ -104,14 +103,33 @@ class TracingFilterTest {
         Map<String, String> capturedMdc = new HashMap<>();
         doAnswer(invocation -> {
             capturedMdc.put(USER_ID, MDC.get(USER_ID));
-            capturedMdc.put(CLIENT_CORRELATION_ID, MDC.get(CLIENT_CORRELATION_ID));
             return null;
         }).when(filterChain).doFilter(request, response);
 
         tracingFilter.doFilterInternal(request, response, filterChain);
 
         assertThat(capturedMdc.get(USER_ID)).isNull();
-        assertThat(capturedMdc.get(CLIENT_CORRELATION_ID)).isNull();
+    }
+
+    /**
+     * Verifies that when no correlation header is supplied the filter generates a UUID
+     * clientCorrelationId so every request has a correlation key in its logs.
+     */
+    @Test
+    void filter_should_generate_clientCorrelationId_when_header_absent() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/test");
+
+        Map<String, String> capturedMdc = new HashMap<>();
+        doAnswer(invocation -> {
+            capturedMdc.put(CLIENT_CORRELATION_ID, MDC.get(CLIENT_CORRELATION_ID));
+            return null;
+        }).when(filterChain).doFilter(request, response);
+
+        tracingFilter.doFilterInternal(request, response, filterChain);
+
+        String generated = capturedMdc.get(CLIENT_CORRELATION_ID);
+        assertThat(generated).isNotNull();
+        assertThat(java.util.UUID.fromString(generated)).isNotNull();
     }
 
     /**

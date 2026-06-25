@@ -14,6 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthzFilterIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+    private static final String RULES_URL = "/api/validation/rules";
+    private static final String RULES_DETAIL_URL = "/api/validation/rules/DR-SENT-002";
 
     private static final String EMPTY_REQUEST = """
             {
@@ -32,6 +34,10 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
         IDENTITY_WIRE_MOCK.resetAll();
         stubIdentityResponse("System Users");
     }
+
+    // -------------------------------------------------------------------------
+    // validate endpoint — explicit CPP-ACTION header
+    // -------------------------------------------------------------------------
 
     /**
      * Verifies a user resolved into the Court Clerks group can call the validation endpoint.
@@ -106,7 +112,7 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
         stubIdentityResponse("Court Administrators");
 
         mockMvc.perform(post(VALIDATE_URL)
-                        .header("CJSCPPUID", "court-admin-user")
+                        .header("CJSCPPUID", "court-administrator-user")
                         .header("CPP-ACTION", "validation-service.validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(EMPTY_REQUEST))
@@ -156,6 +162,237 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
                         .content(EMPTY_REQUEST))
                 .andExpect(status().isUnauthorized());
     }
+
+    /**
+     * Verifies the full filter → Drools → controller path when the caller omits CPP-ACTION:
+     * ActionHeaderFilter must synthesise the header from the request path for auth to succeed.
+     */
+    @Test
+    void validate_request_without_cpp_action_header_should_succeed_via_filter_injection() throws Exception {
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(EMPTY_REQUEST))
+                .andExpect(status().isOk());
+    }
+
+    // -------------------------------------------------------------------------
+    // rules endpoint — CPP-ACTION injected by ActionHeaderFilter
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies an allowed group can list validation rules; CPP-ACTION is supplied explicitly
+     * to isolate the authz concern from filter injection.
+     */
+    @Test
+    void rules_request_with_allowed_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .header("CPP-ACTION", "validation-service.rules"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies ActionHeaderFilter synthesises CPP-ACTION for the rules path when the caller
+     * omits it — exercises the full filter → Drools → controller path for this endpoint.
+     */
+    @Test
+    void rules_request_without_cpp_action_header_should_succeed_via_filter_injection() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "system-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Court Clerks can list validation rules.
+     */
+    @Test
+    void rules_request_with_court_clerks_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Clerks");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "court-clerk-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Legal Advisers can list validation rules.
+     */
+    @Test
+    void rules_request_with_legal_advisers_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Legal Advisers");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "legal-adviser-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Listing Officers are denied access to the rules list endpoint (HTTP 403).
+     */
+    @Test
+    void rules_request_with_listing_officers_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Listing Officers");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "listing-officer-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies Court Associate are denied access to the rules list endpoint (HTTP 403).
+     */
+    @Test
+    void rules_request_with_court_associate_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Associate");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "court-associate-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies Court Administrators are denied access to the rules list endpoint (HTTP 403).
+     */
+    @Test
+    void rules_request_with_court_administrators_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Administrators");
+
+        mockMvc.perform(get(RULES_URL)
+                        .header("CJSCPPUID", "court-administrator-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies the rules endpoint rejects requests missing the mandatory identity header (HTTP 401).
+     */
+    @Test
+    void rules_request_without_cjscppuid_header_should_return_401() throws Exception {
+        mockMvc.perform(get(RULES_URL))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // -------------------------------------------------------------------------
+    // rules-detail endpoint — CPP-ACTION injected by ActionHeaderFilter
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies an allowed group can retrieve a single rule detail; CPP-ACTION is supplied
+     * explicitly to isolate the authz concern from filter injection.
+     */
+    @Test
+    void rules_detail_request_with_allowed_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .header("CPP-ACTION", "validation-service.rules-detail"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies ActionHeaderFilter synthesises CPP-ACTION for the rules-detail path when the
+     * caller omits it.
+     */
+    @Test
+    void rules_detail_request_without_cpp_action_header_should_succeed_via_filter_injection() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "system-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Court Clerks can retrieve a single rule detail.
+     */
+    @Test
+    void rules_detail_request_with_court_clerks_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Clerks");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "court-clerk-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Legal Advisers can retrieve a single rule detail.
+     */
+    @Test
+    void rules_detail_request_with_legal_advisers_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Legal Advisers");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "legal-adviser-user"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Listing Officers are denied access to the rule detail endpoint (HTTP 403).
+     */
+    @Test
+    void rules_detail_request_with_listing_officers_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Listing Officers");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "listing-officer-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies Court Associate are denied access to the rule detail endpoint (HTTP 403).
+     */
+    @Test
+    void rules_detail_request_with_court_associate_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Associate");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "court-associate-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies Court Administrators are denied access to the rule detail endpoint (HTTP 403).
+     */
+    @Test
+    void rules_detail_request_with_court_administrators_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Administrators");
+
+        mockMvc.perform(get(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "court-administrator-user"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies the rules-detail endpoint rejects requests missing the mandatory identity header (HTTP 401).
+     */
+    @Test
+    void rules_detail_request_without_cjscppuid_header_should_return_401() throws Exception {
+        mockMvc.perform(get(RULES_DETAIL_URL))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // -------------------------------------------------------------------------
+    // unauthenticated / public
+    // -------------------------------------------------------------------------
 
     /**
      * Verifies unauthenticated access is still allowed for the health endpoint.

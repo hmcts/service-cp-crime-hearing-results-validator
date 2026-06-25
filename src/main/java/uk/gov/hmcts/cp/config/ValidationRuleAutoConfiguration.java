@@ -11,6 +11,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CelValidationRule;
@@ -31,7 +32,8 @@ public class ValidationRuleAutoConfiguration {
             final CelExpressionEvaluator evaluator,
             final MessageTemplateResolver messageResolver,
             final OffenceDisplayHelper offenceDisplayHelper,
-            final RuleOverrideService ruleOverrideService) throws IOException {
+            final RuleOverrideService ruleOverrideService,
+            final ValidationIssueRecorder issueRecorder) throws IOException {
 
         final Resource[] resources = new PathMatchingResourcePatternResolver()
                 .getResources("classpath*:rules/*.yaml");
@@ -44,7 +46,7 @@ public class ValidationRuleAutoConfiguration {
             }
             final String path = "rules/" + filename;
             rules.add(new CelValidationRule(path, preprocessorRegistry, evaluator,
-                    messageResolver, offenceDisplayHelper, ruleOverrideService));
+                    messageResolver, offenceDisplayHelper, ruleOverrideService, issueRecorder));
         }
 
         rules.sort(Comparator.comparingInt(ValidationRule::getPriority));
