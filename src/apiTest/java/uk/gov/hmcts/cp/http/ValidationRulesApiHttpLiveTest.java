@@ -44,7 +44,7 @@ class ValidationRulesApiHttpLiveTest {
 
         final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("count").asInt()).isEqualTo(3);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(2);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(1);
         assertThat(json.get("rules")).hasSize(3);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));

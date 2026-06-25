@@ -1,9 +1,17 @@
 package uk.gov.hmcts.cp.integration;
 
+import jakarta.annotation.Resource;
+import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -34,6 +42,44 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_COEW_ERRORS = "$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]";
+    private static final String RULE_ID = "DR-COEW-001";
+
+    @Resource
+    private ValidationRuleRepository repository;
+
+    @Resource
+    private CacheManager cacheManager;
+
+    @BeforeEach
+    void enableRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(RULE_ID)
+                .enabled(true)
+                .severity("ERROR")
+                .updatedAt(Instant.now())
+                .updatedBy("test-setup")
+                .build());
+        evictOverrideCache();
+    }
+
+    @AfterEach
+    void restoreRule() {
+        repository.save(ValidationRuleEntity.builder()
+                .id(RULE_ID)
+                .enabled(false)
+                .severity("ERROR")
+                .updatedAt(Instant.now())
+                .updatedBy("test-teardown")
+                .build());
+        evictOverrideCache();
+    }
+
+    private void evictOverrideCache() {
+        Cache cache = cacheManager.getCache("ruleOverrides");
+        if (cache != null) {
+            cache.evict(RULE_ID);
+        }
+    }
 
     // ── AC2a–AC2d inline messages (messageTemplate — per offence) ─────────────
     private static final String MSG_CUR =
