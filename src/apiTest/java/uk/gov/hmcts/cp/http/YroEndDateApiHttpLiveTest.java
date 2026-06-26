@@ -42,6 +42,7 @@ class YroEndDateApiHttpLiveTest {
     private static final String IS_VALID = "isValid";
     private static final String ERRORS = "errors";
     private static final String VALIDATION_ISSUES = "validationIssues";
+    private static final String ERROR_MESSAGES = "errorMessages";
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
     private static final String RULE_ID = "DR-YRO-001";
@@ -63,6 +64,7 @@ class YroEndDateApiHttpLiveTest {
     private static final String MSG_YRC3 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Further curfew requirement made";
+
     private static final String DB_URL =
             System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
     private static final String DB_USER = System.getProperty("db.username", "postgres");
@@ -100,6 +102,7 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get("validationId").asText()).startsWith("val-");
         assertThat(json.get("mode").asText()).isEqualTo("advisory");
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(rulesEvaluated(json)).contains(RULE_ID);
@@ -178,6 +181,9 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRC2);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualToIgnoringWhitespace(MSG_YRC2 + ". This affects Ethan Grant.");
     }
 
     /**
@@ -232,7 +238,7 @@ class YroEndDateApiHttpLiveTest {
                     {"resultLineId": "rl2", "shortCode": "YRC1", "category": "I",
                      "label": "Curfew with electronic monitoring", "defendantId": "d1",
                      "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-31"}]}
+                     "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2027-01-31"}]}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
                   "offences": [
@@ -257,6 +263,9 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRC1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualToIgnoringWhitespace(MSG_YRC1 + ". This affects George Hill.");
     }
 
     /**
@@ -277,7 +286,7 @@ class YroEndDateApiHttpLiveTest {
                     {"resultLineId": "rl2", "shortCode": "YRC1", "category": "I",
                      "label": "Curfew with electronic monitoring", "defendantId": "d1",
                      "offenceId": "off1",
-                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]}
+                     "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2026-12-31"}]}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Hannah", "lastName": "Iris"}],
                   "offences": [
@@ -337,6 +346,9 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_YRC3);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualToIgnoringWhitespace(MSG_YRC3 + ". This affects James King.");
     }
 
     /**
@@ -372,6 +384,73 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * Combined AC2a + AC2b + AC2c — all three curfew requirements breach the YRO end date in a
+     * single hearing. DR-YRO-001 must produce three independent ERRORs, one per condition.
+     */
+    @Test
+    void ac2_all_three_curfew_requirements_breach_simultaneously_should_produce_three_errors()
+            throws Exception {
+        final String body = """
+                {
+                  "hearingId": "yro-h11",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "YROEW", "category": "F",
+                     "label": "YRO", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                    {"resultLineId": "rl2", "shortCode": "YRC2", "category": "I",
+                     "label": "Curfew", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-01-31"}]},
+                    {"resultLineId": "rl3", "shortCode": "YRC1", "category": "I",
+                     "label": "Curfew with electronic monitoring", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2027-02-28"}]},
+                    {"resultLineId": "rl4", "shortCode": "YRC3", "category": "I",
+                     "label": "Further curfew requirement made", "defendantId": "d1",
+                     "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2027-03-31"}]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Noah", "lastName": "Blake"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(WARNINGS)).isEmpty();
+
+        final JsonNode issues = json.get(ERRORS).get(VALIDATION_ISSUES);
+        assertThat(issues).hasSize(3);
+        for (int i = 0; i < 3; i++) {
+            assertThat(issues.get(i).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
+            assertThat(issues.get(i).get(SEVERITY_FIELD).asText()).isEqualTo(SEVERITY_ERROR);
+            assertThat(issues.get(i).get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
+                    .isEqualTo(TEST_OFFENCE_ID);
+        }
+
+        final List<String> inlineMessages = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            inlineMessages.add(
+                    issues.get(i).get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText());
+        }
+        assertThat(inlineMessages).containsExactlyInAnyOrder(MSG_YRC2, MSG_YRC1, MSG_YRC3);
+
+        final List<String> errorMessages = new ArrayList<>();
+        json.get(ERRORS).get(ERROR_MESSAGES).forEach(n -> errorMessages.add(n.asText()));
+        assertThat(errorMessages).hasSize(3);
+        assertThat(errorMessages).containsExactlyInAnyOrder(
+                MSG_YRC2 + ". This affects Noah Blake.",
+                MSG_YRC1 + ". This affects Noah Blake.",
+                MSG_YRC3 + ". This affects Noah Blake."
+        );
     }
 
     @BeforeAll

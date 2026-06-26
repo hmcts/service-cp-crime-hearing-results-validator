@@ -117,6 +117,12 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
                 .andExpect(jsonPath("$.errors.validationIssues[*].ruleId", contains("DR-SENT-002")))
+                .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                .andExpect(jsonPath("$.errors.errorMessages[0]", is(
+                        "Some offences do not include details of whether they are concurrent or"
+                                + " consecutive. There should be only one primary sentence for each"
+                                + " defendant, therefore one result without concurrent or consecutive"
+                                + " information. This affects Alex Driver.")))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[*].ruleId", contains("DR-DISQ-001")))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))

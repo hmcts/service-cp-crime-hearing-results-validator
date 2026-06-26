@@ -1,6 +1,6 @@
 # Tasks: YRO Date Validation (DR-YRO-001)
 
-**Input**: Design documents from `specs/004-yro-date-validation/`
+**Input**: Design documents from `specs/002-yro-date-validation/`
 **Branch**: `DD-41654-yro-date-validation`
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md) | **Data model**: [data-model.md](data-model.md) | **Research**: [research.md](research.md)
 

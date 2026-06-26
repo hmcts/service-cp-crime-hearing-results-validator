@@ -1,7 +1,7 @@
 # Implementation Plan: YRO Date Validation
 
 **Branch**: `DD-41654-yro-date-validation` | **Date**: 2026-05-27 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/004-yro-date-validation/spec.md`
+**Input**: Feature specification from `specs/002-yro-date-validation/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule
 ### Documentation (this feature)
 
 ```text
-specs/004-yro-date-validation/
+specs/002-yro-date-validation/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 — preprocessor reuse decision, prompt-ref mapping
 ├── data-model.md        # Phase 1 — entities, violation logic, CEL variable mapping

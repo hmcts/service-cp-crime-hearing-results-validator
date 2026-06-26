@@ -9,6 +9,7 @@ import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -96,7 +97,7 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
                 final LocalDate orderEndDate = offenceLines.stream()
                         .filter(rl -> hasUpperCode(rl, orderCodes))
                         .map(rl -> parsePromptDate(rl, PROMPT_END_DATE, offenceId))
-                        .filter(d -> d != null)
+                        .filter(Objects::nonNull)
                         .findFirst()
                         .orElse(null);
 
