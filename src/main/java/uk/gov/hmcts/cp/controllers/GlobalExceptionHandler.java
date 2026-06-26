@@ -47,40 +47,40 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
-    /** Handles bean validation failures on request bodies and returns a 400 Problem Detail response. */
+    /** Handles bean validation failures on request bodies and returns a 400 error response. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
             final MethodArgumentNotValidException exception) {
 
         final String detail = exception.getBindingResult().getFieldErrors().stream()
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining("; "));
 
-        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, detail.isEmpty() ? "Validation failed" : detail);
-        problem.setTitle("Bad Request");
-        addTraceProperties(problem);
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Bad Request",
+                        detail.isEmpty() ? "Validation failed" : detail,
+                        resolveTraceId(),
+                        Instant.now()));
     }
 
-    /** Handles malformed request bodies and returns a 400 Problem Detail response. */
+    /** Handles malformed request bodies and returns a 400 error response. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
             final HttpMessageNotReadableException exception) {
-
-        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, "Malformed request body");
-        problem.setTitle("Bad Request");
-        addTraceProperties(problem);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Bad Request",
+                        "Malformed request body",
+                        resolveTraceId(),
+                        Instant.now()));
     }
 
     /** Catches all unhandled exceptions and returns a 500 Problem Detail response. */
@@ -99,9 +99,12 @@ public class GlobalExceptionHandler {
                 .body(problem);
     }
 
+    private String resolveTraceId() {
+        return tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace";
+    }
+
     private void addTraceProperties(final ProblemDetail problem) {
-        problem.setProperty("traceId",
-                tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace");
+        problem.setProperty("traceId", resolveTraceId());
         problem.setProperty("timestamp", Instant.now());
     }
 }

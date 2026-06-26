@@ -199,20 +199,20 @@ class GlobalExceptionHandlerTest {
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertThat(problem.getDetail()).contains("hearingId: must not be blank");
-        assertThat(problem.getDetail()).contains("offences: must not be empty");
-        assertEquals("trace-abc", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(400, body.status());
+        assertEquals("Bad Request", body.title());
+        assertThat(body.detail()).contains("hearingId: must not be blank");
+        assertThat(body.detail()).contains("offences: must not be empty");
+        assertEquals("trace-abc", body.traceId());
+        assertNotNull(body.timestamp());
     }
 
     /**
@@ -233,16 +233,16 @@ class GlobalExceptionHandlerTest {
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Validation failed", problem.getDetail());
-        assertEquals("no-trace", problem.getProperties().get("traceId"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(400, body.status());
+        assertEquals("Validation failed", body.detail());
+        assertEquals("no-trace", body.traceId());
     }
 
     /**
@@ -265,19 +265,19 @@ class GlobalExceptionHandlerTest {
         final HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleHttpMessageNotReadable(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertEquals("Malformed request body", problem.getDetail());
-        assertEquals("trace-xyz", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals(400, body.status());
+        assertEquals("Bad Request", body.title());
+        assertEquals("Malformed request body", body.detail());
+        assertEquals("trace-xyz", body.traceId());
+        assertNotNull(body.timestamp());
     }
 
     /**
