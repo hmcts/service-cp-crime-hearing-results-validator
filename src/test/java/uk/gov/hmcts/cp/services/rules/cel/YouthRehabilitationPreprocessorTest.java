@@ -159,6 +159,25 @@ class YouthRehabilitationPreprocessorTest {
             assertThat(ctx.cureViolationCount()).isZero();
             assertThat(ctx.curaViolationCount()).isZero();
         }
+
+        @Test
+        @DisplayName("YROEW with no endDate prompt and breaching YRC2: no violation (null orderEndDate skips AC2)")
+        void yroew_without_end_date_prompt_with_breaching_yrc2_should_produce_zero_violations() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLineNoPrompts("rl-order", "YROEW", "d1", "off1"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-11-30")
+                    ),
+                    List.of(defendant("d1", "Missing", "Prompt")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curViolationCount()).isZero();
+            assertThat(ctx.cureViolationCount()).isZero();
+            assertThat(ctx.curaViolationCount()).isZero();
+        }
     }
 
     @Nested
@@ -184,6 +203,15 @@ class YouthRehabilitationPreprocessorTest {
 
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private ResultLineDto orderLineNoPrompts(String id, String shortCode, String defId, String offId) {
+        ResultLineDto rl = new ResultLineDto();
+        rl.setResultLineId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        return rl;
+    }
 
     private ResultLineDto orderLine(String id, String shortCode, String defId, String offId,
                                     String endDate) {

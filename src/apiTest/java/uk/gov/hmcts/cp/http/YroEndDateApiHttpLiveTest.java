@@ -25,8 +25,9 @@ import org.springframework.web.client.RestTemplate;
  * running service instance.
  *
  * <p>DR-YRO-001 is inserted into the {@code validation_rule} table as disabled by the Flyway
- * migration. {@link #enableRule()} enables it via JDBC in {@code @BeforeAll} and sleeps 2 s to
- * allow the Caffeine cache TTL to expire; {@link #disableRule()} restores it in {@code @AfterAll}.
+ * migration. {@link #enableRule()} and {@link #disableRule()} mutate the DB row then poll
+ * {@code GET /api/validation/rules/DR-YRO-001} until the service reflects the new state,
+ * eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -102,7 +103,6 @@ class YroEndDateApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get("validationId").asText()).startsWith("val-");
         assertThat(json.get("mode").asText()).isEqualTo("advisory");
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(rulesEvaluated(json)).contains(RULE_ID);
@@ -456,12 +456,13 @@ class YroEndDateApiHttpLiveTest {
     @BeforeAll
     static void enableRule() throws Exception {
         setRuleEnabled(true);
-        Thread.sleep(2000);
+        awaitRuleState(true);
     }
 
     @AfterAll
     static void disableRule() throws Exception {
         setRuleEnabled(false);
+        awaitRuleState(false);
     }
 
     private static void setRuleEnabled(final boolean enabled) throws Exception {
@@ -471,6 +472,28 @@ class YroEndDateApiHttpLiveTest {
             ps.setBoolean(1, enabled);
             ps.executeUpdate();
         }
+    }
+
+    private static void awaitRuleState(final boolean expected) throws Exception {
+        final RestTemplate client = new RestTemplate();
+        final HttpHeaders headers = new HttpHeaders();
+        headers.set("CJSCPPUID", "test-setup");
+        final HttpEntity<Void> request = new HttpEntity<>(headers);
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
+                + "/api/validation/rules/" + RULE_ID;
+        final long deadline = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < deadline) {
+            final ResponseEntity<String> response = client.exchange(
+                    url, HttpMethod.GET, request, String.class);
+            final JsonNode json = objectMapper.readTree(response.getBody());
+            if (json.get("enabled").asBoolean() == expected) {
+                return;
+            }
+            Thread.sleep(100);
+        }
+        throw new IllegalStateException(
+                "DR-YRO-001 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

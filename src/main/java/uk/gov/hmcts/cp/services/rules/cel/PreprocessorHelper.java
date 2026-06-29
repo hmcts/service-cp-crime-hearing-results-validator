@@ -66,21 +66,6 @@ public final class PreprocessorHelper {
         return grouped;
     }
 
-    /** Groups result lines by offence id, preserving order; skips lines with a null id. */
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    public static Map<String, List<ResultLineDto>> groupResultsByOffence(
-        final DraftValidationRequest request) {
-        final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
-        if (request.getResultLines() != null) {
-            for (final ResultLineDto rl : request.getResultLines()) {
-                if (rl.getOffenceId() != null) {
-                    grouped.computeIfAbsent(rl.getOffenceId(), k -> new ArrayList<>()).add(rl);
-                }
-            }
-        }
-        return grouped;
-    }
-
     /** Builds a defendantId &rarr; full-name map (keyed by {@code id}), preserving order. */
     public static Map<String, String> buildDefendantNames(final DraftValidationRequest request) {
         final Map<String, String> names = new LinkedHashMap<>();
