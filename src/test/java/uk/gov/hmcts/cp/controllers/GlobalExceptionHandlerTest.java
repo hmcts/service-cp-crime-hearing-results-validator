@@ -15,6 +15,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
+import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -199,20 +201,19 @@ class GlobalExceptionHandlerTest {
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertThat(problem.getDetail()).contains("hearingId: must not be blank");
-        assertThat(problem.getDetail()).contains("offences: must not be empty");
-        assertEquals("trace-abc", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Bad Request", body.getError());
+        assertThat(body.getMessage()).contains("hearingId: must not be blank");
+        assertThat(body.getMessage()).contains("offences: must not be empty");
+        assertEquals("trace-abc", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**
@@ -233,16 +234,15 @@ class GlobalExceptionHandlerTest {
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Validation failed", problem.getDetail());
-        assertEquals("no-trace", problem.getProperties().get("traceId"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Validation failed", body.getMessage());
+        assertEquals("no-trace", body.getTraceId());
     }
 
     /**
@@ -265,19 +265,52 @@ class GlobalExceptionHandlerTest {
         final HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
 
         // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleHttpMessageNotReadable(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(exception);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertEquals("Malformed request body", problem.getDetail());
-        assertEquals("trace-xyz", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Bad Request", body.getError());
+        assertEquals("Malformed request body", body.getMessage());
+        assertEquals("trace-xyz", body.getTraceId());
+        assertNotNull(body.getTimestamp());
+    }
+
+    /**
+     * Verifies that a missing rule is mapped to a 404 ErrorResponse with the rule id in the message
+     * and the current trace id populated.
+     */
+    @Test
+    void handle_rule_not_found_exception_should_return_404_error_response() {
+        // Arrange
+        final Tracer tracer = mock(Tracer.class);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-404");
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final RuleNotFoundException exception = new RuleNotFoundException("DR-SENT-999");
+
+        // Act
+        final ResponseEntity<ErrorResponse> response = handler.handleRuleNotFoundException(exception);
+
+        // Assert
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Rule not found", body.getError());
+        assertThat(body.getMessage()).contains("DR-SENT-999");
+        assertEquals("trace-404", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**

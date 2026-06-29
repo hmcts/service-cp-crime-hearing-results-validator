@@ -13,6 +13,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
+import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 /**
  * Converts controller-layer exceptions into RFC 7807 Problem Detail responses.
@@ -43,44 +45,57 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(problem);
     }
 
-    /** Handles bean validation failures on request bodies and returns a 400 Problem Detail response. */
+    /** Handles rule-not-found conditions and returns a 404 error response. */
+    @ExceptionHandler(RuleNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRuleNotFoundException(
+            final RuleNotFoundException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Rule not found")
+                        .message(exception.getMessage())
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
+    }
+
+    /** Handles bean validation failures on request bodies and returns a 400 error response. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
             final MethodArgumentNotValidException exception) {
 
         final String detail = exception.getBindingResult().getFieldErrors().stream()
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining("; "));
 
-        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, detail.isEmpty() ? "Validation failed" : detail);
-        problem.setTitle("Bad Request");
-        addTraceProperties(problem);
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Bad Request")
+                        .message(detail.isEmpty() ? "Validation failed" : detail)
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
     }
 
-    /** Handles malformed request bodies and returns a 400 Problem Detail response. */
+    /** Handles malformed request bodies and returns a 400 error response. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
             final HttpMessageNotReadableException exception) {
-
-        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, "Malformed request body");
-        problem.setTitle("Bad Request");
-        addTraceProperties(problem);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Bad Request")
+                        .message("Malformed request body")
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
     }
 
     /** Catches all unhandled exceptions and returns a 500 Problem Detail response. */
@@ -95,13 +110,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(problem);
     }
 
+    private String resolveTraceId() {
+        return tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace";
+    }
+
     private void addTraceProperties(final ProblemDetail problem) {
-        problem.setProperty("traceId",
-                tracer.currentSpan() != null ? tracer.currentSpan().context().traceId() : "no-trace");
+        problem.setProperty("traceId", resolveTraceId());
         problem.setProperty("timestamp", Instant.now());
     }
 }
