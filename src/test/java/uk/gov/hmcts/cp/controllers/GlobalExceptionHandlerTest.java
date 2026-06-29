@@ -15,6 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -207,12 +208,11 @@ class GlobalExceptionHandlerTest {
 
         final ErrorResponse body = response.getBody();
         assertNotNull(body);
-        assertEquals(400, body.status());
-        assertEquals("Bad Request", body.title());
-        assertThat(body.detail()).contains("hearingId: must not be blank");
-        assertThat(body.detail()).contains("offences: must not be empty");
-        assertEquals("trace-abc", body.traceId());
-        assertNotNull(body.timestamp());
+        assertEquals("Bad Request", body.getError());
+        assertThat(body.getMessage()).contains("hearingId: must not be blank");
+        assertThat(body.getMessage()).contains("offences: must not be empty");
+        assertEquals("trace-abc", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**
@@ -240,9 +240,8 @@ class GlobalExceptionHandlerTest {
 
         final ErrorResponse body = response.getBody();
         assertNotNull(body);
-        assertEquals(400, body.status());
-        assertEquals("Validation failed", body.detail());
-        assertEquals("no-trace", body.traceId());
+        assertEquals("Validation failed", body.getMessage());
+        assertEquals("no-trace", body.getTraceId());
     }
 
     /**
@@ -273,11 +272,10 @@ class GlobalExceptionHandlerTest {
 
         final ErrorResponse body = response.getBody();
         assertNotNull(body);
-        assertEquals(400, body.status());
-        assertEquals("Bad Request", body.title());
-        assertEquals("Malformed request body", body.detail());
-        assertEquals("trace-xyz", body.traceId());
-        assertNotNull(body.timestamp());
+        assertEquals("Bad Request", body.getError());
+        assertEquals("Malformed request body", body.getMessage());
+        assertEquals("trace-xyz", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**

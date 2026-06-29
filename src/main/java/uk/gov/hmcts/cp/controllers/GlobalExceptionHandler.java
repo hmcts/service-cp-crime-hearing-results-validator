@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 /**
  * Converts controller-layer exceptions into RFC 7807 Problem Detail responses.
@@ -59,12 +60,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(new ErrorResponse(
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        detail.isEmpty() ? "Validation failed" : detail,
-                        resolveTraceId(),
-                        Instant.now()));
+                .body(new ErrorResponse()
+                        .error("Bad Request")
+                        .message(detail.isEmpty() ? "Validation failed" : detail)
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
     }
 
     /** Handles malformed request bodies and returns a 400 error response. */
@@ -75,12 +75,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(new ErrorResponse(
-                        HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request",
-                        "Malformed request body",
-                        resolveTraceId(),
-                        Instant.now()));
+                .body(new ErrorResponse()
+                        .error("Bad Request")
+                        .message("Malformed request body")
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
     }
 
     /** Catches all unhandled exceptions and returns a 500 Problem Detail response. */
