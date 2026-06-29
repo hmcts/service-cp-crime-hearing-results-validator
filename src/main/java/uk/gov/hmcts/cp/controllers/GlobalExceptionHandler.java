@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 /**
@@ -44,8 +45,23 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(status)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(problem);
+    }
+
+    /** Handles rule-not-found conditions and returns a 404 error response. */
+    @ExceptionHandler(RuleNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRuleNotFoundException(
+            final RuleNotFoundException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Rule not found")
+                        .message(exception.getMessage())
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
     }
 
     /** Handles bean validation failures on request bodies and returns a 400 error response. */
@@ -59,7 +75,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorResponse()
                         .error("Bad Request")
                         .message(detail.isEmpty() ? "Validation failed" : detail)
@@ -74,7 +90,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorResponse()
                         .error("Bad Request")
                         .message("Malformed request body")
@@ -94,7 +110,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(problem);
     }
 
