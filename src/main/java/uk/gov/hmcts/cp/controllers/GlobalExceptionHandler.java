@@ -4,6 +4,8 @@ import io.micrometer.tracing.Tracer;
 import java.time.Instant;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -20,6 +22,7 @@ import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
  * Converts controller-layer exceptions into RFC 7807 Problem Detail responses.
  */
 @RestControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class GlobalExceptionHandler {
 
