@@ -13,7 +13,6 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
@@ -31,21 +30,6 @@ public class GlobalExceptionHandler {
     /** Constructs the exception handler with the given tracer for trace-id propagation. */
     public GlobalExceptionHandler(final Tracer tracer) {
         this.tracer = tracer;
-    }
-
-    /** Handles requests to paths with no mapped handler and returns a 404 ErrorResponse. */
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResourceFound(
-            final NoResourceFoundException exception) {
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponse()
-                        .error("Not Found")
-                        .message(exception.getMessage())
-                        .traceId(resolveTraceId())
-                        .timestamp(Instant.now()));
     }
 
     /** Handles rule-not-found conditions and returns a 404 ErrorResponse. */

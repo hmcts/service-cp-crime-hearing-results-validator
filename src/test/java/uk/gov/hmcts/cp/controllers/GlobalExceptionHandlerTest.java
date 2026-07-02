@@ -3,7 +3,6 @@ package uk.gov.hmcts.cp.controllers;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.TraceContext;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -13,14 +12,12 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,42 +25,6 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link GlobalExceptionHandler}.
  */
 class GlobalExceptionHandlerTest {
-
-    /**
-     * Verifies that a request to an unknown path is mapped to a 404 ErrorResponse.
-     */
-    @Test
-    void handle_no_resource_found_should_return_404_error_response() {
-        final Tracer tracer = mock(Tracer.class);
-        final Span span = mock(Span.class);
-        final TraceContext context = mock(TraceContext.class);
-
-        when(tracer.currentSpan()).thenReturn(span);
-        when(span.context()).thenReturn(context);
-        when(context.traceId()).thenReturn("trace-404");
-
-        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
-
-        final NoResourceFoundException exception = new NoResourceFoundException(
-                org.springframework.http.HttpMethod.GET, "/unknown/path", "No resource found");
-
-        final Instant beforeCall = Instant.now();
-        final ResponseEntity<ErrorResponse> response = handler.handleNoResourceFound(exception);
-        final Instant afterCall = Instant.now();
-
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
-
-        final ErrorResponse body = response.getBody();
-        assertNotNull(body);
-        assertEquals("Not Found", body.getError());
-        assertThat(body.getMessage()).isNotBlank();
-        assertEquals("trace-404", body.getTraceId());
-        assertTrue(
-                !body.getTimestamp().isBefore(beforeCall) && !body.getTimestamp().isAfter(afterCall),
-                "Timestamp should be between beforeCall and afterCall"
-        );
-    }
 
     /**
      * Verifies that a missing rule is mapped to a 404 ErrorResponse with the rule id in the
