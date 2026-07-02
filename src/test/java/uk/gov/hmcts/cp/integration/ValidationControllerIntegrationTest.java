@@ -332,6 +332,23 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
             """;
 
     /**
+     * Verifies that a request to an unknown path returns a 404 ErrorResponse with a body.
+     */
+    @Test
+    void validate_should_return_404_error_response_for_unknown_path() throws Exception {
+        mockMvc.perform(post("/api/validation/unknown-path")
+                        .header("CJSCPPUID", "test-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error", is("Not Found")))
+                .andExpect(jsonPath("$.message", notNullValue()))
+                .andExpect(jsonPath("$.traceId", notNullValue()))
+                .andExpect(jsonPath("$.timestamp", notNullValue()));
+    }
+
+    /**
      * Verifies that a result line missing resultLineId returns a 400 ErrorResponse
      * with the correct field-level validation message.
      */
