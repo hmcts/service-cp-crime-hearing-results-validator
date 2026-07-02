@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
+import uk.gov.hmcts.cp.openapi.model.UpdateRuleRequest;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
 
 import java.util.List;
@@ -62,5 +63,67 @@ class ValidationRulesControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
+    }
+
+    /**
+     * Covers the update endpoint delegating to the service and returning the updated rule detail.
+     */
+    @Test
+    void updateValidationRule_should_delegate_to_service_and_return_ok() {
+        UpdateRuleRequest request = new UpdateRuleRequest(false, null);
+        RuleDetailResponse expected = RuleDetailResponse.builder()
+                .ruleId("DR-SENT-002")
+                .enabled(false)
+                .build();
+        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+
+        ResponseEntity<RuleDetailResponse> response =
+                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(expected);
+        assertThat(response.getBody().getEnabled()).isFalse();
+    }
+
+    /**
+     * Covers the update endpoint delegating a severity-only request to the service.
+     */
+    @Test
+    void updateValidationRule_severityOnly_should_delegate_to_service_and_return_ok() {
+        UpdateRuleRequest request = new UpdateRuleRequest(null, UpdateRuleRequest.SeverityEnum.WARNING);
+        RuleDetailResponse expected = RuleDetailResponse.builder()
+                .ruleId("DR-SENT-002")
+                .severity(RuleDetailResponse.SeverityEnum.WARNING)
+                .build();
+        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+
+        ResponseEntity<RuleDetailResponse> response =
+                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(expected);
+        assertThat(response.getBody().getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.WARNING);
+    }
+
+    /**
+     * Covers the update endpoint delegating a request that sets both fields to the service.
+     */
+    @Test
+    void updateValidationRule_bothFields_should_delegate_to_service_and_return_ok() {
+        UpdateRuleRequest request = new UpdateRuleRequest(false, UpdateRuleRequest.SeverityEnum.WARNING);
+        RuleDetailResponse expected = RuleDetailResponse.builder()
+                .ruleId("DR-SENT-002")
+                .enabled(false)
+                .severity(RuleDetailResponse.SeverityEnum.WARNING)
+                .build();
+        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+
+        ResponseEntity<RuleDetailResponse> response =
+                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(expected);
+        assertThat(response.getBody().getEnabled()).isFalse();
+        assertThat(response.getBody().getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.WARNING);
     }
 }
