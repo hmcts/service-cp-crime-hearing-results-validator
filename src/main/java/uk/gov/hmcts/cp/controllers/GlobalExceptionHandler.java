@@ -18,7 +18,8 @@ import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 /**
  * Maps exceptions to ErrorResponse as defined in the OpenAPI spec.
- * Handles 400 (Bad Request) and 404 (Not Found) only.
+ * Handles 400 (Bad Request) and 404 (Not Found) per the spec, plus a 500 (Internal Server
+ * Error) fallback for any uncaught exception so the client never sees a non-ErrorResponse body.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -77,6 +78,21 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse()
                         .error("Bad Request")
                         .message("Malformed request body")
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
+    }
+
+    /** Handles any uncaught exception and returns a 500 ErrorResponse without leaking internal details. */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(final Exception exception) {
+        log.error("Unhandled exception", exception);
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Internal Server Error")
+                        .message("An unexpected error occurred")
                         .traceId(resolveTraceId())
                         .timestamp(Instant.now()));
     }

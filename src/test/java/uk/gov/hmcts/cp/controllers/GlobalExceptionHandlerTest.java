@@ -151,4 +151,36 @@ class GlobalExceptionHandlerTest {
         assertEquals("trace-xyz", body.getTraceId());
         assertNotNull(body.getTimestamp());
     }
+
+    /**
+     * Verifies that any uncaught exception is mapped to a 500 ErrorResponse with a fixed,
+     * non-leaking message and the current trace id populated.
+     */
+    @Test
+    void handle_generic_exception_should_return_500_error_response() {
+        final Tracer tracer = mock(Tracer.class);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-500");
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final Exception exception = new IllegalStateException("Something went wrong internally");
+
+        final ResponseEntity<ErrorResponse> response = handler.handleGenericException(exception);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Internal Server Error", body.getError());
+        assertEquals("An unexpected error occurred", body.getMessage());
+        assertThat(body.getMessage()).doesNotContain("Something went wrong internally");
+        assertEquals("trace-500", body.getTraceId());
+        assertNotNull(body.getTimestamp());
+    }
 }
