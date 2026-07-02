@@ -232,7 +232,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.validate")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+            .andExpect(jsonPath("$.message", is("Malformed request body")))
+            .andExpect(status().isBadRequest());
     }
 
     /**
