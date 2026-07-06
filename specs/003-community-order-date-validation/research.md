@@ -90,3 +90,110 @@
 | 4 | Share button scope | Hearing-level (hidden if any defendant has errors) |
 | 5 | AC1 scope | Out of scope; separate ticket |
 | 6 | Grouping unit | Per-defendant |
+
+---
+
+## Extension (2026-07-06, Jira `DD-41655`) — Requirement Duration End Date Validation
+
+Adds User Stories 4–7 to the spec: a CUR/CURE/AAR requirement's own recorded end date must
+match its calculated duration (`Start date + period − 1 day`, or `hearing date + days − 1 day`
+for AAR). Independent of and additive to AC2 (Decisions 1–7 above), which compares a
+requirement's date against its *parent order's* end date.
+
+### Decision 8 — Extend `DR-COEW-001` Rather Than Create a New Rule
+
+**Decision**: Add three new conditions and extend `CommunityOrderEndDatePreprocessor` /
+`CommunityOrderContext` in place, rather than authoring a new `DR-COEW-002.yaml` with its own
+preprocessor and context type. `CURA` is excluded — the new acceptance criteria (AC1, AC1A, AC2 of
+`DD-41655`) only name CUR, CURE and AAR.
+
+**Rationale**: The duration-mismatch check reads from the same result lines, grouped by the same
+defendant/offence keys, already scanned by this preprocessor for AC2. Extending it avoids a second
+full pass over `resultLines` and mirrors the existing "one rule, N independent per-requirement-type
+conditions" pattern (AC2a–d).
+
+**Alternatives considered**: A new rule/preprocessor pair — rejected as needless duplication of the
+grouping logic for no isolation benefit; the two checks are independently enable/disable-able as
+separate CEL conditions either way.
+
+### Decision 9 — Duration-Mismatch Comparison Semantics
+
+**Decision**: A duration mismatch is **any inequality** between the recorded end date and the
+calculated end date (`startDate.plusDays(period - 1)`), not just "later than". Both an early and a
+late recorded date are violations. For AAR, the reference start point is the hearing date
+(`request.getHearingDay()`), not a requirement-specific prompt — CUR and CURE each use their own
+"Start date" / "Start date of tagging" prompt.
+
+**Rationale**: AC1/AC1A/AC2 all say the error triggers when the recorded date "does not equal" the
+calculated value — a strict equality check, deliberately different from AC2's `isAfter`-only
+semantics (Decision 6), because this check validates the requirement's own internal consistency,
+not a boundary against a parent order.
+
+**Alternatives considered**: Reusing `isAfter`-only semantics — rejected; it would silently accept
+an end date entered too early, which the acceptance criteria explicitly treat as equally wrong.
+
+### Decision 10 — New Prompt Ref Keys (Unverified — Risk)
+
+**Decision**: Hardcode four new `promptRef` keys, following the naming convention already used for
+`endDateOfTagging` (Decision 3):
+
+| Requirement | Start-point prompt | Period prompt |
+|---|---|---|
+| CUR | `"startDate"` | `"curfewPeriod"` (integer days) |
+| CURE | `"startDateOfTagging"` | `"curfewAndElectronicMonitoringPeriod"` (integer days) |
+| AAR | *(uses `request.getHearingDay()`, no prompt)* | `"numberOfDaysToAbstain"` (integer days) |
+
+**Rationale**: Consistent with Decision 3 — these are stable upstream API-contract values, not YAML
+policy, so they stay hardcoded in Java rather than becoming YAML config.
+
+**Risk**: Unlike the original ticket's prompt refs (verified during that implementation), these
+four names are **assumed** from the acceptance-criteria field labels and the existing naming
+convention — not yet confirmed against a real payload or the upstream
+`api-cp-crime-hearing-results-validator` schema. Carried into the Risk Register; must be verified
+early during implementation (unit tests will fail fast if wrong).
+
+### Decision 11 — Injecting a Computed Value (Calculated Date) into a Message Template
+
+**Decision**: Extend `MessageTemplateResolver.resolve(...)` with a backward-compatible overload
+taking an additional `Map<String, String> extraPlaceholders` parameter — for each entry, replaces
+`${key}` in the template with its value. `RuleEvaluationContext` gains a new default method
+`getCalculatedValue(String setName, String offenceId)` (throws `IllegalArgumentException` by
+default, mirroring `getOffenceIdSet`); `CommunityOrderContext` overrides it against three new
+per-offence `Map<String, String>` fields. `ConditionDefinition` gains an optional YAML field
+`calculatedValueSet`; a new `${calculatedEndDate}` token is introduced. `CelValidationRule`'s
+existing per-offence message-resolution lambda (OFFENCE-level branch only) looks up and passes this
+value when `calculatedValueSet` is configured on the condition. The aggregate `errorMessageTemplate`
+(one message per defendant/condition, used for the top-of-screen summary) does **not** receive it —
+a single summary line cannot show a distinct calculated date per offence.
+
+**Rationale**: No existing placeholder covers a per-offence, rule-specific computed value — the
+framework only resolves `${offenceNumber}`, `${defendantName}`, and (separately) `${defendantNames}`.
+The acceptance criteria require the *actual* calculated date inline (e.g. "...should be
+30/09/2026"), so this capability is required, not incidental scope creep. Generalising via a named
+`calculatedValueSet` (rather than a one-off "curfew date" field) keeps the mechanism reusable for
+any future rule needing a per-offence computed value, matching how `affectedOffenceSet` already
+generalises per-condition offence scoping.
+
+**Alternatives considered**:
+- *Bake the fully-formatted sentence into the preprocessor and treat it as a stand-in offence-id* —
+  rejected; conflates data with YAML-owned message wording (Constitution Principle I).
+- *One-off `${curfewCalculatedEndDate}`-style field wired directly into `CelValidationRule`* —
+  rejected in favour of the generic, named-set design for reusability.
+
+### Decision 12 — CURA Excluded
+
+**Decision**: The three new conditions cover CUR, CURE, and AAR only. `CURA` ("Further curfew
+requirement made") keeps its existing AC2c order-end-date check (User Story 1) but has no
+duration-mismatch counterpart.
+
+**Rationale**: `DD-41655`'s acceptance criteria (AC1, AC1A, AC2) name only Curfew (non-EM), Curfew
+with EM, and AAM. Adding a symmetrical CURA check was not requested (YAGNI).
+
+### Extension — Resolved Unknowns
+
+| # | Unknown | Resolution |
+|---|---------|------------|
+| 7 | New prompt ref keys for start dates / periods | Hardcoded, **unverified** — see Risk Register in plan.md |
+| 8 | Duration-mismatch comparison semantics | Strict equality (not `isAfter`); an off-by-one (forgetting `− 1 day`) is a violation |
+| 9 | Calculated-date placeholder mechanism | New generic `extraPlaceholders` param on `MessageTemplateResolver`; `${calculatedEndDate}` token, wired via `calculatedValueSet` |
+| 10 | Rule/preprocessor reuse vs. new rule | Extend `DR-COEW-001` / `CommunityOrderEndDatePreprocessor` / `CommunityOrderContext`; no new rule ID |

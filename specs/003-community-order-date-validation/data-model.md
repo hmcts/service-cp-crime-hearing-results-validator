@@ -208,6 +208,183 @@ rule:
 
 ---
 
+## Extension (2026-07-06, Jira `DD-41655`) — Requirement Duration End Date Validation
+
+Adds three new conditions to `DR-COEW-001` (CUR, CURE, AAR only — `CURA` excluded, see
+research.md Decision 12) checking a requirement's own recorded end date against its calculated
+duration, independent of the AC2 order-end-date comparison above.
+
+### New prompt ref keys (hardcoded — unverified, see research.md Decision 10)
+
+| Result short code | New `promptRef` | Meaning |
+|---|---|---|
+| CUR | `"startDate"` | Start date of the curfew requirement |
+| CUR | `"curfewPeriod"` | Curfew period, integer days |
+| CURE | `"startDateOfTagging"` | Start date of tagging |
+| CURE | `"curfewAndElectronicMonitoringPeriod"` | Curfew and electronic monitoring period, integer days |
+| AAR | `"numberOfDaysToAbstain"` | Number of days to abstain from consuming any alcohol |
+
+AAR's start point is `DraftValidationRequest.hearingDay` (already modelled, no new prompt needed).
+
+### `CommunityOrderContext` — new fields (extends existing record)
+
+```
+CommunityOrderContext  (additions)
+  ├── curDurationMismatchCount: long             — CUR end date != Start date + period − 1
+  ├── cureDurationMismatchCount: long            — CURE end date of tagging != Start date of tagging + period − 1
+  ├── aarDurationMismatchCount: long             — AAR until != hearing date + days to abstain − 1
+  ├── curDurationMismatchOffenceIds: List<String>
+  ├── cureDurationMismatchOffenceIds: List<String>
+  ├── aarDurationMismatchOffenceIds: List<String>
+  ├── curCalculatedEndDateByOffenceId: Map<String, String>   — offenceId → ISO-8601 correct end date
+  ├── cureCalculatedEndDateByOffenceId: Map<String, String>
+  └── aarCalculatedEndDateByOffenceId: Map<String, String>
+```
+
+`toCelContext()` gains three new entries: `curDurationMismatchCount`, `cureDurationMismatchCount`,
+`aarDurationMismatchCount` (all `Long`). `getOffenceIdSet(setName)` gains three new cases:
+`"curDurationMismatchOffenceIds"`, `"cureDurationMismatchOffenceIds"`, `"aarDurationMismatchOffenceIds"`.
+
+**New**: `getCalculatedValue(setName, offenceId)` (overrides a new `RuleEvaluationContext` default
+method) — switches on `setName` across the three `*CalculatedEndDateByOffenceId` maps and returns
+`map.get(offenceId)` (or `null` if absent, meaning the template resolver leaves the `${calculatedEndDate}`
+token unexpanded — this should not happen if the offence is present in the corresponding
+`*DurationMismatchOffenceIds` list, which it always is by construction).
+
+### `CommunityOrderEndDatePreprocessor` — algorithm addition
+
+The existing per-offence loop currently does `if (orderEndDate == null) continue;` before running
+any check — this early-exit must move so it **only** gates the pre-existing AC2a–d order-vs-requirement
+checks. The new duration checks do not need the order's own end date at all (CUR/CURE compare
+against their own Start date; AAR compares against the hearing date) and must run even when the
+community order's end date prompt is missing/unparseable.
+
+```
+Additional per-offence steps (independent of orderEndDate):
+
+CUR line present:
+  startDate   = parsePromptDate(line, "startDate")
+  period      = parsePromptInt(line, "curfewPeriod")
+  endDate     = parsePromptDate(line, "endDate")             # already parsed for AC2a
+  if startDate, period, endDate all present:
+      expected = startDate.plusDays(period - 1)
+      if !endDate.isEqual(expected):
+          add offenceId to curDurationMismatchOffenceIds
+          curCalculatedEndDateByOffenceId[offenceId] = expected.toString()
+
+CURE line present: same shape, using "startDateOfTagging" / "curfewAndElectronicMonitoringPeriod" / "endDateOfTagging"
+
+AAR line present: same shape, using requestHearingDay (parsed once, outer scope) /
+  "numberOfDaysToAbstain" / "until"
+```
+
+`parsePromptInt` is a new helper alongside the existing `parsePromptDate`, with the same
+defensive null/blank/unparseable → log `WARN` and skip semantics as Decision 6.
+
+### `ConditionDefinition` — new field
+
+| New Field | YAML Key | Purpose |
+|-----------|----------|---------|
+| `calculatedValueSet` | `calculatedValueSet` | Names which `*CalculatedEndDateByOffenceId` map to look up when resolving this condition's `${calculatedEndDate}` token (`null` for conditions that don't use it) |
+
+### `RuleEvaluationContext` — new default method
+
+```java
+default String getCalculatedValue(String setName, String offenceId) {
+    throw new IllegalArgumentException("Unknown calculated-value set: " + setName);
+}
+```
+
+Mirrors `getOffenceIdSet` — contexts that don't support computed values inherit the throwing
+default; `CommunityOrderContext` overrides it.
+
+### `MessageTemplateResolver` — new overload
+
+```java
+public String resolve(String template, String defendantName, List<String> affectedOffenceIds,
+                       Map<String, OffenceDto> offenceMap, List<String> allOffenceIds,
+                       Map<String, String> extraPlaceholders) {
+    String result = resolve(template, defendantName, affectedOffenceIds, offenceMap, allOffenceIds);
+    for (Map.Entry<String, String> entry : extraPlaceholders.entrySet()) {
+        result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+    }
+    return result;
+}
+```
+
+The existing 5-arg `resolve(...)` is unchanged; all current call sites are unaffected.
+
+### `CelValidationRule` — wiring
+
+In the OFFENCE-level (`isDefendantLevel == false`) branch, the per-offence message lambda passes an
+extra-placeholder map when `condition.getCalculatedValueSet() != null`:
+
+```java
+id -> {
+    Map<String, String> extra = condition.getCalculatedValueSet() != null
+        ? Map.of("calculatedEndDate", context.getCalculatedValue(condition.getCalculatedValueSet(), id))
+        : Map.of();
+    return messageResolver.resolve(condition.getMessageTemplate(), context.defendantName(),
+        List.of(id), offenceMap, context.allOffenceIds(), extra);
+}
+```
+
+The `errorMessageTemplate` resolve call (top-of-screen summary) is **not** changed — it has no
+per-offence `id` in scope, only the aggregate `offenceIdsForTemplate` list.
+
+### Rule YAML — new conditions appended to `DR-COEW-001.yaml`
+
+```yaml
+    - id: "DUR-CUR"
+      name: "Curfew requirement end date does not match calculated duration"
+      expression: "curDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "curDurationMismatchOffenceIds"
+      calculatedValueSet: "curCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-CURE"
+      name: "Curfew with electronic monitoring end date of tagging does not match calculated duration"
+      expression: "cureDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "cureDurationMismatchOffenceIds"
+      calculatedValueSet: "cureCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-AAR"
+      name: "Alcohol abstinence and monitoring until date does not match calculated duration"
+      expression: "aarDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. The current recorded period would mean the end date should be
+        ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. This affects ${defendantNames}.
+      affectedOffenceSet: "aarDurationMismatchOffenceIds"
+      calculatedValueSet: "aarCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+```
+
+No changes to `preprocessing:` block — `curfewShortCodes`, `curfewTagShortCodes`, and
+`alcoholAbstinenceShortCodes` are reused as-is; `communityOrderShortCodes` and
+`furtherCurfewShortCodes` are untouched (`CURA` excluded, see Decision 12).
+
+---
+
 ## Relationships
 
 ```
