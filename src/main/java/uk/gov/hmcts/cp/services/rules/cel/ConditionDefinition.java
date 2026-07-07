@@ -22,5 +22,6 @@ public class ConditionDefinition {
     private String errorMessageTemplate;
     private String affectedOffenceSet;
     private String affectedDefendantSet;
+    private String calculatedValueSet;
     private ValidationLevel validationLevel;
 }

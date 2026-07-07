@@ -60,6 +60,19 @@ class CommunityOrderEndDatePreprocessorTest {
         return rl;
     }
 
+    private ResultLineDto requirementLineWithPrompts(String id, String shortCode, String defId,
+                                                       String offId, Map<String, String> prompts) {
+        ResultLineDto rl = new ResultLineDto();
+        rl.setResultLineId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        rl.setPrompts(prompts.entrySet().stream()
+                .map(e -> new Prompt(e.getKey(), e.getValue()))
+                .toList());
+        return rl;
+    }
+
     private ResultLineDto noPromptLine(String id, String shortCode, String defId, String offId) {
         ResultLineDto rl = new ResultLineDto();
         rl.setResultLineId(id);
@@ -364,6 +377,452 @@ class CommunityOrderEndDatePreprocessorTest {
             Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
 
             assertThat(result).doesNotContainKey("d1");
+        }
+    }
+
+    @Nested
+    @DisplayName("DUR-CUR — CUR end date does not match Start date + Curfew period - 1 (DD-41655)")
+    class DurCur {
+
+        @Test
+        void end_date_equal_to_startDate_plus_period_minus_one_should_not_violate() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-30"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void end_date_one_day_early_should_violate_with_correct_calculated_date() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("2026-09-30");
+        }
+
+        @Test
+        void end_date_one_day_late_should_violate() {
+            // Clerk forgot to subtract 1 day
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-10-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-10-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isEqualTo(1L);
+        }
+
+        @Test
+        void missing_startDate_should_skip_gracefully_no_violation() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void missing_curfewPeriod_should_skip_gracefully_no_violation() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void missing_endDate_should_skip_gracefully_no_violation() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void unparseable_curfewPeriod_should_skip_gracefully_no_violation() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "thirty",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void duration_check_should_still_run_when_order_end_date_is_missing() {
+            // Community order has no parseable end date — AC2 checks are skipped for this
+            // offence, but the CUR duration-mismatch check does not depend on the order at all.
+            ResultLineDto orderNoPrompt = noPromptLine("rl-order", "COEW", "d1", "off1");
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderNoPrompt, cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(result.get("d1").curViolationCount()).isZero();
+        }
+
+        @Test
+        void offence_failing_both_ac2_and_duration_check_appears_in_both_offence_id_lists() {
+            // Order ends 2026-09-15, CUR endDate 2026-09-29 (after order -> AC2a) and
+            // does not match startDate(2026-09-01) + period(30) - 1 = 2026-09-30 (-> DUR-CUR)
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-15"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        void offence_with_two_mismatching_cur_lines_should_appear_only_once_in_offence_ids() {
+            // Two CUR lines on the same offence (e.g. a correction), both mismatching.
+            ResultLineDto cur1 = requirementLineWithPrompts("rl-cur-1", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+            ResultLineDto cur2 = requirementLineWithPrompts("rl-cur-2", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "60",
+                    "endDate", "2026-10-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-09-30"), cur1, cur2),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("DUR-CURE — CURE end date of tagging does not match duration (DD-41655)")
+    class DurCure {
+
+        @Test
+        void endDateOfTagging_equal_to_calculated_should_not_violate() {
+            ResultLineDto cure = requirementLineWithPrompts("rl-cure", "CURE", "d1", "off1", Map.of(
+                    "startDateOfTagging", "2026-09-01",
+                    "curfewAndElectronicMonitoringPeriod", "60",
+                    "endDateOfTagging", "2026-10-30"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COS", "d1", "off1", "2026-10-30"), cure),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").cureDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void endDateOfTagging_mismatch_should_violate_with_correct_calculated_date() {
+            ResultLineDto cure = requirementLineWithPrompts("rl-cure", "CURE", "d1", "off1", Map.of(
+                    "startDateOfTagging", "2026-09-01",
+                    "curfewAndElectronicMonitoringPeriod", "60",
+                    "endDateOfTagging", "2026-11-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COS", "d1", "off1", "2026-11-01"), cure),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.cureDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.cureDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("cureCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("2026-10-30");
+        }
+
+        @Test
+        void missing_startDateOfTagging_should_skip_gracefully_no_violation() {
+            ResultLineDto cure = requirementLineWithPrompts("rl-cure", "CURE", "d1", "off1", Map.of(
+                    "curfewAndElectronicMonitoringPeriod", "60",
+                    "endDateOfTagging", "2026-11-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COS", "d1", "off1", "2026-11-01"), cure),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").cureDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void missing_endDateOfTagging_should_skip_gracefully_no_violation() {
+            ResultLineDto cure = requirementLineWithPrompts("rl-cure", "CURE", "d1", "off1", Map.of(
+                    "startDateOfTagging", "2026-09-01",
+                    "curfewAndElectronicMonitoringPeriod", "60"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COS", "d1", "off1", "2026-11-01"), cure),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").cureDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void does_not_affect_cur_duration_mismatch_count() {
+            ResultLineDto cure = requirementLineWithPrompts("rl-cure", "CURE", "d1", "off1", Map.of(
+                    "startDateOfTagging", "2026-09-01",
+                    "curfewAndElectronicMonitoringPeriod", "60",
+                    "endDateOfTagging", "2026-11-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COS", "d1", "off1", "2026-11-01"), cure),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("DUR-AAR — AAR until date does not match hearing date + days - 1 (DD-41655)")
+    class DurAar {
+
+        @Test
+        void until_equal_to_hearingDay_plus_days_minus_one_should_not_violate() {
+            // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31
+            ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
+                    "numberOfDaysToAbstain", "90",
+                    "until", "2026-03-31"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-03-31"), aar),
+                    List.of(defendant("d1", "Sarah", "Green")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").aarDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void until_mismatch_should_violate_with_correct_calculated_date() {
+            // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31 (entered as 2026-04-01, wrong)
+            ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
+                    "numberOfDaysToAbstain", "90",
+                    "until", "2026-04-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-04-01"), aar),
+                    List.of(defendant("d1", "Sarah", "Green")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.aarDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.aarDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("aarCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("2026-03-31");
+        }
+
+        @Test
+        void missing_numberOfDaysToAbstain_should_skip_gracefully_no_violation() {
+            ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
+                    "until", "2026-04-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-04-01"), aar),
+                    List.of(defendant("d1", "Sarah", "Green")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").aarDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void missing_until_should_skip_gracefully_no_violation() {
+            ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
+                    "numberOfDaysToAbstain", "90"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-04-01"), aar),
+                    List.of(defendant("d1", "Sarah", "Green")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").aarDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void missing_hearingDay_should_skip_gracefully_no_violation() {
+            ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
+                    "numberOfDaysToAbstain", "90",
+                    "until", "2026-04-01"));
+
+            DraftValidationRequest req = request(
+                    null,
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-04-01"), aar),
+                    List.of(defendant("d1", "Sarah", "Green")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").aarDurationMismatchCount()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("DD-41655 cross-cutting: CURA exclusion and multi-defendant isolation")
+    class DurationMismatchCrossCutting {
+
+        @Test
+        void cura_requirement_with_duration_shaped_prompts_never_produces_any_duration_mismatch() {
+            // CURA carries the same-shaped prompts (startDate/curfewPeriod/endDate) that would
+            // mismatch if routed through the CUR duration check — but CURA is not one of
+            // DD-41655's target requirement types (only CUR, CURE, AAR), so it must be a no-op
+            // for all three duration-mismatch counters, even though AC2c (order-vs-CURA) still
+            // fires independently.
+            ResultLineDto cura = requirementLineWithPrompts("rl-cura", "CURA", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "CONI", "d1", "off1", "2026-09-15"), cura),
+                    List.of(defendant("d1", "Cura", "Only")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            // AC2c still fires (CURA endDate 2026-09-29 is after order end 2026-09-15).
+            assertThat(ctx.curaViolationCount()).isEqualTo(1L);
+            // But none of the DD-41655 duration-mismatch counters are touched by CURA.
+            assertThat(ctx.curDurationMismatchCount()).isZero();
+            assertThat(ctx.cureDurationMismatchCount()).isZero();
+            assertThat(ctx.aarDurationMismatchCount()).isZero();
+            assertThat(ctx.curDurationMismatchOffenceIds()).isEmpty();
+            assertThat(ctx.cureDurationMismatchOffenceIds()).isEmpty();
+            assertThat(ctx.aarDurationMismatchOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void two_defendants_only_one_with_cur_duration_mismatch_should_be_isolated_per_defendant() {
+            // d1's CUR end date is correct (start + period - 1) — no mismatch.
+            ResultLineDto d1Cur = requirementLineWithPrompts("rl-d1-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-30"));
+            // d2's CUR end date is wrong (one day early) — mismatch.
+            ResultLineDto d2Cur = requirementLineWithPrompts("rl-d2-cur", "CUR", "d2", "off2", Map.of(
+                    "startDate", "2026-09-01",
+                    "curfewPeriod", "30",
+                    "endDate", "2026-09-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-d1-order", "COEW", "d1", "off1", "2026-09-30"), d1Cur,
+                            orderLine("rl-d2-order", "COEW", "d2", "off2", "2026-09-30"), d2Cur
+                    ),
+                    List.of(
+                            defendant("d1", "Clean", "Defendant"),
+                            defendant("d2", "Mismatched", "Defendant")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            CommunityOrderContext d1Ctx = result.get("d1");
+            CommunityOrderContext d2Ctx = result.get("d2");
+
+            assertThat(d1Ctx.curDurationMismatchCount()).isZero();
+            assertThat(d1Ctx.curDurationMismatchOffenceIds()).isEmpty();
+
+            assertThat(d2Ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(d2Ctx.curDurationMismatchOffenceIds()).containsExactly("off2");
+            assertThat(d2Ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off2"))
+                    .isEqualTo("2026-09-30");
         }
     }
 
