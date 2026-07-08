@@ -89,6 +89,51 @@ class YouthRehabilitationPreprocessorTest {
 
             assertThat(result.get("d1").curViolationCount()).isZero();
         }
+
+        @Test
+        @DisplayName("YRC2 end date before YROEW end date: no violation")
+        void yrc2_end_date_before_order_should_not_violate() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-08-20"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-07-01")
+                    ),
+                    List.of(defendant("d1", "Before", "Date")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curViolationCount()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("AC2 — multiple curfew types breach simultaneously")
+    class Ac2AllTypesSimultaneously {
+
+        @Test
+        @DisplayName("YRC1, YRC2 and YRC3 all breaching the same order each produce their own violation count")
+        void yrc1_yrc2_yrc3_all_breach_simultaneously_should_produce_all_three_violation_counts() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-01-10"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-02-10"),
+                            requirementLine("rl-yrc1", "YRC1", "d1", "off1", "endDateOfTagging", "2026-03-10"),
+                            requirementLine("rl-yrc3", "YRC3", "d1", "off1", "endDate", "2026-04-10")
+                    ),
+                    List.of(defendant("d1", "Sam", "Taylor")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+            assertThat(ctx.cureViolationCount()).isEqualTo(1L);
+            assertThat(ctx.cureViolationOffenceIds()).containsExactly("off1");
+            assertThat(ctx.curaViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curaViolationOffenceIds()).containsExactly("off1");
+        }
     }
 
     @Nested
