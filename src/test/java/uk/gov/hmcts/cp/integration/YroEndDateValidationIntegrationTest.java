@@ -243,6 +243,203 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
                             is(ERR_MSG_BASE_YRC2 + "Frances Morgan.")));
         }
+
+        @Test
+        @DisplayName("Scenario T004 — All three curfew requirements (YRC1, YRC2, YRC3) "
+                + "breach YRO end date simultaneously")
+        void three_curfew_types_breach_simultaneously_produce_three_ac2_errors() throws Exception {
+            // YRO end 10/01/2026; YRC2 end 10/02/2026, YRC1 tag end 10/03/2026,
+            // YRC3 end 10/04/2026 — all three exceed the order end date
+            String request = """
+                    {
+                      "hearingId": "h-sc-t004",
+                      "hearingDay": "2026-05-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-01-10"}]},
+                        {"resultLineId": "rl-yrc2", "shortCode": "YRC2", "category": "I", "label": "Curfew",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-02-10"}]},
+                        {"resultLineId": "rl-yrc1", "shortCode": "YRC1", "category": "I", "label": "Curfew+tag",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2026-03-10"}]},
+                        {"resultLineId": "rl-yrc3", "shortCode": "YRC3", "category": "I",
+                         "label": "Further curfew", "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-04-10"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(false)))
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath(DR_YRO_ERRORS, hasSize(3)))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
+                            containsInAnyOrder(MSG_YRC2, MSG_YRC1, MSG_YRC3)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(3)))
+                    .andExpect(jsonPath("$.errors.errorMessages",
+                            containsInAnyOrder(
+                                    ERR_MSG_BASE_YRC2 + "Sam Taylor.",
+                                    ERR_MSG_BASE_YRC1 + "Sam Taylor.",
+                                    ERR_MSG_BASE_YRC3 + "Sam Taylor.")));
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AC2 — No Violation (boundary / absent-requirement cases)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("AC2 — no violation when curfew requirements do not exceed YRO end date")
+    class Ac2NoViolation {
+
+        @Test
+        @DisplayName("Scenario T005 — YRC2 end date equal to YRO end date is not a violation (boundary)")
+        void yrc2_end_date_equal_to_yro_end_date_should_not_produce_error() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-sc-t005",
+                      "hearingDay": "2026-05-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-15"}]},
+                        {"resultLineId": "rl-yrc2", "shortCode": "YRC2", "category": "I", "label": "Curfew",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-15"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
+        }
+
+        @Test
+        @DisplayName("Scenario T006 — YRC2 end date before YRO end date is not a violation")
+        void yrc2_end_date_before_yro_end_date_should_not_produce_error() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-sc-t006",
+                      "hearingDay": "2026-05-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-08-20"}]},
+                        {"resultLineId": "rl-yrc2", "shortCode": "YRC2", "category": "I", "label": "Curfew",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-07-01"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
+        }
+
+        @Test
+        @DisplayName("Scenario T008 — YRO with no curfew child requirements does not trigger AC2")
+        void yro_without_any_curfew_child_requirements_should_not_produce_ac2_error() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-sc-t008",
+                      "hearingDay": "2026-05-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-09-01"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Nadia", "lastName": "Khan"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
+        }
+
+        @Test
+        @DisplayName("Scenario T012 — Valid YRO: all curfew requirements within order end date "
+                + "produces no errors")
+        void yro_with_all_curfew_requirements_within_end_date_should_be_valid() throws Exception {
+            // YRO end 31/12/2026; YRC2 end 31/12/2026 (equal), YRC1 tag end 01/12/2026 (before),
+            // YRC3 end 01/11/2026 (before) — none exceed the order end date
+            String request = """
+                    {
+                      "hearingId": "h-sc-t012",
+                      "hearingDay": "2026-05-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "YROEW", "category": "F", "label": "YRO",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                        {"resultLineId": "rl-yrc2", "shortCode": "YRC2", "category": "I", "label": "Curfew",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-31"}]},
+                        {"resultLineId": "rl-yrc1", "shortCode": "YRC1", "category": "I", "label": "Curfew+tag",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDateOfTagging", "promptValue": "2026-12-01"}]},
+                        {"resultLineId": "rl-yrc3", "shortCode": "YRC3", "category": "I",
+                         "label": "Further curfew", "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-01"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Oliver", "lastName": "Bennett"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", empty()));
+        }
     }
 
 }
