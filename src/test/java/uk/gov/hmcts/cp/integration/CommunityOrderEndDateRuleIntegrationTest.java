@@ -419,7 +419,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
-    @DisplayName("Scenario 13 — Share button suppressed when AC2 errors exist")
+    @DisplayName("Scenario 13 — Share button suppressed when AC2 errors exist (US1/AC8)")
     class Scenario13 {
 
         @Test
@@ -450,6 +450,47 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isValid", is(false)));
+        }
+
+        // Closes the AC8 counterpart gap: the response must report a clean state
+        // (isValid=true, no error messages) once the AC2 breach is corrected — the
+        // precondition the Enter Results / Manage Hearings UI relies on to show the
+        // Share button and no validation error messages. The UI behaviour itself
+        // (Share button rendering, Manage Hearings screen) is out of scope for this
+        // backend integration test.
+        @Test
+        void no_ac2_violation_should_set_isValid_true_with_no_validation_error_messages()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-s13b",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-30"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Share", "lastName": "Enabled"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath(DR_COEW_ERRORS, empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.errors.errorMessages", empty()));
         }
     }
 
