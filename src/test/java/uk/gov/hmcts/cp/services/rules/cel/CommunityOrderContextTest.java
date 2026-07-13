@@ -130,9 +130,9 @@ class CommunityOrderContextTest {
                 List.of(), List.of(), List.of(), List.of(), List.of("off1", "off2", "off3"),
                 1L, 1L, 1L,
                 List.of("off1"), List.of("off2"), List.of("off3"),
-                Map.of("off1", "2026-09-30"),
-                Map.of("off2", "2026-10-30"),
-                Map.of("off3", "2026-11-29"));
+                Map.of("off1", "30/09/2026"),
+                Map.of("off2", "30/10/2026"),
+                Map.of("off3", "29/11/2026"));
 
         @Test
         void toCelContext_should_include_all_three_duration_mismatch_counts() {
@@ -166,19 +166,19 @@ class CommunityOrderContextTest {
         @Test
         void getCalculatedValue_curCalculatedEndDateByOffenceId_returns_expected_date() {
             assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
-                    .isEqualTo("2026-09-30");
+                    .isEqualTo("30/09/2026");
         }
 
         @Test
         void getCalculatedValue_cureCalculatedEndDateByOffenceId_returns_expected_date() {
             assertThat(ctx.getCalculatedValue("cureCalculatedEndDateByOffenceId", "off2"))
-                    .isEqualTo("2026-10-30");
+                    .isEqualTo("30/10/2026");
         }
 
         @Test
         void getCalculatedValue_aarCalculatedEndDateByOffenceId_returns_expected_date() {
             assertThat(ctx.getCalculatedValue("aarCalculatedEndDateByOffenceId", "off3"))
-                    .isEqualTo("2026-11-29");
+                    .isEqualTo("29/11/2026");
         }
 
         @Test

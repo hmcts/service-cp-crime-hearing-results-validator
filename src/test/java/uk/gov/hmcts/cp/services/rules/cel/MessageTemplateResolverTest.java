@@ -275,9 +275,9 @@ class MessageTemplateResolverTest {
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS,
-                Map.of("calculatedEndDate", "2026-09-30"));
+                Map.of("calculatedEndDate", "30/09/2026"));
 
-        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826): should be 2026-09-30");
+        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826): should be 30/09/2026");
     }
 
     /**
