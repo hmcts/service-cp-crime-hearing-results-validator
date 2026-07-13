@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -42,6 +43,10 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     public static final String QUALIFIER = "community-order-end-date";
 
     private static final int SINGLE_DAY = 1;
+
+    /** Display format for calculated end dates surfaced in validation messages (DD-41655). */
+    private static final DateTimeFormatter CALCULATED_END_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     // Prompt ref keys — stable API-contract values (research.md Decision 3)
     private static final String PROMPT_END_DATE = "endDate";
@@ -295,7 +300,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         final LocalDate expectedEndDate = startDate.plusDays(period - SINGLE_DAY);
         if (!endDate.isEqual(expectedEndDate)) {
             mismatchIds.add(offenceId);
-            calculatedEndDates.put(offenceId, expectedEndDate.toString());
+            calculatedEndDates.put(offenceId, expectedEndDate.format(CALCULATED_END_DATE_FORMAT));
         }
     }
 

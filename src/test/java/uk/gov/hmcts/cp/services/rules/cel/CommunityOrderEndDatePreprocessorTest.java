@@ -419,7 +419,7 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
             assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
             assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
-                    .isEqualTo("2026-09-30");
+                    .isEqualTo("30/09/2026");
         }
 
         @Test
@@ -611,7 +611,7 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(ctx.cureDurationMismatchCount()).isEqualTo(1L);
             assertThat(ctx.cureDurationMismatchOffenceIds()).containsExactly("off1");
             assertThat(ctx.getCalculatedValue("cureCalculatedEndDateByOffenceId", "off1"))
-                    .isEqualTo("2026-10-30");
+                    .isEqualTo("30/10/2026");
         }
 
         @Test
@@ -703,7 +703,7 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(ctx.aarDurationMismatchCount()).isEqualTo(1L);
             assertThat(ctx.aarDurationMismatchOffenceIds()).containsExactly("off1");
             assertThat(ctx.getCalculatedValue("aarCalculatedEndDateByOffenceId", "off1"))
-                    .isEqualTo("2026-03-31");
+                    .isEqualTo("31/03/2026");
         }
 
         @Test
@@ -822,7 +822,7 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(d2Ctx.curDurationMismatchCount()).isEqualTo(1L);
             assertThat(d2Ctx.curDurationMismatchOffenceIds()).containsExactly("off2");
             assertThat(d2Ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off2"))
-                    .isEqualTo("2026-09-30");
+                    .isEqualTo("30/09/2026");
         }
     }
 

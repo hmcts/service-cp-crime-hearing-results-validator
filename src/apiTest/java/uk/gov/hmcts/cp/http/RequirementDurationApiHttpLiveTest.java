@@ -110,7 +110,7 @@ class RequirementDurationApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences").get(0).get("message").asText())
-                .isEqualTo(durCurfewInlineMessage("2026-09-30"));
+                .isEqualTo(durCurfewInlineMessage("30/09/2026"));
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualTo(MSG_DUR_CURFEW_SUMMARY_BASE + "John Smith.");
     }
@@ -187,7 +187,7 @@ class RequirementDurationApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences").get(0).get("message").asText())
-                .isEqualTo(durCurfewInlineMessage("2026-10-30"));
+                .isEqualTo(durCurfewInlineMessage("30/10/2026"));
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualTo(MSG_DUR_CURFEW_SUMMARY_BASE + "Jane Doe.");
     }
@@ -227,7 +227,7 @@ class RequirementDurationApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).isEmpty();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences").get(0).get("message").asText())
-                .isEqualTo(durAarInlineMessage("2026-03-31"));
+                .isEqualTo(durAarInlineMessage("31/03/2026"));
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualTo(MSG_DUR_AAR_SUMMARY_BASE + "Sarah Green.");
     }
