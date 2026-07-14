@@ -28,7 +28,8 @@ class ValidationIssueRecorderTest {
     @Test
     void record_should_increment_counter_with_rule_condition_severity_tags() {
         recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
 
@@ -49,15 +50,18 @@ class ValidationIssueRecorderTest {
     @Test
     void record_should_keep_separate_series_per_condition_and_severity() {
         recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
         recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
         recorder.record("DR-SENT-002", "AC3", ValidationIssue.SeverityEnum.WARNING, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Both concurrent and consecutive",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
 
@@ -73,7 +77,8 @@ class ValidationIssueRecorderTest {
     @Test
     void record_should_tolerate_null_severity() {
         recorder.record("DR-SENT-002", "AC2", null, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
 
@@ -88,7 +93,8 @@ class ValidationIssueRecorderTest {
     void record_should_tolerate_null_validation_level() {
         assertThatCode(() -> recorder.record("DR-SENT-002", "AC2",
                 ValidationIssue.SeverityEnum.ERROR, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 null))
                 .doesNotThrowAnyException();
@@ -108,7 +114,8 @@ class ValidationIssueRecorderTest {
 
         assertThatCode(() -> failSafeRecorder.record(
                 "DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE))
                 .doesNotThrowAnyException();

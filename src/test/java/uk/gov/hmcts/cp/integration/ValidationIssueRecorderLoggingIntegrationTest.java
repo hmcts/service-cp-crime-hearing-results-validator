@@ -46,7 +46,8 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         ByteArrayOutputStream capturedStdOut = captureStdOut();
 
         recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz",
-                "Custodial sentence concurrent/consecutive check",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
 
@@ -63,8 +64,9 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         assertThat(fields.get("hearingId")).isEqualTo("hearing-xyz");
         assertThat(fields.get("validationId")).isEqualTo("val-test-123");
         assertThat(fields.get("clientCorrelationId")).isEqualTo("corr-abc");
-        assertThat(fields.get("ruleDescription"))
-                .isEqualTo("Custodial sentence concurrent/consecutive check");
+        assertThat(fields.get("ruleDescription")).isEqualTo(
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.");
         assertThat(fields.get("conditionDescription")).isEqualTo("Multiple offences missing info");
         assertThat(fields.get("validationLevel")).isEqualTo("OFFENCE");
         assertThat(fields.get("message").toString())

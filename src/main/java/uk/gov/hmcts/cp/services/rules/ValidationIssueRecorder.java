@@ -16,7 +16,9 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
  * <p>The counter is tagged only with low-cardinality identifiers ({@code ruleId},
  * {@code conditionId}, {@code severity}); high-cardinality values ({@code hearingId},
  * {@code validationId}) are deliberately kept out of metric tags. The log line carries identifiers
- * only — never the resolved message text or affected offences, which can contain PII.
+ * and static rule-definition text from the YAML (rule/condition descriptions, validation level) —
+ * never request-derived values such as the resolved message text or affected offences, which can
+ * contain PII.
  *
  * <p>Recording is observability and must never alter a validation result. Each signal is emitted in
  * its own fail-safe block so a failure in one (or in the metrics/logging subsystem) cannot suppress
