@@ -129,16 +129,27 @@ public class CelValidationRule implements ValidationRule {
                                             context.getDefendantIdSet(condition.getAffectedDefendantSet()),
                                             message));
                         } else {
+                            final String calculatedValueSet = condition.getCalculatedValueSet();
                             issueBuilder.affectedOffences(
                                     offenceDisplayHelper.buildAffectedOffences(
                                             offenceIdsForTemplate,
                                             offenceMap,
-                                            id -> messageResolver.resolve(
-                                                    condition.getMessageTemplate(),
-                                                    context.defendantName(),
-                                                    List.of(id),
-                                                    offenceMap,
-                                                    context.allOffenceIds())));
+                                            id -> calculatedValueSet == null
+                                                    ? messageResolver.resolve(
+                                                            condition.getMessageTemplate(),
+                                                            context.defendantName(),
+                                                            List.of(id),
+                                                            offenceMap,
+                                                            context.allOffenceIds())
+                                                    : messageResolver.resolve(
+                                                            condition.getMessageTemplate(),
+                                                            context.defendantName(),
+                                                            List.of(id),
+                                                            offenceMap,
+                                                            context.allOffenceIds(),
+                                                            calculatedValuePlaceholder(
+                                                                    context.getCalculatedValue(
+                                                                            calculatedValueSet, id)))));
                         }
 
                         final String errorMessage = (isError && condition.getErrorMessageTemplate() != null)
@@ -187,6 +198,14 @@ public class CelValidationRule implements ValidationRule {
             log.warn("Validation issue recorder failed for ruleId={} conditionId={}: {}",
                     ruleDefinition.getId(), conditionId, e.getMessage());
         }
+    }
+
+    /**
+     * Builds the {@code ${calculatedEndDate}} placeholder map, leaving the token unexpanded
+     * (empty map) rather than passing a null value into {@code Map.of}, which would throw.
+     */
+    private static Map<String, String> calculatedValuePlaceholder(final String calculatedValue) {
+        return calculatedValue == null ? Map.of() : Map.of("calculatedEndDate", calculatedValue);
     }
 
     /**

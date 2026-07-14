@@ -69,4 +69,17 @@ public interface RuleEvaluationContext {
     default List<String> getDefendantIdSet(final String setName) {
         throw new IllegalArgumentException("Unknown defendant set: " + setName);
     }
+
+    /**
+     * Returns a per-offence computed value named by a YAML condition's {@code calculatedValueSet}
+     * field (e.g. a calculated correct end date), used to expand a message-template placeholder.
+     *
+     * @param setName configured calculated-value set name
+     * @param offenceId offence id to look up within that set
+     * @return the computed value for this offence, or {@code null} if not present
+     * @throws IllegalArgumentException if the set name is unknown to this context
+     */
+    default String getCalculatedValue(final String setName, final String offenceId) {
+        throw new IllegalArgumentException("Unknown calculated-value set: " + setName);
+    }
 }

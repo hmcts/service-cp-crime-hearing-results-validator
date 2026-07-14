@@ -419,7 +419,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     }
 
     @Nested
-    @DisplayName("Scenario 13 — Share button suppressed when AC2 errors exist")
+    @DisplayName("Scenario 13 — Share button suppressed when AC2 errors exist (US1/AC8)")
     class Scenario13 {
 
         @Test
@@ -450,6 +450,47 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isValid", is(false)));
+        }
+
+        // Closes the AC8 counterpart gap: the response must report a clean state
+        // (isValid=true, no error messages) once the AC2 breach is corrected — the
+        // precondition the Enter Results / Manage Hearings UI relies on to show the
+        // Share button and no validation error messages. The UI behaviour itself
+        // (Share button rendering, Manage Hearings screen) is out of scope for this
+        // backend integration test.
+        @Test
+        void no_ac2_violation_should_set_isValid_true_with_no_validation_error_messages()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-s13b",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-12-30"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Share", "lastName": "Enabled"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath(DR_COEW_ERRORS, empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.errors.errorMessages", empty()));
         }
     }
 
@@ -656,6 +697,338 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
                     .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_AAR)));
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // DD-41655 — Requirement duration end date validation (User Stories 4–7)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    private static final String MSG_DUR_CURFEW_SUMMARY_BASE =
+            "The end date for the Curfew Requirement does not match the period of the "
+                    + "requirement. This affects ";
+    private static final String MSG_DUR_AAR_SUMMARY_BASE =
+            "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
+                    + "the period of the requirement. This affects ";
+
+    private static String durCurfewInlineMessage(String calculatedEndDate) {
+        return "The end date for the Curfew Requirement does not match the period of the "
+                + "requirement. The current recorded period would mean the end date should be "
+                + calculatedEndDate + ".";
+    }
+
+    private static String durAarInlineMessage(String calculatedEndDate) {
+        return "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
+                + "the period of the requirement. The current recorded period would mean the "
+                + "end date should be " + calculatedEndDate + ".";
+    }
+
+    @Nested
+    @DisplayName("User Story 4 — DUR-CUR: Curfew end date does not match Start date + period - 1")
+    class UserStory4DurCur {
+
+        @Test
+        void cur_end_date_mismatch_should_produce_dur_cur_error() throws Exception {
+            // Start date 2026-09-01 + curfewPeriod 30 - 1 day = 2026-09-30; entered 2026-10-01 (wrong)
+            String request = """
+                    {
+                      "hearingId": "h-us4",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-01"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewPeriod", "promptValue": "30"},
+                           {"promptRef": "endDate", "promptValue": "2026-10-01"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message",
+                            is(durCurfewInlineMessage("30/09/2026"))))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            is(MSG_DUR_CURFEW_SUMMARY_BASE + "John Smith.")));
+        }
+
+        @Test
+        void cur_end_date_matching_calculated_duration_should_not_error() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-us4b",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-09-30"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewPeriod", "promptValue": "30"},
+                           {"promptRef": "endDate", "promptValue": "2026-09-30"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", empty()));
+        }
+    }
+
+    @Nested
+    @DisplayName("User Story 5 — DUR-CURE: End date of tagging does not match duration")
+    class UserStory5DurCure {
+
+        @Test
+        void cure_end_date_of_tagging_mismatch_should_produce_dur_cure_error() throws Exception {
+            // Start of tagging 2026-09-01 + 60 - 1 = 2026-10-30; entered 2026-11-01 (wrong)
+            String request = """
+                    {
+                      "hearingId": "h-us5",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COS", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-01"}]},
+                        {"resultLineId": "rl-cure", "shortCode": "CURE", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDateOfTagging", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewAndElectronicMonitoringPeriod", "promptValue": "60"},
+                           {"promptRef": "endDateOfTagging", "promptValue": "2026-11-01"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message",
+                            is(durCurfewInlineMessage("30/10/2026"))))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            is(MSG_DUR_CURFEW_SUMMARY_BASE + "Jane Doe.")));
+        }
+    }
+
+    @Nested
+    @DisplayName("User Story 6 — DUR-AAR: Until date does not match hearing date + days - 1")
+    class UserStory6DurAar {
+
+        @Test
+        void aar_until_mismatch_should_produce_dur_aar_error() throws Exception {
+            // hearingDay 2026-01-01 + 90 - 1 = 2026-03-31; entered 2026-04-01 (wrong)
+            String request = """
+                    {
+                      "hearingId": "h-us6",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-04-01"}]},
+                        {"resultLineId": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "numberOfDaysToAbstain", "promptValue": "90"},
+                           {"promptRef": "until", "promptValue": "2026-04-01"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message",
+                            is(durAarInlineMessage("31/03/2026"))))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            is(MSG_DUR_AAR_SUMMARY_BASE + "Sarah Green.")));
+        }
+    }
+
+    @Nested
+    @DisplayName("User Story 7 — Duration-mismatch errors combine with each other and with AC2")
+    class UserStory7CombinedDisplay {
+
+        @Test
+        void cur_duration_mismatch_on_one_defendant_and_aar_duration_mismatch_on_another_both_appear()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-us7a",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-d1-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-01"}]},
+                        {"resultLineId": "rl-d1-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewPeriod", "promptValue": "30"},
+                           {"promptRef": "endDate", "promptValue": "2026-10-01"}
+                         ]},
+                        {"resultLineId": "rl-d2-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d2", "offenceId": "off2",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-04-01"}]},
+                        {"resultLineId": "rl-d2-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
+                         "defendantId": "d2", "offenceId": "off2",
+                         "prompts": [
+                           {"promptRef": "numberOfDaysToAbstain", "promptValue": "90"},
+                           {"promptRef": "until", "promptValue": "2026-04-01"}
+                         ]}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "First", "lastName": "Defendant"},
+                        {"defendantId": "d2", "firstName": "Second", "lastName": "Defendant"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
+                            MSG_DUR_CURFEW_SUMMARY_BASE + "First Defendant.",
+                            MSG_DUR_AAR_SUMMARY_BASE + "Second Defendant.")));
+        }
+
+        @Test
+        void offence_failing_both_ac2_and_dur_cur_produces_two_separate_errors_on_same_offence()
+                throws Exception {
+            // Order ends 2026-09-15 (before CUR's 2026-09-29 -> AC2a fires).
+            // CUR start 2026-09-01 + period 30 - 1 = 2026-09-30, entered 2026-09-29 -> DUR-CUR fires.
+            String request = """
+                    {
+                      "hearingId": "h-us7b",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-09-15"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewPeriod", "promptValue": "30"},
+                           {"promptRef": "endDate", "promptValue": "2026-09-29"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Combo", "lastName": "Violator"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
+                            containsInAnyOrder(MSG_CUR, durCurfewInlineMessage("30/09/2026"))))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].offenceId",
+                            containsInAnyOrder("off1", "off1")));
+        }
+
+        @Test
+        void no_duration_mismatch_or_other_errors_should_allow_navigation() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-us7c",
+                      "hearingDay": "2026-01-01",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl-order", "shortCode": "COEW", "category": "F", "label": "Community order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "endDate", "promptValue": "2026-09-30"}]},
+                        {"resultLineId": "rl-cur", "shortCode": "CUR", "category": "I", "label": "Requirement",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [
+                           {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                           {"promptRef": "curfewPeriod", "promptValue": "30"},
+                           {"promptRef": "endDate", "promptValue": "2026-09-30"}
+                         ]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "All", "lastName": "Valid"}],
+                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings", empty()))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]", empty()));
         }
     }
 }

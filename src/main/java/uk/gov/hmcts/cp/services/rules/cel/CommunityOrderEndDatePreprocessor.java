@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,9 +25,15 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * <p>AC2 — detects when any child requirement (CUR, CURE, CURA, AAR) on a community order
  * has a date strictly later than the parent order end date.
  *
+ * <p>DD-41655 — detects when a CUR/CURE/AAR requirement's own recorded end date does not equal
+ * its calculated duration (Start date + period - 1 day, or hearing date + days - 1 day for AAR).
+ * This is independent of the AC2 check above and does not require a parseable order end date.
+ *
  * <p>Prompt ref keys are stable API-contract values from
  * {@code api-cp-crime-hearing-results-validator:0.1.6} and are intentionally hardcoded
- * rather than being YAML-configurable (see research.md Decision 3).
+ * rather than being YAML-configurable (see research.md Decision 3). The DD-41655 prompt ref
+ * keys below are unverified assumptions (research.md Decision 10) pending confirmation against
+ * the real upstream contract.
  */
 @Slf4j
 @Component
@@ -35,10 +42,23 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     /** YAML {@code preprocessing.type} qualifier for this preprocessor. */
     public static final String QUALIFIER = "community-order-end-date";
 
+    private static final int SINGLE_DAY = 1;
+
+    /** Display format for calculated end dates surfaced in validation messages (DD-41655). */
+    private static final DateTimeFormatter CALCULATED_END_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     // Prompt ref keys — stable API-contract values (research.md Decision 3)
     private static final String PROMPT_END_DATE = "endDate";
     private static final String PROMPT_END_DATE_OF_TAG = "endDateOfTagging";
     private static final String PROMPT_UNTIL = "until";
+
+    // DD-41655 duration-mismatch prompt ref keys — unverified assumptions (research.md Decision 10)
+    private static final String PROMPT_START_DATE = "startDate";
+    private static final String PROMPT_CURFEW_PERIOD = "curfewPeriod";
+    private static final String PROMPT_START_DATE_OF_TAGGING = "startDateOfTagging";
+    private static final String PROMPT_CURFEW_TAG_PERIOD = "curfewAndElectronicMonitoringPeriod";
+    private static final String PROMPT_DAYS_TO_ABSTAIN = "numberOfDaysToAbstain";
 
     @Override
     public String type() {
@@ -64,6 +84,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         final Set<String> aarCodes = upperSet(config.getAlcoholAbstinenceShortCodes());
 
         final Map<String, String> defendantNames = buildDefendantNames(request);
+        final LocalDate hearingDay = request.getHearingDay();
 
         // Group all result lines by defendantId
         final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
@@ -86,6 +107,14 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
             final List<String> cureViolationIds = new ArrayList<>();
             final List<String> curaViolationIds = new ArrayList<>();
             final List<String> aarViolationIds = new ArrayList<>();
+
+            // DD-41655 — duration-mismatch accumulators (independent of the AC2 checks above)
+            final List<String> curDurationMismatchIds = new ArrayList<>();
+            final List<String> cureDurationMismatchIds = new ArrayList<>();
+            final List<String> aarDurationMismatchIds = new ArrayList<>();
+            final Map<String, String> curCalculatedEndDates = new LinkedHashMap<>();
+            final Map<String, String> cureCalculatedEndDates = new LinkedHashMap<>();
+            final Map<String, String> aarCalculatedEndDates = new LinkedHashMap<>();
 
             // Group lines by offenceId within this defendant
             final Map<String, List<ResultLineDto>> linesByOffence = lines.stream()
@@ -110,26 +139,37 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                         .findFirst()
                         .orElse(null);
 
-                if (orderEndDate == null) {
-                    // No parseable order end date — skip AC2 checks for this offence
-                    continue;
+                if (orderEndDate != null) {
+                    // AC2a — CUR: compare "endDate" prompt
+                    checkRequirementViolation(offenceLines, curCodes, PROMPT_END_DATE,
+                            orderEndDate, offenceId, curViolationIds);
+
+                    // AC2b — CURE: compare "endDateOfTagging" prompt
+                    checkRequirementViolation(offenceLines, cureCodes, PROMPT_END_DATE_OF_TAG,
+                            orderEndDate, offenceId, cureViolationIds);
+
+                    // AC2c — CURA: compare "endDate" prompt
+                    checkRequirementViolation(offenceLines, curaCodes, PROMPT_END_DATE,
+                            orderEndDate, offenceId, curaViolationIds);
+
+                    // AC2d — AAR: compare "until" prompt
+                    checkRequirementViolation(offenceLines, aarCodes, PROMPT_UNTIL,
+                            orderEndDate, offenceId, aarViolationIds);
                 }
 
-                // AC2a — CUR: compare "endDate" prompt
-                checkRequirementViolation(offenceLines, curCodes, PROMPT_END_DATE,
-                        orderEndDate, offenceId, curViolationIds);
+                // DD-41655 — duration-mismatch checks do NOT depend on a parseable order end date
+                checkDurationMismatch(offenceLines, curCodes, PROMPT_START_DATE, PROMPT_CURFEW_PERIOD,
+                        PROMPT_END_DATE, offenceId, curDurationMismatchIds, curCalculatedEndDates);
 
-                // AC2b — CURE: compare "endDateOfTagging" prompt
-                checkRequirementViolation(offenceLines, cureCodes, PROMPT_END_DATE_OF_TAG,
-                        orderEndDate, offenceId, cureViolationIds);
+                checkDurationMismatch(offenceLines, cureCodes, PROMPT_START_DATE_OF_TAGGING,
+                        PROMPT_CURFEW_TAG_PERIOD, PROMPT_END_DATE_OF_TAG, offenceId,
+                        cureDurationMismatchIds, cureCalculatedEndDates);
 
-                // AC2c — CURA: compare "endDate" prompt
-                checkRequirementViolation(offenceLines, curaCodes, PROMPT_END_DATE,
-                        orderEndDate, offenceId, curaViolationIds);
-
-                // AC2d — AAR: compare "until" prompt
-                checkRequirementViolation(offenceLines, aarCodes, PROMPT_UNTIL,
-                        orderEndDate, offenceId, aarViolationIds);
+                if (hearingDay != null) {
+                    checkDurationMismatchFromFixedStart(offenceLines, aarCodes, hearingDay,
+                            PROMPT_DAYS_TO_ABSTAIN, PROMPT_UNTIL, offenceId,
+                            aarDurationMismatchIds, aarCalculatedEndDates);
+                }
             }
 
             result.put(defendantId, new CommunityOrderContext(
@@ -142,7 +182,16 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                     List.copyOf(cureViolationIds),
                     List.copyOf(curaViolationIds),
                     List.copyOf(aarViolationIds),
-                    List.copyOf(allOffenceIds)));
+                    List.copyOf(allOffenceIds),
+                    curDurationMismatchIds.size(),
+                    cureDurationMismatchIds.size(),
+                    aarDurationMismatchIds.size(),
+                    List.copyOf(curDurationMismatchIds),
+                    List.copyOf(cureDurationMismatchIds),
+                    List.copyOf(aarDurationMismatchIds),
+                    Map.copyOf(curCalculatedEndDates),
+                    Map.copyOf(cureCalculatedEndDates),
+                    Map.copyOf(aarCalculatedEndDates)));
         }
 
         return result;
@@ -170,6 +219,127 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         if (violated) {
             violationIds.add(offenceId);
         }
+    }
+
+    /**
+     * DD-41655 — checks whether any result line in {@code lines} matching {@code codes} has a
+     * recorded end date (identified by {@code endDatePromptRef}) that does not equal
+     * {@code startDate} (from {@code startDatePromptRef} on the same line) plus
+     * {@code period} (from {@code periodPromptRef} on the same line) minus one day. If so, adds
+     * {@code offenceId} to {@code mismatchIds} and records the correctly calculated end date in
+     * {@code calculatedEndDates}. Silently skips (no violation) when the start date, period, or
+     * end date is missing or unparseable.
+     */
+    private void checkDurationMismatch(final List<ResultLineDto> lines,
+                                        final Set<String> codes,
+                                        final String startDatePromptRef,
+                                        final String periodPromptRef,
+                                        final String endDatePromptRef,
+                                        final String offenceId,
+                                        final List<String> mismatchIds,
+                                        final Map<String, String> calculatedEndDates) {
+        for (final ResultLineDto line : lines) {
+            // An offence contributes at most one mismatch per condition, mirroring
+            // checkRequirementViolation's anyMatch semantics — avoids duplicate
+            // AffectedOffence entries if an offence ever has >1 matching requirement line.
+            if (mismatchIds.contains(offenceId)) {
+                break;
+            }
+            if (!hasUpperCode(line, codes)) {
+                continue;
+            }
+            final LocalDate startDate = parsePromptDate(line, startDatePromptRef, offenceId);
+            recordDurationMismatchIfAny(line, startDate, periodPromptRef, endDatePromptRef,
+                    offenceId, mismatchIds, calculatedEndDates);
+        }
+    }
+
+    /**
+     * DD-41655 (AAR) — as {@link #checkDurationMismatch}, but the start date is a fixed value
+     * (the hearing date) rather than a per-line prompt.
+     */
+    private void checkDurationMismatchFromFixedStart(final List<ResultLineDto> lines,
+                                                       final Set<String> codes,
+                                                       final LocalDate startDate,
+                                                       final String periodPromptRef,
+                                                       final String endDatePromptRef,
+                                                       final String offenceId,
+                                                       final List<String> mismatchIds,
+                                                       final Map<String, String> calculatedEndDates) {
+        for (final ResultLineDto line : lines) {
+            if (mismatchIds.contains(offenceId)) {
+                break;
+            }
+            if (!hasUpperCode(line, codes)) {
+                continue;
+            }
+            recordDurationMismatchIfAny(line, startDate, periodPromptRef, endDatePromptRef,
+                    offenceId, mismatchIds, calculatedEndDates);
+        }
+    }
+
+    @SuppressWarnings("PMD.OnlyOneReturn")
+    private void recordDurationMismatchIfAny(final ResultLineDto line,
+                                              final LocalDate startDate,
+                                              final String periodPromptRef,
+                                              final String endDatePromptRef,
+                                              final String offenceId,
+                                              final List<String> mismatchIds,
+                                              final Map<String, String> calculatedEndDates) {
+        if (startDate == null) {
+            return;
+        }
+        final Integer period = parsePromptInt(line, periodPromptRef, offenceId);
+        if (period == null) {
+            return;
+        }
+        final LocalDate endDate = parsePromptDate(line, endDatePromptRef, offenceId);
+        if (endDate == null) {
+            return;
+        }
+        final LocalDate expectedEndDate = startDate.plusDays(period - SINGLE_DAY);
+        if (!endDate.isEqual(expectedEndDate)) {
+            mismatchIds.add(offenceId);
+            calculatedEndDates.put(offenceId, expectedEndDate.format(CALCULATED_END_DATE_FORMAT));
+        }
+    }
+
+    /**
+     * Parses the {@code promptValue} for the given {@code promptRef} as an integer. Returns
+     * {@code null} if the prompt is missing, blank, or unparseable, and logs a warning.
+     */
+    @SuppressWarnings("PMD.OnlyOneReturn")
+    private Integer parsePromptInt(final ResultLineDto line,
+                                    final String promptRef,
+                                    final String offenceId) {
+        if (line.getPrompts() == null) {
+            return null;
+        }
+        Integer found = null;
+        for (final Prompt prompt : line.getPrompts()) {
+            if (found == null && promptRef.equals(prompt.getPromptRef())) {
+                found = parseIntValue(prompt.getPromptValue(), promptRef,
+                        line.getShortCode(), offenceId);
+            }
+        }
+        return found;
+    }
+
+    private Integer parseIntValue(final String value, final String promptRef,
+                                   final String shortCode, final String offenceId) {
+        Integer result = null;
+        if (value == null || value.isBlank()) {
+            log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
+                    promptRef, shortCode, offenceId);
+        } else {
+            try {
+                result = Integer.valueOf(value.trim());
+            } catch (NumberFormatException e) {
+                log.warn("Unparseable integer '{}' for promptRef={} on shortCode={} offenceId={}",
+                        value, promptRef, shortCode, offenceId);
+            }
+        }
+        return result;
     }
 
     /**

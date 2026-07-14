@@ -3,7 +3,9 @@ rule:
   title: "Community Order End Date Validation"
   description: >-
     Validates that a community order's end date is not earlier than the end date of any
-    attached requirement (AC2: CUR, CURE, CURA, AAR).
+    attached requirement (AC2: CUR, CURE, CURA, AAR), and that a CUR/CURE/AAR requirement's own
+    recorded end date matches its calculated duration (DD-41655: Start date + period - 1 day, or
+    hearing date + days - 1 day for AAR).
   priority: 4000
   enabled: true
 
@@ -73,4 +75,47 @@ rule:
         The end date of the order must match or be longer than the end date of
         Alcohol abstinence and monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "aarViolationOffenceIds"
+      validationLevel: OFFENCE
+
+    - id: "DUR-CUR"
+      name: "Curfew requirement end date does not match calculated duration"
+      expression: "curDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "curDurationMismatchOffenceIds"
+      calculatedValueSet: "curCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-CURE"
+      name: "Curfew with electronic monitoring end date of tagging does not match calculated duration"
+      expression: "cureDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "cureDurationMismatchOffenceIds"
+      calculatedValueSet: "cureCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-AAR"
+      name: "Alcohol abstinence and monitoring until date does not match calculated duration"
+      expression: "aarDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. The current recorded period would mean the end date should be
+        ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. This affects ${defendantNames}.
+      affectedOffenceSet: "aarDurationMismatchOffenceIds"
+      calculatedValueSet: "aarCalculatedEndDateByOffenceId"
       validationLevel: OFFENCE

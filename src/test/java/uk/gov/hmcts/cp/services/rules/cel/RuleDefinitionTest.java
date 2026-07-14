@@ -95,4 +95,43 @@ class RuleDefinitionTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must contain a top-level 'rule' key");
     }
+
+    /**
+     * Verifies DR-COEW-001 loads all 7 conditions (4 order-end-date AC2 checks plus the 3
+     * DD-41655 duration-mismatch checks) and that the new duration conditions parse
+     * {@code calculatedValueSet} to the expected named set.
+     */
+    @Test
+    void loadFromYaml_should_parse_duration_mismatch_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-COEW-001.yaml");
+
+        assertThat(rule.getConditions()).hasSize(7);
+
+        ConditionDefinition durCur = rule.getConditions().get(4);
+        assertThat(durCur.getId()).isEqualTo("DUR-CUR");
+        assertThat(durCur.getExpression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durCur.getSeverity()).isEqualTo("ERROR");
+        assertThat(durCur.getMessageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durCur.getErrorMessageTemplate()).contains("${defendantNames}");
+        assertThat(durCur.getAffectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durCur.getCalculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durCur.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durCure = rule.getConditions().get(5);
+        assertThat(durCure.getId()).isEqualTo("DUR-CURE");
+        assertThat(durCure.getExpression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durCure.getAffectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durCure.getCalculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+
+        ConditionDefinition durAar = rule.getConditions().get(6);
+        assertThat(durAar.getId()).isEqualTo("DUR-AAR");
+        assertThat(durAar.getExpression()).isEqualTo("aarDurationMismatchCount > 0");
+        assertThat(durAar.getAffectedOffenceSet()).isEqualTo("aarDurationMismatchOffenceIds");
+        assertThat(durAar.getCalculatedValueSet()).isEqualTo("aarCalculatedEndDateByOffenceId");
+
+        // Pre-existing AC2 conditions must not have calculatedValueSet set.
+        ConditionDefinition ac2a = rule.getConditions().get(0);
+        assertThat(ac2a.getId()).isEqualTo("AC2a");
+        assertThat(ac2a.getCalculatedValueSet()).isNull();
+    }
 }

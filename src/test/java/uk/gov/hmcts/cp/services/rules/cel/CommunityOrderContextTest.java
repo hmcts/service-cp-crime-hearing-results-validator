@@ -20,7 +20,8 @@ class CommunityOrderContextTest {
             List<String> curIds, List<String> cureIds, List<String> curaIds,
             List<String> aarIds, List<String> allIds) {
         return new CommunityOrderContext(name, cur, cure, cura, aar,
-                curIds, cureIds, curaIds, aarIds, allIds);
+                curIds, cureIds, curaIds, aarIds, allIds,
+                0L, 0L, 0L, List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of());
     }
 
     @Nested
@@ -43,12 +44,12 @@ class CommunityOrderContextTest {
         }
 
         @Test
-        void toCelContext_should_return_exactly_four_entries() {
+        void toCelContext_should_return_exactly_seven_entries() {
             CommunityOrderContext ctx = context(
                     "A", 0L, 0L, 0L, 0L,
                     List.of(), List.of(), List.of(), List.of(), List.of());
 
-            assertThat(ctx.toCelContext()).hasSize(4);
+            assertThat(ctx.toCelContext()).hasSize(7);
         }
 
         @Test
@@ -117,6 +118,80 @@ class CommunityOrderContextTest {
 
             assertThat(ctx.defendantName()).isEqualTo("James Bond");
             assertThat(ctx.allOffenceIds()).containsExactly("off-x");
+        }
+    }
+
+    @Nested
+    @DisplayName("duration-mismatch fields (DD-41655)")
+    class DurationMismatch {
+
+        private final CommunityOrderContext ctx = new CommunityOrderContext(
+                "Jane Doe", 0L, 0L, 0L, 0L,
+                List.of(), List.of(), List.of(), List.of(), List.of("off1", "off2", "off3"),
+                1L, 1L, 1L,
+                List.of("off1"), List.of("off2"), List.of("off3"),
+                Map.of("off1", "30/09/2026"),
+                Map.of("off2", "30/10/2026"),
+                Map.of("off3", "29/11/2026"));
+
+        @Test
+        void toCelContext_should_include_all_three_duration_mismatch_counts() {
+            Map<String, Long> cel = ctx.toCelContext();
+
+            assertThat(cel).containsEntry("curDurationMismatchCount", 1L);
+            assertThat(cel).containsEntry("cureDurationMismatchCount", 1L);
+            assertThat(cel).containsEntry("aarDurationMismatchCount", 1L);
+        }
+
+        @Test
+        void toCelContext_should_return_exactly_seven_entries() {
+            assertThat(ctx.toCelContext()).hasSize(7);
+        }
+
+        @Test
+        void getOffenceIdSet_curDurationMismatchOffenceIds_returns_correct_list() {
+            assertThat(ctx.getOffenceIdSet("curDurationMismatchOffenceIds")).containsExactly("off1");
+        }
+
+        @Test
+        void getOffenceIdSet_cureDurationMismatchOffenceIds_returns_correct_list() {
+            assertThat(ctx.getOffenceIdSet("cureDurationMismatchOffenceIds")).containsExactly("off2");
+        }
+
+        @Test
+        void getOffenceIdSet_aarDurationMismatchOffenceIds_returns_correct_list() {
+            assertThat(ctx.getOffenceIdSet("aarDurationMismatchOffenceIds")).containsExactly("off3");
+        }
+
+        @Test
+        void getCalculatedValue_curCalculatedEndDateByOffenceId_returns_expected_date() {
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("30/09/2026");
+        }
+
+        @Test
+        void getCalculatedValue_cureCalculatedEndDateByOffenceId_returns_expected_date() {
+            assertThat(ctx.getCalculatedValue("cureCalculatedEndDateByOffenceId", "off2"))
+                    .isEqualTo("30/10/2026");
+        }
+
+        @Test
+        void getCalculatedValue_aarCalculatedEndDateByOffenceId_returns_expected_date() {
+            assertThat(ctx.getCalculatedValue("aarCalculatedEndDateByOffenceId", "off3"))
+                    .isEqualTo("29/11/2026");
+        }
+
+        @Test
+        void getCalculatedValue_missing_offence_id_returns_null() {
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "unknown-offence"))
+                    .isNull();
+        }
+
+        @Test
+        void getCalculatedValue_unknown_set_name_throws_IllegalArgumentException() {
+            assertThatThrownBy(() -> ctx.getCalculatedValue("unknownSet", "off1"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("unknownSet");
         }
     }
 }
