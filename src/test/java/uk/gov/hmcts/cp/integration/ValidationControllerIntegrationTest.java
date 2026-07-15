@@ -232,7 +232,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.validate")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+            .andExpect(jsonPath("$.message", is("Malformed request body")))
+            .andExpect(status().isBadRequest());
     }
 
     /**
@@ -269,5 +270,83 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(NO_HEARING_ID_ARRAYS_REQUEST))
             .andExpect(status().isBadRequest());
+    }
+
+    private static final String MISSING_RESULT_LINE_ID_REQUEST = """
+            {
+              "hearingId": "4d0af157-4f04-4f87-a368-1e1a3e970bc4",
+              "hearingDay": "2026-07-08",
+              "courtType": "MAGISTRATES",
+              "resultLines": [
+                {
+                  "shortCode": "yroew",
+                  "label": "Youth Rehabilitation Order England and Wales",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "F"
+                },
+                {
+                  "resultLineId": "80c464b2-a2ec-40be-8492-57d98750d118",
+                  "shortCode": "rehr",
+                  "label": "Rehabilitation requirements",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "A"
+                },
+                {
+                  "resultLineId": "525e701a-3008-472d-a0cc-e4d397acc65b",
+                  "shortCode": "yrc2",
+                  "label": "Youth rehabilitation requirement: Curfew",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "A"
+                },
+                {
+                  "resultLineId": "1a08bb8a-2a9d-447b-82b3-4c3d2ec58e1f",
+                  "shortCode": "emreq",
+                  "label": "Is electronic monitoring required",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "I"
+                }
+              ],
+              "defendants": [
+                {
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "firstName": "MO",
+                  "lastName": "MO Bloggs",
+                  "masterDefendantId": "e617b06e-db09-4417-a0be-02933bee11f2"
+                }
+              ],
+              "offences": [
+                {
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "offenceCode": "TH68010",
+                  "offenceTitle": "Theft from a shop",
+                  "orderIndex": 1,
+                  "caseUrn": "19BH5952026",
+                  "hasExistingCtlRecord": false,
+                  "isConvicted": false
+                }
+              ]
+            }
+            """;
+
+    /**
+     * Verifies that a result line missing resultLineId returns a 400 ErrorResponse
+     * with the correct field-level validation message.
+     */
+    @Test
+    void validate_should_return_400_error_response_when_result_line_missing_result_line_id() throws Exception {
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "test-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(MISSING_RESULT_LINE_ID_REQUEST))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error", is("Bad Request")))
+                .andExpect(jsonPath("$.message", is("resultLines[0].resultLineId: must not be null")))
+                .andExpect(jsonPath("$.traceId", notNullValue()))
+                .andExpect(jsonPath("$.timestamp", notNullValue()));
     }
 }
