@@ -1,7 +1,7 @@
 package uk.gov.hmcts.cp.services.impl;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
@@ -57,8 +57,8 @@ class DefaultValidationRulesServiceTest {
         DefaultValidationRulesService service = new DefaultValidationRulesService(List.of());
 
         assertThatThrownBy(() -> service.getRuleById("UNKNOWN"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Rule not found");
+                .isInstanceOf(RuleNotFoundException.class)
+                .hasMessageContaining("Rule not found: UNKNOWN");
     }
 
     private static ValidationRule stubRule(String ruleId, boolean enabled) {
