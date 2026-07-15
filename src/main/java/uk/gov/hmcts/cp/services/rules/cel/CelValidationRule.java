@@ -162,7 +162,9 @@ public class CelValidationRule implements ValidationRule {
                         }
                         recordIssue(condition.getId(),
                                 ValidationIssue.SeverityEnum.valueOf(normalizedSeverity),
-                                request.getHearingId());
+                                request.getHearingId(),
+                                condition.getName(),
+                                level);
                     }
                 }
             }
@@ -180,9 +182,12 @@ public class CelValidationRule implements ValidationRule {
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // observability must never suppress an issue
     private void recordIssue(final String conditionId,
                              final ValidationIssue.SeverityEnum severity,
-                             final String hearingId) {
+                             final String hearingId,
+                             final String conditionDescription,
+                             final ValidationIssue.ValidationLevelEnum validationLevel) {
         try {
-            issueRecorder.record(ruleDefinition.getId(), conditionId, severity, hearingId);
+            issueRecorder.record(ruleDefinition.getId(), conditionId, severity, hearingId,
+                    ruleDefinition.getDescription(), conditionDescription, validationLevel);
         } catch (Exception e) {
             log.warn("Validation issue recorder failed for ruleId={} conditionId={}: {}",
                     ruleDefinition.getId(), conditionId, e.getMessage());
