@@ -22,4 +22,6 @@ public class PreprocessingDefinition {
     private List<String> relevantOffenceCodes;
     private List<String> excludedFinalShortCodes;
     private List<String> extendedTestShortCodes;
+    private List<String> remandShortCodes;
+    private List<String> ctlShortCodes;
 }
