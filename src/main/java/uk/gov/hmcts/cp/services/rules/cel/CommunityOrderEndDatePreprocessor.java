@@ -1,8 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -10,6 +12,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -47,6 +51,15 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     /** Display format for calculated end dates surfaced in validation messages (DD-41655). */
     private static final DateTimeFormatter CALCULATED_END_DATE_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    /**
+     * Matches period prompt values as sent by the real upstream contract, e.g. {@code "90 Days"},
+     * {@code "1 Day"}, {@code "1 Months"}, or {@code "1 weeks"} (DD-41655 follow-up — Days, Weeks,
+     * and Months are all confirmed against real payloads; any other unit falls back to the
+     * WARN-and-skip behaviour below rather than guessing a conversion).
+     */
+    private static final Pattern PERIOD_PATTERN =
+            Pattern.compile("^(\\d+)\\s*(Days?|Weeks?|Months?)$", Pattern.CASE_INSENSITIVE);
 
     // Prompt ref keys — stable API-contract values (research.md Decision 3)
     private static final String PROMPT_END_DATE = "endDate";
@@ -289,7 +302,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         if (startDate == null) {
             return;
         }
-        final Integer period = parsePromptInt(line, periodPromptRef, offenceId);
+        final ParsedPeriod period = parsePromptPeriod(line, periodPromptRef, offenceId);
         if (period == null) {
             return;
         }
@@ -297,7 +310,14 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         if (endDate == null) {
             return;
         }
-        final LocalDate expectedEndDate = startDate.plusDays(period - SINGLE_DAY);
+        final LocalDate expectedEndDate;
+        try {
+            expectedEndDate = startDate.plus(period.amount(), period.unit()).minusDays(SINGLE_DAY);
+        } catch (DateTimeException e) {
+            log.warn("Period out of range for promptRef={} on shortCode={} offenceId={}",
+                    periodPromptRef, line.getShortCode(), offenceId);
+            return;
+        }
         if (!endDate.isEqual(expectedEndDate)) {
             mismatchIds.add(offenceId);
             calculatedEndDates.put(offenceId, expectedEndDate.format(CALCULATED_END_DATE_FORMAT));
@@ -305,41 +325,69 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     }
 
     /**
-     * Parses the {@code promptValue} for the given {@code promptRef} as an integer. Returns
+     * A parsed period prompt value: a count paired with the calendar unit it's expressed in
+     * (DD-41655 follow-up — periods are recorded as e.g. "90 Days" or "1 Months", and month
+     * arithmetic must use calendar-aware {@link LocalDate#plus} rather than a fixed day-count
+     * conversion, since month lengths vary).
+     */
+    private record ParsedPeriod(long amount, ChronoUnit unit) {
+    }
+
+    /**
+     * Parses the {@code promptValue} for the given {@code promptRef} as a period. Returns
      * {@code null} if the prompt is missing, blank, or unparseable, and logs a warning.
      */
     @SuppressWarnings("PMD.OnlyOneReturn")
-    private Integer parsePromptInt(final ResultLineDto line,
-                                    final String promptRef,
-                                    final String offenceId) {
+    private ParsedPeriod parsePromptPeriod(final ResultLineDto line,
+                                            final String promptRef,
+                                            final String offenceId) {
         if (line.getPrompts() == null) {
             return null;
         }
-        Integer found = null;
+        ParsedPeriod found = null;
         for (final Prompt prompt : line.getPrompts()) {
             if (found == null && promptRef.equals(prompt.getPromptRef())) {
-                found = parseIntValue(prompt.getPromptValue(), promptRef,
+                found = parsePeriodValue(prompt.getPromptValue(), promptRef,
                         line.getShortCode(), offenceId);
             }
         }
         return found;
     }
 
-    private Integer parseIntValue(final String value, final String promptRef,
-                                   final String shortCode, final String offenceId) {
-        Integer result = null;
+    private ParsedPeriod parsePeriodValue(final String value, final String promptRef,
+                                           final String shortCode, final String offenceId) {
+        ParsedPeriod result = null;
         if (value == null || value.isBlank()) {
             log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
                     promptRef, shortCode, offenceId);
         } else {
+            final String trimmed = value.trim();
+            final Matcher periodMatcher = PERIOD_PATTERN.matcher(trimmed);
+            final String digits = periodMatcher.matches() ? periodMatcher.group(1) : trimmed;
+            final ChronoUnit unit = periodMatcher.matches()
+                    ? unitFor(periodMatcher.group(2))
+                    : ChronoUnit.DAYS;
             try {
-                result = Integer.valueOf(value.trim());
+                result = new ParsedPeriod(Long.parseLong(digits), unit);
             } catch (NumberFormatException e) {
                 log.warn("Unparseable integer '{}' for promptRef={} on shortCode={} offenceId={}",
                         value, promptRef, shortCode, offenceId);
             }
         }
         return result;
+    }
+
+    private static ChronoUnit unitFor(final String unitToken) {
+        final String upper = unitToken.toUpperCase(Locale.ROOT);
+        final ChronoUnit unit;
+        if (upper.startsWith("MONTH")) {
+            unit = ChronoUnit.MONTHS;
+        } else if (upper.startsWith("WEEK")) {
+            unit = ChronoUnit.WEEKS;
+        } else {
+            unit = ChronoUnit.DAYS;
+        }
+        return unit;
     }
 
     /**

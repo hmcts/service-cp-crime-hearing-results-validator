@@ -506,6 +506,223 @@ class CommunityOrderEndDatePreprocessorTest {
         }
 
         @Test
+        void curfewPeriod_with_days_suffix_should_parse_and_detect_violation() {
+            // Real upstream payload sends curfewPeriod as "90 Days", not a bare integer.
+            // startDate(2026-04-01) + period(90) - 1 = 2026-06-29, but recorded endDate is
+            // 2026-06-10 -> should violate.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "90 Days",
+                    "endDate", "2026-06-10"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("29/06/2026");
+        }
+
+        @Test
+        void curfewPeriod_with_days_suffix_should_parse_and_not_violate_when_matching() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "90 Days",
+                    "endDate", "2026-06-29"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_single_day_singular_suffix_should_parse() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "1 Day",
+                    "endDate", "2026-04-01"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_unrecognized_unit_should_skip_gracefully_no_violation() {
+            // Only Days/Weeks/Months are confirmed real-world units (DD-41655 follow-up);
+            // anything else falls back to the existing WARN-and-skip behaviour rather than
+            // guessing a conversion.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "3 Years",
+                    "endDate", "2026-06-10"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_days_suffix_overflowing_long_should_skip_gracefully_no_violation() {
+            // "\d+" has no digit-count limit, so a numerically overflowing value (beyond even
+            // Long.MAX_VALUE, 19 digits) must still be caught and skipped, not throw uncaught.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "99999999999999999999 Days",
+                    "endDate", "2026-06-10"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_days_suffix_out_of_localdate_range_should_skip_gracefully_no_violation() {
+            // A value that parses fine as a long (well within Long.MAX_VALUE) but, once added
+            // to startDate, produces a date beyond LocalDate's supported year range must be
+            // caught (DateTimeException) and skipped, not throw uncaught.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "999999999999 Days",
+                    "endDate", "2026-06-10"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_months_suffix_should_parse_and_detect_violation() {
+            // Real upstream payload: startDate 2025-12-01, curfewPeriod "1 Months",
+            // endDate 2026-02-02. Expected = 2025-12-01 + 1 month - 1 day = 2025-12-31,
+            // so the recorded endDate is a genuine mismatch.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2025-12-01",
+                    "curfewPeriod", "1 Months",
+                    "endDate", "2026-02-02"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("31/12/2025");
+        }
+
+        @Test
+        void curfewPeriod_with_months_suffix_should_parse_and_not_violate_when_matching() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2025-12-01",
+                    "curfewPeriod", "1 Months",
+                    "endDate", "2025-12-31"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_months_suffix_should_use_calendar_aware_arithmetic() {
+            // startDate is the last day of January in a non-leap year; a naive "period * 30
+            // days" conversion would land on 2026-03-02, but calendar-aware plusMonths clamps
+            // to the last valid day of February (28th in 2026), giving 2026-02-27.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-01-31",
+                    "curfewPeriod", "1 Months",
+                    "endDate", "2026-02-27"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        void curfewPeriod_with_weeks_suffix_should_parse_and_detect_violation() {
+            // Real upstream payload sends curfewPeriod as "1 weeks" (lower-case, plural even
+            // at count 1). Expected = 2026-04-01 + 1 week - 1 day = 2026-04-07.
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "1 weeks",
+                    "endDate", "2026-04-10"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+            CommunityOrderContext ctx = result.get("d1");
+
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("07/04/2026");
+        }
+
+        @Test
+        void curfewPeriod_with_weeks_suffix_should_parse_and_not_violate_when_matching() {
+            ResultLineDto cur = requirementLineWithPrompts("rl-cur", "CUR", "d1", "off1", Map.of(
+                    "startDate", "2026-04-01",
+                    "curfewPeriod", "1 weeks",
+                    "endDate", "2026-04-07"));
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(orderLine("rl-order", "COEW", "d1", "off1", "2026-12-01"), cur),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
         void duration_check_should_still_run_when_order_end_date_is_missing() {
             // Community order has no parseable end date — AC2 checks are skipped for this
             // offence, but the CUR duration-mismatch check does not depend on the order at all.
