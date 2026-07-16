@@ -16,7 +16,9 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
  * <p>The counter is tagged only with low-cardinality identifiers ({@code ruleId},
  * {@code conditionId}, {@code severity}); high-cardinality values ({@code hearingId},
  * {@code validationId}) are deliberately kept out of metric tags. The log line carries identifiers
- * only — never the resolved message text or affected offences, which can contain PII.
+ * and static rule-definition text from the YAML (rule/condition descriptions, validation level) —
+ * never request-derived values such as the resolved message text or affected offences, which can
+ * contain PII.
  *
  * <p>Recording is observability and must never alter a validation result. Each signal is emitted in
  * its own fail-safe block so a failure in one (or in the metrics/logging subsystem) cannot suppress
@@ -42,11 +44,19 @@ public class ValidationIssueRecorder {
      * @param conditionId condition within the rule that triggered (e.g. {@code AC2})
      * @param severity resolved severity of the issue
      * @param hearingId hearing the draft results belong to
+     * @param ruleDescription human-readable description of the rule, from the YAML {@code description}
+     * @param conditionDescription human-readable description of the condition, from the YAML
+     *     {@code name}
+     * @param validationLevel scope of the condition (offence or defendant level), from the YAML
+     *     {@code validationLevel}
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // observability must never throw
     public void record(final String ruleId, final String conditionId,
-                       final ValidationIssue.SeverityEnum severity, final String hearingId) {
+                       final ValidationIssue.SeverityEnum severity, final String hearingId,
+                       final String ruleDescription, final String conditionDescription,
+                       final ValidationIssue.ValidationLevelEnum validationLevel) {
         final String severityName = severity == null ? "UNKNOWN" : severity.name();
+        final String validationLevelName = validationLevel == null ? "UNKNOWN" : validationLevel.name();
 
         try {
             meterRegistry.counter(COUNTER_NAME,
@@ -63,7 +73,10 @@ public class ValidationIssueRecorder {
                     kv("ruleId", ruleId),
                     kv("conditionId", conditionId),
                     kv("severity", severityName),
-                    kv("hearingId", hearingId));
+                    kv("hearingId", hearingId),
+                    kv("ruleDescription", ruleDescription),
+                    kv("conditionDescription", conditionDescription),
+                    kv("validationLevel", validationLevelName));
         } catch (Exception e) {
             log.warn("Failed to log validation issue for ruleId={} conditionId={}: {}",
                     ruleId, conditionId, e.getMessage());

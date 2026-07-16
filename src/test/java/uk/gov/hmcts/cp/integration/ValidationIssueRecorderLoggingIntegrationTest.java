@@ -45,7 +45,11 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         MDC.put("clientCorrelationId", "corr-abc");
         ByteArrayOutputStream capturedStdOut = captureStdOut();
 
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz");
+        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
 
         String issueLine = Arrays.stream(capturedStdOut.toString().split(System.lineSeparator()))
                 .filter(line -> line.contains(ValidationIssueRecorder.ISSUE_LOG_MESSAGE))
@@ -60,6 +64,11 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         assertThat(fields.get("hearingId")).isEqualTo("hearing-xyz");
         assertThat(fields.get("validationId")).isEqualTo("val-test-123");
         assertThat(fields.get("clientCorrelationId")).isEqualTo("corr-abc");
+        assertThat(fields.get("ruleDescription")).isEqualTo(
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.");
+        assertThat(fields.get("conditionDescription")).isEqualTo("Multiple offences missing info");
+        assertThat(fields.get("validationLevel")).isEqualTo("OFFENCE");
         assertThat(fields.get("message").toString())
                 .contains(ValidationIssueRecorder.ISSUE_LOG_MESSAGE);
         // No PII / issue detail leaks into the log.
