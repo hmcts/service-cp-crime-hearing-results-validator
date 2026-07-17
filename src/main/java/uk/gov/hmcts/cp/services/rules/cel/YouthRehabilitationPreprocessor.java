@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantDedupeKeys;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByDefendant;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
@@ -62,13 +63,23 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
         final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
         final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
 
+        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
         final Map<String, String> defendantNames = buildDefendantNames(request);
         final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
 
-        final Map<String, YouthRehabilitationContext> result = new LinkedHashMap<>();
-
+        final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
+        final Map<String, String> groupNames = new LinkedHashMap<>();
         for (final Map.Entry<String, List<ResultLineDto>> entry : linesByDefendant.entrySet()) {
             final String defendantId = entry.getKey();
+            final String groupKey = dedupeKeys.getOrDefault(defendantId, defendantId);
+            linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).addAll(entry.getValue());
+            groupNames.putIfAbsent(groupKey, defendantNames.getOrDefault(defendantId, "Unknown"));
+        }
+
+        final Map<String, YouthRehabilitationContext> result = new LinkedHashMap<>();
+
+        for (final Map.Entry<String, List<ResultLineDto>> entry : linesByGroup.entrySet()) {
+            final String groupKey = entry.getKey();
             final List<ResultLineDto> lines = entry.getValue();
 
             final boolean hasYro = lines.stream().anyMatch(rl -> hasUpperCode(rl, orderCodes));
@@ -125,8 +136,8 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
 
             }
 
-            result.put(defendantId, new YouthRehabilitationContext(
-                    defendantNames.getOrDefault(defendantId, "Unknown"),
+            result.put(groupKey, new YouthRehabilitationContext(
+                    groupNames.getOrDefault(groupKey, "Unknown"),
                     curViolationIds.size(),
                     cureViolationIds.size(),
                     curaViolationIds.size(),

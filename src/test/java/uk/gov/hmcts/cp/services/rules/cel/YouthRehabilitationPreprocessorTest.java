@@ -246,6 +246,47 @@ class YouthRehabilitationPreprocessorTest {
         }
     }
 
+    @Nested
+    @DisplayName("masterDefendantId grouping — mirrors CustodialPreprocessor")
+    class MasterDefendantIdGrouping {
+
+        @Test
+        @DisplayName("YRO lines split across two defendantIds sharing a masterDefendantId are merged into one context")
+        void yro_lines_across_defendantIds_sharing_masterDefendantId_are_merged_into_one_context() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-01-10"),
+                            requirementLine("rl-yrc2", "YRC2", "d2", "off1", "endDate", "2026-02-10")
+                    ),
+                    List.of(
+                            defendant("d1", "Sam", "Taylor").masterDefendantId("master1"),
+                            defendant("d2", "Sam", "Taylor").masterDefendantId("master1")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result).containsOnlyKeys("master1");
+            YouthRehabilitationContext ctx = result.get("master1");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        @DisplayName("defendantId with blank masterDefendantId falls back to its own defendantId as the group key")
+        void defendant_with_blank_masterDefendantId_falls_back_to_own_defendantId() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-10-30"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-11-30")
+                    ),
+                    List.of(defendant("d1", "John", "Smith").masterDefendantId("  ")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result).containsOnlyKeys("d1");
+        }
+    }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
