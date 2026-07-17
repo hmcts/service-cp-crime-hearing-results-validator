@@ -215,6 +215,54 @@ class PreprocessorHelperTest {
         }
     }
 
+    // ── buildDefendantDedupeKeys ─────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("buildDefendantDedupeKeys")
+    class BuildDefendantDedupeKeys {
+
+        @Test
+        void buildDefendantDedupeKeys_null_defendants_returns_empty_map() {
+            DraftValidationRequest request = new DraftValidationRequest();
+            request.setDefendants(null);
+
+            assertThat(PreprocessorHelper.buildDefendantDedupeKeys(request)).isEmpty();
+        }
+
+        @Test
+        void buildDefendantDedupeKeys_maps_defendantId_to_itself_when_no_masterDefendantId() {
+            DraftValidationRequest request = new DraftValidationRequest();
+            request.setDefendants(List.of(defendant("d1", "Alice", "Smith")));
+
+            Map<String, String> keys = PreprocessorHelper.buildDefendantDedupeKeys(request);
+
+            assertThat(keys).containsEntry("d1", "d1");
+        }
+
+        @Test
+        void buildDefendantDedupeKeys_different_defendantIds_sharing_masterDefendantId_map_to_same_key() {
+            DraftValidationRequest request = new DraftValidationRequest();
+            request.setDefendants(List.of(
+                    defendant("d1", "Test", "Ark").masterDefendantId("master1"),
+                    defendant("d2", "Test", "Ark").masterDefendantId("master1")));
+
+            Map<String, String> keys = PreprocessorHelper.buildDefendantDedupeKeys(request);
+
+            assertThat(keys).containsEntry("d1", "master1");
+            assertThat(keys).containsEntry("d2", "master1");
+        }
+
+        @Test
+        void buildDefendantDedupeKeys_falls_back_to_defendantId_when_masterDefendantId_blank() {
+            DraftValidationRequest request = new DraftValidationRequest();
+            request.setDefendants(List.of(defendant("d1", "Alice", "Smith").masterDefendantId("  ")));
+
+            Map<String, String> keys = PreprocessorHelper.buildDefendantDedupeKeys(request);
+
+            assertThat(keys).containsEntry("d1", "d1");
+        }
+    }
+
     // ── buildDefendantNames ──────────────────────────────────────────────────
 
     @Nested

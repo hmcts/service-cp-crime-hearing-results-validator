@@ -66,6 +66,26 @@ public final class PreprocessorHelper {
         return grouped;
     }
 
+    /**
+     * Maps each defendantId to its dedupe key: the {@code masterDefendantId} when present and
+     * non-blank, otherwise the defendantId itself. Lets callers fold multiple defendantIds that
+     * represent the same person (linked cases) into a single group, mirroring
+     * {@link CustodialPreprocessor}'s master-defendant grouping.
+     */
+    public static Map<String, String> buildDefendantDedupeKeys(final DraftValidationRequest request) {
+        final Map<String, String> dedupeKeys = new LinkedHashMap<>();
+        if (request.getDefendants() != null) {
+            for (final DefendantDto d : request.getDefendants()) {
+                final String masterId = d.getMasterDefendantId();
+                final String dedupeKey = masterId != null && !masterId.isBlank()
+                    ? masterId
+                    : d.getDefendantId();
+                dedupeKeys.put(d.getDefendantId(), dedupeKey);
+            }
+        }
+        return dedupeKeys;
+    }
+
     /** Builds a defendantId &rarr; full-name map (keyed by {@code id}), preserving order. */
     public static Map<String, String> buildDefendantNames(final DraftValidationRequest request) {
         final Map<String, String> names = new LinkedHashMap<>();
