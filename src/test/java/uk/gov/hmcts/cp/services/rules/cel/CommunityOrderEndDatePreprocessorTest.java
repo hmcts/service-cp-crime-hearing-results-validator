@@ -889,7 +889,7 @@ class CommunityOrderEndDatePreprocessorTest {
         void until_equal_to_hearingDay_plus_days_minus_one_should_not_violate() {
             // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-03-31"));
 
             DraftValidationRequest req = request(
@@ -906,7 +906,7 @@ class CommunityOrderEndDatePreprocessorTest {
         void until_mismatch_should_violate_with_correct_calculated_date() {
             // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31 (entered as 2026-04-01, wrong)
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-04-01"));
 
             DraftValidationRequest req = request(
@@ -941,7 +941,7 @@ class CommunityOrderEndDatePreprocessorTest {
         @Test
         void missing_until_should_skip_gracefully_no_violation() {
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90"));
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90"));
 
             DraftValidationRequest req = request(
                     LocalDate.of(2026, 1, 1),
@@ -956,7 +956,7 @@ class CommunityOrderEndDatePreprocessorTest {
         @Test
         void missing_hearingDay_should_skip_gracefully_no_violation() {
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-04-01"));
 
             DraftValidationRequest req = request(

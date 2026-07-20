@@ -35,9 +35,10 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  *
  * <p>Prompt ref keys are stable API-contract values from
  * {@code api-cp-crime-hearing-results-validator:0.1.6} and are intentionally hardcoded
- * rather than being YAML-configurable (see research.md Decision 3). The DD-41655 prompt ref
- * keys below are unverified assumptions (research.md Decision 10) pending confirmation against
- * the real upstream contract.
+ * rather than being YAML-configurable (see research.md Decision 3). The DD-41655 CUR/CURE
+ * prompt ref keys were assumptions at authoring time (research.md Decision 10); the AAR key
+ * has since been confirmed against a real payload as
+ * {@code numberOfDaysToAbstainFromConsumingAnyAlcohol}, not {@code numberOfDaysToAbstain}.
  */
 @Slf4j
 @Component
@@ -71,7 +72,8 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     private static final String PROMPT_CURFEW_PERIOD = "curfewPeriod";
     private static final String PROMPT_START_DATE_OF_TAGGING = "startDateOfTagging";
     private static final String PROMPT_CURFEW_TAG_PERIOD = "curfewAndElectronicMonitoringPeriod";
-    private static final String PROMPT_DAYS_TO_ABSTAIN = "numberOfDaysToAbstain";
+    private static final String PROMPT_DAYS_TO_ABSTAIN =
+            "numberOfDaysToAbstainFromConsumingAnyAlcohol";
 
     @Override
     public String type() {
