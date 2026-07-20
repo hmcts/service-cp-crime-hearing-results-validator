@@ -501,6 +501,122 @@ class PreprocessorHelperTest {
         }
     }
 
+    // ── parsePromptPeriod ────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("parsePromptPeriod")
+    class ParsePromptPeriod {
+
+        @Test
+        void parsePromptPeriod_bare_integer_is_parsed_as_days() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "21");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_days_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "21 Days");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_singular_day_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "1 Day");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(1L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_weeks_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "3 Weeks");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(3L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.WEEKS);
+        }
+
+        @Test
+        void parsePromptPeriod_months_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "1 Months");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(1L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.MONTHS);
+        }
+
+        @Test
+        void parsePromptPeriod_lower_case_unit_is_parsed_case_insensitively() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "1 weeks");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(1L);
+            assertThat(period.unit()).isEqualTo(java.time.temporal.ChronoUnit.WEEKS);
+        }
+
+        @Test
+        void parsePromptPeriod_unrecognised_unit_word_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "5 Fortnights");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_blank_value_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "   ");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_null_value_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", null);
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_non_numeric_value_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "not-a-period");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_null_prompts_returns_null() {
+            ResultLineDto line = resultLine("YRC2");
+            line.setPrompts(null);
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_prompt_ref_not_found_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "otherRef", "21");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private ResultLineDto resultLine(final String shortCode) {

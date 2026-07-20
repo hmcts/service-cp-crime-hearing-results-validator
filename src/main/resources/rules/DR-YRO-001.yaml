@@ -3,7 +3,9 @@ rule:
   title: "Youth Rehabilitation Order End Date Validation"
   description: >-
     Validates that a Youth Rehabilitation Order's end date is not earlier
-    than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3).
+    than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3), and that a
+    YRC2/YRC1 requirement's own recorded end date matches its calculated duration (DD-42850:
+    Start date + period - 1 day).
   priority: 5000
   enabled: false
 
@@ -58,3 +60,31 @@ rule:
         The end date of the order must match or be longer than the end date of
         Youth Rehabilitation Requirement: Further curfew requirement made. This affects ${defendantNames}.
       affectedOffenceSet: "curaViolationOffenceIds"
+
+    - id: "DUR-YRC2"
+      name: "Curfew requirement end date does not match calculated duration"
+      expression: "curDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "curDurationMismatchOffenceIds"
+      calculatedValueSet: "curCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-YRC1"
+      name: "Curfew with electronic monitoring end date of tagging does not match calculated duration"
+      expression: "cureDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "cureDurationMismatchOffenceIds"
+      calculatedValueSet: "cureCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
