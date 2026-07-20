@@ -86,7 +86,8 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
      *
      * @param request draft validation request being evaluated
      * @param config preprocessing configuration loaded from YAML
-     * @return map of defendantId to derived context
+     * @return map of defendant grouping key (masterDefendantId if present, else defendantId) to
+     *     derived context
      */
     @Override
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
@@ -98,16 +99,18 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
         final Set<String> aarCodes = upperSet(config.getAlcoholAbstinenceShortCodes());
 
+        final Map<String, String> defendantGrouping = buildDefendantGrouping(request);
         final Map<String, String> defendantNames = buildDefendantNames(request);
         final LocalDate hearingDay = request.getHearingDay();
 
-        // Group all result lines by defendantId
-        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
+        // Group all result lines by defendant grouping key, folding linked defendantIds that
+        // share a masterDefendantId into one group (mirrors CustodialPreprocessor)
+        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request, defendantGrouping);
 
         final Map<String, CommunityOrderContext> result = new LinkedHashMap<>();
 
         for (final Map.Entry<String, List<ResultLineDto>> entry : linesByDefendant.entrySet()) {
-            final String defendantId = entry.getKey();
+            final String groupKey = entry.getKey();
             final List<ResultLineDto> lines = entry.getValue();
 
             // Skip defendants with no community order lines
@@ -187,8 +190,8 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                 }
             }
 
-            result.put(defendantId, new CommunityOrderContext(
-                    defendantNames.getOrDefault(defendantId, "Unknown"),
+            result.put(groupKey, new CommunityOrderContext(
+                    defendantNames.getOrDefault(groupKey, "Unknown"),
                     curViolationIds.size(),
                     cureViolationIds.size(),
                     curaViolationIds.size(),
@@ -443,28 +446,54 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    /**
+     * Groups result lines by defendant grouping key, folding defendantIds that share a
+     * {@code masterDefendantId} (linked cases for the same person) into a single group —
+     * mirrors {@link CustodialPreprocessor}'s master-defendant grouping. Without this, a
+     * community order and a requirement recorded under two linked defendantIds for the same
+     * person would never be compared against each other (DD-41654-style bug).
+     */
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     private static Map<String, List<ResultLineDto>> groupByDefendant(
-            final DraftValidationRequest request) {
+            final DraftValidationRequest request, final Map<String, String> defendantGrouping) {
         final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
         if (request.getResultLines() != null) {
             for (final ResultLineDto rl : request.getResultLines()) {
                 if (rl.getDefendantId() != null) {
-                    grouped.computeIfAbsent(rl.getDefendantId(), k -> new ArrayList<>()).add(rl);
+                    final String groupKey = defendantGrouping.getOrDefault(
+                            rl.getDefendantId(), rl.getDefendantId());
+                    grouped.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(rl);
                 }
             }
         }
         return grouped;
     }
 
+    /** Maps each defendantId to its {@code masterDefendantId} when present and non-blank,
+     * otherwise to the defendantId itself. */
+    private static Map<String, String> buildDefendantGrouping(final DraftValidationRequest request) {
+        final Map<String, String> grouping = new LinkedHashMap<>();
+        if (request.getDefendants() != null) {
+            for (final DefendantDto d : request.getDefendants()) {
+                grouping.put(d.getDefendantId(), groupKeyFor(d));
+            }
+        }
+        return grouping;
+    }
+
     private static Map<String, String> buildDefendantNames(final DraftValidationRequest request) {
         final Map<String, String> names = new LinkedHashMap<>();
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
-                names.put(d.getDefendantId(), buildFullName(d));
+                names.putIfAbsent(groupKeyFor(d), buildFullName(d));
             }
         }
         return names;
+    }
+
+    private static String groupKeyFor(final DefendantDto defendant) {
+        final String masterId = defendant.getMasterDefendantId();
+        return masterId != null && !masterId.isBlank() ? masterId : defendant.getDefendantId();
     }
 
     private static String buildFullName(final DefendantDto defendant) {
