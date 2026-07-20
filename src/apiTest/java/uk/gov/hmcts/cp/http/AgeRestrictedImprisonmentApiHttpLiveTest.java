@@ -30,6 +30,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
     private static final String RULE_ID = "DR-AGE-001";
+    private static final String RULE_ID_FIELD = "ruleId";
     private static final String EXPECTED_BASE_MESSAGE =
             "The defendant is under 21 years of age and cannot receive a sentence of imprisonment.";
 
@@ -150,7 +151,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("validationLevel").asText())
                 .isEqualTo("OFFENCE");
@@ -193,7 +194,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(2);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
@@ -233,7 +234,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
     }
@@ -334,7 +335,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
 
     private List<String> ruleIdsOf(final JsonNode issues) {
         final List<String> ids = new ArrayList<>();
-        issues.forEach(n -> ids.add(n.get("ruleId").asText()));
+        issues.forEach(n -> ids.add(n.get(RULE_ID_FIELD).asText()));
         return ids;
     }
 
