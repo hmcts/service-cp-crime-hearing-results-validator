@@ -1,0 +1,36 @@
+# Draft of the new rule file for this feature.
+# On implementation, this content moves to:
+#   src/main/resources/rules/DR-AGE-001.yaml
+# It is kept here under contracts/ during planning as the reviewable "interface"
+# for this feature, per Constitution Principle I (YAML/CEL Rule-First).
+
+rule:
+  id: "DR-AGE-001"
+  title: "Imprisonment result age restriction"
+  description: >-
+    Blocks sharing when a defendant under 21 years of age on the hearing date
+    has an imprisonment-type result (IMP, EXTIVS, SPECC) recorded against one
+    or more of their offences.
+  priority: 1000
+  enabled: true
+
+  preprocessing:
+    type: "age-restricted-imprisonment"
+    filterShortCodes:
+      - IMP
+      - EXTIVS
+      - SPECC
+
+  conditions:
+    - id: "AC2"
+      name: "Imprisonment result recorded for under-21 defendant"
+      expression: "isUnder21 == 1"
+      severity: ERROR
+      messageTemplate: >-
+        The defendant is under 21 years of age and cannot receive a sentence of imprisonment.
+      errorMessageTemplate: >-
+        The defendant is under 21 years of age and cannot receive a sentence of imprisonment.
+        This affects: ${defendantNames}.
+      affectedOffenceSet: "qualifyingOffenceIds"
+      affectedDefendantSet: "defendantId"
+      validationLevel: OFFENCE
