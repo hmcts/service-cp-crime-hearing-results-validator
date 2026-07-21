@@ -464,8 +464,10 @@ class CelValidationRuleTest {
 
         rule.evaluate(request);
 
-        verify(issueRecorder).record("DR-SENT-002", "AC2",
-                ValidationIssue.SeverityEnum.ERROR, "h1");
+        verify(issueRecorder).record(eq("DR-SENT-002"), eq("AC2"),
+                eq(ValidationIssue.SeverityEnum.ERROR), eq("h1"),
+                anyString(), eq("Multiple offences missing info"),
+                eq(ValidationIssue.ValidationLevelEnum.OFFENCE));
     }
 
     /**
@@ -499,7 +501,8 @@ class CelValidationRuleTest {
         List<ValidationIssueResult> issues = disabledRule.evaluate(request);
 
         assertThat(issues).isEmpty();
-        verify(localRecorder, never()).record(anyString(), anyString(), any(), anyString());
+        verify(localRecorder, never()).record(anyString(), anyString(), any(), anyString(),
+                anyString(), anyString(), any());
     }
 
     /**
@@ -509,7 +512,7 @@ class CelValidationRuleTest {
     @Test
     void recorder_failure_should_not_suppress_issue() {
         doThrow(new RuntimeException("recorder down")).when(issueRecorder)
-                .record(eq("DR-SENT-002"), eq("AC2"), any(), eq("h1"));
+                .record(eq("DR-SENT-002"), eq("AC2"), any(), eq("h1"), any(), any(), any());
         DraftValidationRequest request = buildRequest(
                 List.of(
                         resultLine("rl1", "IMP", "d1", "off1"),

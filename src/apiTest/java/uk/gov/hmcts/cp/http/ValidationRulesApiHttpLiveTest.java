@@ -1,7 +1,7 @@
 package uk.gov.hmcts.cp.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,12 +43,13 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(3);
+        assertThat(json.get("count").asInt()).isEqualTo(4);
         assertThat(json.get("enabledCount").asInt()).isEqualTo(1);
-        assertThat(json.get("rules")).hasSize(3);
+        assertThat(json.get("rules")).hasSize(4);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
-        assertThat(ruleIds).containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-COEW-001");
+        assertThat(ruleIds).containsExactlyInAnyOrder(
+                "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001");
     }
 
     /**
@@ -75,18 +76,28 @@ class ValidationRulesApiHttpLiveTest {
     }
 
     /**
-     * Verifies an unknown rule id is surfaced as an HTTP 404 response.
+     * Verifies an unknown rule id is surfaced as an HTTP 404 response with a structured error body.
      */
     @Test
-    void get_rule_by_id_should_return_not_found_for_unknown_rule() {
+    void get_rule_by_id_should_return_not_found_for_unknown_rule() throws Exception {
         final HttpHeaders headers = new HttpHeaders();
         headers.set("CJSCPPUID", "test-user");
 
-        assertThatThrownBy(() -> http.exchange(
-                baseUrl + "/api/validation/rules/UNKNOWN-RULE",
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                String.class
-        )).isInstanceOf(HttpClientErrorException.NotFound.class);
+        final HttpClientErrorException.NotFound exception = catchThrowableOfType(
+                () -> http.exchange(
+                        baseUrl + "/api/validation/rules/UNKNOWN-RULE",
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        String.class
+                ),
+                HttpClientErrorException.NotFound.class
+        );
+
+        assertThat(exception).isNotNull();
+        final JsonNode json = mapper.readTree(exception.getResponseBodyAsString());
+        assertThat(json.get("error").asText()).isEqualTo("Rule not found");
+        assertThat(json.get("message").asText()).contains("UNKNOWN-RULE");
+        assertThat(json.get("traceId").asText()).isNotBlank();
+        assertThat(json.get("timestamp").asText()).isNotBlank();
     }
 }

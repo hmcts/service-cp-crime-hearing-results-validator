@@ -43,6 +43,18 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     }
 
     /**
+     * Verifies the Flyway seed data can be read back for the bundled DR-CTL-001 override row.
+     */
+    @Test
+    void findById_should_return_seeded_dr_ctl_001_rule() {
+        Optional<ValidationRuleEntity> result = repository.findById("DR-CTL-001");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().isEnabled()).isFalse();
+        assertThat(result.get().getSeverity()).isEqualTo("WARNING");
+    }
+
+    /**
      * Verifies the Flyway seed data can be read back for the bundled DR-COEW-001 override row.
      */
     @Test

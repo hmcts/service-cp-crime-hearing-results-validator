@@ -31,6 +31,15 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     private static final String RULES_EVALUATED = "rulesEvaluated";
     private static final String RULE_ID = "DR-DISQ-001";
 
+    /**
+     * Wait long enough to outlast the server-side rule-override Caffeine cache
+     * ({@code RULE_OVERRIDE_CACHE_TTL=1}s in the api-test stack). Used to guarantee both that a
+     * DB change has propagated before asserting, and that the cache no longer holds the toggled
+     * value once this test restores shared state — otherwise a stale {@code enabled=true} can leak
+     * into other test classes (e.g. the rule-list count assertion).
+     */
+    private static final long CACHE_TTL_EVICTION_WAIT_MS = 2000L;
+
     private static final String EXPECTED_MESSAGE =
             "Check whether you need to add extended test disqualification with DDOTE "
                     + "(disqualification and extended test) or DDOTEL (disqualification for "
@@ -151,7 +160,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     void ac1_relevant_offence_without_ddote_should_produce_warning_when_rule_enabled() throws Exception {
         setRuleEnabled(true);
         try {
-            Thread.sleep(2000);
+            Thread.sleep(CACHE_TTL_EVICTION_WAIT_MS);
 
             final String body = """
                     {
@@ -184,7 +193,10 @@ class DisqualificationExtendedTestApiHttpLiveTest {
                     .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
         } finally {
             setRuleEnabled(false);
-            Thread.sleep(2000); // allow 1s Caffeine cache TTL to expire before subsequent tests read rule state
+            // Restore shared state fully: the DB row is reset above, but the app still caches the
+            // toggled override for up to the TTL. Wait it out so no stale enabled=true leaks into
+            // other test classes (see CACHE_TTL_EVICTION_WAIT_MS).
+            Thread.sleep(CACHE_TTL_EVICTION_WAIT_MS);
         }
     }
 

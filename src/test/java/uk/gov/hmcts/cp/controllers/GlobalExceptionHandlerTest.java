@@ -3,23 +3,21 @@ package uk.gov.hmcts.cp.controllers;
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.TraceContext;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
+import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,156 +27,42 @@ import static org.mockito.Mockito.when;
 class GlobalExceptionHandlerTest {
 
     /**
-     * Verifies that a {@link ResponseStatusException} with an explicit reason is mapped to the same
-     * HTTP status and an RFC 7807 Problem Detail body that includes the current trace id.
+     * Verifies that a missing rule is mapped to a 404 ErrorResponse with the rule id in the
+     * message and the current trace id populated.
      */
     @Test
-    void handle_response_status_exception_should_return_problem_detail_with_correct_fields() {
-        // Arrange
+    void handle_rule_not_found_exception_should_return_404_error_response() {
         final Tracer tracer = mock(Tracer.class);
         final Span span = mock(Span.class);
         final TraceContext context = mock(TraceContext.class);
 
         when(tracer.currentSpan()).thenReturn(span);
         when(span.context()).thenReturn(context);
-        when(context.traceId()).thenReturn("test-trace-id");
+        when(context.traceId()).thenReturn("trace-404");
 
         final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
 
-        final String reason = "Test error";
-        final ResponseStatusException exception =
-                new ResponseStatusException(HttpStatus.NOT_FOUND, reason);
+        final RuleNotFoundException exception = new RuleNotFoundException("DR-SENT-999");
 
-        final Instant beforeCall = Instant.now();
+        final ResponseEntity<ErrorResponse> response = handler.handleRuleNotFoundException(exception);
 
-        // Act
-        final ResponseEntity<ProblemDetail> response =
-                handler.handleResponseStatusException(exception);
-
-        final Instant afterCall = Instant.now();
-
-        // Assert
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-
-        assertEquals(404, problem.getStatus());
-        assertEquals("Not Found", problem.getTitle());
-        assertEquals(reason, problem.getDetail());
-        assertEquals("test-trace-id", problem.getProperties().get("traceId"));
-
-        final Instant timestamp = (Instant) problem.getProperties().get("timestamp");
-        assertNotNull(timestamp);
-        assertTrue(
-                !timestamp.isBefore(beforeCall) && !timestamp.isAfter(afterCall),
-                "Timestamp should be between beforeCall and afterCall"
-        );
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Rule not found", body.getError());
+        assertThat(body.getMessage()).contains("DR-SENT-999");
+        assertEquals("trace-404", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**
-     * Verifies the fallback scenario where a {@link ResponseStatusException} has no explicit
-     * reason, so the handler uses the exception message instead.
+     * Verifies that bean-validation failures are collected into a semicolon-separated detail
+     * string and returned as a 400 ErrorResponse.
      */
     @Test
-    void handle_response_status_exception_with_null_reason_should_use_message() {
-        // Arrange
-        final Tracer tracer = mock(Tracer.class);
-        final Span span = mock(Span.class);
-        final TraceContext context = mock(TraceContext.class);
-
-        when(tracer.currentSpan()).thenReturn(span);
-        when(span.context()).thenReturn(context);
-        when(context.traceId()).thenReturn("test-trace-id");
-
-        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
-
-        final ResponseStatusException exception =
-                new ResponseStatusException(HttpStatus.BAD_REQUEST);
-
-        // Act
-        final ResponseEntity<ProblemDetail> response =
-                handler.handleResponseStatusException(exception);
-
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertNotNull(problem.getDetail());
-        assertThat(problem.getDetail()).isNotBlank();
-    }
-
-    /**
-     * Verifies the handler returns {@code no-trace} when no current span is available for a
-     * response-status failure.
-     */
-    @Test
-    void handle_response_status_exception_with_null_span_should_return_no_trace() {
-        // Arrange
-        final Tracer tracer = mock(Tracer.class);
-        when(tracer.currentSpan()).thenReturn(null);
-
-        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
-
-        final ResponseStatusException exception =
-                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server error");
-
-        // Act
-        final ResponseEntity<ProblemDetail> response =
-                handler.handleResponseStatusException(exception);
-
-        // Assert
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals("no-trace", problem.getProperties().get("traceId"));
-        assertEquals(500, problem.getStatus());
-        assertEquals("Server error", problem.getDetail());
-    }
-
-    /**
-     * Verifies uncaught exceptions are converted into a standard HTTP 500 payload with trace data.
-     */
-    @Test
-    void handle_generic_exception_should_return_500_with_structured_error() {
-        // Arrange
-        final Tracer tracer = mock(Tracer.class);
-        final Span span = mock(Span.class);
-        final TraceContext context = mock(TraceContext.class);
-
-        when(tracer.currentSpan()).thenReturn(span);
-        when(span.context()).thenReturn(context);
-        when(context.traceId()).thenReturn("test-trace-id");
-
-        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
-
-        final Exception exception = new RuntimeException("Something went wrong");
-
-        // Act
-        final ResponseEntity<ProblemDetail> response =
-                handler.handleGenericException(exception);
-
-        // Assert
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(500, problem.getStatus());
-        assertEquals("Internal server error", problem.getDetail());
-        assertEquals("test-trace-id", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
-    }
-
-    /**
-     * Verifies that bean-validation failures are collected into a semicolon-separated detail string
-     * and returned as a 400 Problem Detail with {@code application/problem+json} content type.
-     */
-    @Test
-    void handle_method_argument_not_valid_with_field_errors_should_return_400_problem_detail() {
-        // Arrange
+    void handle_method_argument_not_valid_with_field_errors_should_return_400_error_response() {
         final Tracer tracer = mock(Tracer.class);
         final Span span = mock(Span.class);
         final TraceContext context = mock(TraceContext.class);
@@ -198,29 +82,25 @@ class GlobalExceptionHandlerTest {
         final MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
-        // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertThat(problem.getDetail()).contains("hearingId: must not be blank");
-        assertThat(problem.getDetail()).contains("offences: must not be empty");
-        assertEquals("trace-abc", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Bad Request", body.getError());
+        assertThat(body.getMessage()).contains("hearingId: must not be blank");
+        assertThat(body.getMessage()).contains("offences: must not be empty");
+        assertEquals("trace-abc", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**
-     * Verifies that when there are no field errors the detail falls back to "Validation failed".
+     * Verifies that when there are no field errors the message falls back to "Validation failed".
      */
     @Test
-    void handle_method_argument_not_valid_with_no_field_errors_should_return_validation_failed_detail() {
-        // Arrange
+    void handle_method_argument_not_valid_with_no_field_errors_should_return_validation_failed() {
         final Tracer tracer = mock(Tracer.class);
         when(tracer.currentSpan()).thenReturn(null);
 
@@ -232,26 +112,21 @@ class GlobalExceptionHandlerTest {
         final MethodArgumentNotValidException exception = mock(MethodArgumentNotValidException.class);
         when(exception.getBindingResult()).thenReturn(bindingResult);
 
-        // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleMethodArgumentNotValid(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentNotValid(exception);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Validation failed", problem.getDetail());
-        assertEquals("no-trace", problem.getProperties().get("traceId"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Validation failed", body.getMessage());
+        assertEquals("no-trace", body.getTraceId());
     }
 
     /**
-     * Verifies that a malformed request body is returned as a 400 Problem Detail with the
-     * fixed detail text "Malformed request body".
+     * Verifies that a malformed request body returns a 400 ErrorResponse with fixed message text.
      */
     @Test
-    void handle_http_message_not_readable_should_return_400_with_malformed_body_detail() {
-        // Arrange
+    void handle_http_message_not_readable_should_return_400_with_malformed_body_message() {
         final Tracer tracer = mock(Tracer.class);
         final Span span = mock(Span.class);
         final TraceContext context = mock(TraceContext.class);
@@ -264,44 +139,48 @@ class GlobalExceptionHandlerTest {
 
         final HttpMessageNotReadableException exception = mock(HttpMessageNotReadableException.class);
 
-        // Act
-        final ResponseEntity<ProblemDetail> response = handler.handleHttpMessageNotReadable(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(exception);
 
-        // Assert
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals(400, problem.getStatus());
-        assertEquals("Bad Request", problem.getTitle());
-        assertEquals("Malformed request body", problem.getDetail());
-        assertEquals("trace-xyz", problem.getProperties().get("traceId"));
-        assertNotNull(problem.getProperties().get("timestamp"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Bad Request", body.getError());
+        assertEquals("Malformed request body", body.getMessage());
+        assertEquals("trace-xyz", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 
     /**
-     * Verifies the generic-exception path still succeeds when tracing is unavailable.
+     * Verifies that any uncaught exception is mapped to a 500 ErrorResponse with a fixed,
+     * non-leaking message and the current trace id populated.
      */
     @Test
-    void handle_generic_exception_with_null_span_should_return_no_trace() {
-        // Arrange
+    void handle_generic_exception_should_return_500_error_response() {
         final Tracer tracer = mock(Tracer.class);
-        when(tracer.currentSpan()).thenReturn(null);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-500");
 
         final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
 
-        final Exception exception = new RuntimeException("Something went wrong");
+        final Exception exception = new IllegalStateException("Something went wrong internally");
 
-        // Act
-        final ResponseEntity<ProblemDetail> response =
-                handler.handleGenericException(exception);
+        final ResponseEntity<ErrorResponse> response = handler.handleGenericException(exception);
 
-        // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
 
-        final ProblemDetail problem = response.getBody();
-        assertNotNull(problem);
-        assertEquals("no-trace", problem.getProperties().get("traceId"));
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Internal Server Error", body.getError());
+        assertEquals("An unexpected error occurred", body.getMessage());
+        assertThat(body.getMessage()).doesNotContain("Something went wrong internally");
+        assertEquals("trace-500", body.getTraceId());
+        assertNotNull(body.getTimestamp());
     }
 }
