@@ -3,9 +3,8 @@ package uk.gov.hmcts.cp.services.impl;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
@@ -60,8 +59,7 @@ public class DefaultValidationRulesService implements ValidationRulesService {
                 .map(ValidationRule::getRuleDetail)
                 .filter(r -> ruleId.equals(r.getRuleId()))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Rule not found: " + ruleId));
+                .orElseThrow(() -> new RuleNotFoundException(ruleId));
         log.info("Getting validation rule detail for ruleId={}", found.getRuleId());
         return found;
     }

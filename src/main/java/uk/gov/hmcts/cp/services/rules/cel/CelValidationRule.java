@@ -25,6 +25,7 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 public class CelValidationRule implements ValidationRule {
 
     private final RuleDefinition ruleDefinition;
+    private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
     private final MessageTemplateResolver messageResolver;
     private final OffenceDisplayHelper offenceDisplayHelper;
@@ -47,6 +48,7 @@ public class CelValidationRule implements ValidationRule {
                              final RuleOverrideService ruleOverrideService,
                              final ValidationIssueRecorder issueRecorder) {
         this.ruleDefinition = RuleDefinitionLoader.load(rulePath);
+        this.preprocessorRegistry = preprocessorRegistry;
         this.evaluator = evaluator;
         this.messageResolver = messageResolver;
         this.offenceDisplayHelper = offenceDisplayHelper;
@@ -162,7 +164,9 @@ public class CelValidationRule implements ValidationRule {
                         }
                         recordIssue(condition.getId(),
                                 ValidationIssue.SeverityEnum.valueOf(normalizedSeverity),
-                                request.getHearingId());
+                                request.getHearingId(),
+                                condition.getName(),
+                                level);
                     }
                 }
             }
@@ -180,9 +184,12 @@ public class CelValidationRule implements ValidationRule {
     @SuppressWarnings("PMD.AvoidCatchingGenericException") // observability must never suppress an issue
     private void recordIssue(final String conditionId,
                              final ValidationIssue.SeverityEnum severity,
-                             final String hearingId) {
+                             final String hearingId,
+                             final String conditionDescription,
+                             final ValidationIssue.ValidationLevelEnum validationLevel) {
         try {
-            issueRecorder.record(ruleDefinition.getId(), conditionId, severity, hearingId);
+            issueRecorder.record(ruleDefinition.getId(), conditionId, severity, hearingId,
+                    ruleDefinition.getDescription(), conditionDescription, validationLevel);
         } catch (Exception e) {
             log.warn("Validation issue recorder failed for ruleId={} conditionId={}: {}",
                     ruleDefinition.getId(), conditionId, e.getMessage());
