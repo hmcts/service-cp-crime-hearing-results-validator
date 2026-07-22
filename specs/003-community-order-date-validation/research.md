@@ -132,7 +132,7 @@ not a boundary against a parent order.
 **Alternatives considered**: Reusing `isAfter`-only semantics — rejected; it would silently accept
 an end date entered too early, which the acceptance criteria explicitly treat as equally wrong.
 
-### Decision 10 — New Prompt Ref Keys (Unverified — Risk)
+### Decision 10 — New Prompt Ref Keys (AAR key confirmed against real payload)
 
 **Decision**: Hardcode four new `promptRef` keys, following the naming convention already used for
 `endDateOfTagging` (Decision 3):
@@ -141,16 +141,24 @@ an end date entered too early, which the acceptance criteria explicitly treat as
 |---|---|---|
 | CUR | `"startDate"` | `"curfewPeriod"` (integer days) |
 | CURE | `"startDateOfTagging"` | `"curfewAndElectronicMonitoringPeriod"` (integer days) |
-| AAR | *(uses `request.getHearingDay()`, no prompt)* | `"numberOfDaysToAbstain"` (integer days) |
+| AAR | *(uses `request.getHearingDay()`, no prompt)* | `"numberOfDaysToAbstainFromConsumingAnyAlcohol"` (integer days) |
 
 **Rationale**: Consistent with Decision 3 — these are stable upstream API-contract values, not YAML
 policy, so they stay hardcoded in Java rather than becoming YAML config.
 
-**Risk**: Unlike the original ticket's prompt refs (verified during that implementation), these
-four names are **assumed** from the acceptance-criteria field labels and the existing naming
-convention — not yet confirmed against a real payload or the upstream
-`api-cp-crime-hearing-results-validator` schema. Carried into the Risk Register; must be verified
-early during implementation (unit tests will fail fast if wrong).
+**Risk (CUR/CURE)**: `"startDate"`, `"curfewPeriod"`, and `"curfewAndElectronicMonitoringPeriod"` are
+still **assumed** from the acceptance-criteria field labels and the existing naming convention — not
+yet confirmed against a real payload. Carried into the Risk Register; must be verified early during
+implementation (unit tests will fail fast if wrong).
+
+**AAR — confirmed wrong, then fixed**: the original assumption `"numberOfDaysToAbstain"` was
+disproved by a real payload, which sends `"numberOfDaysToAbstainFromConsumingAnyAlcohol"`. Because
+the key didn't match, `CommunityOrderEndDatePreprocessor` silently found no period prompt and
+`recordDurationMismatchIfAny` returned early — the `DUR-AAR` condition never fired even when the
+`until` date was genuinely wrong. Fixed in `CommunityOrderEndDatePreprocessor.PROMPT_DAYS_TO_ABSTAIN`
+plus the corresponding fixtures in `CommunityOrderEndDatePreprocessorTest`,
+`CommunityOrderEndDateRuleIntegrationTest`, and `RequirementDurationApiHttpLiveTest` (DD-41655
+follow-up).
 
 ### Decision 11 — Injecting a Computed Value (Calculated Date) into a Message Template
 

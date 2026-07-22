@@ -889,7 +889,7 @@ class CommunityOrderEndDatePreprocessorTest {
         void until_equal_to_hearingDay_plus_days_minus_one_should_not_violate() {
             // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-03-31"));
 
             DraftValidationRequest req = request(
@@ -906,7 +906,7 @@ class CommunityOrderEndDatePreprocessorTest {
         void until_mismatch_should_violate_with_correct_calculated_date() {
             // hearingDay 2026-01-01 + 90 days - 1 day = 2026-03-31 (entered as 2026-04-01, wrong)
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-04-01"));
 
             DraftValidationRequest req = request(
@@ -941,7 +941,7 @@ class CommunityOrderEndDatePreprocessorTest {
         @Test
         void missing_until_should_skip_gracefully_no_violation() {
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90"));
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90"));
 
             DraftValidationRequest req = request(
                     LocalDate.of(2026, 1, 1),
@@ -956,7 +956,7 @@ class CommunityOrderEndDatePreprocessorTest {
         @Test
         void missing_hearingDay_should_skip_gracefully_no_violation() {
             ResultLineDto aar = requirementLineWithPrompts("rl-aar", "AAR", "d1", "off1", Map.of(
-                    "numberOfDaysToAbstain", "90",
+                    "numberOfDaysToAbstainFromConsumingAnyAlcohol", "90",
                     "until", "2026-04-01"));
 
             DraftValidationRequest req = request(
@@ -1040,6 +1040,54 @@ class CommunityOrderEndDatePreprocessorTest {
             assertThat(d2Ctx.curDurationMismatchOffenceIds()).containsExactly("off2");
             assertThat(d2Ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off2"))
                     .isEqualTo("30/09/2026");
+        }
+    }
+
+    @Nested
+    @DisplayName("masterDefendantId grouping — mirrors CustodialPreprocessor (DD-41654 fix ported)")
+    class MasterDefendantIdGrouping {
+
+        @Test
+        @DisplayName("community order and requirement split across two defendantIds sharing a "
+                + "masterDefendantId are merged into one context")
+        void lines_across_defendantIds_sharing_masterDefendantId_are_merged_into_one_context() {
+            // Order recorded under d1, its CUR requirement recorded under linked defendantId d2 —
+            // same person via masterDefendantId "master1". Without merging, the order's end date
+            // (d1) and the CUR requirement's end date (d2) live in separate contexts and AC2a can
+            // never compare them against each other.
+            ResultLineDto order = orderLine("rl-order", "COEW", "d1", "off1", "2026-10-30");
+            ResultLineDto cur = requirementLine("rl-cur", "CUR", "d2", "off1", "endDate", "2026-11-30");
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(order, cur),
+                    List.of(
+                            defendant("d1", "Jaren", "Schroeder").masterDefendantId("master1"),
+                            defendant("d2", "Jaren", "Schroeder").masterDefendantId("master1")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result).containsOnlyKeys("master1");
+            CommunityOrderContext ctx = result.get("master1");
+            assertThat(ctx.defendantName()).isEqualTo("Jaren Schroeder");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        @DisplayName("defendant with blank masterDefendantId falls back to its own defendantId as "
+                + "the group key")
+        void defendant_with_blank_masterDefendantId_falls_back_to_own_defendantId() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "COEW", "d1", "off1", "2026-10-30"),
+                            requirementLine("rl-cur", "CUR", "d1", "off1", "endDate", "2026-11-30")),
+                    List.of(defendant("d1", "John", "Smith").masterDefendantId("  ")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result).containsOnlyKeys("d1");
         }
     }
 

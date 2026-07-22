@@ -870,7 +870,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                         {"resultLineId": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                          "defendantId": "d1", "offenceId": "off1",
                          "prompts": [
-                           {"promptRef": "numberOfDaysToAbstain", "promptValue": "90"},
+                           {"promptRef": "numberOfDaysToAbstainFromConsumingAnyAlcohol", "promptValue": "90"},
                            {"promptRef": "until", "promptValue": "2026-04-01"}
                          ]}
                       ],
@@ -925,7 +925,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                         {"resultLineId": "rl-d2-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                          "defendantId": "d2", "offenceId": "off2",
                          "prompts": [
-                           {"promptRef": "numberOfDaysToAbstain", "promptValue": "90"},
+                           {"promptRef": "numberOfDaysToAbstainFromConsumingAnyAlcohol", "promptValue": "90"},
                            {"promptRef": "until", "promptValue": "2026-04-01"}
                          ]}
                       ],

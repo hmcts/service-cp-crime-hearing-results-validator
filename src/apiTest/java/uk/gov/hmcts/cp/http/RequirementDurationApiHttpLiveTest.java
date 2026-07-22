@@ -211,7 +211,7 @@ class RequirementDurationApiHttpLiveTest {
                     {"resultLineId": "rl-aar", "shortCode": "AAR", "category": "I", "label": "Requirement",
                      "defendantId": "d1", "offenceId": "off1",
                      "prompts": [
-                       {"promptRef": "numberOfDaysToAbstain", "promptValue": "90"},
+                       {"promptRef": "numberOfDaysToAbstainFromConsumingAnyAlcohol", "promptValue": "90"},
                        {"promptRef": "until", "promptValue": "2026-04-01"}
                      ]}
                   ],
