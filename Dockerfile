@@ -3,7 +3,8 @@
 # This image has the hmcts self signing certificate authority added to truststore so we dont need to worry about about the certs
 # If pulling this locally we need to authenticate to acr ... az login; az acr login -n crmdvrepo01
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-eclipse-temurin:25-jre}
+# Fallback pinned to digest so the tag can't be silently repointed upstream
+FROM ${BASE_IMAGE:-eclipse-temurin:25-jre@sha256:681c543d6f36c50f45e9b5226930a46203dcfa351d3670e9d0bdf0dabae53539}
 
 # install curl for debugging
 RUN apt-get update \
