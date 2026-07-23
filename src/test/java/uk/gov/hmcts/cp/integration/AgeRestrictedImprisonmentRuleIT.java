@@ -28,6 +28,8 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
     private static final String RULE_ID = "DR-AGE-001";
     private static final String EXPECTED_BASE_MESSAGE =
             "The defendant is under 21 years of age and cannot receive a sentence of imprisonment.";
+    private static final String EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE =
+            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.";
 
     @Nested
     @DisplayName("Graceful degradation on missing date of birth")
@@ -175,7 +177,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].validationLevel", is("OFFENCE")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
+                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
 
         @Test
@@ -205,7 +207,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
+                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
 
         @Test
@@ -243,7 +245,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(2)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
+                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
 
         @Test
@@ -278,7 +280,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
+                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
 
         @Test

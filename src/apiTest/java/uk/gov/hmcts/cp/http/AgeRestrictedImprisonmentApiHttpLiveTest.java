@@ -33,6 +33,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String EXPECTED_BASE_MESSAGE =
             "The defendant is under 21 years of age and cannot receive a sentence of imprisonment.";
+    private static final String EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE =
+            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.";
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -190,7 +192,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("validationLevel").asText())
                 .isEqualTo("OFFENCE");
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
+                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
     }
 
     /**
@@ -223,7 +225,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
+                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
     }
 
     /**
@@ -264,7 +266,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(2);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
+                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
     }
 
     /**
@@ -303,7 +305,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
+                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
     }
 
     /**
