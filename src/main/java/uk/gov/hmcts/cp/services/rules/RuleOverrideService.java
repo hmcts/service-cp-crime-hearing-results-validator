@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.rules;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
@@ -37,5 +38,17 @@ public class RuleOverrideService {
             result = Optional.empty();
         }
         return result;
+    }
+
+    /**
+     * Persists a rule override row and evicts the stale cache entry so the next evaluation
+     * picks up the updated values without waiting for the TTL to expire.
+     *
+     * @param entity rule override entity to save
+     * @return the saved entity as returned by the repository
+     */
+    @CacheEvict(value = "ruleOverrides", key = "#entity.id")
+    public ValidationRuleEntity saveOverride(final ValidationRuleEntity entity) {
+        return ruleRepository.save(entity);
     }
 }
