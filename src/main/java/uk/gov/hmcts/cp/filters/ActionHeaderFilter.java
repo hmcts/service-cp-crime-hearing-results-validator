@@ -16,15 +16,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Resolves the CPP-ACTION header from the request path when not explicitly provided.
- * Runs before the authz filter so that Drools rules can match on action names
- * even when the caller (e.g. browser UI) does not send the CPP-ACTION header.
+ * Resolves the CPP-ACTION header from the request path and method, and enforces it
+ * server-side for every path this filter recognises.
+ *
+ * <p>The action is always derived from path + method and never taken from the caller,
+ * even when the request already carries a CPP-ACTION header. Trusting a caller-supplied
+ * value here would let a caller authorized only for a read action (e.g. rules-detail)
+ * spoof that same header on a mutating request (e.g. a PATCH that resolves to
+ * rules-update) and have the Drools authz filter evaluate the wrong, more permissive
+ * action. Paths this filter does not recognise are passed through unchanged, leaving
+ * any caller-supplied CPP-ACTION (or its absence) untouched.</p>
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ActionHeaderFilter extends OncePerRequestFilter {
 
     private static final String ACTION_HEADER = "CPP-ACTION";
+
+    private static final String RULES_DETAIL_ACTION = "validation-service.rules-detail";
+    private static final String RULES_UPDATE_ACTION = "validation-service.rules-update";
 
     private static final Map<String, String> PATH_TO_ACTION = Map.of(
             "/api/validation/validate", "validation-service.validate",
@@ -41,21 +51,21 @@ public class ActionHeaderFilter extends OncePerRequestFilter {
         final String path = (servletPath == null || servletPath.isEmpty())
                 ? request.getRequestURI()
                 : servletPath;
-        final String action = resolveAction(path);
-        if (request.getHeader(ACTION_HEADER) == null && action != null) {
+        final String action = resolveAction(path, request.getMethod());
+        if (action != null) {
             filterChain.doFilter(new ActionHeaderRequestWrapper(request, action), response);
         } else {
             filterChain.doFilter(request, response);
         }
     }
 
-    private String resolveAction(final String uri) {
+    private String resolveAction(final String uri, final String method) {
         final String mapped = PATH_TO_ACTION.get(uri);
         final String action;
         if (mapped != null) {
             action = mapped;
         } else if (uri.startsWith(RULES_DETAIL_PREFIX)) {
-            action = "validation-service.rules-detail";
+            action = "PATCH".equalsIgnoreCase(method) ? RULES_UPDATE_ACTION : RULES_DETAIL_ACTION;
         } else {
             action = null;
         }

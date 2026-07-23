@@ -1,27 +1,36 @@
 package uk.gov.hmcts.cp.services.impl;
 
+import java.time.Instant;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
+import uk.gov.hmcts.cp.openapi.model.UpdateRuleRequest;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 
 /**
- * Default in-memory implementation backed by the discovered validation rule beans.
+ * Default implementation backed by the discovered validation rule beans and the DB override table.
  */
 @Service
 @Slf4j
 public class DefaultValidationRulesService implements ValidationRulesService {
 
     private final List<ValidationRule> rules;
+    private final RuleOverrideService ruleOverrideService;
 
-    /** Creates the service with the given list of discovered validation rules. */
-    public DefaultValidationRulesService(@Qualifier("validationRules") final List<ValidationRule> rules) {
+    /** Creates the service with the given list of discovered validation rules and override service. */
+    public DefaultValidationRulesService(
+            @Qualifier("validationRules") final List<ValidationRule> rules,
+            final RuleOverrideService ruleOverrideService) {
         this.rules = rules;
+        this.ruleOverrideService = ruleOverrideService;
     }
 
     /**
@@ -55,12 +64,65 @@ public class DefaultValidationRulesService implements ValidationRulesService {
      */
     @Override
     public RuleDetailResponse getRuleById(final String ruleId) {
-        final RuleDetailResponse found = rules.stream()
+        final RuleDetailResponse found = findRuleDetail(ruleId);
+        log.info("Getting validation rule detail for ruleId={}", found.getRuleId());
+        return found;
+    }
+
+    private RuleDetailResponse findRuleDetail(final String ruleId) {
+        return rules.stream()
                 .map(ValidationRule::getRuleDetail)
                 .filter(r -> ruleId.equals(r.getRuleId()))
                 .findFirst()
                 .orElseThrow(() -> new RuleNotFoundException(ruleId));
-        log.info("Getting validation rule detail for ruleId={}", found.getRuleId());
-        return found;
+    }
+
+    /**
+     * Partially updates a rule's enabled status and/or severity override in the database.
+     *
+     * @param ruleId    identifier of the rule to update
+     * @param request   partial update — at least one field must be non-null
+     * @param updatedBy caller identity for the audit column
+     * @return updated rule detail merging YAML metadata with the new persisted override
+     */
+    @Override
+    public RuleDetailResponse updateRule(
+            final String ruleId,
+            final UpdateRuleRequest request,
+            final String updatedBy) {
+
+        if (request.getEnabled() == null && request.getSeverity() == null) {
+            throw new InvalidRuleUpdateException(
+                    "At least one of 'enabled' or 'severity' must be provided");
+        }
+
+        final RuleDetailResponse currentDetail = findRuleDetail(ruleId);
+
+        final ValidationRuleEntity existing = ruleOverrideService.findOverride(ruleId)
+                .orElseGet(() -> buildDefaultEntity(ruleId, currentDetail));
+
+        final ValidationRuleEntity updated = ValidationRuleEntity.builder()
+                .id(existing.getId())
+                .enabled(request.getEnabled() != null ? request.getEnabled() : existing.isEnabled())
+                .severity(request.getSeverity() != null
+                        ? request.getSeverity().getValue()
+                        : existing.getSeverity())
+                .updatedAt(Instant.now())
+                .updatedBy(updatedBy)
+                .build();
+
+        ruleOverrideService.saveOverride(updated);
+        log.info("Updated validation rule ruleId={}", ruleId);
+        return getRuleById(ruleId);
+    }
+
+    private static ValidationRuleEntity buildDefaultEntity(
+            final String ruleId,
+            final RuleDetailResponse currentDetail) {
+        return ValidationRuleEntity.builder()
+                .id(ruleId)
+                .enabled(Boolean.TRUE.equals(currentDetail.getEnabled()))
+                .severity(currentDetail.getSeverity().getValue())
+                .build();
     }
 }
