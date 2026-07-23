@@ -56,7 +56,10 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
 
         final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
         for (final ResultLineDto rl : request.getResultLines()) {
-            final String groupKey = defendantGrouping.getOrDefault(rl.getDefendantId(), rl.getDefendantId());
+            final String groupKey = defendantGrouping.get(rl.getDefendantId());
+            if (groupKey == null) {
+                continue;
+            }
             linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(rl);
         }
 
@@ -103,8 +106,9 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
         final Map<String, LocalDate> datesOfBirth = new HashMap<>();
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
-                final String groupKey = groupKeyFor(d);
-                datesOfBirth.putIfAbsent(groupKey, d.getDateOfBirth());
+                if (hasMasterDefendantId(d)) {
+                    datesOfBirth.putIfAbsent(d.getMasterDefendantId(), d.getDateOfBirth());
+                }
             }
         }
         return datesOfBirth;
@@ -114,7 +118,9 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
         final Map<String, String> names = new HashMap<>();
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
-                names.putIfAbsent(groupKeyFor(d), buildFullName(d));
+                if (hasMasterDefendantId(d)) {
+                    names.putIfAbsent(d.getMasterDefendantId(), buildFullName(d));
+                }
             }
         }
         return names;
@@ -138,15 +144,20 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
         final Map<String, String> grouping = new HashMap<>();
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
-                grouping.put(d.getDefendantId(), groupKeyFor(d));
+                if (hasMasterDefendantId(d)) {
+                    grouping.put(d.getDefendantId(), d.getMasterDefendantId());
+                }
             }
         }
         return grouping;
     }
 
-    private String groupKeyFor(final DefendantDto defendant) {
-        return (defendant.getMasterDefendantId() != null && !defendant.getMasterDefendantId().isBlank())
-                ? defendant.getMasterDefendantId()
-                : defendant.getDefendantId();
+    /**
+     * A defendant without a {@code masterDefendantId} cannot be grouped or evaluated by this rule;
+     * such a defendant is excluded entirely rather than falling back to another identifier.
+     */
+    private boolean hasMasterDefendantId(final DefendantDto defendant) {
+        final String masterDefendantId = defendant.getMasterDefendantId();
+        return masterDefendantId != null && !masterDefendantId.isBlank();
     }
 }

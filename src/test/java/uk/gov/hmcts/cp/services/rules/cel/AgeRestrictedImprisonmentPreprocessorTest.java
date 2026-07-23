@@ -141,6 +141,45 @@ class AgeRestrictedImprisonmentPreprocessorTest {
     }
 
     @Test
+    void defendant_without_masterDefendantId_should_yield_no_context_entry_and_not_throw() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1")),
+                List.of(defendant("d1", null, LocalDate.of(2006, 8, 1))));
+
+        assertThatCode(() -> preprocessor.preprocess(request, config)).doesNotThrowAnyException();
+
+        Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void defendant_with_blank_masterDefendantId_should_yield_no_context_entry() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1")),
+                List.of(defendant("d1", "   ", LocalDate.of(2006, 8, 1))));
+
+        Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void one_defendant_without_masterDefendantId_should_not_suppress_or_corrupt_another_defendants_context() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "IMP", "d2", "off2")),
+                List.of(defendant("d1", null, LocalDate.of(2006, 8, 1)),
+                        defendant("d2", "d2", LocalDate.of(2006, 8, 1))));
+
+        Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).hasSize(1);
+        assertThat(result).doesNotContainKey("d1");
+        assertThat(result.get("d2").isUnder21()).isTrue();
+        assertThat(result.get("d2").qualifyingOffenceIds()).containsExactly("off2");
+    }
+
+    @Test
     void one_defendant_with_null_dob_should_not_suppress_or_corrupt_another_defendants_context() {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", "IMP", "d1", "off1"),
@@ -161,7 +200,7 @@ class AgeRestrictedImprisonmentPreprocessorTest {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", "IMP", "d1", "off1")),
                 List.of(DefendantDto.builder()
-                        .defendantId("d1").firstName(null).lastName("Smith")
+                        .defendantId("d1").masterDefendantId("d1").firstName(null).lastName("Smith")
                         .dateOfBirth(LocalDate.of(2006, 8, 1)).build()));
 
         Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
@@ -174,7 +213,7 @@ class AgeRestrictedImprisonmentPreprocessorTest {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", "IMP", "d1", "off1")),
                 List.of(DefendantDto.builder()
-                        .defendantId("d1").firstName("Jamie").lastName(null)
+                        .defendantId("d1").masterDefendantId("d1").firstName("Jamie").lastName(null)
                         .dateOfBirth(LocalDate.of(2006, 8, 1)).build()));
 
         Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
@@ -183,7 +222,7 @@ class AgeRestrictedImprisonmentPreprocessorTest {
     }
 
     private static DefendantDto defendant(String id, LocalDate dateOfBirth) {
-        return defendant(id, null, dateOfBirth);
+        return defendant(id, id, dateOfBirth);
     }
 
     private static DefendantDto defendant(String id, String masterDefendantId, LocalDate dateOfBirth) {

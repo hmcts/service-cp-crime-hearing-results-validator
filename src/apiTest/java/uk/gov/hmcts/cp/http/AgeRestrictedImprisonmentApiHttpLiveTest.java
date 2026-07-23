@@ -58,7 +58,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "consecutiveToOffence": "off3"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
                   ],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
@@ -91,7 +91,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2005-07-20"}
                   ],
                   "offences": [
@@ -122,9 +122,9 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d2", "offenceId": "off2"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "1990-01-01"},
-                    {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones",
                      "dateOfBirth": "1985-06-15"}
                   ],
                   "offences": [
@@ -156,9 +156,9 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d2", "offenceId": "off2"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "1990-01-01"},
-                    {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones",
                      "dateOfBirth": "1985-06-15"}
                   ],
                   "offences": [
@@ -208,7 +208,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
@@ -247,7 +247,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d1", "offenceId": "off2", "isConcurrent": true}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
@@ -285,9 +285,9 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d2", "offenceId": "off2"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2006-08-01"},
-                    {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones",
                      "dateOfBirth": "1990-01-01"}
                   ],
                   "offences": [
@@ -324,9 +324,9 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d2", "offenceId": "off2"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2006-08-01"},
-                    {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones",
                      "dateOfBirth": "2007-01-01"}
                   ],
                   "offences": [
@@ -365,7 +365,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2005-07-20"}
                   ],
                   "offences": [
@@ -390,7 +390,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [
-                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
