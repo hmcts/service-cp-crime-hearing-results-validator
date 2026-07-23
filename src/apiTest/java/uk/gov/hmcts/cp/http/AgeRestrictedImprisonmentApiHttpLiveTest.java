@@ -140,6 +140,40 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
     }
 
     /**
+     * Covers User Story 1 for the SUSPS and SUSPSNR short codes against defendants well over 21.
+     */
+    @Test
+    void entersSuspsOrSuspsnrResult_defendantWellOver21_shouldNotRaiseError() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-07-20",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "SUSPS", "label": "Suspended sentence",
+                     "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "SUSPSNR", "label": "Suspended sentence not revoked",
+                     "defendantId": "d2", "offenceId": "off2"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                     "dateOfBirth": "1990-01-01"},
+                    {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                     "dateOfBirth": "1985-06-15"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(ruleIdsOf(json.get(ERRORS).get(VALIDATION_ISSUES))).doesNotContain(RULE_ID);
+    }
+
+    /**
      * Covers User Story 2: an imprisonment-type result against an under-21 defendant blocks
      * sharing with the exact required error text.
      */
@@ -155,6 +189,39 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("validationLevel").asText())
                 .isEqualTo("OFFENCE");
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
+    }
+
+    /**
+     * Covers User Story 2 for the SUSPSNR short code: an under-21 defendant blocks sharing.
+     */
+    @Test
+    void entersSuspsResult_defendantUnder21_shouldRaiseBlockingError() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-07-20",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "SUSPSNR", "label": "Suspended sentence not revoked",
+                     "defendantId": "d1", "offenceId": "off1"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                     "dateOfBirth": "2006-08-01"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.");
     }

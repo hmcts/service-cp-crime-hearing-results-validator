@@ -25,7 +25,7 @@ class AgeRestrictedImprisonmentPreprocessorTest {
             new AgeRestrictedImprisonmentPreprocessor();
     private final PreprocessingDefinition config = PreprocessingDefinition.builder()
             .type("age-restricted-imprisonment")
-            .filterShortCodes(List.of("IMP", "EXTIVS", "SPECC"))
+            .filterShortCodes(List.of("IMP", "EXTIVS", "SPECC", "SUSPS", "SUSPSNR"))
             .build();
 
     @Test
@@ -45,6 +45,21 @@ class AgeRestrictedImprisonmentPreprocessorTest {
         AgeRestrictedResultContext ctx = result.get("d1");
         assertThat(ctx.isUnder21()).isTrue();
         assertThat(ctx.qualifyingOffenceIds()).containsExactly("off1");
+    }
+
+    @Test
+    void under21_defendant_with_susps_or_suspsnr_result_should_yield_context_with_isUnder21_true() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "SUSPS", "d1", "off1"),
+                        resultLine("rl2", "SUSPSNR", "d1", "off2")),
+                List.of(defendant("d1", LocalDate.of(2006, 8, 1))));
+
+        Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).containsKey("d1");
+        AgeRestrictedResultContext ctx = result.get("d1");
+        assertThat(ctx.isUnder21()).isTrue();
+        assertThat(ctx.qualifyingOffenceIds()).containsExactly("off1", "off2");
     }
 
     @Test
@@ -114,7 +129,7 @@ class AgeRestrictedImprisonmentPreprocessorTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"imp", "Extivs", "SPECC", "extivs", "specc"})
+    @ValueSource(strings = {"imp", "Extivs", "SPECC", "extivs", "specc", "susps", "Suspsnr", "SUSPSNR"})
     void short_code_matching_should_be_case_insensitive(final String code) {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", code, "d1", "off1")),

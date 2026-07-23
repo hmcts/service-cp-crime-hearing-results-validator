@@ -126,6 +126,37 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-AGE-001')]", empty()));
         }
+
+        @Test
+        void entersSuspsOrSuspsnrResult_defendantWellOver21_shouldNotRaiseError() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "SUSPS", "label": "Suspended sentence",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "SUSPSNR", "label": "Suspended sentence not revoked",
+                         "defendantId": "d2", "offenceId": "off2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "1990-01-01"},
+                        {"defendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                         "dateOfBirth": "1985-06-15"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-AGE-001')]", empty()));
+        }
     }
 
     @Nested
@@ -143,6 +174,36 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].validationLevel", is("OFFENCE")))
+                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
+                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
+        }
+
+        @Test
+        void entersSuspsResult_defendantUnder21_shouldRaiseBlockingError() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "SUSPSNR", "label": "Suspended sentence not revoked",
+                         "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "2006-08-01"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(false)))
+                    .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
                             EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.")));
         }
