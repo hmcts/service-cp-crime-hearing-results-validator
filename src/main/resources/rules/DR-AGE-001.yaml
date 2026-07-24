@@ -23,9 +23,9 @@ rule:
       expression: "isUnder21 == 1"
       severity: ERROR
       messageTemplate: >-
-        The defendant is under 21 years of age and cannot receive a sentence of imprisonment.
+        The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth.
       errorMessageTemplate: >-
-        The defendant is under 21 years of age and cannot receive a sentence of imprisonment.
+        The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth.
         This affects: ${defendantNames}.
       affectedOffenceSet: "qualifyingOffenceIds"
       affectedDefendantSet: "defendantId"

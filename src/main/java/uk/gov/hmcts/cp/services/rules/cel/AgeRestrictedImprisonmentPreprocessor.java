@@ -119,25 +119,11 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
         if (request.getDefendants() != null) {
             for (final DefendantDto d : request.getDefendants()) {
                 if (hasMasterDefendantId(d)) {
-                    names.putIfAbsent(d.getMasterDefendantId(), buildFullName(d));
+                    names.putIfAbsent(d.getMasterDefendantId(), PreprocessorHelper.buildFullName(d));
                 }
             }
         }
         return names;
-    }
-
-    private String buildFullName(final DefendantDto defendant) {
-        final String first = defendant.getFirstName();
-        final String last = defendant.getLastName();
-        final String name;
-        if (first != null && last != null) {
-            name = first + " " + last;
-        } else if (first != null) {
-            name = first;
-        } else {
-            name = last;
-        }
-        return name;
     }
 
     private Map<String, String> buildDefendantGrouping(final DraftValidationRequest request) {

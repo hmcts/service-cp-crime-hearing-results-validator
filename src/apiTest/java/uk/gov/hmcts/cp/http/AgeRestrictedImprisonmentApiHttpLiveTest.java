@@ -32,7 +32,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
     private static final String RULE_ID = "DR-AGE-001";
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String EXPECTED_BASE_MESSAGE =
-            "The defendant is under 21 years of age and cannot receive a sentence of imprisonment.";
+            "The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth.";
     private static final String EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE =
             EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith.";
 
