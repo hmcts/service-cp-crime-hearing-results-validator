@@ -581,6 +581,36 @@ class YouthRehabilitationPreprocessorTest {
         }
     }
 
+    @Nested
+    @DisplayName("Null offenceId resilience — defendant-level lines must not blow up preprocess()")
+    class NullOffenceIdResilience {
+
+        @Test
+        @DisplayName("defendant-level line with null offenceId is ignored; offence-linked lines still evaluate")
+        void line_with_null_offenceId_should_be_ignored_not_throw() {
+            ResultLineDto defendantLevelLine = new ResultLineDto();
+            defendantLevelLine.setResultLineId("rl-defendant-level");
+            defendantLevelLine.setShortCode("XYZ");
+            defendantLevelLine.setDefendantId("d1");
+            defendantLevelLine.setOffenceId(null);
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-10-30"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-11-30"),
+                            defendantLevelLine
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+        }
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private ResultLineDto orderLineNoPrompts(String id, String shortCode, String defId, String offId) {

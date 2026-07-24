@@ -118,6 +118,7 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
             final Map<String, String> cureCalculatedEndDates = new LinkedHashMap<>();
 
             final Map<String, List<ResultLineDto>> linesByOffence = lines.stream()
+                    .filter(rl -> rl.getOffenceId() != null)
                     .collect(Collectors.groupingBy(
                             ResultLineDto::getOffenceId,
                             LinkedHashMap::new,
