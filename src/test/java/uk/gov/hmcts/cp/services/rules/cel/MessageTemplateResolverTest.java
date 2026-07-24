@@ -261,6 +261,44 @@ class MessageTemplateResolverTest {
         assertThat(resolver.resolveDefendantNames(template, List.of("Alice"))).isEqualTo(template);
     }
 
+    /**
+     * Verifies the 6-arg overload substitutes an extra placeholder token from
+     * {@code extraPlaceholders} in addition to the standard offence/defendant tokens.
+     */
+    @Test
+    void resolve_should_replace_extraPlaceholder_tokens() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+
+        String result = resolver.resolve(
+                "${offenceNumber} end date should be ${calculatedEndDate}",
+                "John Smith",
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS,
+                Map.of("calculatedEndDate", "21/09/2026"));
+
+        assertThat(result).isEqualTo("Offence 1 (URN:32AH9105826) end date should be 21/09/2026");
+    }
+
+    /**
+     * Verifies the 6-arg overload leaves defendantName/offenceNumber substitution behaving
+     * identically to the existing 5-arg overload when extraPlaceholders is empty.
+     */
+    @Test
+    void resolve_should_leave_other_placeholders_unaffected_when_extraPlaceholders_used() {
+        Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
+
+        String result = resolver.resolve(
+                "${defendantName} ${offenceNumber} have issues",
+                "John Smith",
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS,
+                Map.of());
+
+        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826) have issues");
+    }
+
     private static OffenceDto offence(String id, int orderIndex) {
         return OffenceDto.builder()
                 .offenceId(id)
