@@ -1,0 +1,32 @@
+rule:
+  id: "DR-AGE-001"
+  title: "Imprisonment result age restriction"
+  description: >-
+    Blocks sharing when a defendant under 21 years of age on the hearing date
+    has an imprisonment-type result (IMP, EXTIVS, SPECC, SUSPS, SUSPSNR)
+    recorded against one or more of their offences.
+  priority: 1500
+  enabled: true
+
+  preprocessing:
+    type: "age-restricted-imprisonment"
+    filterShortCodes:
+      - IMP
+      - EXTIVS
+      - SPECC
+      - SUSPS
+      - SUSPSNR
+
+  conditions:
+    - id: "AC1"
+      name: "Imprisonment result recorded for under-21 defendant"
+      expression: "isUnder21 == 1"
+      severity: ERROR
+      messageTemplate: >-
+        The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth.
+      errorMessageTemplate: >-
+        The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth.
+        This affects: ${defendantNames}.
+      affectedOffenceSet: "qualifyingOffenceIds"
+      affectedDefendantSet: "defendantId"
+      validationLevel: OFFENCE

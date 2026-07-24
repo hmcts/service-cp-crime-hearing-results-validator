@@ -6,12 +6,14 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
+import uk.gov.hmcts.cp.services.rules.cel.AgeRestrictedImprisonmentPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
+import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,11 +34,12 @@ class ValidationRuleAutoConfigurationTest {
     private final PreprocessorRegistry preprocessorRegistry = new PreprocessorRegistry(List.of(
             new CustodialPreprocessor(),
             new DisqualificationExtendedTestPreprocessor(),
-            new CtlMissingPreprocessor()));
+            new CtlMissingPreprocessor(),
+            new AgeRestrictedImprisonmentPreprocessor(),
+            new YouthRehabilitationPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
-
 
     /**
      * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
@@ -68,10 +71,11 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(3);
+        assertThat(rules).hasSize(5);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001");
+                .containsExactlyInAnyOrder(
+                        "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-AGE-001", "DR-YRO-001");
     }
 
     /**
