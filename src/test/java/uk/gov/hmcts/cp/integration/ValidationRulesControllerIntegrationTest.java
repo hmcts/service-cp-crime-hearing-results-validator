@@ -25,11 +25,12 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count", is(4)))
+                .andExpect(jsonPath("$.count", is(5)))
                 .andExpect(jsonPath("$.enabledCount", is(2)))
-                .andExpect(jsonPath("$.rules", hasSize(4)))
+                .andExpect(jsonPath("$.rules", hasSize(5)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
-                        contains("DR-SENT-002", "DR-AGE-001", "DR-DISQ-001", "DR-CTL-001")));
+                        contains(
+                                "DR-SENT-002", "DR-AGE-001", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001")));
     }
 
     /**
