@@ -129,16 +129,27 @@ public class CelValidationRule implements ValidationRule {
                                             context.getDefendantIdSet(condition.getAffectedDefendantSet()),
                                             message));
                         } else {
+                            final String calculatedValueSet = condition.getCalculatedValueSet();
                             issueBuilder.affectedOffences(
                                     offenceDisplayHelper.buildAffectedOffences(
                                             offenceIdsForTemplate,
                                             offenceMap,
-                                            id -> messageResolver.resolve(
-                                                    condition.getMessageTemplate(),
-                                                    context.defendantName(),
-                                                    List.of(id),
-                                                    offenceMap,
-                                                    context.allOffenceIds())));
+                                            id -> calculatedValueSet == null
+                                                    ? messageResolver.resolve(
+                                                            condition.getMessageTemplate(),
+                                                            context.defendantName(),
+                                                            List.of(id),
+                                                            offenceMap,
+                                                            context.allOffenceIds())
+                                                    : messageResolver.resolve(
+                                                            condition.getMessageTemplate(),
+                                                            context.defendantName(),
+                                                            List.of(id),
+                                                            offenceMap,
+                                                            context.allOffenceIds(),
+                                                            calculatedValuePlaceholder(
+                                                                    context.getCalculatedValue(
+                                                                            calculatedValueSet, id)))));
                         }
 
                         final String errorMessage = (isError && condition.getErrorMessageTemplate() != null)
@@ -207,4 +218,13 @@ public class CelValidationRule implements ValidationRule {
     }
 
     private record ResolvedOverride(boolean enabled, String dbSeverity) {}
+
+    /**
+     * Wraps a single calculated value (e.g. a duration-mismatch's correct end date) into the
+     * {@code extraPlaceholders} map expected by {@link MessageTemplateResolver}'s 6-arg
+     * {@code resolve} overload, keyed as {@code calculatedEndDate}.
+     */
+    private static Map<String, String> calculatedValuePlaceholder(final String calculatedValue) {
+        return calculatedValue == null ? Map.of() : Map.of("calculatedEndDate", calculatedValue);
+    }
 }

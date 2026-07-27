@@ -38,6 +38,24 @@ public class MessageTemplateResolver {
     }
 
     /**
+     * Resolves placeholders as {@link #resolve(String, String, List, Map, List)} does, then
+     * substitutes any {@code ${key}} token for each entry in {@code extraPlaceholders} (e.g.
+     * {@code ${calculatedEndDate}}).
+     */
+    public String resolve(final String template,
+                          final String defendantName,
+                          final List<String> affectedOffenceIds,
+                          final Map<String, OffenceDto> offenceMap,
+                          final List<String> allOffenceIds,
+                          final Map<String, String> extraPlaceholders) {
+        String result = resolve(template, defendantName, affectedOffenceIds, offenceMap, allOffenceIds);
+        for (final Map.Entry<String, String> entry : extraPlaceholders.entrySet()) {
+            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
+        }
+        return result;
+    }
+
+    /**
      * Expands {@code ${defendantNames}} in the template with the formatted list of defendant names.
      * This is an aggregate token resolved at the service level after all per-context results are
      * collected, distinct from the per-context {@code ${defendantName}} token handled by

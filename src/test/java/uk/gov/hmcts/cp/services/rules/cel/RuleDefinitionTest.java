@@ -77,6 +77,34 @@ class RuleDefinitionTest {
     }
 
     /**
+     * Verifies DR-YRO-001.yaml loads all 5 conditions (3 existing AC2 checks plus the 2 new
+     * duration-mismatch conditions) and that the duration conditions parse {@code calculatedValueSet}.
+     */
+    @Test
+    void loadFromYaml_should_parse_dr_yro_001_duration_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-YRO-001.yaml");
+
+        assertThat(rule.getConditions()).hasSize(5);
+
+        ConditionDefinition durYrc2 = rule.getConditions().get(3);
+        assertThat(durYrc2.getId()).isEqualTo("DUR-YRC2");
+        assertThat(durYrc2.getExpression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durYrc2.getSeverity()).isEqualTo("ERROR");
+        assertThat(durYrc2.getMessageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durYrc2.getAffectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durYrc2.getCalculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durYrc2.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durYrc1 = rule.getConditions().get(4);
+        assertThat(durYrc1.getId()).isEqualTo("DUR-YRC1");
+        assertThat(durYrc1.getExpression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durYrc1.getSeverity()).isEqualTo("ERROR");
+        assertThat(durYrc1.getAffectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durYrc1.getCalculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+        assertThat(durYrc1.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+    }
+
+    /**
      * Verifies a missing YAML resource is surfaced as a rule-loading failure.
      */
     @Test

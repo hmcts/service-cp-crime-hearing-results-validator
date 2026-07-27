@@ -288,6 +288,329 @@ class YouthRehabilitationPreprocessorTest {
         }
     }
 
+    @Nested
+    @DisplayName("DUR-YRC2 — Curfew requirement end date does not match calculated duration")
+    class DurYrc2 {
+
+        @Test
+        @DisplayName("end date equal to Start date + Curfew period − 1 day: no violation")
+        void end_date_matching_formula_should_not_violate() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-21"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("end date one day early produces violation with correct calculated end date")
+        void end_date_one_day_early_should_violate_with_calculated_date() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-20"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.curDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("21/09/2026");
+        }
+
+        @Test
+        @DisplayName("end date one day late (forgot to subtract 1 day) produces violation")
+        void end_date_one_day_late_should_violate() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-22"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("21/09/2026");
+        }
+
+        @Test
+        @DisplayName("missing startDate prompt: skip gracefully, no violation")
+        void missing_start_date_should_skip_gracefully() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-21"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("missing curfewPeriod prompt: skip gracefully, no violation")
+        void missing_period_should_skip_gracefully() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("endDate", "2026-09-21"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("unparseable curfewPeriod prompt: skip gracefully, no violation")
+        void unparseable_period_should_skip_gracefully() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "not-a-period"),
+                                    new Prompt("endDate", "2026-09-21"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("missing endDate prompt: skip gracefully, no violation")
+        void missing_end_date_should_skip_gracefully() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("duration check still runs when the YRO's own end date prompt is missing")
+        void duration_check_runs_even_when_order_end_date_missing() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLineNoPrompts("rl-order", "YROEW", "d1", "off1"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-20"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("period expressed in weeks computes the calendar-correct expected date")
+        void period_in_weeks_should_compute_correct_date() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "3 Weeks"),
+                                    new Prompt("endDate", "2026-09-20"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").getCalculatedValue("curCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("21/09/2026");
+        }
+
+        @Test
+        @DisplayName("period expressed in months across a month-end boundary uses calendar arithmetic")
+        void period_in_months_across_month_end_boundary_should_compute_correct_date() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-01-31"),
+                                    new Prompt("curfewPeriod", "1 Months"),
+                                    new Prompt("endDate", "2026-02-27"))
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            // 31 Jan + 1 month = 28 Feb (2026 not a leap year); minus 1 day = 27 Feb (no violation)
+            assertThat(result.get("d1").curDurationMismatchCount()).isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("DUR-YRC1 — Curfew with electronic monitoring end date of tagging does not match calculated duration")
+    class DurYrc1 {
+
+        @Test
+        @DisplayName("endDateOfTagging equal to Start date of tagging + period − 1 day: no violation")
+        void end_date_of_tagging_matching_formula_should_not_violate() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YRONI", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc1", "YRC1", "d1", "off1",
+                                    new Prompt("startDateOfTagging", "2026-09-01"),
+                                    new Prompt("curfewAndElectronicMonitoringPeriod", "60 Days"),
+                                    new Prompt("endDateOfTagging", "2026-10-30"))
+                    ),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").cureDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("endDateOfTagging mismatch produces violation with correct calculated end date")
+        void end_date_of_tagging_mismatch_should_violate_with_calculated_date() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YRONI", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc1", "YRC1", "d1", "off1",
+                                    new Prompt("startDateOfTagging", "2026-09-01"),
+                                    new Prompt("curfewAndElectronicMonitoringPeriod", "60 Days"),
+                                    new Prompt("endDateOfTagging", "2026-11-01"))
+                    ),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.cureDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.cureDurationMismatchOffenceIds()).containsExactly("off1");
+            assertThat(ctx.getCalculatedValue("cureCalculatedEndDateByOffenceId", "off1"))
+                    .isEqualTo("30/10/2026");
+        }
+
+        @Test
+        @DisplayName("missing startDateOfTagging prompt: skip gracefully, no violation")
+        void missing_start_date_of_tagging_should_skip_gracefully() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YRONI", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc1", "YRC1", "d1", "off1",
+                                    new Prompt("curfewAndElectronicMonitoringPeriod", "60 Days"),
+                                    new Prompt("endDateOfTagging", "2026-10-30"))
+                    ),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            assertThat(result.get("d1").cureDurationMismatchCount()).isZero();
+        }
+
+        @Test
+        @DisplayName("YRC2 and YRC1 duration mismatches on the same defendant are independent")
+        void yrc2_and_yrc1_duration_mismatches_are_independent() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2027-01-01"),
+                            requirementLineWithPrompts("rl-yrc2", "YRC2", "d1", "off1",
+                                    new Prompt("startDate", "2026-09-01"),
+                                    new Prompt("curfewPeriod", "21 Days"),
+                                    new Prompt("endDate", "2026-09-20")),
+                            requirementLineWithPrompts("rl-yrc1", "YRC1", "d1", "off1",
+                                    new Prompt("startDateOfTagging", "2026-09-01"),
+                                    new Prompt("curfewAndElectronicMonitoringPeriod", "60 Days"),
+                                    new Prompt("endDateOfTagging", "2026-11-01"))
+                    ),
+                    List.of(defendant("d1", "Jane", "Doe")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curDurationMismatchCount()).isEqualTo(1L);
+            assertThat(ctx.cureDurationMismatchCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("Null offenceId resilience — defendant-level lines must not blow up preprocess()")
+    class NullOffenceIdResilience {
+
+        @Test
+        @DisplayName("defendant-level line with null offenceId is ignored; offence-linked lines still evaluate")
+        void line_with_null_offenceId_should_be_ignored_not_throw() {
+            ResultLineDto defendantLevelLine = new ResultLineDto();
+            defendantLevelLine.setResultLineId("rl-defendant-level");
+            defendantLevelLine.setShortCode("XYZ");
+            defendantLevelLine.setDefendantId("d1");
+            defendantLevelLine.setOffenceId(null);
+
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "YROEW", "d1", "off1", "2026-10-30"),
+                            requirementLine("rl-yrc2", "YRC2", "d1", "off1", "endDate", "2026-11-30"),
+                            defendantLevelLine
+                    ),
+                    List.of(defendant("d1", "John", "Smith")));
+
+            Map<String, YouthRehabilitationContext> result = preprocessor.preprocess(req, yroConfig);
+
+            YouthRehabilitationContext ctx = result.get("d1");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+        }
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private ResultLineDto orderLineNoPrompts(String id, String shortCode, String defId, String offId) {
@@ -320,6 +643,17 @@ class YouthRehabilitationPreprocessorTest {
         rl.setDefendantId(defId);
         rl.setOffenceId(offId);
         rl.setPrompts(List.of(prompt));
+        return rl;
+    }
+
+    private ResultLineDto requirementLineWithPrompts(String id, String shortCode, String defId,
+                                                     String offId, Prompt... prompts) {
+        ResultLineDto rl = new ResultLineDto();
+        rl.setResultLineId(id);
+        rl.setShortCode(shortCode);
+        rl.setDefendantId(defId);
+        rl.setOffenceId(offId);
+        rl.setPrompts(List.of(prompts));
         return rl;
     }
 

@@ -23,4 +23,5 @@ public class ConditionDefinition {
     private String affectedOffenceSet;
     private String affectedDefendantSet;
     private ValidationLevel validationLevel;
+    private String calculatedValueSet;
 }
