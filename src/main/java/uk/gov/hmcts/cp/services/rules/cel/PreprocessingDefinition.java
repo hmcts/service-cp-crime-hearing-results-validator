@@ -24,4 +24,10 @@ public class PreprocessingDefinition {
     private List<String> extendedTestShortCodes;
     private List<String> remandShortCodes;
     private List<String> ctlShortCodes;
+
+    // YRO-specific short-code lists (used by YouthRehabilitationPreprocessor)
+    private List<String> yroOrderShortCodes;
+    private List<String> curfewShortCodes;
+    private List<String> curfewTagShortCodes;
+    private List<String> furtherCurfewShortCodes;
 }

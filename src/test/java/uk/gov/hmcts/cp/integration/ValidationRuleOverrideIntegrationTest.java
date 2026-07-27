@@ -104,7 +104,13 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
                         .content(AC2_ERROR_REQUEST))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(false)))
-                .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)));
+                .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
+                .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                .andExpect(jsonPath("$.errors.errorMessages[0]", is(
+                        "Some offences do not include details of whether they are concurrent or"
+                                + " consecutive. There should be only one primary sentence for each"
+                                + " defendant, therefore one result without concurrent or consecutive"
+                                + " information. This affects John Doe.")));
     }
 
     /**
