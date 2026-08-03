@@ -1,10 +1,13 @@
 package uk.gov.hmcts.cp.integration;
 
+import jakarta.annotation.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,6 +19,10 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String RULES_URL = "/api/validation/rules";
     private static final String RULES_DETAIL_URL = "/api/validation/rules/DR-SENT-002";
+    private static final String RULE_ID = "DR-SENT-002";
+
+    @Resource
+    private RuleOverrideService ruleOverrideService;
 
     private static final String EMPTY_REQUEST = """
             {
@@ -33,6 +40,16 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
     void restoreDefaultStub() {
         IDENTITY_WIRE_MOCK.resetAll();
         stubIdentityResponse("System Users");
+    }
+
+    /**
+     * Restores DR-SENT-002 to its default enabled/ERROR state, since the rules-update tests in
+     * this class persist real DB overrides that would otherwise leak into other integration tests
+     * sharing the same TestContainers database.
+     */
+    @AfterEach
+    void resetRuleOverride() {
+        resetRuleOverride(ruleOverrideService, RULE_ID);
     }
 
     // -------------------------------------------------------------------------
@@ -388,6 +405,109 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
     void rules_detail_request_without_cjscppuid_header_should_return_401() throws Exception {
         mockMvc.perform(get(RULES_DETAIL_URL))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // -------------------------------------------------------------------------
+    // rules-update endpoint (PATCH) — CPP-ACTION injected by ActionHeaderFilter
+    // -------------------------------------------------------------------------
+
+    /**
+     * Verifies System Users can update a rule; CPP-ACTION is supplied explicitly to isolate the
+     * authz concern from filter injection.
+     */
+    @Test
+    void rules_update_request_with_system_users_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .header("CPP-ACTION", "validation-service.rules-update")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Second Line Support can update a rule.
+     */
+    @Test
+    void rules_update_request_with_second_line_support_group_should_succeed() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Second Line Support");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "second-line-support-user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies ActionHeaderFilter synthesises the write action for PATCH on the rules-detail path
+     * when the caller omits CPP-ACTION, proving the method-aware branch fires end to end.
+     */
+    @Test
+    void rules_update_request_without_cpp_action_header_should_succeed_via_filter_injection() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("System Users");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "system-user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Verifies Court Clerks — allowed to read rule detail — are denied write access (HTTP 403).
+     */
+    @Test
+    void rules_update_request_with_court_clerks_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Clerks");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "court-clerk-user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies Legal Advisers — allowed to read rule detail — are denied write access (HTTP 403).
+     */
+    @Test
+    void rules_update_request_with_legal_advisers_group_should_return_403() throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Legal Advisers");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "legal-adviser-user")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Verifies a Court Clerk cannot escalate to the write action by spoofing the CPP-ACTION header
+     * with the value for the broader read-only rules-detail action on a PATCH request.
+     * ActionHeaderFilter must derive and enforce the action from method + path rather than trusting
+     * a caller-supplied header, otherwise a caller authorized only for rules-detail could have their
+     * PATCH evaluated under that wider group list instead of the restricted rules-update rule.
+     */
+    @Test
+    void rules_update_request_with_spoofed_rules_detail_header_should_still_return_403_for_court_clerks()
+            throws Exception {
+        IDENTITY_WIRE_MOCK.resetAll();
+        stubIdentityResponse("Court Clerks");
+
+        mockMvc.perform(patch(RULES_DETAIL_URL)
+                        .header("CJSCPPUID", "court-clerk-user")
+                        .header("CPP-ACTION", "validation-service.rules-detail")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"enabled\": false}"))
+                .andExpect(status().isForbidden());
     }
 
     // -------------------------------------------------------------------------

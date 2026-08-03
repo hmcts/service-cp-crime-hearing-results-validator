@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -69,5 +70,26 @@ class RuleOverrideServiceTest {
         Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-002");
 
         assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies saveOverride delegates persistence to the repository and returns its result
+     * unchanged, independent of the cache-eviction behaviour proven at the integration level.
+     */
+    @Test
+    void saveOverride_should_delegate_to_repository_and_return_saved_entity() {
+        ValidationRuleEntity entity = ValidationRuleEntity.builder()
+                .id("DR-SENT-002")
+                .enabled(false)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-user")
+                .build();
+        when(ruleRepository.save(entity)).thenReturn(entity);
+
+        ValidationRuleEntity result = ruleOverrideService.saveOverride(entity);
+
+        verify(ruleRepository).save(entity);
+        assertThat(result).isEqualTo(entity);
     }
 }

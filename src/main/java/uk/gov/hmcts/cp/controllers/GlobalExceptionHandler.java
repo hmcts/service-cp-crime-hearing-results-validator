@@ -13,6 +13,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
@@ -43,6 +44,21 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new ErrorResponse()
                         .error("Rule not found")
+                        .message(exception.getMessage())
+                        .traceId(resolveTraceId())
+                        .timestamp(Instant.now()));
+    }
+
+    /** Handles invalid rule update requests and returns a 400 ErrorResponse. */
+    @ExceptionHandler(InvalidRuleUpdateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRuleUpdateException(
+            final InvalidRuleUpdateException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponse()
+                        .error("Bad Request")
                         .message(exception.getMessage())
                         .traceId(resolveTraceId())
                         .timestamp(Instant.now()));

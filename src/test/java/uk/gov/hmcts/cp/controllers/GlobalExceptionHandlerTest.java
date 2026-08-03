@@ -12,6 +12,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
 
@@ -54,6 +55,39 @@ class GlobalExceptionHandlerTest {
         assertEquals("Rule not found", body.getError());
         assertThat(body.getMessage()).contains("DR-SENT-999");
         assertEquals("trace-404", body.getTraceId());
+        assertNotNull(body.getTimestamp());
+    }
+
+    /**
+     * Verifies that an invalid rule update request is mapped to a 400 ErrorResponse with the
+     * exception message and the current trace id populated.
+     */
+    @Test
+    void handle_invalid_rule_update_exception_should_return_400_error_response() {
+        final Tracer tracer = mock(Tracer.class);
+        final Span span = mock(Span.class);
+        final TraceContext context = mock(TraceContext.class);
+
+        when(tracer.currentSpan()).thenReturn(span);
+        when(span.context()).thenReturn(context);
+        when(context.traceId()).thenReturn("trace-400");
+
+        final GlobalExceptionHandler handler = new GlobalExceptionHandler(tracer);
+
+        final InvalidRuleUpdateException exception =
+                new InvalidRuleUpdateException("At least one of 'enabled' or 'severity' must be provided");
+
+        final ResponseEntity<ErrorResponse> response =
+                handler.handleInvalidRuleUpdateException(exception);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+
+        final ErrorResponse body = response.getBody();
+        assertNotNull(body);
+        assertEquals("Bad Request", body.getError());
+        assertThat(body.getMessage()).contains("At least one of 'enabled' or 'severity' must be provided");
+        assertEquals("trace-400", body.getTraceId());
         assertNotNull(body.getTimestamp());
     }
 

@@ -80,6 +80,7 @@ class ValidationDroolsRulesTest {
         assertThat(drlContent).contains("validation-service.validate");
         assertThat(drlContent).contains("validation-service.rules");
         assertThat(drlContent).contains("validation-service.rules-detail");
+        assertThat(drlContent).contains("validation-service.rules-update");
     }
 
     @Test
@@ -90,6 +91,7 @@ class ValidationDroolsRulesTest {
         assertThat(drlContent).contains("Court Associate");
         assertThat(drlContent).contains("Court Administrators");
         assertThat(drlContent).contains("System Users");
+        assertThat(drlContent).contains("Second Line Support");
     }
 
     @Nested
@@ -203,6 +205,46 @@ class ValidationDroolsRulesTest {
     }
 
     @Nested
+    @DisplayName("Allow – rules-update rule")
+    class RulesUpdateRule {
+
+        @Test
+        void rules_update_rule_should_grant_access_to_system_users() {
+            assertThat(fireRule("validation-service.rules-update", "System Users")).isTrue();
+        }
+
+        @Test
+        void rules_update_rule_should_grant_access_to_second_line_support() {
+            assertThat(fireRule("validation-service.rules-update", "Second Line Support")).isTrue();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_to_court_clerks() {
+            assertThat(fireRule("validation-service.rules-update", "Court Clerks")).isFalse();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_to_legal_advisers() {
+            assertThat(fireRule("validation-service.rules-update", "Legal Advisers")).isFalse();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_to_listing_officers() {
+            assertThat(fireRule("validation-service.rules-update", "Listing Officers")).isFalse();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_to_court_associate() {
+            assertThat(fireRule("validation-service.rules-update", "Court Associate")).isFalse();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_to_court_administrators() {
+            assertThat(fireRule("validation-service.rules-update", "Court Administrators")).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("Unrecognised action name")
     class UnrecognisedAction {
 
@@ -244,6 +286,16 @@ class ValidationDroolsRulesTest {
         @Test
         void rules_detail_rule_should_deny_access_when_all_groups_are_denied() {
             assertThat(fireRuleWithGroups("validation-service.rules-detail", "Court Associate", "Court Administrators")).isFalse();
+        }
+
+        @Test
+        void rules_update_rule_should_grant_access_when_one_of_multiple_groups_is_allowed() {
+            assertThat(fireRuleWithGroups("validation-service.rules-update", "Court Clerks", "Second Line Support")).isTrue();
+        }
+
+        @Test
+        void rules_update_rule_should_deny_access_when_all_groups_are_denied() {
+            assertThat(fireRuleWithGroups("validation-service.rules-update", "Court Clerks", "Legal Advisers")).isFalse();
         }
     }
 }

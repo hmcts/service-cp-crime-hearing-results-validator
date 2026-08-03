@@ -20,6 +20,12 @@ rule:
       - REMYD
     ctlShortCodes:
       - CTL
+      - CCII
+      - CCIIB
+      - CCIILA
+      - CCIITDH
+      - CCIIYDA
+      - CCQB
 
   conditions:
     - id: "AC1"
