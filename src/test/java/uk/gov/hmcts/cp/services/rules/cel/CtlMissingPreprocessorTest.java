@@ -22,7 +22,8 @@ class CtlMissingPreprocessorTest {
 
     private static final List<String> REMAND_SHORT_CODES =
             List.of("RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD");
-    private static final List<String> CTL_SHORT_CODES = List.of("CTL");
+    private static final List<String> CTL_SHORT_CODES =
+            List.of("CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB");
 
     private final CtlMissingPreprocessor preprocessor = new CtlMissingPreprocessor();
 
@@ -134,6 +135,20 @@ class CtlMissingPreprocessorTest {
                     List.of(
                             resultLine("rl1", "RI", "d1", "off1"),
                             resultLine("rl2", "ctl", "d1", "off1")),
+                    List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
+
+            CtlOffenceContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.ctlWarningCount()).isEqualTo(0L);
+        }
+
+        @ParameterizedTest(name = "CTL code {0} should suppress warning")
+        @ValueSource(strings = {"CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB"})
+        void each_ctl_short_code_should_suppress_warning(String shortCode) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "RI", "d1", "off1"),
+                            resultLine("rl2", shortCode, "d1", "off1")),
                     List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
 
             CtlOffenceContext ctx = preprocess(request).get("off1");
