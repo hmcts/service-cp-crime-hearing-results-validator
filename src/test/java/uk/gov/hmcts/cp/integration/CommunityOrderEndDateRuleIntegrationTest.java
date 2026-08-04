@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -410,10 +411,16 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             .content(request))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
-                    // d2 → CUR violation, d3 → AAR violation
+                    // d2 → CUR violation on off2, d3 → AAR violation on off3; d1 untouched
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
                     .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
-                            containsInAnyOrder(MSG_CUR, MSG_AAR)));
+                            containsInAnyOrder(MSG_CUR, MSG_AAR)))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].offenceId",
+                            containsInAnyOrder("off2", "off3")))
+                    .andExpect(jsonPath("$.errors.errorMessages",
+                            containsInAnyOrder(
+                                    ERR_MSG_BASE_CUR + "Curfew Violator.",
+                                    ERR_MSG_BASE_AAR + "Alcohol Violator.")));
         }
     }
 
@@ -653,8 +660,11 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(2)))
-                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
-                            containsInAnyOrder(MSG_CUR, MSG_AAR)));
+                    // pin the message-to-offence mapping: CUR error → off1, AAR error → off2
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.affectedOffences[0].message == '"
+                            + MSG_CUR + "')].affectedOffences[0].offenceId", contains("off1")))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.affectedOffences[0].message == '"
+                            + MSG_AAR + "')].affectedOffences[0].offenceId", contains("off2")));
         }
     }
 }

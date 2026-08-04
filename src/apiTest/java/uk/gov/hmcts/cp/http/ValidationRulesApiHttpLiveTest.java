@@ -43,7 +43,8 @@ class ValidationRulesApiHttpLiveTest {
     static void restoreDefaultRuleStates() throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = false WHERE id = 'DR-YRO-001'")) {
+                     "UPDATE validation_rule SET enabled = false "
+                             + "WHERE id IN ('DR-YRO-001', 'DR-COEW-001')")) {
             ps.executeUpdate();
         }
         awaitEnabledCount(1);
