@@ -1,5 +1,5 @@
 rule:
-  id: "DR-COEW-001"
+  id: "DR-COEW-005"
   title: "Community Order End Date Validation"
   description: >-
     Validates that a community order's end date is not earlier than the end date of any

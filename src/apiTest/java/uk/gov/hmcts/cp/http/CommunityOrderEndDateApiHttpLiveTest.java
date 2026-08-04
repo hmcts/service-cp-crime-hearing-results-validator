@@ -21,13 +21,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Live HTTP coverage for DR-COEW-001 (community order end-date validation) against a
+ * Live HTTP coverage for DR-COEW-005 (community order end-date validation) against a
  * running service instance.
  *
- * <p>DR-COEW-001 is inserted into the {@code validation_rule} table as disabled by the Flyway
- * migration. {@link #enableRule()} and {@link #disableRule()} mutate the DB row then poll
- * {@code GET /api/validation/rules/DR-COEW-001} until the service reflects the new state,
- * eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
+ * <p>DR-COEW-005 is inserted into the {@code validation_rule} table as enabled by the Flyway
+ * migration. {@link #enableRule()} re-asserts that state (guarding against leakage from other
+ * test classes) then polls {@code GET /api/validation/rules/DR-COEW-005} until the service
+ * reflects it, eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -47,7 +47,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
     private static final String ERROR_MESSAGES = "errorMessages";
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
-    private static final String RULE_ID = "DR-COEW-001";
+    private static final String RULE_ID = "DR-COEW-005";
 
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String AFFECTED_OFFENCES = "affectedOffences";
@@ -74,7 +74,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * No community order result lines in the hearing; DR-COEW-001 must not fire and the response
+     * No community order result lines in the hearing; DR-COEW-005 must not fire and the response
      * must be valid with no errors or warnings.
      */
     @Test
@@ -110,7 +110,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * Valid community order with a future end date (2027-06-17) and no requirement violations.
-     * DR-COEW-001 must not fire and the response must be valid.
+     * DR-COEW-005 must not fire and the response must be valid.
      */
     @Test
     void validate_community_order_with_future_end_date_should_return_valid() throws Exception {
@@ -140,7 +140,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
     }
 
     /**
-     * AC2a — CUR (curfew) end date is strictly after the order end date. DR-COEW-001 must
+     * AC2a — CUR (curfew) end date is strictly after the order end date. DR-COEW-005 must
      * produce a single ERROR for the curfew breach.
      */
     @Test
@@ -188,7 +188,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * AC2a suppression — CUR end date matches the order end date (equal, not later).
-     * DR-COEW-001 must not fire because the curfew does not exceed the order.
+     * DR-COEW-005 must not fire because the curfew does not exceed the order.
      */
     @Test
     void ac2a_cur_end_date_equal_to_order_end_date_should_not_produce_error() throws Exception {
@@ -222,7 +222,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * AC2b — CURE (curfew with electronic monitoring) tag end date is strictly after the order
-     * end date. DR-COEW-001 must produce a single ERROR.
+     * end date. DR-COEW-005 must produce a single ERROR.
      */
     @Test
     void ac2b_cure_tag_end_date_after_order_end_date_should_produce_error() throws Exception {
@@ -265,7 +265,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * AC2c — CURA (further curfew) end date is strictly after the order end date.
-     * DR-COEW-001 must produce a single ERROR.
+     * DR-COEW-005 must produce a single ERROR.
      */
     @Test
     void ac2c_cura_end_date_after_order_end_date_should_produce_error() throws Exception {
@@ -308,7 +308,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * AC2d — AAR (alcohol abstinence) until date is strictly after the order end date.
-     * DR-COEW-001 must produce a single ERROR.
+     * DR-COEW-005 must produce a single ERROR.
      */
     @Test
     void ac2d_aar_until_date_after_order_end_date_should_produce_error() throws Exception {
@@ -351,7 +351,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
 
     /**
      * Combined AC2a + AC2b + AC2c + AC2d — all four requirements breach the order end date in a
-     * single hearing. DR-COEW-001 must produce four independent ERRORs, one per condition.
+     * single hearing. DR-COEW-005 must produce four independent ERRORs, one per condition.
      */
     @Test
     void ac2_all_four_requirements_breach_simultaneously_should_produce_four_errors()
@@ -429,15 +429,16 @@ class CommunityOrderEndDateApiHttpLiveTest {
     }
 
     @AfterAll
-    static void disableRule() throws Exception {
-        setRuleEnabled(false);
-        awaitRuleState(false);
+    static void restoreRule() throws Exception {
+        // restore the Flyway seed default (DR-COEW-005 ships enabled)
+        setRuleEnabled(true);
+        awaitRuleState(true);
     }
 
     private static void setRuleEnabled(final boolean enabled) throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-COEW-001'")) {
+                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-COEW-005'")) {
             ps.setBoolean(1, enabled);
             ps.executeUpdate();
         }
@@ -462,7 +463,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
             Thread.sleep(100);
         }
         throw new IllegalStateException(
-                "DR-COEW-001 did not reach enabled=" + expected + " within 5 s");
+                "DR-COEW-005 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

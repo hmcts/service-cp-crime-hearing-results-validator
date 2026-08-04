@@ -75,7 +75,7 @@ class ValidationRuleAutoConfigurationTest {
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001",
-                        "DR-COEW-001");
+                        "DR-COEW-005");
     }
 
     /**

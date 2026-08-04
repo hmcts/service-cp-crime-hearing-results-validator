@@ -23,7 +23,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Preprocesses community order result lines into per-defendant
- * {@link CommunityOrderContext} summaries for DR-COEW-001. Shared result-line grouping,
+ * {@link CommunityOrderContext} summaries for DR-COEW-005. Shared result-line grouping,
  * short-code matching, defendant-name assembly, and prompt-date parsing live in
  * {@link PreprocessorHelper}.
  *
