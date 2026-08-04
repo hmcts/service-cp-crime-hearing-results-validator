@@ -285,12 +285,54 @@ class CommunityOrderEndDatePreprocessorTest {
     }
 
     @Nested
+    @DisplayName("masterDefendantId grouping — mirrors YouthRehabilitationPreprocessor")
+    class MasterDefendantIdGrouping {
+
+        @Test
+        @DisplayName("CO lines split across two defendantIds sharing a masterDefendantId are merged into one context")
+        void co_lines_across_defendantIds_sharing_masterDefendantId_are_merged_into_one_context() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "COEW", "d1", "off1", "2026-01-10"),
+                            requirementLine("rl-cur", "CUR", "d2", "off1", "endDate", "2026-02-10")
+                    ),
+                    List.of(
+                            defendant("d1", "Sam", "Taylor").masterDefendantId("master1"),
+                            defendant("d2", "Sam", "Taylor").masterDefendantId("master1")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result).containsOnlyKeys("master1");
+            CommunityOrderContext ctx = result.get("master1");
+            assertThat(ctx.curViolationCount()).isEqualTo(1L);
+            assertThat(ctx.curViolationOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        @DisplayName("defendantId with blank masterDefendantId falls back to its own defendantId as the group key")
+        void defendant_with_blank_masterDefendantId_falls_back_to_own_defendantId() {
+            DraftValidationRequest req = request(
+                    LocalDate.of(2026, 1, 1),
+                    List.of(
+                            orderLine("rl-order", "COEW", "d1", "off1", "2026-10-30"),
+                            requirementLine("rl-cur", "CUR", "d1", "off1", "endDate", "2026-11-30")
+                    ),
+                    List.of(defendant("d1", "John", "Smith").masterDefendantId("  ")));
+
+            Map<String, CommunityOrderContext> result = preprocessor.preprocess(req, config);
+
+            assertThat(result).containsOnlyKeys("d1");
+        }
+    }
+
+    @Nested
     @DisplayName("Null and missing prompt handling")
     class NullPromptHandling {
 
         @Test
         void null_prompts_on_community_order_line_should_skip_offence_gracefully() {
-            // Community order has no prompts — cannot parse end date, offence AC2/AC3 checks
+            // Community order has no prompts — cannot parse end date, offence AC2 checks
             // are skipped. Defendant IS included in result map (with zero counts) so that the
             // CEL engine can evaluate and naturally produce no ValidationIssue.
             ResultLineDto orderNoPrompt = noPromptLine("rl-order", "COEW", "d1", "off1");
