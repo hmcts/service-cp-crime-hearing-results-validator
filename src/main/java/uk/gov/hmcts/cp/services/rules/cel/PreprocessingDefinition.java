@@ -30,4 +30,9 @@ public class PreprocessingDefinition {
     private List<String> curfewShortCodes;
     private List<String> curfewTagShortCodes;
     private List<String> furtherCurfewShortCodes;
+
+    // Community-order-specific short-code lists (used by CommunityOrderEndDatePreprocessor;
+    // the curfew* lists above are shared with YRO)
+    private List<String> communityOrderShortCodes;
+    private List<String> alcoholAbstinenceShortCodes;
 }
