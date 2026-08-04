@@ -7,11 +7,11 @@
 
 ## Summary
 
-Implement the `DR-COEW-001` validation rule that detects community order date errors at "Save and continue":
+Implement the `DR-COEW-004` validation rule that detects community order date errors at "Save and continue":
 
 - **AC2** — A community order's end date is earlier than the end date of any attached requirement (CUR, CURE, CURA, or AAR).
 
-The implementation follows the established YAML+CEL rule engine pattern: a new `DR-COEW-001.yaml` rule file, a new `CommunityOrderEndDatePreprocessor` Spring component, a new `CommunityOrderContext` record, and minor extensions to `PreprocessingDefinition`. AC1 ("end date must be in the future") is **out of scope** — handled by a separate ticket.
+The implementation follows the established YAML+CEL rule engine pattern: a new `DR-COEW-004.yaml` rule file, a new `CommunityOrderEndDatePreprocessor` Spring component, a new `CommunityOrderContext` record, and minor extensions to `PreprocessingDefinition`. AC1 ("end date must be in the future") is **out of scope** — handled by a separate ticket.
 
 ---
 
@@ -33,7 +33,7 @@ The implementation follows the established YAML+CEL rule engine pattern: a new `
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| **I — YAML/CEL Rule-First** | ✅ PASS | `DR-COEW-001.yaml` is authored before any Java change; all conditions and short-code lists live in YAML |
+| **I — YAML/CEL Rule-First** | ✅ PASS | `DR-COEW-004.yaml` is authored before any Java change; all conditions and short-code lists live in YAML |
 | **II — Constructor Injection & Immutable DTOs** | ✅ PASS | `CommunityOrderContext` is a Java record; `CommunityOrderEndDatePreprocessor` uses `@Component` with no field injection |
 | **III — Layered Architecture & Preprocessor Dispatch** | ✅ PASS | New preprocessor plugs in via `PreprocessorRegistry` using the `type()` qualifier; zero changes to `CelValidationRule` |
 | **IV — Spec-Driven Build Loop** | ✅ PASS | This plan document; tasks.md and implement follow; `code-reviewer`, `qa`, `spec-validator` gate before ship |
@@ -63,7 +63,7 @@ specs/003-community-order-date-validation/
 
 ```text
 src/main/resources/rules/
-└── DR-COEW-001.yaml                                           [NEW]
+└── DR-COEW-004.yaml                                           [NEW]
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── CelValidationRule.java                                     [MODIFY — populate affectedDefendants]
@@ -116,7 +116,7 @@ See [data-model.md](data-model.md) for full entity definitions, CEL variable map
 | `PreprocessingDefinition` | +5 `List<String>` fields | `cel/PreprocessingDefinition.java` |
 | `CommunityOrderContext` | NEW record, implements `RuleEvaluationContext` | `cel/CommunityOrderContext.java` |
 | `CommunityOrderEndDatePreprocessor` | NEW `@Component`, type `"community-order-end-date"` | `cel/CommunityOrderEndDatePreprocessor.java` |
-| `DR-COEW-001.yaml` | NEW rule, priority 4000, 4 conditions | `resources/rules/DR-COEW-001.yaml` |
+| `DR-COEW-004.yaml` | NEW rule, priority 4000, 4 conditions | `resources/rules/DR-COEW-004.yaml` |
 
 ### 1b. Interface contracts
 
@@ -140,7 +140,7 @@ The tasks must be ordered to enforce TDD (Constitution Principle VIII): test aut
 
 ### Step 1 — YAML Rule First (Constitution Principle I)
 
-Author `DR-COEW-001.yaml` with all 5 conditions before writing any Java. This is the contract the Java must satisfy.
+Author `DR-COEW-004.yaml` with all 5 conditions before writing any Java. This is the contract the Java must satisfy.
 
 ### Step 2 — Extend `PreprocessingDefinition`
 
@@ -168,7 +168,7 @@ Add the 5 new `List<String>` fields. This is a pure data change; existing tests 
 
 1. Write `CommunityOrderEndDateRuleIntegrationTest` extending `IntegrationTestBase`:
    - Scenarios 6–13 from the spec (AC2)
-   - Verify rule ID `DR-COEW-001` appears in `rulesEvaluated`
+   - Verify rule ID `DR-COEW-004` appears in `rulesEvaluated`
    - Verify error messages contain exact requirement display names
    - Verify "This affects" defendant list correctness
    - Verify no errors for valid community orders
@@ -178,7 +178,7 @@ Add the 5 new `List<String>` fields. This is a pure data change; existing tests 
 ### Step 6 — Update `ValidationRuleAutoConfigurationTest`
 
 - Add `CommunityOrderEndDatePreprocessor` to the `PreprocessorRegistry` in the test
-- Update `should_create_one_rule_per_yaml_file` assertion: `hasSize(2)`, `containsExactlyInAnyOrder("DR-SENT-002", "DR-COEW-001")`
+- Update `should_create_one_rule_per_yaml_file` assertion: `hasSize(2)`, `containsExactlyInAnyOrder("DR-SENT-001", "DR-COEW-004")`
 
 ### Step 7 — Quality gates
 

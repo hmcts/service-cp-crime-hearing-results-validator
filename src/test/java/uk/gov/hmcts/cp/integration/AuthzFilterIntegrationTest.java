@@ -15,7 +15,7 @@ class AuthzFilterIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String RULES_URL = "/api/validation/rules";
-    private static final String RULES_DETAIL_URL = "/api/validation/rules/DR-SENT-002";
+    private static final String RULES_DETAIL_URL = "/api/validation/rules/DR-SENT-001";
 
     private static final String EMPTY_REQUEST = """
             {

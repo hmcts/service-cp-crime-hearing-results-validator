@@ -40,12 +40,12 @@ class DefaultValidationRulesServiceTest {
      */
     @Test
     void getRuleById_should_return_matching_rule() {
-        ValidationRule rule = stubRule("DR-SENT-002", true);
+        ValidationRule rule = stubRule("DR-SENT-001", true);
         DefaultValidationRulesService service = new DefaultValidationRulesService(List.of(rule));
 
-        RuleDetailResponse response = service.getRuleById("DR-SENT-002");
+        RuleDetailResponse response = service.getRuleById("DR-SENT-001");
 
-        assertThat(response.getRuleId()).isEqualTo("DR-SENT-002");
+        assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(response.getEnabled()).isTrue();
     }
 

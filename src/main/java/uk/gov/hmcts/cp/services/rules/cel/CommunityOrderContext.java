@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * Per-defendant context produced by {@link CommunityOrderEndDatePreprocessor} for the
- * DR-COEW-001 rule. Carries violation counts (exposed to CEL conditions) and the sets of
+ * DR-COEW-004 rule. Carries violation counts (exposed to CEL conditions) and the sets of
  * offence ids that triggered each violation (used by the message template resolver to
  * scope inline errors).
  */

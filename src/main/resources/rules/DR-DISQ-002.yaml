@@ -1,5 +1,5 @@
 rule:
-  id: "DR-DISQ-001"
+  id: "DR-DISQ-002"
   title: "Extended test disqualification check"
   description: >-
     Warns when a relevant Road Traffic Act 1988 offence has a non-excluded final

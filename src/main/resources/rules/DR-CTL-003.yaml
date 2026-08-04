@@ -1,10 +1,10 @@
 rule:
-  id: "DR-CTL-001"
+  id: "DR-CTL-003"
   title: "CTL missing check"
   description: >-
     Warns when a remand-type result is recorded against an offence that has no
     existing CTL record from a previous hearing, no CTL result in the current
-    hearing, and is not convicted.
+    hearing, no CTL date prompt recorded, and is not convicted.
   priority: 3000
   enabled: true
 
@@ -20,6 +20,8 @@ rule:
       - REMYD
     ctlShortCodes:
       - CTL
+    ctlDatePromptRefs:
+      - CTLDATE
 
   conditions:
     - id: "AC1"

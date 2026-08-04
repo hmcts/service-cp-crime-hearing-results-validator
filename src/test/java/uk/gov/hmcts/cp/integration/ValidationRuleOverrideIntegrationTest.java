@@ -21,14 +21,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Framework-level integration tests for the runtime override mechanism: enable/disable, severity
  * ceiling capping, and severity-promotion-no-op. The mechanism is rule-agnostic and is proven
- * once here against the bundled DR-SENT-002 rule; new rules inherit this coverage and MUST NOT
+ * once here against the bundled DR-SENT-001 rule; new rules inherit this coverage and MUST NOT
  * duplicate per-rule override tests (see {@code .claude/rules/design_rules.md} §"Test the
  * framework once, not the rule again").
  */
 class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
-    private static final String RULE_ID = "DR-SENT-002";
+    private static final String RULE_ID = "DR-SENT-001";
 
     private static final String AC2_ERROR_REQUEST = """
             {
@@ -89,7 +89,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
     }
 
     /**
-     * Verifies the seeded DR-SENT-002 override is present at startup and that the validation
+     * Verifies the seeded DR-SENT-001 override is present at startup and that the validation
      * response reflects its configured enabled/severity behaviour.
      */
     @Test
@@ -111,7 +111,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
     /**
      * Verifies that setting a rule's {@code enabled=false} via the database row suppresses
      * issues from that rule at runtime, without service restart. Mechanism is proven once here
-     * against DR-SENT-002; per-rule override IT is rejected by reviewers per
+     * against DR-SENT-001; per-rule override IT is rejected by reviewers per
      * {@code .claude/rules/design_rules.md}.
      */
     @Test
@@ -137,7 +137,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
 
     /**
      * Verifies that a database severity lower than the YAML severity caps the issue's emitted
-     * severity downward. The DR-SENT-002 AC2 condition is YAML-{@code ERROR}; with the ceiling
+     * severity downward. The DR-SENT-001 AC2 condition is YAML-{@code ERROR}; with the ceiling
      * set to {@code WARNING} the same payload still produces an issue, but the severity is
      * capped to {@code WARNING} (Constitution Principle VI — ceiling caps downward only).
      */
@@ -166,7 +166,7 @@ class ValidationRuleOverrideIntegrationTest extends IntegrationTestBase {
 
     /**
      * Verifies that a database severity higher than the YAML severity has no effect — the
-     * ceiling cannot promote a YAML-WARNING condition to ERROR. DR-SENT-002 AC3 is
+     * ceiling cannot promote a YAML-WARNING condition to ERROR. DR-SENT-001 AC3 is
      * YAML-{@code WARNING}; with the ceiling set to {@code ERROR} the same AC3 payload should
      * still emit a {@code WARNING} (Constitution Principle VI — never promote).
      */

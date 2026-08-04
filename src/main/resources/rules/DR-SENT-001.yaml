@@ -1,5 +1,5 @@
 rule:
-  id: "DR-SENT-002"
+  id: "DR-SENT-001"
   title: "Custodial sentence concurrent/consecutive check"
   description: >-
     Validates that custodial sentences have correct concurrent/consecutive

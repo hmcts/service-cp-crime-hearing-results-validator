@@ -13,9 +13,9 @@ import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Per-offence preprocessor for the DR-CTL-001 CTL missing check rule. Produces one
+ * Per-offence preprocessor for the DR-CTL-003 CTL missing check rule. Produces one
  * {@link CtlOffenceContext} per offence in the request, with {@code ctlWarningCount} set to 1
- * when all four warning conditions are met:
+ * when all five warning conditions are met:
  *
  * <ol>
  *   <li>At least one result line on the offence carries a trigger short code from the YAML
@@ -25,9 +25,11 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  *   <li>No result line on the offence carries a CTL short code from the YAML
  *       {@code ctlShortCodes} list (e.g. CTL).</li>
  *   <li>The offence is not convicted ({@code isConvicted} is null or false).</li>
+ *   <li>No result line on the offence carries a prompt whose reference is in the YAML
+ *       {@code ctlDatePromptRefs} list (e.g. CTLDATE).</li>
  * </ol>
  *
- * <p>All short-code comparisons are case-insensitive (normalised to upper case).
+ * <p>All short-code and prompt-ref comparisons are case-insensitive (normalised to upper case).
  */
 @Component
 public class CtlMissingPreprocessor implements ValidationPreprocessor {
@@ -45,6 +47,7 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
                                                       final PreprocessingDefinition config) {
         final Set<String> remandCodes = upperSet(config.getRemandShortCodes());
         final Set<String> ctlCodes = upperSet(config.getCtlShortCodes());
+        final Set<String> ctlDatePromptRefs = upperSet(config.getCtlDatePromptRefs());
 
         final Map<String, List<ResultLineDto>> resultsByOffence = groupResultsByOffence(request);
         final Map<String, CtlOffenceContext> result = new LinkedHashMap<>();
@@ -52,7 +55,7 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
         if (request.getOffences() != null) {
             for (final OffenceDto offence : request.getOffences()) {
                 result.put(offence.getOffenceId(),
-                        buildContext(offence, resultsByOffence, remandCodes, ctlCodes));
+                        buildContext(offence, resultsByOffence, remandCodes, ctlCodes, ctlDatePromptRefs));
             }
         }
 
@@ -62,7 +65,8 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
     private CtlOffenceContext buildContext(final OffenceDto offence,
                                             final Map<String, List<ResultLineDto>> resultsByOffence,
                                             final Set<String> remandCodes,
-                                            final Set<String> ctlCodes) {
+                                            final Set<String> ctlCodes,
+                                            final Set<String> ctlDatePromptRefs) {
         final String offenceId = offence.getOffenceId();
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
 
@@ -70,8 +74,10 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
         final boolean hasExistingCtl = Boolean.TRUE.equals(offence.getHasExistingCtlRecord());
         final boolean hasCtlResult = anyShortCodeIn(lines, ctlCodes);
         final boolean isConvicted = Boolean.TRUE.equals(offence.getIsConvicted());
+        final boolean hasCtlDatePrompt = anyPromptRefIn(lines, ctlDatePromptRefs);
 
-        final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !isConvicted;
+        final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult
+                && !isConvicted && !hasCtlDatePrompt;
 
         return new CtlOffenceContext(
                 offenceId,
@@ -111,5 +117,16 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
 
     private static String upperOrNull(final String value) {
         return value == null ? null : value.toUpperCase(Locale.ROOT);
+    }
+
+    private static boolean anyPromptRefIn(final List<ResultLineDto> lines,
+                                           final Set<String> upperPromptRefs) {
+        return lines.stream()
+                .filter(rl -> rl.getPrompts() != null)
+                .flatMap(rl -> rl.getPrompts().stream())
+                .anyMatch(prompt -> {
+                    final String upper = upperOrNull(prompt.getPromptRef());
+                    return upper != null && upperPromptRefs.contains(upper);
+                });
     }
 }

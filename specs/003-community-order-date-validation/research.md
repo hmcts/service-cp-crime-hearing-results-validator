@@ -1,4 +1,4 @@
-# Research: Community Order End Date Validation (DR-COEW-001)
+# Research: Community Order End Date Validation (DR-COEW-004)
 
 **Branch**: `DD-41653-community-order-date-validation`  
 **Date**: 2026-05-20  

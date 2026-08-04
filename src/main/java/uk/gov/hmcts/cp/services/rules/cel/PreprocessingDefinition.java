@@ -29,4 +29,5 @@ public class PreprocessingDefinition {
     private List<String> extendedTestShortCodes;
     private List<String> remandShortCodes;
     private List<String> ctlShortCodes;
+    private List<String> ctlDatePromptRefs;
 }

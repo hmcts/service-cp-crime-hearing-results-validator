@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.rules;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
+import uk.gov.hmcts.cp.openapi.model.Prompt;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 import java.time.LocalDate;
@@ -29,6 +30,22 @@ public final class ValidationRuleTestHelper {
                 .label(shortCode + " label")
                 .defendantId(defendantId)
                 .offenceId(offenceId)
+                .build();
+    }
+
+    public static ResultLineDto resultLineWithPrompt(String id, String shortCode,
+                                                      String defendantId, String offenceId,
+                                                      String promptRef, String promptValue) {
+        return ResultLineDto.builder()
+                .resultLineId(id)
+                .shortCode(shortCode)
+                .label(shortCode + " label")
+                .defendantId(defendantId)
+                .offenceId(offenceId)
+                .prompts(List.of(Prompt.builder()
+                        .promptRef(promptRef)
+                        .promptValue(promptValue)
+                        .build()))
                 .build();
     }
 

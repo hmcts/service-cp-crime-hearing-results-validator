@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offenceWithCtlFlags;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLineWithPrompt;
 
 import java.util.List;
 import java.util.Map;
@@ -16,13 +17,14 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 
 /**
- * Unit tests for the per-offence preprocessor that drives DR-CTL-001.
+ * Unit tests for the per-offence preprocessor that drives DR-CTL-003.
  */
 class CtlMissingPreprocessorTest {
 
     private static final List<String> REMAND_SHORT_CODES =
             List.of("RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD");
     private static final List<String> CTL_SHORT_CODES = List.of("CTL");
+    private static final List<String> CTL_DATE_PROMPT_REFS = List.of("CTLDATE");
 
     private final CtlMissingPreprocessor preprocessor = new CtlMissingPreprocessor();
 
@@ -30,6 +32,7 @@ class CtlMissingPreprocessorTest {
             .type(CtlMissingPreprocessor.QUALIFIER)
             .remandShortCodes(REMAND_SHORT_CODES)
             .ctlShortCodes(CTL_SHORT_CODES)
+            .ctlDatePromptRefs(CTL_DATE_PROMPT_REFS)
             .build();
 
     private Map<String, CtlOffenceContext> preprocess(DraftValidationRequest request) {
@@ -69,6 +72,17 @@ class CtlMissingPreprocessorTest {
         void trigger_short_code_matching_is_case_insensitive() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", "ri", "d1", "off1")),
+                    List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
+
+            CtlOffenceContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.ctlWarningCount()).isEqualTo(1L);
+        }
+
+        @Test
+        void unrelated_prompt_ref_should_not_suppress_warning() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RI", "d1", "off1", "SOMEOTHERPROMPT", "value")),
                     List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
 
             CtlOffenceContext ctx = preprocess(request).get("off1");
@@ -134,6 +148,42 @@ class CtlMissingPreprocessorTest {
                     List.of(
                             resultLine("rl1", "RI", "d1", "off1"),
                             resultLine("rl2", "ctl", "d1", "off1")),
+                    List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
+
+            CtlOffenceContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.ctlWarningCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void ctl_date_prompt_on_a_different_result_line_should_suppress_warning() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "RI", "d1", "off1"),
+                            resultLineWithPrompt("rl2", "IMP", "d1", "off1", "CTLDATE", "2026-05-06")),
+                    List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
+
+            CtlOffenceContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.ctlWarningCount()).isEqualTo(0L);
+            assertThat(ctx.warningOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void ctl_date_prompt_on_the_trigger_result_line_should_suppress_warning() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RI", "d1", "off1", "CTLDATE", "2026-05-06")),
+                    List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
+
+            CtlOffenceContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.ctlWarningCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void ctl_date_prompt_ref_matching_is_case_insensitive() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RI", "d1", "off1", "ctlDate", "2026-05-06")),
                     List.of(offenceWithCtlFlags("off1", 1, "Offence", false, false)));
 
             CtlOffenceContext ctx = preprocess(request).get("off1");

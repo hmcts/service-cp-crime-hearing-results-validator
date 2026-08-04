@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RuleDefinitionTest {
 
     /**
-     * Verifies the DR-SENT-002 YAML file exposes the expected top-level metadata fields.
+     * Verifies the DR-SENT-001 YAML file exposes the expected top-level metadata fields.
      */
     @Test
     void loadFromYaml_should_parse_rule_id_and_title() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
-        assertThat(rule.getId()).isEqualTo("DR-SENT-002");
+        assertThat(rule.getId()).isEqualTo("DR-SENT-001");
         assertThat(rule.getTitle()).isEqualTo("Custodial sentence concurrent/consecutive check");
         assertThat(rule.getDescription()).contains("concurrent/consecutive");
         assertThat(rule.getPriority()).isEqualTo(1000);
@@ -30,7 +30,7 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_preprocessing() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
         PreprocessingDefinition preprocessing = rule.getPreprocessing();
         assertThat(preprocessing).isNotNull();
@@ -48,7 +48,7 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_conditions() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
         assertThat(rule.getConditions()).hasSize(3);
 

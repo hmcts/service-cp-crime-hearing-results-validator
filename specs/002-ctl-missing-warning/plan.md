@@ -1,11 +1,11 @@
-# Implementation Plan: CTL Missing Warning (DR-CTL-001)
+# Implementation Plan: CTL Missing Warning (DR-CTL-003)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `specs/002-ctl-missing-warning/spec.md`
 
 ## Summary
 
-Implement validation rule DR-CTL-001 that warns when a remand-type result (`RI`, `RIYDA`, `RIH`, `RIB`, `RILA`, `RILAB`, `REMYD`) is entered against an offence that has no existing CTL record, no CTL result in the current hearing, and is not convicted. The warning is advisory (WARNING severity, non-blocking). The rule follows the existing YAML+CEL rule engine pattern: a new `CtlMissingPreprocessor` computes a per-offence `ctlWarningCount` flag; the YAML rule `DR-CTL-001.yaml` evaluates `ctlWarningCount > 0`. **This rule is blocked on upstream API changes** — `OffenceDto` must gain `hasExistingCtlRecord` and `isConvicted` boolean fields before Java implementation can compile.
+Implement validation rule DR-CTL-003 that warns when a remand-type result (`RI`, `RIYDA`, `RIH`, `RIB`, `RILA`, `RILAB`, `REMYD`) is entered against an offence that has no existing CTL record, no CTL result in the current hearing, and is not convicted. The warning is advisory (WARNING severity, non-blocking). The rule follows the existing YAML+CEL rule engine pattern: a new `CtlMissingPreprocessor` computes a per-offence `ctlWarningCount` flag; the YAML rule `DR-CTL-003.yaml` evaluates `ctlWarningCount > 0`. **This rule is blocked on upstream API changes** — `OffenceDto` must gain `hasExistingCtlRecord` and `isConvicted` boolean fields before Java implementation can compile.
 
 ## Technical Context
 
@@ -25,7 +25,7 @@ Implement validation rule DR-CTL-001 that warns when a remand-type result (`RI`,
 
 | Principle | Status | Notes |
 |-----------|--------|-------|
-| I — YAML/CEL Rule-First | PASS | New rule starts with `DR-CTL-001.yaml`; new preprocessor required (gap in existing preprocessors), added in same change per Principle I |
+| I — YAML/CEL Rule-First | PASS | New rule starts with `DR-CTL-003.yaml`; new preprocessor required (gap in existing preprocessors), added in same change per Principle I |
 | II — Constructor Injection & Immutable DTOs | PASS | Preprocessor uses constructor injection; `CtlOffenceContext` is a Java record |
 | III — Layered Architecture & Data-Driven Dispatch | PASS | New `@Component` preprocessor with unique qualifier `"ctl-missing"`, registered via `PreprocessorRegistry`; no hard-wiring into `CelValidationRule` |
 | IV — Spec-Driven Build Loop | PASS | Spec → Plan → Tasks → Implement → Analyse flow followed |
@@ -53,7 +53,7 @@ specs/002-ctl-missing-warning/
 
 ```text
 src/main/resources/rules/
-└── DR-CTL-001.yaml                                                   (NEW)
+└── DR-CTL-003.yaml                                                   (NEW)
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── CtlOffenceContext.java                                            (NEW)
@@ -73,7 +73,7 @@ Upstream (separate repository — api-cp-crime-hearing-results-validator):
 ### Dependency map
 
 ```
-DR-CTL-001.yaml
+DR-CTL-003.yaml
     └── preprocessing.type: "ctl-missing"
             └── CtlMissingPreprocessor (@Component)
                     ├── reads: PreprocessingDefinition.remandShortCodes

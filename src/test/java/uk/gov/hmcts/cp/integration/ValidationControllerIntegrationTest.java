@@ -52,7 +52,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        contains("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-COEW-001")));
+                        contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-COEW-004")));
     }
 
     /**
@@ -124,7 +124,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(false)))
                 .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
-                .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                 .andExpect(jsonPath("$.errors.errorMessages[0]", is(
                         "Some offences do not include details of whether they are concurrent or"
@@ -165,7 +165,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.isValid", is(true)))
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
                 .andExpect(jsonPath("$.warnings[0].errorMessages").doesNotExist())
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
@@ -206,7 +206,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.isValid", is(true)))
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.warnings[0].errorMessages").doesNotExist())
                 .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].message", is(
                         "All offences include details of being concurrent or consecutive with no"

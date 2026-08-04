@@ -25,7 +25,7 @@ before any second preprocessor type ships — see Constitution Principle III.
 > registry, and `preprocessing.type` dispatch described in this section are the **target**
 > architecture. On the current `main` branch, `CelValidationRule` is wired directly to the single
 > `CustodialPreprocessor` and the YAML `preprocessing.type` field is **not yet read** — only the
-> custodial rule (`DR-SENT-002`) ships today. Treat the registry/dispatch wording above as
+> custodial rule (`DR-SENT-001`) ships today. Treat the registry/dispatch wording above as
 > aspirational until the preprocessor-registry refactor lands (tracked under *Known limitations*
 > below).
 
@@ -87,7 +87,7 @@ rule:
 
 ## Test the framework once, not the rule again (severity ceiling / runtime overrides)
 
-The runtime-override mechanism (`validation_rule` table → `RuleOverrideService` → Caffeine cache → `SeverityCeiling.resolve()` → `CelValidationRule`) is **rule-agnostic**. The same code path executes for every rule. Therefore: **per-rule integration tests of override / severity-ceiling behaviour are duplicative and should be rejected by reviewers.** The mechanism is proven once, against `DR-SENT-002`, in `ValidationRuleOverrideIntegrationTest.java`. New rules (current or future) inherit that coverage without their own override IT.
+The runtime-override mechanism (`validation_rule` table → `RuleOverrideService` → Caffeine cache → `SeverityCeiling.resolve()` → `CelValidationRule`) is **rule-agnostic**. The same code path executes for every rule. Therefore: **per-rule integration tests of override / severity-ceiling behaviour are duplicative and should be rejected by reviewers.** The mechanism is proven once, against `DR-SENT-001`, in `ValidationRuleOverrideIntegrationTest.java`. New rules (current or future) inherit that coverage without their own override IT.
 
 What a new rule's integration test SHOULD cover:
 

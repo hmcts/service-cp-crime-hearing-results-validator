@@ -19,11 +19,11 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     private ValidationRuleRepository repository;
 
     /**
-     * Verifies the Flyway seed data can be read back for the bundled DR-SENT-002 override row.
+     * Verifies the Flyway seed data can be read back for the bundled DR-SENT-001 override row.
      */
     @Test
     void findById_should_return_seeded_rule() {
-        Optional<ValidationRuleEntity> result = repository.findById("DR-SENT-002");
+        Optional<ValidationRuleEntity> result = repository.findById("DR-SENT-001");
 
         assertThat(result).isPresent();
         assertThat(result.get().isEnabled()).isTrue();
@@ -31,11 +31,11 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     }
 
     /**
-     * Verifies the Flyway seed data can be read back for the bundled DR-DISQ-001 override row.
+     * Verifies the Flyway seed data can be read back for the bundled DR-DISQ-002 override row.
      */
     @Test
     void findById_should_return_seeded_dr_disq_001_rule() {
-        Optional<ValidationRuleEntity> result = repository.findById("DR-DISQ-001");
+        Optional<ValidationRuleEntity> result = repository.findById("DR-DISQ-002");
 
         assertThat(result).isPresent();
         assertThat(result.get().isEnabled()).isFalse();
@@ -43,11 +43,11 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     }
 
     /**
-     * Verifies the Flyway seed data can be read back for the bundled DR-CTL-001 override row.
+     * Verifies the Flyway seed data can be read back for the bundled DR-CTL-003 override row.
      */
     @Test
     void findById_should_return_seeded_dr_ctl_001_rule() {
-        Optional<ValidationRuleEntity> result = repository.findById("DR-CTL-001");
+        Optional<ValidationRuleEntity> result = repository.findById("DR-CTL-003");
 
         assertThat(result).isPresent();
         assertThat(result.get().isEnabled()).isFalse();
@@ -55,11 +55,11 @@ class ValidationRuleRepositoryIntegrationTest extends IntegrationTestBase {
     }
 
     /**
-     * Verifies the Flyway seed data can be read back for the bundled DR-COEW-001 override row.
+     * Verifies the Flyway seed data can be read back for the bundled DR-COEW-004 override row.
      */
     @Test
     void findById_should_return_seeded_dr_coew_001_rule() {
-        Optional<ValidationRuleEntity> result = repository.findById("DR-COEW-001");
+        Optional<ValidationRuleEntity> result = repository.findById("DR-COEW-004");
 
         assertThat(result).isPresent();
         assertThat(result.get().isEnabled()).isFalse();

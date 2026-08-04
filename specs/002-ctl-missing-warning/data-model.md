@@ -1,4 +1,4 @@
-# Data Model: CTL Missing Warning (DR-CTL-001)
+# Data Model: CTL Missing Warning (DR-CTL-003)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06
 
@@ -91,13 +91,13 @@ No existing fields removed or renamed.
 
 ---
 
-## 5. `DR-CTL-001.yaml` (new rule file)
+## 5. `DR-CTL-003.yaml` (new rule file)
 
-**File**: `src/main/resources/rules/DR-CTL-001.yaml`
+**File**: `src/main/resources/rules/DR-CTL-003.yaml`
 
 ```yaml
 rule:
-  id: "DR-CTL-001"
+  id: "DR-CTL-003"
   title: "CTL missing check"
   description: >-
     Warns when a remand-type result is recorded against an offence that has no

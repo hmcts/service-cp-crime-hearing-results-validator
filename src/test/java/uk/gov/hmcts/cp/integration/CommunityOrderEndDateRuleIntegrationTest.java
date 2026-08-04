@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.Matchers.hasItem;
 
 /**
- * End-to-end integration tests for DR-COEW-001 (community order end date validation).
+ * End-to-end integration tests for DR-COEW-004 (community order end date validation).
  *
  * <p>Covers spec Scenarios 6–13:
  * <ul>
@@ -33,16 +33,16 @@ import static org.hamcrest.Matchers.hasItem;
  *
  * <p>Every positive scenario pins:
  * <ul>
- *   <li>{@code $.warnings} is empty (DR-COEW-001 produces ERRORs only).</li>
- *   <li>{@code $.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]} has the expected size.</li>
+ *   <li>{@code $.warnings} is empty (DR-COEW-004 produces ERRORs only).</li>
+ *   <li>{@code $.errors.validationIssues[?(@.ruleId=='DR-COEW-004')]} has the expected size.</li>
  *   <li>Rule id, severity, message, and affectedOffences are verified per issue.</li>
  * </ul>
  */
 class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
-    private static final String DR_COEW_ERRORS = "$.errors.validationIssues[?(@.ruleId=='DR-COEW-001')]";
-    private static final String RULE_ID = "DR-COEW-001";
+    private static final String DR_COEW_ERRORS = "$.errors.validationIssues[?(@.ruleId=='DR-COEW-004')]";
+    private static final String RULE_ID = "DR-COEW-004";
 
     @Resource
     private ValidationRuleRepository repository;
@@ -146,7 +146,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings", empty()))
                     .andExpect(jsonPath(DR_COEW_ERRORS, hasSize(1)))
-                    .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-COEW-001")))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is("DR-COEW-004")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CUR)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(1)))
@@ -353,7 +353,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].message",
                             containsInAnyOrder(MSG_CUR, MSG_AAR)))
                     .andExpect(jsonPath("$.errors.validationIssues[*].ruleId",
-                            containsInAnyOrder("DR-COEW-001", "DR-COEW-001")));
+                            containsInAnyOrder("DR-COEW-004", "DR-COEW-004")));
         }
     }
 

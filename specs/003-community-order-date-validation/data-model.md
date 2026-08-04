@@ -1,4 +1,4 @@
-# Data Model: Community Order End Date Validation (DR-COEW-001)
+# Data Model: Community Order End Date Validation (DR-COEW-004)
 
 **Branch**: `DD-41653-community-order-date-validation`  
 **Date**: 2026-05-20
@@ -37,7 +37,7 @@
 | `promptRef` | `String` | Key identifying which prompt (e.g. `"endDate"`, `"endDateOfTag"`, `"until"`) |
 | `promptValue` | `String` | Clerk-entered value as string (ISO-8601 date, e.g. `"2026-11-30"`) |
 
-**Prompt ref keys used by DR-COEW-001:**
+**Prompt ref keys used by DR-COEW-004:**
 
 | Result short code | `promptRef` | Meaning |
 |-------------------|-------------|---------|
@@ -108,7 +108,7 @@ CommunityOrderContext
 
 ### `CommunityOrderEndDatePreprocessor` — new Spring component
 
-**Qualifier**: `"community-order-end-date"` (used as `preprocessing.type` in `DR-COEW-001.yaml`)
+**Qualifier**: `"community-order-end-date"` (used as `preprocessing.type` in `DR-COEW-004.yaml`)
 
 **Processing algorithm**:
 
@@ -145,7 +145,7 @@ Each triggered YAML condition produces one `ValidationIssue` entry in the `error
 
 | Field | Type | Populated by |
 |-------|------|-------------|
-| `ruleId` | `String` | `"DR-COEW-001"` |
+| `ruleId` | `String` | `"DR-COEW-004"` |
 | `severity` | `SeverityEnum` | `ERROR` (ceiling can lower at runtime) |
 | `message` | `String` | Expanded `messageTemplate` from YAML |
 | `affectedOffences` | `List<AffectedOffence>` | `offenceDisplayHelper.buildAffectedOffences(affectedIds, offenceMap)` — scoped to the violation type's offence-id set |
@@ -155,11 +155,11 @@ The UI uses `affectedDefendants[].defendantId` to look up the defendant display 
 
 ---
 
-## Rule YAML — `DR-COEW-001.yaml`
+## Rule YAML — `DR-COEW-004.yaml`
 
 ```yaml
 rule:
-  id: "DR-COEW-001"
+  id: "DR-COEW-004"
   title: "Community Order End Date Validation"
   priority: 4000
   enabled: true
@@ -227,7 +227,7 @@ CommunityOrderContext  (one per defendant with ≥1 community order)
   ├── 4 violation offence-id sets ──→ getOffenceIdSet(name) per YAML condition
   └── allOffenceIds ──→ message template resolver ordering
 
-DR-COEW-001.yaml
+DR-COEW-004.yaml
   └── 4 conditions → CelValidationRule → ValidationIssue (ERROR) per triggered condition
         ├── affectedOffences  ── scoped to violation offence-id set
         └── affectedDefendants ── [{ defendantId }] for the triggering defendant

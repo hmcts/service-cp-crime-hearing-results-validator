@@ -1,0 +1,119 @@
+{
+  "info": {
+    "name": "DR-CTL-003 - CTL Missing Check",
+    "description": "Requests exercising the DR-CTL-003 (\"CTL missing check\") validation rule against POST /api/validation/validate, including the ctlShortCodes bypass path via a CCII result line.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4550"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Enable DR-CTL-003 (setup)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "CJSCPPUID",
+            "value": "test-user"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enabled\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/validation/rules/DR-CTL-003",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "validation", "rules", "DR-CTL-003"]
+        },
+        "description": "DR-CTL-003 defaults to enabled=false in the validation_rule table (see V1.003__insert_dr_ctl_001.sql). Run this once against a live instance before the requests below, otherwise the rule is skipped and no warning is ever produced regardless of payload."
+      },
+      "response": []
+    },
+    {
+      "name": "Warning triggered - RI with no CTL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "CJSCPPUID",
+            "value": "test-user"
+          },
+          {
+            "key": "CPP-ACTION",
+            "value": "validation-service.validate"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hearingId\": \"h1\",\n  \"hearingDay\": \"2026-05-06\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\"resultLineId\": \"rl1\", \"shortCode\": \"RI\", \"label\": \"Remand in custody\",\n     \"defendantId\": \"d1\", \"offenceId\": \"off1\"}\n  ],\n  \"defendants\": [\n    {\"defendantId\": \"d1\", \"firstName\": \"Alex\", \"lastName\": \"Jones\"}\n  ],\n  \"offences\": [\n    {\"offenceId\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",\n     \"orderIndex\": 1, \"hasExistingCtlRecord\": false, \"isConvicted\": false}\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/validation/validate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "validation", "validate"]
+        },
+        "description": "No CTL short code and no existing CTL record on the offence, and the offence is not convicted -> DR-CTL-003 WARNING is expected on off1."
+      },
+      "response": []
+    },
+    {
+      "name": "Warning suppressed - CCII short code present in resultLines",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "CJSCPPUID",
+            "value": "test-user"
+          },
+          {
+            "key": "CPP-ACTION",
+            "value": "validation-service.validate"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hearingId\": \"h1\",\n  \"hearingDay\": \"2026-05-06\",\n  \"courtType\": \"MAGISTRATES\",\n  \"resultLines\": [\n    {\"resultLineId\": \"rl1\", \"shortCode\": \"RI\", \"label\": \"Remand in custody\",\n     \"defendantId\": \"d1\", \"offenceId\": \"off1\"},\n    {\"resultLineId\": \"rl2\", \"shortCode\": \"CCII\", \"label\": \"Custody time limit\",\n     \"defendantId\": \"d1\", \"offenceId\": \"off1\"}\n  ],\n  \"defendants\": [\n    {\"defendantId\": \"d1\", \"firstName\": \"Alex\", \"lastName\": \"Jones\"}\n  ],\n  \"offences\": [\n    {\"offenceId\": \"off1\", \"offenceCode\": \"TH68001\", \"offenceTitle\": \"Theft\",\n     \"orderIndex\": 1, \"hasExistingCtlRecord\": false, \"isConvicted\": false}\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/validation/validate",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "validation", "validate"]
+        },
+        "description": "CCII is one of the configured ctlShortCodes in DR-CTL-003.yaml. A CCII result line recorded against the same offence in the current hearing satisfies the CTL-present bypass condition, so DR-CTL-003 should NOT fire (0 warnings)."
+      },
+      "response": []
+    }
+  ]
+}

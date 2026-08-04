@@ -1,6 +1,6 @@
 # Phase 1 Data Model — DD-41656
 
-This document captures the in-process value types introduced or modified by this feature. Request/response DTOs are owned upstream by `libs.api.hearing.results.validator` — **the contract is being extended in this revision** to add `category: enum [A, I, F]` to `ResultLineDto`. See `contracts/rule-DR-DISQ-001.md` for the full contract change and how this rule consumes it.
+This document captures the in-process value types introduced or modified by this feature. Request/response DTOs are owned upstream by `libs.api.hearing.results.validator` — **the contract is being extended in this revision** to add `category: enum [A, I, F]` to `ResultLineDto`. See `contracts/rule-DR-DISQ-002.md` for the full contract change and how this rule consumes it.
 
 ## Revision — 2026-04-28
 

@@ -1,4 +1,4 @@
-# Quickstart: Testing DR-CTL-001 (CTL Missing Warning)
+# Quickstart: Testing DR-CTL-003 (CTL Missing Warning)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06
 
@@ -55,7 +55,7 @@ Expected response includes a warning for `offence-1`:
 {
   "warnings": [
     {
-      "ruleId": "DR-CTL-001",
+      "ruleId": "DR-CTL-003",
       "conditionId": "AC1",
       "message": "This offence does not have a CTL. If the trial has started a CTL is not needed. It is your responsibility to check and confirm.",
       "affectedOffenceIds": ["offence-1"]
@@ -86,11 +86,11 @@ Insert a row in the `validation_rule` table to test the severity ceiling:
 
 ```sql
 INSERT INTO validation_rule (rule_id, enabled, severity)
-VALUES ('DR-CTL-001', true, 'WARNING');
+VALUES ('DR-CTL-003', true, 'WARNING');
 ```
 
 The WARNING severity cannot be promoted — ceiling has no effect here. To disable the rule entirely:
 
 ```sql
-UPDATE validation_rule SET enabled = false WHERE rule_id = 'DR-CTL-001';
+UPDATE validation_rule SET enabled = false WHERE rule_id = 'DR-CTL-003';
 ```
