@@ -5,7 +5,7 @@ rule:
     Validates that a Youth Rehabilitation Order's end date is not earlier
     than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3).
   priority: 5000
-  enabled: false
+  enabled: true
 
   preprocessing:
     type: "youth-rehabilitation-order"
