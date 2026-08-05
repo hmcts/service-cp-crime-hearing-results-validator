@@ -2,10 +2,10 @@
 
 **Feature Branch**: `dev/DD-42678-co-end-date-rule`
 **Created**: 2026-05-20
-**Updated**: 2026-08-05 — retrofitted onto `dev/DD-42678-co-end-date-rule` after the rule shipped as `DR-COEW-005` (see [Clarifications](#clarifications))
+**Updated**: 2026-08-05 — ported requirement duration end date validation (DD-41655, User Stories 4–7) from PR #116 onto `DR-COEW-005` (see [Clarifications](#clarifications))
 **Status**: Implemented
-**Input**: User description: "Community order end date validation — AC2 (requirement end dates), AC4/AC5 (error display patterns)"
-**Scope**: AC2, AC4, AC5 only. AC1 ("end date must be in the future") is out of scope — handled by a separate ticket.
+**Input**: User description: "Community order end date validation — AC2 (requirement end dates), AC4/AC5 (error display patterns); DD-41655 (requirement duration end date validation)"
+**Scope**: AC2, AC4, AC5, and DD-41655 (CUR/CURE/AAR duration-mismatch checks) only. AC1 ("end date must be in the future") is out of scope — handled by a separate ticket.
 
 ---
 
@@ -71,6 +71,26 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 
 ---
 
+### User Story 4 — Requirement's Own End Date Must Match Its Calculated Duration (Priority: P1)
+
+As a court clerk, when I record a CUR, CURE, or AAR requirement, the system must detect if the requirement's own recorded end date does not match its calculated duration — start date plus period minus one day (or hearing date plus days minus one day for AAR) — and block navigation until I correct it, independent of any AC2 order-end-date check.
+
+**Why this priority**: A requirement whose recorded end date doesn't match its own stated period is internally inconsistent and would produce an invalid record even when it happens not to exceed the parent order's end date — a case AC2 alone cannot catch.
+
+**Independent Test**: Add a CUR requirement with a start date and period whose calculated end date (start date + period − 1 day) does not equal the recorded end date, then click "Save and continue". Navigation must be blocked and the error must state the correctly calculated end date.
+
+**Acceptance Scenarios**:
+
+1. **Given** a CUR requirement with start date 01/09/2026 and curfew period 30, **When** the recorded end date is 29/09/2026 (one day early), **Then** navigation is blocked and the error states the end date should be 30/09/2026.
+2. **Given** a CUR requirement with start date 01/09/2026 and curfew period 30, **When** the recorded end date is exactly 30/09/2026, **Then** no DUR-CUR error is shown.
+3. **Given** a CURE requirement with start date of tagging 01/09/2026 and curfew-and-electronic-monitoring period 60, **When** the recorded end date of tagging does not equal 30/10/2026, **Then** navigation is blocked and the error states the end date should be 30/10/2026.
+4. **Given** an AAR requirement on a hearing dated 01/01/2026 with 90 days to abstain, **When** the recorded "Until" date does not equal 31/03/2026 (hearing date + 90 − 1 day), **Then** navigation is blocked and the error states the end date should be 31/03/2026.
+5. **Given** a CUR requirement whose end date is both after the parent order's end date (AC2a) and does not match its own calculated duration (DUR-CUR), **When** the user selects "Save and continue", **Then** two independent errors are shown for the same offence — one for each condition.
+6. **Given** a CURA requirement carrying the same-shaped prompts (start date, period, end date) as CUR, **When** the requirement is evaluated, **Then** no duration-mismatch check runs against it — DUR-CUR/CURE/AAR apply only to CUR, CURE, and AAR; CURA is covered by AC2c only.
+7. **Given** a CUR requirement missing its start date, period, or end date prompt, **When** the requirement is evaluated, **Then** the duration-mismatch check is skipped for that requirement (no error, no exception) rather than failing closed.
+
+---
+
 ### Edge Cases
 
 - What happens when multiple defendants in a hearing have AC2 failures alongside valid defendants? Only the defendants with each specific error type appear in that error's "This affects:" list; valid defendants are never listed.
@@ -79,6 +99,8 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - What happens when the user navigates directly to Manage Hearings (bypassing "Save and continue") while unresolved validation errors exist? The Share button must not be visible; the Manage Hearings screen must not show any validation error messages.
 - What happens when the community order end date is null/missing? This should be caught by mandatory field validation before AC2 checks run.
 - What happens when a defendant's community order and one of their requirement lines are recorded under two different `defendantId` values that share the same `masterDefendantId`? Both `defendantId`s are folded into a single group (keyed by `masterDefendantId`) before AC2 checks run, so the violation is still detected and reported once, against the shared identity. See Scenario 9.
+- What happens when a CUR/CURE/AAR requirement fails both AC2 (exceeds the order end date) and its own duration-mismatch check? Both fire independently as two separate `ValidationIssue` entries against the same offence — DUR-CUR/CURE/AAR does not depend on a parseable order end date and evaluates regardless of the AC2 outcome. See User Story 4, Scenario 5.
+- What happens when a community order has no parseable end date at all? AC2 checks are skipped for that offence (no order end date to compare against), but DUR-CUR/CURE/AAR duration-mismatch checks still run — they compare the requirement's own start date/period/end date and never reference the order.
 
 ---
 
@@ -99,6 +121,9 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - **FR-012**: When any AC2 validation errors exist for any defendant in the hearing, the Share button MUST NOT be visible on the Manage Hearings screen — the Share button is a single hearing-level control, hidden for the whole hearing regardless of which defendant(s) have errors, and regardless of whether the user reached Manage Hearings via "Save and continue" or by navigating directly.
 - **FR-013**: The Manage Hearings screen MUST NOT display validation error messages; errors are surfaced exclusively on the Enter Results screen.
 - **FR-014**: Per-defendant isolation applies to error display only — inline errors and "This affects:" lists on the Enter Results screen MUST reference only the defendants whose results triggered each specific error. Valid defendants must never appear in an error's "This affects:" list. This does not imply independent per-defendant sharing; the Share button remains a single hearing-level control (see FR-012).
+- **FR-015**: System MUST detect, at "Save and continue", when a CUR, CURE, or AAR requirement's own recorded end date does not equal its calculated duration: start date + period − 1 day (CUR: `startDate`/`curfewPeriod`/`endDate`; CURE: `startDateOfTagging`/`curfewAndElectronicMonitoringPeriod`/`endDateOfTagging`), or hearing date + days − 1 day for AAR (`numberOfDaysToAbstain`/`until`, using `DraftValidationRequest.hearingDay`). This check is independent of and additive to the FR-002 order-end-date check and does not require a parseable order end date to run. CURA is out of scope for this check.
+- **FR-016**: When FR-015 triggers, the validation service MUST emit a `ValidationIssue` whose inline message states the correctly calculated end date (formatted DD/MM/YYYY) via a `${calculatedEndDate}` placeholder, and whose error-summary message follows the same "This affects: <<defendant name(s)>>" pattern as FR-004/FR-008. Each requirement type (CUR, CURE, AAR) maps to an independent YAML condition (DUR-CUR, DUR-CURE, DUR-AAR).
+- **FR-017**: When the start date, period, or end date prompt required by FR-015 is missing or unparseable, the duration-mismatch check MUST be skipped for that requirement (no error) rather than failing the request.
 
 ### Key Entities
 
@@ -120,6 +145,7 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - **SC-005**: Error messages precisely identify only the defendants affected by each specific error — no defendant is incorrectly included or omitted from any "This affects:" list, including when `masterDefendantId` grouping folds two `defendantId`s together.
 - **SC-006**: All 9 in-scope acceptance scenarios pass automated regression tests. Scenarios 1–5 (AC1) are excluded from this ticket's test suite.
 - **SC-007**: Valid defendants are never listed in any error's "This affects:" line when other defendants in the same hearing have errors; however, the Share button is hidden for the whole hearing until all errors are resolved.
+- **SC-008**: 100% of CUR/CURE/AAR requirements whose recorded end date does not match their calculated duration (FR-015) are blocked at "Save and continue" with the correctly calculated end date shown inline — zero missed violations, independent of whether the AC2 order-end-date check also fires on the same offence.
 
 ---
 
@@ -135,6 +161,8 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - **A-009**: UI error display patterns (red box, bold heading, vertical border for inline errors) align with the existing GOV.UK Design System error summary and error message components already in use in the Enter Results screen.
 - **A-010**: The rule ships as `DR-COEW-005` (not `DR-COEW-001`) on `dev/DD-42678-co-end-date-rule` because migration slots `V1.001`–`V1.004` were already claimed by `DR-DISQ-001`, `DR-CTL-001`, and `DR-YRO-001` on this branch by the time this rule landed. The rule's behaviour, YAML conditions, and CEL variable names are otherwise unchanged from the original `DR-COEW-001` design.
 - **A-011**: Unlike the original design (which shipped the DB override row `enabled: false`), this branch ships `DR-COEW-005` with the DB override row set to `enabled: true` — the rule is live by default rather than requiring a manual opt-in.
+- **A-012**: The DUR-CUR/CURE prompt ref keys (`startDate`, `curfewPeriod`, `startDateOfTagging`, `curfewAndElectronicMonitoringPeriod`) remain unverified assumptions pending confirmation against the real upstream API contract, mirroring the caveat already recorded for the AC2 prompt ref keys. The DUR-AAR key was originally assumed as `numberOfDaysToAbstain` in PR #116 but has since been **confirmed** against a real payload as `numberOfDaysToAbstainFromConsumingAnyAlcohol` — this port carries the confirmed key directly. See research.md Decision 9.
+- **A-013**: DUR-CUR/CURE/AAR reuse `DR-COEW-005`'s existing `${defendantNames}` error-summary mechanism and the OFFENCE-level inline message mechanism; no new rule file, DB migration, or preprocessor type is required — only new conditions on the existing `DR-COEW-005` YAML and new fields on `CommunityOrderContext`.
 
 ---
 
@@ -153,3 +181,10 @@ As a court clerk, when I scroll through the Enter Results screen after a validat
 - Q: Why is the rule ID `DR-COEW-005` here instead of the `DR-COEW-001` used when this feature was first specified on `team/DD-41653`? → A: This branch had already claimed migration slots for `DR-DISQ-001`, `DR-CTL-001`, and `DR-YRO-001` by the time the community-order rule was ported across, so it was renumbered to `DR-COEW-005` and its DB seed row moved to `V1.005__insert_dr_coew_005.sql`. See A-010, FR-005, and research.md Decision 8.
 - Q: Was any new behaviour added beyond the original AC2/AC4/AC5 scope during the port? → A: Yes — `masterDefendantId` grouping (FR-005, Scenario 9) was added so the preprocessor treats linked `defendantId`s as one defendant, matching the pattern already used by `CustodialPreprocessor` and `YouthRehabilitationPreprocessor`. The preprocessor's shared plumbing (short-code matching, grouping, date parsing) was also extracted into `PreprocessorHelper` for reuse across preprocessors — see research.md Decision 8 and plan.md.
 - Q: Did the rule's default enabled/disabled state change? → A: Yes — it now ships with the DB override row `enabled: true` (live by default) rather than `false`. See A-011.
+
+### Session 2026-08-05 — port requirement duration end date validation (DD-41655) from PR #116
+
+- Q: PR #116 (`DD-41655-requirement-duration-validation`, merged upstream against an older `DR-COEW-001` lineage) was never merged into this branch's history — how is its functionality brought across? → A: Ported as new conditions (DUR-CUR, DUR-CURE, DUR-AAR) on the already-renumbered `DR-COEW-005` YAML, plus corresponding fields on `CommunityOrderContext`/`CommunityOrderEndDatePreprocessor`, rather than a literal git merge — the two branches' histories had diverged too far (rule renumbering, `PreprocessorRegistry` dispatch, `masterDefendantId` grouping) for a mechanical merge/cherry-pick to apply cleanly. See User Story 4, FR-015–FR-017, A-012, A-013.
+- Q: Does the duration-mismatch check depend on the AC2 order-end-date check? → A: No — independent and additive. DUR-CUR/CURE/AAR compare a requirement's own start date/period/end date and run even when the order end date is missing or unparseable (Edge Cases).
+- Q: Why does DUR-CUR/CURE/AAR exclude CURA even though CURA shares the same prompt shape as CUR? → A: The original DD-41655 design only covers CUR, CURE, and AAR; CURA remains covered by AC2c alone. See Scenario 6.
+- Q: Does this port carry PR #116's original code exactly, or does it include later fixes? → A: Later fixes. PR #116's own branch had two further merged PRs (#127, #133) fixing real defects confirmed against live payloads — a period-value parsing bug (bare integers assumed; real payloads send `"90 Days"`-style values) and a wrong AAR prompt-ref key (`numberOfDaysToAbstain` vs. the real `numberOfDaysToAbstainFromConsumingAnyAlcohol`). Both would have made a duration-mismatch condition silently never fire. This port carries the corrected behaviour directly; see plan.md's Port Notes and research.md Decision 9.
