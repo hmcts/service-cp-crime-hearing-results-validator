@@ -64,6 +64,13 @@ class CommunityOrderEndDateApiHttpLiveTest {
     private static final String MSG_CURA = MSG_PREFIX + "Further curfew requirement made";
     private static final String MSG_AAR = MSG_PREFIX + "Alcohol abstinence and monitoring";
 
+    private static final String MSG_DUR_CUR_SUMMARY =
+            "The end date for the Curfew Requirement does not match the period of the requirement";
+    private static final String MSG_DUR_CUR_INLINE =
+            "The end date for the Curfew Requirement does not match the period of the "
+                    + "requirement. The current recorded period would mean the end date "
+                    + "should be 30/09/2026.";
+
     private static final String DB_URL =
             System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
     private static final String DB_USER = System.getProperty("db.username", "postgres");
@@ -420,6 +427,54 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 MSG_CURA + affectsSuffix,
                 MSG_AAR + affectsSuffix
         );
+    }
+
+    /**
+     * DUR-CUR — CUR's own recorded end date does not match its calculated duration (start date +
+     * curfew period - 1 day), independent of the AC2 order-end-date check. DR-COEW-005 must
+     * produce a single ERROR carrying the correctly calculated end date.
+     */
+    @Test
+    void dur_cur_end_date_not_matching_calculated_duration_should_produce_error() throws Exception {
+        // Start date 2026-09-01 + curfewPeriod 30 - 1 day = 2026-09-30; entered 2026-10-01 (wrong)
+        final String body = """
+                {
+                  "hearingId": "coew-h12",
+                  "hearingDay": "2026-06-17",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+                     "label": "Community order", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [{"promptRef": "endDate", "promptValue": "2026-10-01"}]},
+                    {"resultLineId": "rl2", "shortCode": "CUR", "category": "I",
+                     "label": "Curfew", "defendantId": "d1", "offenceId": "off1",
+                     "prompts": [
+                       {"promptRef": "startDate", "promptValue": "2026-09-01"},
+                       {"promptRef": "curfewPeriod", "promptValue": "30"},
+                       {"promptRef": "endDate", "promptValue": "2026-10-01"}
+                     ]}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Shah"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001",
+                     "offenceTitle": "Theft", "orderIndex": 1}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(json.get(WARNINGS)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText())
+                .isEqualTo(RULE_ID);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0)
+                .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
+                .isEqualToIgnoringWhitespace(MSG_DUR_CUR_INLINE);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualToIgnoringWhitespace(MSG_DUR_CUR_SUMMARY + ". This affects Priya Shah.");
     }
 
     @BeforeAll

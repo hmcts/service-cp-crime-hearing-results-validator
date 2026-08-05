@@ -47,6 +47,20 @@
 | CURA | `"endDate"` | Further curfew end date |
 | AAR | `"until"` | Alcohol abstinence until date |
 
+**Additional prompt ref keys used by DUR-CUR/CURE/AAR** (unverified assumptions — see spec.md A-012):
+
+| Result short code | `promptRef` | Meaning |
+|-------------------|-------------|---------|
+| CUR | `"startDate"` | Curfew requirement start date — unverified assumption |
+| CUR | `"curfewPeriod"` | Curfew requirement period, e.g. `"90 Days"` — unverified assumption |
+| CURE | `"startDateOfTagging"` | Start date of electronic tagging — unverified assumption |
+| CURE | `"curfewAndElectronicMonitoringPeriod"` | Curfew-and-tagging period, e.g. `"1 Months"` — unverified assumption |
+| AAR | `"numberOfDaysToAbstainFromConsumingAnyAlcohol"` | Number of days the alcohol abstinence requirement runs, e.g. `"90"` — **confirmed** against a real payload (research.md Decision 9; the original `"numberOfDaysToAbstain"` assumption was disproved) |
+
+`hearingDay` (from `DraftValidationRequest`, not a prompt) supplies the fixed start date for the AAR duration calculation.
+
+**Period value format**: sent as `"<n> <unit>"` (Days/Weeks/Months, case-insensitive — e.g. `"90 Days"`, `"1 Months"`, `"1 weeks"`) or a bare integer defaulting to days. Parsed calendar-aware (`LocalDate.plus(amount, ChronoUnit)`), not by converting months to a fixed day count — see research.md Decision 9.
+
 ### `DefendantDto` (upstream library `0.1.6`)
 
 | Field | Type | Notes |
@@ -92,6 +106,8 @@ Shared static helpers, used by both `CommunityOrderEndDatePreprocessor` and `You
 | `parsePromptDate(ResultLineDto, promptRef, offenceId)` | Parses the first matching prompt's value as `LocalDate`; logs `WARN` and returns `null` on missing/blank/unparseable |
 | `isRequirementViolated(lines, codes, promptRef, orderEndDate, offenceId)` | True if any matching line's prompt date is strictly after `orderEndDate` |
 
+Period parsing for DUR-CUR/CURE/AAR (`parsePromptPeriod`/`ParsedPeriod`) is **not** in `PreprocessorHelper` — it stays private to `CommunityOrderEndDatePreprocessor` since the `"<n> <unit>"` format and calendar-aware `ChronoUnit` arithmetic are specific to this duration calculation, not a generally-reusable prompt-parsing primitive like `parsePromptDate`.
+
 ---
 
 ### `CommunityOrderContext` — new record
@@ -111,7 +127,16 @@ CommunityOrderContext
   ├── cureViolationOffenceIds: List<String>  — offence IDs for AC2b (CURE) violations
   ├── curaViolationOffenceIds: List<String>  — offence IDs for AC2c (CURA) violations
   ├── aarViolationOffenceIds: List<String>   — offence IDs for AC2d (AAR) violations
-  └── allOffenceIds: List<String>            — all offence IDs for this defendant group
+  ├── allOffenceIds: List<String>            — all offence IDs for this defendant group
+  ├── curDurationMismatchCount: long          — offences where CUR end date ≠ start date + period - 1
+  ├── cureDurationMismatchCount: long         — offences where CURE end date of tagging ≠ calculated duration
+  ├── aarDurationMismatchCount: long          — offences where AAR until date ≠ hearing date + days - 1
+  ├── curDurationMismatchOffenceIds: List<String>   — offence IDs for DUR-CUR mismatches
+  ├── cureDurationMismatchOffenceIds: List<String>  — offence IDs for DUR-CURE mismatches
+  ├── aarDurationMismatchOffenceIds: List<String>   — offence IDs for DUR-AAR mismatches
+  ├── curCalculatedEndDateByOffenceId: Map<String, String>   — offenceId → correct end date (DD/MM/YYYY) for DUR-CUR
+  ├── cureCalculatedEndDateByOffenceId: Map<String, String>  — offenceId → correct end date (DD/MM/YYYY) for DUR-CURE
+  └── aarCalculatedEndDateByOffenceId: Map<String, String>   — offenceId → correct end date (DD/MM/YYYY) for DUR-AAR
 ```
 
 **CEL variable map** (`toCelContext()`):
@@ -122,6 +147,9 @@ CommunityOrderContext
 | `cureViolationCount` | `Long` | AC2b: `cureViolationCount > 0` |
 | `curaViolationCount` | `Long` | AC2c: `curaViolationCount > 0` |
 | `aarViolationCount` | `Long` | AC2d: `aarViolationCount > 0` |
+| `curDurationMismatchCount` | `Long` | DUR-CUR: `curDurationMismatchCount > 0` |
+| `cureDurationMismatchCount` | `Long` | DUR-CURE: `cureDurationMismatchCount > 0` |
+| `aarDurationMismatchCount` | `Long` | DUR-AAR: `aarDurationMismatchCount > 0` |
 
 **Named offence-id sets** (`getOffenceIdSet(setName)`):
 
@@ -131,7 +159,18 @@ CommunityOrderContext
 | `"cureViolationOffenceIds"` | `cureViolationOffenceIds` |
 | `"curaViolationOffenceIds"` | `curaViolationOffenceIds` |
 | `"aarViolationOffenceIds"` | `aarViolationOffenceIds` |
+| `"curDurationMismatchOffenceIds"` | `curDurationMismatchOffenceIds` |
+| `"cureDurationMismatchOffenceIds"` | `cureDurationMismatchOffenceIds` |
+| `"aarDurationMismatchOffenceIds"` | `aarDurationMismatchOffenceIds` |
 | `"allOffenceIds"` | `allOffenceIds` |
+
+**Named calculated-value sets** (`getCalculatedValue(setName, offenceId)` — new `RuleEvaluationContext` default method, added alongside `calculatedValueSet` on `ConditionDefinition` and the 6-arg `MessageTemplateResolver.resolve(...)` overload it feeds):
+
+| `setName` | Returns |
+|-----------|---------|
+| `"curCalculatedEndDateByOffenceId"` | `curCalculatedEndDateByOffenceId.get(offenceId)` |
+| `"cureCalculatedEndDateByOffenceId"` | `cureCalculatedEndDateByOffenceId.get(offenceId)` |
+| `"aarCalculatedEndDateByOffenceId"` | `aarCalculatedEndDateByOffenceId.get(offenceId)` |
 
 ---
 
@@ -162,12 +201,22 @@ Output: Map<String, CommunityOrderContext>  (key = defendant-group key)
           CURE → "endDateOfTag"  → cureViolationIds
           CURA → "endDate"       → curaViolationIds
           AAR  → "until"         → aarViolationIds
+      (order-end-date-less offences skip this step, but continue to step iii below)
+      iii. Independent of ii — for CUR, CURE, and AAR only, checkDurationMismatch(...) compares
+          the requirement's own recorded end date against its calculated duration:
+          CUR  → startDate + curfewPeriod - 1 day             → curDurationMismatchIds / curCalculatedEndDates
+          CURE → startDateOfTagging + curfewAndElectronicMonitoringPeriod - 1 day
+                                                                → cureDurationMismatchIds / cureCalculatedEndDates
+          AAR  → hearingDay + numberOfDaysToAbstain - 1 day    → aarDurationMismatchIds / aarCalculatedEndDates
+          Skipped (no violation) when any input date/period is missing or unparseable, or
+          (AAR only) when hearingDay is null. CURA is never routed through this step.
    c. Build CommunityOrderContext with accumulated counts and id sets
 6. Return map (includes groups with all-zero counts; CEL conditions won't fire for them)
 ```
 
 **Date comparison semantics**:
 - AC2 (requirement end date check): violation when `requirementDate.isAfter(orderEndDate)` — equal is valid.
+- DUR-CUR/CURE/AAR (duration-mismatch check): violation when `recordedEndDate != startDate.plusDays(period - 1)` — any mismatch either way (too early or too late) triggers, not just "too early".
 
 **Grouping semantics**:
 - Two `defendantId`s that share a non-blank `masterDefendantId` are folded into a single
@@ -262,6 +311,49 @@ rule:
         Alcohol abstinence and monitoring. This affects ${defendantNames}.
       affectedOffenceSet: "aarViolationOffenceIds"
       validationLevel: OFFENCE
+
+    - id: "DUR-CUR"
+      name: "Curfew requirement end date does not match calculated duration"
+      expression: "curDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "curDurationMismatchOffenceIds"
+      calculatedValueSet: "curCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-CURE"
+      name: "Curfew with electronic monitoring end date of tagging does not match calculated duration"
+      expression: "cureDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        The current recorded period would mean the end date should be ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Curfew Requirement does not match the period of the requirement.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "cureDurationMismatchOffenceIds"
+      calculatedValueSet: "cureCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "DUR-AAR"
+      name: "Alcohol abstinence and monitoring until date does not match calculated duration"
+      expression: "aarDurationMismatchCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. The current recorded period would mean the end date should be
+        ${calculatedEndDate}.
+      errorMessageTemplate: >-
+        The end date for the Alcohol Abstinence Monitoring Requirement does not match the period
+        of the requirement. This affects ${defendantNames}.
+      affectedOffenceSet: "aarDurationMismatchOffenceIds"
+      calculatedValueSet: "aarCalculatedEndDateByOffenceId"
+      validationLevel: OFFENCE
 ```
 
 ---
@@ -273,7 +365,7 @@ INSERT INTO validation_rule (id, enabled, severity)
 VALUES ('DR-COEW-005', true, 'ERROR');
 ```
 
-This seeds the runtime override row so the rule is live by default (see spec.md A-011 and research.md Decision 8).
+This seeds the runtime override row so the rule is live by default (see spec.md A-011 and research.md Decision 8). No new migration is needed for DUR-CUR/CURE/AAR — conditions live entirely in the YAML, not the DB; the existing `V1.005` row governs enable/disable and severity ceiling for all seven conditions on `DR-COEW-005` uniformly (see spec.md A-013).
 
 ---
 
@@ -293,12 +385,14 @@ CommunityOrderEndDatePreprocessor
   └── produces: Map<groupKey, CommunityOrderContext>
 
 CommunityOrderContext  (one per defendant group with ≥1 community order)
-  ├── 4 violation counts  ──→ CEL variable map (toCelContext())
-  ├── 4 violation offence-id sets ──→ getOffenceIdSet(name) per YAML condition
+  ├── 4 violation counts + 3 duration-mismatch counts  ──→ CEL variable map (toCelContext())
+  ├── 4 violation + 3 duration-mismatch offence-id sets ──→ getOffenceIdSet(name) per YAML condition
+  ├── 3 calculated-end-date maps ──→ getCalculatedValue(setName, offenceId) for ${calculatedEndDate}
   └── allOffenceIds ──→ message template resolver ordering
 
 DR-COEW-005.yaml
-  └── 4 conditions → CelValidationRule → ValidationIssue (ERROR) per triggered condition
-        ├── affectedOffences  ── scoped to violation offence-id set
-        └── affectedDefendants ── [{ defendantId: groupKey }] for the triggering group
+  └── 7 conditions (4 AC2 + 3 DUR) → CelValidationRule → ValidationIssue (ERROR) per triggered condition
+        ├── affectedOffences  ── scoped to violation/mismatch offence-id set
+        ├── affectedDefendants ── [{ defendantId: groupKey }] for the triggering group
+        └── calculatedValueSet (DUR-* only) ── resolved per offence into ${calculatedEndDate}
 ```

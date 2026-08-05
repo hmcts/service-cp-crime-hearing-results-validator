@@ -103,6 +103,26 @@ short codes) rather than being exclusive to this rule. `communityOrderShortCodes
 
 ---
 
+## Decision 9 — New Prompt Ref Keys for DUR-CUR/CURE/AAR (AAR key confirmed against real payload)
+
+**Decision**: Hardcode four new `promptRef` keys, following the naming convention already used for `endDateOfTagging` (Decision 3):
+
+| Requirement | Start prompt ref | Period prompt ref |
+|---|---|---|
+| CUR | `"startDate"` | `"curfewPeriod"` |
+| CURE | `"startDateOfTagging"` | `"curfewAndElectronicMonitoringPeriod"` |
+| AAR | *(uses `request.getHearingDay()`, no prompt)* | `"numberOfDaysToAbstainFromConsumingAnyAlcohol"` |
+
+**Rationale**: Consistent with Decision 3 — these are stable upstream API-contract values, not YAML policy, so they stay hardcoded in Java rather than becoming YAML config.
+
+**Risk (CUR/CURE)**: `"startDate"`, `"curfewPeriod"`, and `"curfewAndElectronicMonitoringPeriod"` are assumed from the acceptance-criteria field labels and the existing naming convention — not yet confirmed against a real payload. Unit tests will fail fast if wrong.
+
+**AAR — confirmed wrong, then fixed upstream**: the original PR #116 assumption `"numberOfDaysToAbstain"` was disproved by a real payload during that branch's follow-up work, which sends `"numberOfDaysToAbstainFromConsumingAnyAlcohol"` instead. Because the key didn't match, `CommunityOrderEndDatePreprocessor` would silently find no period prompt and the duration-mismatch check would return early — `DUR-AAR` would never fire even when the `until` date was genuinely wrong. This port carries the corrected key directly (`CommunityOrderEndDatePreprocessor.PROMPT_DAYS_TO_ABSTAIN`) rather than reintroducing the disproved assumption — see plan.md's Port Notes.
+
+**Period value format** (also from PR #116's follow-up work): period prompt values are sent as `"<n> <unit>"` (e.g. `"90 Days"`, `"1 Months"`, `"1 weeks"`), not bare integers — Days/Weeks/Months are the confirmed real-world units. Parsing is unit-aware and case-insensitive, uses calendar-correct `LocalDate.plus(amount, ChronoUnit)` (so month arithmetic doesn't assume a fixed 30-day month), falls back to bare-integer-as-days for backward compatibility, and treats an unrecognised unit, a numeric overflow (digit run beyond `Long.MAX_VALUE`), or a calculated date outside `LocalDate`'s supported range the same as any other unparseable value — log `WARN` and skip rather than throw. This port carries the corrected parser directly rather than the bare-integer version PR #116 originally shipped.
+
+---
+
 ## Resolved Unknowns Summary
 
 | # | Unknown | Resolution |

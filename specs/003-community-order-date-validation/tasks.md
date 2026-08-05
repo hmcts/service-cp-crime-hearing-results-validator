@@ -108,6 +108,28 @@ confirmed failing before its corresponding implementation task, per the commit h
 
 ---
 
+## Phase 8: User Story 4 — Requirement Duration End Date Validation (DD-41655) (Priority: P1)
+
+**Goal**: Detect when a CUR/CURE/AAR requirement's own recorded end date does not match its calculated duration, independent of and additive to the Phase 3 (AC2) checks. Ported from PR #116 (`DD-41655-requirement-duration-validation`), which was never merged into this branch's history — see plan.md's [Port Notes](plan.md#port-notes-2026-08-05--dd-41655-requirement-duration-end-date-validation).
+
+- [X] T021 Add three new conditions (DUR-CUR, DUR-CURE, DUR-AAR) to `src/main/resources/rules/DR-COEW-005.yaml` with ERROR severity, `calculatedValueSet`, and exact message templates from spec FR-015/FR-016
+- [X] T022 [P] Add `calculatedValueSet` field to `ConditionDefinition.java`
+- [X] T023 [P] Add default `getCalculatedValue(setName, offenceId)` method to `RuleEvaluationContext.java`
+- [X] T024 [P] Add 6-arg `resolve(...)` overload (with `extraPlaceholders`) to `MessageTemplateResolver.java`
+- [X] T025 [P] Add unit-aware period parsing (`ParsedPeriod`, `PERIOD_PATTERN`, `parsePromptPeriod`) local to `CommunityOrderEndDatePreprocessor.java` — kept out of `PreprocessorHelper` since the `"<n> <unit>"` format and `ChronoUnit` arithmetic are specific to this duration calculation, not a generic prompt-parsing primitive
+- [X] T026 Write `CommunityOrderContextTest` duration-mismatch nested class (test-first), then extend `CommunityOrderContext.java` with 9 new fields and `getCalculatedValue(...)` override to pass
+- [X] T027 Write `CommunityOrderEndDatePreprocessorTest` DUR-CUR/DUR-CURE/DUR-AAR nested classes plus a CURA-exclusion/multi-defendant cross-cutting class (test-first), then extend `CommunityOrderEndDatePreprocessor.java` with the duration-mismatch checks to pass
+- [X] T028 Extend `CelValidationRule.java` with the `calculatedValueSet` branch resolving `${calculatedEndDate}` per offence
+- [X] T029 Write `CommunityOrderEndDateRuleIntegrationTest` User Stories 4–7 (DUR-CUR, DUR-CURE, DUR-AAR, and combined-display scenarios)
+- [X] T030 [P] Extend `RuleDefinitionTest` and `MessageTemplateResolverTest` with coverage for the new YAML fields/overload
+- [X] T031 [P] Add a DUR-CUR scenario to `CommunityOrderEndDateApiHttpLiveTest.java` (live HTTP, `gradle api`)
+- [X] T032 Update `specs/003-community-order-date-validation/{spec,plan,data-model}.md` with User Story 4, FR-015–FR-017, SC-008, A-012/A-013, and the Port Notes section
+- [X] T033 Code-review pass (2 rounds) against this repo's own git history: carried forward two post-PR#116 fixes discovered in `team/DD-41655-CO-duration-validation` (unit-aware period parsing — commit `1dd5dba`; corrected AAR prompt-ref key — commit `6199910`) and fixed one additional overflow-handling gap found during the port itself (`ArithmeticException` alongside `DateTimeException` around `LocalDate.plus(...)`) — see plan.md Port Notes
+
+**Checkpoint**: `./gradlew test checkstyleMain checkstyleTest pmdMain` all green; all 7 `DR-COEW-005` conditions covered end-to-end; no DB migration required.
+
+---
+
 ## Dependencies & Execution Order
 
 ```
@@ -120,6 +142,8 @@ Phase 1 (Setup/Baseline)
             │       └── Phase 5 (US3 — AC5 offence scoping)
             └── Phase 6 (Polish)             ← after all phases complete
 Phase 7 (Retrofit docs) — independent of the above; documents what already shipped
+Phase 8 (DD-41655 duration validation, ported from PR #116) — depends on Phase 3/3a/3b (extends
+    the same YAML, context, and preprocessor); independent of Phase 7
 ```
 
 ### Task-Level Dependencies

@@ -7,7 +7,9 @@
 > retrofitted here to describe what actually shipped on `dev/DD-42678-co-end-date-rule`: the same
 > rule, renumbered `DR-COEW-005`, refactored to share plumbing with `YouthRehabilitationPreprocessor`
 > via a new `PreprocessorHelper`, and extended with `masterDefendantId` grouping. See the
-> [Retrofit Notes](#retrofit-notes-2026-08-05) section at the end.
+> [Retrofit Notes](#retrofit-notes-2026-08-05) section at the end. It was subsequently extended
+> with the DD-41655 requirement duration end date checks (DUR-CUR/CURE/AAR) ported from PR #116
+> onto `DR-COEW-005` — see [Port Notes](#port-notes-2026-08-05--dd-41655-requirement-duration-end-date-validation) at the very end.
 
 ---
 
@@ -16,6 +18,7 @@
 Implement the `DR-COEW-005` validation rule that detects community order date errors at "Save and continue":
 
 - **AC2** — A community order's end date is earlier than the end date of any attached requirement (CUR, CURE, CURA, or AAR).
+- **DUR-CUR/CURE/AAR** — A CUR, CURE, or AAR requirement's own recorded end date does not match its calculated duration (start date + period − 1 day, or hearing date + days − 1 day for AAR), independent of and additive to AC2.
 
 The implementation follows the established YAML+CEL rule engine pattern: a new `DR-COEW-005.yaml` rule file, a new `CommunityOrderEndDatePreprocessor` Spring component, a new `CommunityOrderContext` record, and minor extensions to `PreprocessingDefinition`. The preprocessor delegates its shared plumbing (short-code matching, defendant grouping, name assembly, prompt-date parsing) to `PreprocessorHelper`, which is also used by `YouthRehabilitationPreprocessor`. AC1 ("end date must be in the future") is **out of scope** — handled by a separate ticket.
 
@@ -75,27 +78,34 @@ src/main/resources/db/migration/
 └── V1.005__insert_dr_coew_005.sql                              [NEW — seeds enabled: true]
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
-├── CelValidationRule.java                                     [unchanged — affectedDefendants already populated]
+├── CelValidationRule.java                                     [MODIFY (DD-41655) — calculatedValueSet branch feeding ${calculatedEndDate}]
+├── ConditionDefinition.java                                   [MODIFY (DD-41655) — +calculatedValueSet field]
+├── RuleEvaluationContext.java                                 [MODIFY (DD-41655) — +getCalculatedValue default method]
+├── MessageTemplateResolver.java                               [MODIFY (DD-41655) — +6-arg resolve(...) overload with extraPlaceholders]
 ├── PreprocessingDefinition.java                                [MODIFY — 5 new fields, 3 shared with YRO]
-├── PreprocessorHelper.java                                     [NEW — shared static helpers, also used by YouthRehabilitationPreprocessor]
-├── CommunityOrderEndDatePreprocessor.java                     [NEW]
-└── CommunityOrderContext.java                                 [NEW]
+├── CommunityOrderEndDatePreprocessor.java                     [NEW; MODIFY (DD-41655) — +duration-mismatch checks]
+└── CommunityOrderContext.java                                 [NEW; MODIFY (DD-41655) — +9 duration-mismatch fields]
 
 src/test/java/uk/gov/hmcts/cp/
 ├── services/rules/cel/
-│   ├── CommunityOrderEndDatePreprocessorTest.java             [NEW — unit, includes masterDefendantId grouping]
-│   └── CommunityOrderContextTest.java                         [NEW — unit]
+│   ├── CommunityOrderEndDatePreprocessorTest.java             [NEW — unit, includes masterDefendantId grouping; MODIFY (DD-41655) — +DUR-CUR/CURE/AAR nested classes]
+│   ├── CommunityOrderContextTest.java                         [NEW — unit; MODIFY (DD-41655) — +duration-mismatch nested class]
+│   ├── MessageTemplateResolverTest.java                        [MODIFY (DD-41655) — +extraPlaceholders coverage]
+│   └── RuleDefinitionTest.java                                 [MODIFY (DD-41655) — +calculatedValueSet parsing coverage]
 ├── integration/
-│   ├── CommunityOrderEndDateRuleIntegrationTest.java          [NEW — integration]
+│   ├── CommunityOrderEndDateRuleIntegrationTest.java          [NEW — integration; MODIFY (DD-41655) — +User Stories 4-7]
 │   ├── ValidationControllerIntegrationTest.java               [MODIFY — rule count]
 │   ├── ValidationRulesControllerIntegrationTest.java          [MODIFY — rule count]
 │   ├── ValidationRulesUpdateIntegrationTest.java              [MODIFY — rule count]
 │   └── CrossRuleRegressionIntegrationTest.java                [MODIFY — rule count]
 └── config/
     └── ValidationRuleAutoConfigurationTest.java                [MODIFY — +1 preprocessor, rule count]
+
+src/apiTest/java/uk/gov/hmcts/cp/http/
+└── CommunityOrderEndDateApiHttpLiveTest.java                   [MODIFY (DD-41655) — +DUR-CUR live scenario]
 ```
 
-**No changes to**: `ValidationPreprocessor` interface, `PreprocessorRegistry`, `RuleEvaluationContext` interface, `MessageTemplateResolver`, `DefaultValidationService`, `ValidationController`, `CelValidationRule` (the `affectedDefendants` population described below was already present on `main`/`dev/DD-42678-co-end-date-rule` by the time this rule was ported — no framework change was required here, unlike on the original `team/DD-41653` branch where it was introduced alongside this rule).
+**No changes to**: `ValidationPreprocessor` interface, `PreprocessorRegistry`, `DefaultValidationService`, `ValidationController` (the `affectedDefendants` population described below was already present on `main`/`dev/DD-42678-co-end-date-rule` by the time this rule was ported — no framework change was required here, unlike on the original `team/DD-41653` branch where it was introduced alongside this rule). `RuleEvaluationContext`, `MessageTemplateResolver`, and `CelValidationRule` were additive-only extended by the later DD-41655 port (see [Port Notes](#port-notes-2026-08-05--dd-41655-requirement-duration-end-date-validation)) — no existing behaviour changed, only new optional fields/overloads added.
 
 > **`affectedDefendants` on `ValidationIssue`**: Each emitted `ValidationIssue` includes
 > `affectedDefendants: [{ defendantId }]` — the defendant(s) whose context triggered the
@@ -236,3 +246,75 @@ authored after the fact by porting `specs/003-community-order-date-validation/` 
 
 No further code changes are required by this retrofit — it is documentation-only, added to close
 the gap identified when comparing `team/DD-41653` against `dev/DD-42678-co-end-date-rule`.
+
+---
+
+## Port Notes (2026-08-05) — DD-41655 Requirement Duration End Date Validation
+
+`PR #116` (`DD-41655-requirement-duration-validation`, merged upstream against the older
+`team/DD-41655-CO-duration-validation` → `DR-COEW-001` lineage) added three new conditions
+(DUR-CUR, DUR-CURE, DUR-AAR) checking that a CUR/CURE/AAR requirement's own recorded end date
+matches its calculated duration. That branch was never merged into `dev/DD-42678-co-end-date-rule`
+directly — by the time DD-41655 needed porting here, this branch's history had already diverged
+too far (rule renumbered to `DR-COEW-005`, `PreprocessorRegistry` dispatch added, `masterDefendantId`
+grouping added) for a mechanical `git merge`/cherry-pick of PR #116's seven commits to apply
+cleanly. Instead, PR #116's functional diff was re-applied by hand onto the current structure:
+
+1. `DR-COEW-005.yaml` gained three new conditions (DUR-CUR, DUR-CURE, DUR-AAR) — same expressions,
+   messages, and severities as PR #116's `DR-COEW-001.yaml`, unchanged apart from the rule id.
+2. `CommunityOrderContext` gained 9 new fields (3 counts, 3 offence-id lists, 3 calculated-end-date
+   maps) and a `getCalculatedValue(setName, offenceId)` override — same shape as PR #116.
+3. `CommunityOrderEndDatePreprocessor` gained the duration-mismatch checks, re-homed onto this
+   branch's `masterDefendantId`-based grouping and `PreprocessorHelper` delegation (PR #116 grouped
+   by raw `defendantId` only, since `masterDefendantId` grouping didn't exist yet on its lineage).
+4. Period-value parsing (`ParsedPeriod`, `PERIOD_PATTERN`, `parsePromptPeriod`) stayed private to
+   `CommunityOrderEndDatePreprocessor`, matching PR #116's original shape — an earlier draft of
+   this port promoted a generic `parsePromptInt` into `PreprocessorHelper`, but that was reverted
+   once the unit-aware period-parsing fix (see below) made a shared *integer* parser the wrong
+   abstraction; the `"<n> <unit>"` format is specific to this duration calculation.
+5. `ConditionDefinition` gained `calculatedValueSet`; `RuleEvaluationContext` gained a default
+   `getCalculatedValue(...)` method; `MessageTemplateResolver` gained a 6-arg `resolve(...)`
+   overload accepting `extraPlaceholders`; `CelValidationRule` gained the branch that resolves
+   `calculatedValueSet` per offence into the `${calculatedEndDate}` placeholder — all four changes
+   are identical in shape to PR #116's, modulo this branch's richer `recordIssue(...)` signature
+   (condition description + validation level, added independently of DD-41655) being left intact.
+6. Test suites (`CommunityOrderContextTest`, `CommunityOrderEndDatePreprocessorTest`,
+   `MessageTemplateResolverTest`, `RuleDefinitionTest`, `CommunityOrderEndDateRuleIntegrationTest`,
+   `CommunityOrderEndDateApiHttpLiveTest`) were extended with PR #116's equivalent scenarios,
+   adapted to this branch's fixtures (`DR-COEW-005`, dedupe-key grouping helpers).
+
+No DB migration was needed — conditions live entirely in YAML; the existing `V1.005` override row
+governs all seven `DR-COEW-005` conditions uniformly. See spec.md's "Session 2026-08-05 — port
+requirement duration end date validation (DD-41655) from PR #116" clarification and data-model.md
+for the full field/condition reference.
+
+**Two post-merge fixes carried forward.** PR #116's own branch lineage (`team/DD-41655-CO-duration-validation`)
+had two further merged PRs discovered *after* PR #116 landed, each fixing a real defect confirmed
+against a live payload. Both defects would have made a duration-mismatch condition silently never
+fire — no test failure, no exception, just a dead condition — so this port carries the *fixed*
+behaviour directly rather than the code PR #116 originally shipped:
+
+1. **Period value format** (PR #127, commit `1dd5dba`): `curfewPeriod` and
+   `curfewAndElectronicMonitoringPeriod` are sent as `"<n> <unit>"` (e.g. `"90 Days"`,
+   `"1 Months"`, `"1 weeks"`), not bare integers. `CommunityOrderEndDatePreprocessor` parses these
+   unit-aware (Days/Weeks/Months, case-insensitive, calendar-correct via `LocalDate.plus`), with a
+   bare-integer fallback for backward compatibility and warn-and-skip guards for an unrecognised
+   unit, numeric overflow, or an out-of-range calculated date. See research.md Decision 9.
+2. **AAR prompt-ref key** (PR #133, commit `6199910`): the real key is
+   `numberOfDaysToAbstainFromConsumingAnyAlcohol`, not `numberOfDaysToAbstain`. See research.md
+   Decision 9.
+
+A code-review pass on the first version of this port (before these two fixes were incorporated)
+caught both regressions by cross-referencing this repository's own git history — see the review
+transcript for this change.
+
+**One additional defect found and fixed during the port itself (not present in any upstream
+commit).** The port's initial period-overflow guard caught only `DateTimeException` around
+`startDate.plus(amount, unit)`. A follow-up review verified that `LocalDate.plusDays`/`plusWeeks`
+throw `ArithmeticException` (via `Math.addExact`), not `DateTimeException`, for an `amount` near
+`Long.MAX_VALUE` — `plusMonths` happens to still surface `DateTimeException` for the same input
+range, so the gap was unit-dependent and easy to miss. An uncaught `ArithmeticException` would have
+failed the entire validation request (HTTP 500 via the global exception handler) for one malformed
+period value, rather than degrading to skip just that duration check. Fixed by broadening the catch
+to `DateTimeException | ArithmeticException`, with a regression test using a period value at
+`Long.MAX_VALUE` exactly.
