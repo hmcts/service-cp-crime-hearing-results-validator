@@ -1,7 +1,9 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantDedupeKeys;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -43,13 +45,20 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
                 .map(s -> s.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
 
-        final Map<String, String> defendantGrouping = buildDefendantGrouping(request);
-        final Map<String, String> defendantNames = buildDefendantNames(request);
+        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
+        final Map<String, String> defendantNamesById = buildDefendantNames(request);
 
         final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
+        final Map<String, String> groupNames = new LinkedHashMap<>();
         for (final ResultLineDto rl : request.getResultLines()) {
-            final String groupKey = defendantGrouping.getOrDefault(rl.getDefendantId(), rl.getDefendantId());
+            final String groupKey = dedupeKeys.getOrDefault(rl.getDefendantId(), rl.getDefendantId());
             linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).add(rl);
+        }
+        if (request.getDefendants() != null) {
+            for (final DefendantDto d : request.getDefendants()) {
+                final String groupKey = dedupeKeys.getOrDefault(d.getDefendantId(), d.getDefendantId());
+                groupNames.putIfAbsent(groupKey, defendantNamesById.getOrDefault(d.getDefendantId(), "Unknown"));
+            }
         }
 
         final Map<String, DefendantContext> result = new LinkedHashMap<>();
@@ -113,7 +122,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
 
             result.put(groupKey, new DefendantContext(
                     groupKey,
-                    defendantNames.getOrDefault(groupKey, "Unknown"),
+                    groupNames.getOrDefault(groupKey, "Unknown"),
                     noInfoOffenceIds.size(),
                     offencesWithInfo.size(),
                     offencesWithBoth.size(),
@@ -127,45 +136,5 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
         }
 
         return result;
-    }
-
-    private Map<String, String> buildDefendantNames(final DraftValidationRequest request) {
-        final Map<String, String> names = new HashMap<>();
-        if (request.getDefendants() != null) {
-            for (final DefendantDto d : request.getDefendants()) {
-                final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
-                        ? d.getMasterDefendantId()
-                        : d.getDefendantId();
-                names.putIfAbsent(groupKey, buildFullName(d));
-            }
-        }
-        return names;
-    }
-
-    private String buildFullName(final DefendantDto defendant) {
-        final String first = defendant.getFirstName();
-        final String last = defendant.getLastName();
-        final String name;
-        if (first != null && last != null) {
-            name = first + " " + last;
-        } else if (first != null) {
-            name = first;
-        } else {
-            name = last;
-        }
-        return name;
-    }
-
-    private Map<String, String> buildDefendantGrouping(final DraftValidationRequest request) {
-        final Map<String, String> grouping = new HashMap<>();
-        if (request.getDefendants() != null) {
-            for (final DefendantDto d : request.getDefendants()) {
-                final String groupKey = (d.getMasterDefendantId() != null && !d.getMasterDefendantId().isBlank())
-                        ? d.getMasterDefendantId()
-                        : d.getDefendantId();
-                grouping.put(d.getDefendantId(), groupKey);
-            }
-        }
-        return grouping;
     }
 }
