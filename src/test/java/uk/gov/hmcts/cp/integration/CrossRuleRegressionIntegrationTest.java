@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Cross-rule regression coverage. Proves that DR-SENT-002 and DR-DISQ-001 evaluate
+ * Cross-rule regression coverage. Proves that DR-SENT-001 and DR-DISQ-002 evaluate
  * independently per Constitution Principle III and FR-011 — each produces its own issue on a
  * single hearing payload that triggers both rules, with no interference.
  *
@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
-    private static final String DISQ_RULE_ID = "DR-DISQ-001";
+    private static final String DISQ_RULE_ID = "DR-DISQ-002";
 
     @Resource
     private ValidationRuleRepository repository;
@@ -74,8 +74,8 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
     @Test
     void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {
         // off1..off4 — IMP custodial sentences with off1 = primary (first noInfo), off2/off3 noInfo,
-        //              off4 concurrent → triggers DR-SENT-002 AC2 ERROR.
-        // off5 — RT88026 + COEW + no DDOTE → triggers DR-DISQ-001 AC1 WARNING.
+        //              off4 concurrent → triggers DR-SENT-001 AC2 ERROR.
+        // off5 — RT88026 + COEW + no DDOTE → triggers DR-DISQ-002 AC1 WARNING.
         String request = """
                 {
                   "hearingId": "h-cross",
@@ -116,7 +116,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                         .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
-                .andExpect(jsonPath("$.errors.validationIssues[*].ruleId", contains("DR-SENT-002")))
+                .andExpect(jsonPath("$.errors.validationIssues[*].ruleId", contains("DR-SENT-001")))
                 .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                 .andExpect(jsonPath("$.errors.errorMessages[0]", is(
                         "Some offences do not include details of whether they are concurrent or"
@@ -124,15 +124,16 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                                 + " defendant, therefore one result without concurrent or consecutive"
                                 + " information. This affects Alex Driver.")))
                 .andExpect(jsonPath("$.warnings", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[*].ruleId", contains("DR-DISQ-001")))
+                .andExpect(jsonPath("$.warnings[*].ruleId", contains("DR-DISQ-002")))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off5")))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        containsInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001")));
+                        containsInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
+                                "DR-COEW-005")));
     }
 
     /**
-     * Scenario R11: AC3 fires for Def1 (concurrent/consecutive on off1) and DR-DISQ-001 fires for
+     * Scenario R11: AC3 fires for Def1 (concurrent/consecutive on off1) and DR-DISQ-002 fires for
      * Def2 (relevant RTA offence with no extended-test disqualification). Different rules, different
      * defendants — each produces one independent OFFENCE-level warning.
      */
@@ -174,13 +175,13 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.isValid", is(true)))
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(2)))
-                // DR-SENT-002 has priority 1000 so fires first → warnings[0]
-                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-002")))
+                // DR-SENT-001 has priority 1000 so fires first → warnings[0]
+                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.warnings[0].validationLevel", is("OFFENCE")))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
-                // DR-DISQ-001 has priority 2000 so fires second → warnings[1]
-                .andExpect(jsonPath("$.warnings[1].ruleId", is("DR-DISQ-001")))
+                // DR-DISQ-002 has priority 2000 so fires second → warnings[1]
+                .andExpect(jsonPath("$.warnings[1].ruleId", is("DR-DISQ-002")))
                 .andExpect(jsonPath("$.warnings[1].validationLevel", is("OFFENCE")))
                 .andExpect(jsonPath("$.warnings[1].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[1].affectedOffences[0].offenceId", is("off3")));
@@ -188,9 +189,9 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     /**
      * Scenario R12: AC3 fires for both Def1 and Def2 (each has an offence marked both concurrent
-     * and consecutive), and DR-DISQ-001 additionally fires for Def2 (relevant RTA offence with no
+     * and consecutive), and DR-DISQ-002 additionally fires for Def2 (relevant RTA offence with no
      * extended-test disqualification). This produces three independent OFFENCE-level warnings —
-     * two AC3 (one per defendant) and one DR-DISQ-001 (Def2 only).
+     * two AC3 (one per defendant) and one DR-DISQ-002 (Def2 only).
      */
     @Test
     void ac3_for_both_defendants_and_disq_for_def2_should_produce_three_warnings()
@@ -237,9 +238,9 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.isValid", is(true)))
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", hasSize(3)))
-                .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-SENT-002')]", hasSize(2)))
-                .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-DISQ-001')]", hasSize(1)))
-                .andExpect(jsonPath("$.warnings[2].ruleId", is("DR-DISQ-001")))
+                .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-SENT-001')]", hasSize(2)))
+                .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-DISQ-002')]", hasSize(1)))
+                .andExpect(jsonPath("$.warnings[2].ruleId", is("DR-DISQ-002")))
                 .andExpect(jsonPath("$.warnings[2].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[2].affectedOffences[0].offenceId", is("off5")));
     }

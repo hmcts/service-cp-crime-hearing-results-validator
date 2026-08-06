@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RuleDefinitionTest {
 
     /**
-     * Verifies the DR-SENT-002 YAML file exposes the expected top-level metadata fields.
+     * Verifies the DR-SENT-001 YAML file exposes the expected top-level metadata fields.
      */
     @Test
     void loadFromYaml_should_parse_rule_id_and_title() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
-        assertThat(rule.getId()).isEqualTo("DR-SENT-002");
+        assertThat(rule.getId()).isEqualTo("DR-SENT-001");
         assertThat(rule.getTitle()).isEqualTo("Custodial sentence concurrent/consecutive check");
         assertThat(rule.getDescription()).contains("concurrent/consecutive");
         assertThat(rule.getPriority()).isEqualTo(1000);
@@ -30,7 +30,7 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_preprocessing() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
         PreprocessingDefinition preprocessing = rule.getPreprocessing();
         assertThat(preprocessing).isNotNull();
@@ -48,7 +48,7 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_conditions() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
         assertThat(rule.getConditions()).hasSize(3);
 
@@ -94,5 +94,44 @@ class RuleDefinitionTest {
         assertThatThrownBy(() -> RuleDefinitionLoader.load("rules/no-rule-key.yaml"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must contain a top-level 'rule' key");
+    }
+
+    /**
+     * Verifies DR-COEW-005 loads all 7 conditions (4 order-end-date AC2 checks plus the 3
+     * duration-mismatch checks) and that the duration conditions parse {@code calculatedValueSet}
+     * to the expected named set.
+     */
+    @Test
+    void loadFromYaml_should_parse_duration_mismatch_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-COEW-005.yaml");
+
+        assertThat(rule.getConditions()).hasSize(7);
+
+        ConditionDefinition durCur = rule.getConditions().get(4);
+        assertThat(durCur.getId()).isEqualTo("DUR-CUR");
+        assertThat(durCur.getExpression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durCur.getSeverity()).isEqualTo("ERROR");
+        assertThat(durCur.getMessageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durCur.getErrorMessageTemplate()).contains("${defendantNames}");
+        assertThat(durCur.getAffectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durCur.getCalculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durCur.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durCure = rule.getConditions().get(5);
+        assertThat(durCure.getId()).isEqualTo("DUR-CURE");
+        assertThat(durCure.getExpression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durCure.getAffectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durCure.getCalculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+
+        ConditionDefinition durAar = rule.getConditions().get(6);
+        assertThat(durAar.getId()).isEqualTo("DUR-AAR");
+        assertThat(durAar.getExpression()).isEqualTo("aarDurationMismatchCount > 0");
+        assertThat(durAar.getAffectedOffenceSet()).isEqualTo("aarDurationMismatchOffenceIds");
+        assertThat(durAar.getCalculatedValueSet()).isEqualTo("aarCalculatedEndDateByOffenceId");
+
+        // Pre-existing AC2 conditions must not have calculatedValueSet set.
+        ConditionDefinition ac2a = rule.getConditions().get(0);
+        assertThat(ac2a.getId()).isEqualTo("AC2a");
+        assertThat(ac2a.getCalculatedValueSet()).isNull();
     }
 }

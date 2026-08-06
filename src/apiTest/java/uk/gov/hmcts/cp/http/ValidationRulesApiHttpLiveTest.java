@@ -43,10 +43,11 @@ class ValidationRulesApiHttpLiveTest {
     static void restoreDefaultRuleStates() throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = false WHERE id = 'DR-YRO-001'")) {
+                     "UPDATE validation_rule SET enabled = (id = 'DR-COEW-005') "
+                             + "WHERE id IN ('DR-YRO-004', 'DR-COEW-005')")) {
             ps.executeUpdate();
         }
-        awaitEnabledCount(1);
+        awaitEnabledCount(2);
     }
 
     private static void awaitEnabledCount(final int expected) throws Exception {
@@ -89,13 +90,13 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(4);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(1);
-        assertThat(json.get("rules")).hasSize(4);
+        assertThat(json.get("count").asInt()).isEqualTo(5);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(2);
+        assertThat(json.get("rules")).hasSize(5);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
         assertThat(ruleIds).containsExactlyInAnyOrder(
-                "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001");
+                "DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004", "DR-COEW-005");
     }
 
     /**
@@ -107,7 +108,7 @@ class ValidationRulesApiHttpLiveTest {
         headers.set(CJSCPPUID, "test-user");
 
         final ResponseEntity<String> response = http.exchange(
-                baseUrl + "/api/validation/rules/DR-SENT-002",
+                baseUrl + "/api/validation/rules/DR-SENT-001",
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
                 String.class
@@ -116,7 +117,7 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("ruleId").asText()).isEqualTo("DR-SENT-002");
+        assertThat(json.get("ruleId").asText()).isEqualTo("DR-SENT-001");
         assertThat(json.get("enabled").asBoolean()).isTrue();
         assertThat(json.get("title").asText()).isNotBlank();
     }

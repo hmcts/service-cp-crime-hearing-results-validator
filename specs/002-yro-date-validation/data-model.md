@@ -1,4 +1,4 @@
-# Data Model: YRO Date Validation (DR-YRO-001)
+# Data Model: YRO Date Validation (DR-YRO-004)
 
 ## Entities in scope
 
@@ -49,9 +49,9 @@ Per defendant, per offence:
 
 ## CEL context variables (from `YouthRehabilitationContext`)
 
-These are the variables available in CEL condition expressions for DR-YRO-001:
+These are the variables available in CEL condition expressions for DR-YRO-004:
 
-| CEL variable | Meaning for DR-YRO-001 | Used by condition |
+| CEL variable | Meaning for DR-YRO-004 | Used by condition |
 |---|---|---|
 | `curViolationCount` | Number of offences where YRC2 end date exceeds YRO end date | AC2a |
 | `cureViolationCount` | Number of offences where YRC1 end-of-tag exceeds YRO end date | AC2b |

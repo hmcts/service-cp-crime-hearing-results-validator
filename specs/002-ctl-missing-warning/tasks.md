@@ -1,4 +1,4 @@
-# Tasks: CTL Missing Warning (DR-CTL-001)
+# Tasks: CTL Missing Warning (DR-CTL-003)
 
 **Input**: Design documents from `specs/002-ctl-missing-warning/`
 **Branch**: `DD-41663-ctl-missing-warning`
@@ -34,7 +34,7 @@ flight (they do not reference new OffenceDto fields). All tasks from T006 onward
 fields. They can be authored immediately (and TDD unit tests written for the context record) while
 T001 is in flight.
 
-- [X] T003 [P] Create `src/main/resources/rules/DR-CTL-001.yaml` with `preprocessing.type: "ctl-missing"`, `remandShortCodes`, `ctlShortCodes`, and condition `AC1: ctlWarningCount > 0` at `severity: WARNING` with the exact message from FR-007 (YAML/CEL Rule-First — Constitution Principle I)
+- [X] T003 [P] Create `src/main/resources/rules/DR-CTL-003.yaml` with `preprocessing.type: "ctl-missing"`, `remandShortCodes`, `ctlShortCodes`, and condition `AC1: ctlWarningCount > 0` at `severity: WARNING` with the exact message from FR-007 (YAML/CEL Rule-First — Constitution Principle I)
 - [X] T004 [P] Write failing unit tests for `CtlOffenceContext` record in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CtlOffenceContextTest.java` — verify `toCelContext()` returns `{"ctlWarningCount": 1}` when count is 1 and `{"ctlWarningCount": 0}` when 0; verify `getOffenceIdSet("warningOffenceIds")` and `getOffenceIdSet("allOffenceIds")` return the correct lists; verify `defendantName()` returns null; verify `getOffenceIdSet("<unknown>")` throws `IllegalArgumentException` — confirm tests FAIL before proceeding
 - [X] T005 [P] Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CtlOffenceContext.java` record (fields: `offenceId: String`, `ctlWarningCount: long`, `warningOffenceIds: List<String>`, `allOffenceIds: List<String>`; implements `RuleEvaluationContext`) — run T004 tests and confirm they now PASS
 
@@ -56,7 +56,7 @@ warning message at WARNING severity.
 > with an assertion failure (not a compilation error) before writing any preprocessor code.**
 
 - [X] T006 [US1] Write failing unit tests for `CtlMissingPreprocessor` positive path in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/CtlMissingPreprocessorTest.java` — offence with `shortCode=RI`, `hasExistingCtlRecord=false`, `isConvicted=false`, no CTL result line → `ctlWarningCount=1`, `warningOffenceIds=[offenceId]`; also cover each of the seven trigger short codes (`RI`, `RIYDA`, `RIH`, `RIB`, `RILA`, `RILAB`, `REMYD`) via a parameterised test; confirm tests FAIL before proceeding
-- [X] T007 [US1] Write failing integration test for positive trigger path in `src/test/java/uk/gov/hmcts/cp/integration/CtlMissingWarningIntegrationTest.java` — POST to `/api/validation/validate` with one offence (`hasExistingCtlRecord=false`, `isConvicted=false`) and one result line (`shortCode=RI`); assert `$.warnings[?(@.ruleId=='DR-CTL-001')]` has size 1, message matches FR-007 exactly, `$.errors` is empty; confirm test FAILS before proceeding
+- [X] T007 [US1] Write failing integration test for positive trigger path in `src/test/java/uk/gov/hmcts/cp/integration/CtlMissingWarningIntegrationTest.java` — POST to `/api/validation/validate` with one offence (`hasExistingCtlRecord=false`, `isConvicted=false`) and one result line (`shortCode=RI`); assert `$.warnings[?(@.ruleId=='DR-CTL-003')]` has size 1, message matches FR-007 exactly, `$.errors` is empty; confirm test FAILS before proceeding
 - [X] T008 [US1] Implement `src/main/java/uk/gov/hmcts/cp/services/rules/cel/CtlMissingPreprocessor.java` — Spring `@Component`, qualifier `"ctl-missing"`, reads `remandShortCodes` and `ctlShortCodes` from `PreprocessingDefinition`, evaluates four-condition logic per offence (has remand result AND no existing CTL AND no CTL result AND not convicted), produces one `CtlOffenceContext` per offence
 - [X] T009 [US1] Run `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessorTest" --tests "uk.gov.hmcts.cp.integration.CtlMissingWarningIntegrationTest"` — verify T006 and T007 tests pass; fix any issues in T008 until green
 
@@ -80,7 +80,7 @@ warning message at WARNING severity.
   - bypass 2: CTL result line present (`shortCode=CTL`) → `ctlWarningCount=0`
   - bypass 3: `isConvicted=true` → `ctlWarningCount=0`
   - bypass 4: no trigger result present → `ctlWarningCount=0`
-- [X] T011 [US2] Add integration tests for all four bypass scenarios to `src/test/java/uk/gov/hmcts/cp/integration/CtlMissingWarningIntegrationTest.java` — for each bypass, assert `$.warnings[?(@.ruleId=='DR-CTL-001')]` is empty and `$.errors` is empty
+- [X] T011 [US2] Add integration tests for all four bypass scenarios to `src/test/java/uk/gov/hmcts/cp/integration/CtlMissingWarningIntegrationTest.java` — for each bypass, assert `$.warnings[?(@.ruleId=='DR-CTL-003')]` is empty and `$.errors` is empty
 - [X] T012 [US2] Run `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessorTest" --tests "uk.gov.hmcts.cp.integration.CtlMissingWarningIntegrationTest"` — verify all bypass tests pass; fix T008 if any fail
 
 **Checkpoint**: All four bypass conditions verified at unit and integration level.
@@ -94,7 +94,7 @@ warning message at WARNING severity.
 **Independent Test**: Assertion already embedded in T007; add explicit severity assertion if missing.
 
 - [X] T013 [US3] Add assertion to `CtlMissingWarningIntegrationTest.java` (if not already present from T007) that `$.warnings[0].severity` equals `"WARNING"` and `$.errors` is empty for the positive-path scenario — run and confirm green
-- [X] T014 [US3] Verify `DR-CTL-001.yaml` `severity: WARNING` field is set correctly (compile check passes via `gradle test`; no ERROR issues emitted)
+- [X] T014 [US3] Verify `DR-CTL-003.yaml` `severity: WARNING` field is set correctly (compile check passes via `gradle test`; no ERROR issues emitted)
 
 **Checkpoint**: Severity verified end-to-end. All three user stories independently functional.
 
@@ -108,7 +108,7 @@ warning message at WARNING severity.
 - [X] T016 Run `gradle checkstyleMain` — resolve any Google style violations (`maxWarnings = 0`)
 - [X] T017 Run `gradle pmdMain` — resolve any PMD findings (`ignoreFailures = false`)
 - [X] T018 Run `gradle build` — full build (Checkstyle + PMD + all tests) must be green
-- [X] T019 Run spec-validator agent (read-only) against `src/main/resources/rules/DR-CTL-001.yaml` — confirm schema compliance, `preprocessing.type: "ctl-missing"` resolves to the registered `CtlMissingPreprocessor` bean, and the CEL expression `ctlWarningCount > 0` compiles
+- [X] T019 Run spec-validator agent (read-only) against `src/main/resources/rules/DR-CTL-003.yaml` — confirm schema compliance, `preprocessing.type: "ctl-missing"` resolves to the registered `CtlMissingPreprocessor` bean, and the CEL expression `ctlWarningCount > 0` compiles
 
 ---
 
@@ -144,7 +144,7 @@ warning message at WARNING severity.
 # Phase 1 + Phase 2 can both start immediately:
 Task T001: Raise upstream API change (external)
 Task T002: Add fields to PreprocessingDefinition.java
-Task T003: Create DR-CTL-001.yaml
+Task T003: Create DR-CTL-003.yaml
 Task T004: Write CtlOffenceContextTest.java (failing tests)
 
 # After T001 resolves and T005 (CtlOffenceContext record) is done:
@@ -163,7 +163,7 @@ Task T007: Write CtlMissingWarningIntegrationTest.java (positive path, failing)
 2. Complete Phase 2 (T003–T005) — YAML + context record in place
 3. Complete Phase 3 (T006–T009) — preprocessor implemented, positive-path tests green
 4. **STOP and VALIDATE**: run `gradle test` — US1 fully functional
-5. Demonstrate: POST with RI result → DR-CTL-001 WARNING returned
+5. Demonstrate: POST with RI result → DR-CTL-003 WARNING returned
 
 ### Incremental Delivery
 
@@ -172,6 +172,31 @@ Task T007: Write CtlMissingWarningIntegrationTest.java (positive path, failing)
 3. Phase 4 → US2 bypass conditions verified (regression safety)
 4. Phase 5 → US3 severity advisory confirmed
 5. Phase 6 → Checkstyle + PMD + spec-validator all green
+
+---
+
+## Phase 7: Amendment — CTLDATE prompt bypass (added 2026-08-05)
+
+**Purpose**: Add a fifth bypass condition (FR-010): a `CTLDATE` prompt on any result line for the
+offence suppresses the warning, same as the existing four bypass conditions.
+
+> **TDD: T020 (tests) written and confirmed failing before T021 (implementation).**
+
+- [X] T020 [Addendum] Write failing unit tests in `CtlMissingPreprocessorTest.java` (prompt on the
+  trigger line, prompt on a different line on the same offence, unrelated promptRef does not
+  suppress, prompt on one offence does not leak to another) and a failing integration test in
+  `CtlMissingWarningIntegrationTest.java`; confirm all FAIL with an assertion failure before proceeding
+- [X] T021 [Addendum] Add `PROMPT_CTL_DATE = "CTLDATE"` constant and `hasCtlDatePrompt` check to
+  `CtlMissingPreprocessor.java`, folded into the `ctlWarning` boolean; add `resultLineWithPrompt(...)`
+  test builder to `ValidationRuleTestHelper.java`
+- [X] T022 [Addendum] Run `gradle test --tests "...CtlMissingPreprocessorTest" --tests
+  "...CtlMissingWarningIntegrationTest"` — verify T020 tests now PASS
+- [X] T023 [Addendum] Run `gradle checkstyleMain pmdMain` — clean
+- [X] T024 [Addendum] Update `spec.md` and `data-model.md` to document FR-010 and the fifth bypass
+  condition (this addendum)
+
+**Checkpoint**: Fifth bypass condition (CTLDATE prompt) verified at unit and integration level;
+spec artifacts brought back in sync with shipped behaviour.
 
 ---
 

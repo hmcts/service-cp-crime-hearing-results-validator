@@ -24,7 +24,7 @@ class ValidationApiHttpLiveTest {
     private static final String ERROR_MESSAGES = "errorMessages";
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
-    private static final String RULE_ID = "DR-SENT-002";
+    private static final String RULE_ID = "DR-SENT-001";
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();

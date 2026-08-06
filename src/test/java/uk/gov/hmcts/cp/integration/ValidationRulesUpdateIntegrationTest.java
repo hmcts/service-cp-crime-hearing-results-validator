@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ValidationRulesUpdateIntegrationTest extends IntegrationTestBase {
 
     private static final String BASE_URL = "/api/validation/rules/";
-    private static final String RULE_ID = "DR-SENT-002";
+    private static final String RULE_ID = "DR-SENT-001";
 
     @Resource
     private ValidationRuleRepository repository;

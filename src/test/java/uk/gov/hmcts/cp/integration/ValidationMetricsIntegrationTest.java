@@ -39,7 +39,7 @@ class ValidationMetricsIntegrationTest extends IntegrationTestBase {
             """;
 
     /**
-     * Triggers the DR-SENT-002 AC2 error then verifies the prometheus endpoint exposes the counter
+     * Triggers the DR-SENT-001 AC2 error then verifies the prometheus endpoint exposes the counter
      * series tagged with the rule, condition and severity. Asserts presence of the labelled series
      * rather than an absolute value, since counters accumulate across the shared test context.
      */
@@ -55,7 +55,7 @@ class ValidationMetricsIntegrationTest extends IntegrationTestBase {
         mockMvc.perform(get("/actuator/prometheus"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("validation_rule_issues_total")))
-                .andExpect(content().string(containsString("ruleId=\"DR-SENT-002\"")))
+                .andExpect(content().string(containsString("ruleId=\"DR-SENT-001\"")))
                 .andExpect(content().string(containsString("conditionId=\"AC2\"")))
                 .andExpect(content().string(containsString("severity=\"ERROR\"")));
     }

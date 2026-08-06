@@ -22,7 +22,7 @@ This document records the design decisions taken during planning, why each one w
 
 ## R2. Adding a second preprocessor triggers Constitution Principle III's "remove the hard-wiring" rule
 
-**Decision**: The plan has two ordered phases. Phase A refactors `CelValidationRule` and `ValidationRuleAutoConfiguration` to dispatch preprocessors through a Spring-aware `PreprocessorRegistry` keyed by the YAML's `preprocessing.type`. Phase B adds the new preprocessor + rule. The DR-SENT-002 rule must continue to pass all existing tests after Phase A with no behaviour change.
+**Decision**: The plan has two ordered phases. Phase A refactors `CelValidationRule` and `ValidationRuleAutoConfiguration` to dispatch preprocessors through a Spring-aware `PreprocessorRegistry` keyed by the YAML's `preprocessing.type`. Phase B adds the new preprocessor + rule. The DR-SENT-001 rule must continue to pass all existing tests after Phase A with no behaviour change.
 
 **Rationale**: Principle III is unambiguous: *"Hard-wiring a single preprocessor implementation into `CelValidationRule` is a transitional state; it MUST be removed before any second preprocessor type ships."* Shipping the new rule first and the refactor second would knowingly violate the constitution.
 
@@ -95,7 +95,7 @@ offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
 | `api-cp-crime-hearing-results-validator` | Add `category: enum [A, I, F]` to `ResultLineDto` in `src/main/resources/openapi/openapi-spec.yml`. Bump library version. |
 | `cpp-ui-hearing` | Extend `buildResultLines` (`src/app/results/core/helpers/results-validation.ts`) to map `line.category` onto the request body. |
 | `cpp-context-hearing` | Add `private String category` + `withCategory(...)` builder to the locally hand-written `ResultLineDto` (parallel mirror, **not** regenerated from the contract — must be maintained alongside it). Populate `.category(line.getCategory())` in `ValidationRequestMapper.toValidationRequest`. Add unit-test coverage on the mapper. |
-| `service-cp-crime-hearing-results-validator` | Pull the new lib version. Update `DR-DISQ-001.yaml` and `DisqualificationExtendedTestPreprocessor.java` to read `category`. Retire the "any non-excluded line counts as final" inference. Add a positive integration test for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. |
+| `service-cp-crime-hearing-results-validator` | Pull the new lib version. Update `DR-DISQ-002.yaml` and `DisqualificationExtendedTestPreprocessor.java` to read `category`. Retire the "any non-excluded line counts as final" inference. Add a positive integration test for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. |
 
 **Branch coordination**: each repo carries its own `DD-41656`-prefixed branch off whatever its current integration base is. This repo stays on `DD-41656-results-validation-warning` (001 is unmerged; rebasing onto a new branch would lose the existing implementation). For `cpp-context-hearing`, the open `DD-41715-custodial-concurrent-consecutive-check` branch raises a question: piggyback on it, or open a fresh DD-41656 branch off integration? A fresh branch is the safer default unless DD-41715 is about to merge.
 
@@ -113,10 +113,10 @@ offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
 
 ## R4. What is the rule's identifier — `DR-SENT-003` or a new `DR-DISQ-NNN`?
 
-**Decision**: `DR-DISQ-001`.
+**Decision**: `DR-DISQ-002`.
 
 **Rationale**:
-- The existing rule (`DR-SENT-002`) is about *sentencing arithmetic* (concurrent/consecutive). The new rule is about *disqualification*. Putting them in the same `SENT` family because both relate to sentencing would conflate two distinct policy areas and obscure intent for BAs reading the YAML.
+- The existing rule (`DR-SENT-001`) is about *sentencing arithmetic* (concurrent/consecutive). The new rule is about *disqualification*. Putting them in the same `SENT` family because both relate to sentencing would conflate two distinct policy areas and obscure intent for BAs reading the YAML.
 - `DISQ` reads cleanly in dashboards, in the `validation_rule` DB table, and in the `RuleDetailResponse` JSON.
 - The `id` is a free-form `VARCHAR(20)` in the DB and a free string in the YAML — there is no schema constraint on the prefix.
 - Picking `001` for the new family leaves room for further disqualification rules without renumbering.
@@ -230,9 +230,9 @@ messageTemplate: >-
 
 ---
 
-## R10. Test fixture data: how does the rule react to the existing DR-SENT-002 test corpus?
+## R10. Test fixture data: how does the rule react to the existing DR-SENT-001 test corpus?
 
-**Decision**: Add a regression test that runs both rules against a hearing crafted to trigger DR-SENT-002 *and* DR-DISQ-001 simultaneously (e.g. one defendant, two offences, one with `RT88026 + COEW + IMP`, the other with `IMP` plus missing concurrent/consecutive info). The expected output is one `DR-SENT-002` ERROR plus one `DR-DISQ-001` WARNING — proving the rules evaluate independently per Constitution Principle III and FR-011.
+**Decision**: Add a regression test that runs both rules against a hearing crafted to trigger DR-SENT-001 *and* DR-DISQ-002 simultaneously (e.g. one defendant, two offences, one with `RT88026 + COEW + IMP`, the other with `IMP` plus missing concurrent/consecutive info). The expected output is one `DR-SENT-001` ERROR plus one `DR-DISQ-002` WARNING — proving the rules evaluate independently per Constitution Principle III and FR-011.
 
 **Rationale**: Catches the regression where the registry refactor accidentally short-circuits one rule when the other matches.
 
@@ -246,7 +246,7 @@ messageTemplate: >-
 | R2 | Refactor preprocessor dispatch? | Yes, before the new preprocessor ships (Constitution III) |
 | R3 | "Final result" detection (original) | ~~Per-offence rule over the result-line set; no upstream DTO change~~ **SUPERSEDED 2026-04-28 — see R3-revised** |
 | R3-revised | "Final result" detection (refined) | Read `category = 'F'` from the result line; four-repo contract change under DD-41656 |
-| R4 | Rule id | `DR-DISQ-001` |
+| R4 | Rule id | `DR-DISQ-002` |
 | R5 | Offence-level linkage | One context (and one `ValidationIssue`) per qualifying offence |
 | R6 | CEL variables (original) | `qualifyingCount`, `relevantCount`, `excludedFinalCount`, `disqExtTestCount` |
 | R6-revised | CEL variables (refined) | Adds `finalCategoryCount`; tightens `excludedFinalCount` semantics to F-category lines only |

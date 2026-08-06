@@ -1,4 +1,4 @@
-# Data Model: CTL Missing Warning (DR-CTL-001)
+# Data Model: CTL Missing Warning (DR-CTL-003)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06
 
@@ -61,14 +61,17 @@ for each offence:
   hasRemandResult  = any line for offence has shortCode in remandCodes
   hasExistingCtl   = offence.hasExistingCtlRecord (null → false)
   hasCtlResult     = any line for offence has shortCode in ctlCodes
+  hasCtlDatePrompt = any line for offence carries a prompt with promptRef == "CTLDATE"
   isConvicted      = offence.isConvicted (null → false)
 
-  ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !isConvicted
+  ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !hasCtlDatePrompt && !isConvicted
 
   yield CtlOffenceContext(offenceId, ctlWarning ? 1 : 0, ...)
 ```
 
 **Short-code comparison**: case-insensitive (normalised to `Locale.ROOT` upper case), matching the existing preprocessor style.
+
+**Prompt-ref comparison** (`CTLDATE`): case-sensitive, matching the existing `promptRef` convention (e.g. `PreprocessorHelper.parsePromptDate`, `YouthRehabilitationPreprocessor`'s `endDate`/`endDateOfTagging`). The prompt reference is a Java constant (`PROMPT_CTL_DATE`), not a YAML-configurable list — consistent with how prompt refs are handled elsewhere in this codebase (short codes are YAML-driven lists; prompt refs are Java constants).
 
 **Reads from `PreprocessingDefinition`**:
 - `remandShortCodes` (List<String>)
@@ -91,13 +94,13 @@ No existing fields removed or renamed.
 
 ---
 
-## 5. `DR-CTL-001.yaml` (new rule file)
+## 5. `DR-CTL-003.yaml` (new rule file)
 
-**File**: `src/main/resources/rules/DR-CTL-001.yaml`
+**File**: `src/main/resources/rules/DR-CTL-003.yaml`
 
 ```yaml
 rule:
-  id: "DR-CTL-001"
+  id: "DR-CTL-003"
   title: "CTL missing check"
   description: >-
     Warns when a remand-type result is recorded against an offence that has no
@@ -142,6 +145,7 @@ DraftValidationRequest
 │   └── isConvicted              (NEW — upstream)
 └── resultLines: List<ResultLineDto>
     ├── shortCode                (existing — checked against remandShortCodes / ctlShortCodes)
+    ├── prompts: List<Prompt>    (existing — checked for a CTLDATE promptRef)
     └── offenceId                (existing — groups lines to offences)
 
 CtlMissingPreprocessor

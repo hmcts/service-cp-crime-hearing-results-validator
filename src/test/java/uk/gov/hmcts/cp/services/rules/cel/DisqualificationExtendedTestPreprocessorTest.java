@@ -16,7 +16,7 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Unit tests for the per-offence preprocessor that drives DR-DISQ-001.
+ * Unit tests for the per-offence preprocessor that drives DR-DISQ-002.
  */
 class DisqualificationExtendedTestPreprocessorTest {
 

@@ -7,6 +7,7 @@ import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
+import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
@@ -34,16 +35,17 @@ class ValidationRuleAutoConfigurationTest {
             new CustodialPreprocessor(),
             new DisqualificationExtendedTestPreprocessor(),
             new CtlMissingPreprocessor(),
-            new YouthRehabilitationPreprocessor()));
+            new YouthRehabilitationPreprocessor(),
+            new CommunityOrderEndDatePreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
 
     /**
-     * Verifies the configuration discovers the bundled DR-SENT-002 YAML rule.
+     * Verifies the configuration discovers the bundled DR-SENT-001 YAML rule.
      */
     @Test
-    void should_discover_DR_SENT_002_rule() throws IOException {
+    void should_discover_DR_SENT_001_rule() throws IOException {
         List<ValidationRule> rules = config.validationRules(
                 preprocessorRegistry,
                 new CelExpressionEvaluator(),
@@ -53,7 +55,7 @@ class ValidationRuleAutoConfigurationTest {
                 issueRecorder);
 
         assertThat(rules).isNotEmpty();
-        assertThat(rules).anyMatch(r -> "DR-SENT-002".equals(r.getRuleDetail().getRuleId()));
+        assertThat(rules).anyMatch(r -> "DR-SENT-001".equals(r.getRuleDetail().getRuleId()));
     }
 
     /**
@@ -69,10 +71,11 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(4);
+        assertThat(rules).hasSize(5);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001");
+                .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
+                        "DR-COEW-005");
     }
 
     /**

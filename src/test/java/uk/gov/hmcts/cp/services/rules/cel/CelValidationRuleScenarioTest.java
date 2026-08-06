@@ -23,13 +23,13 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 
 /**
- * Scenario-oriented acceptance tests for DR-SENT-002 grouped by acceptance condition.
+ * Scenario-oriented acceptance tests for DR-SENT-001 grouped by acceptance condition.
  */
 class CelValidationRuleScenarioTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final CelValidationRule rule = new CelValidationRule(
-            "rules/DR-SENT-002.yaml",
+            "rules/DR-SENT-001.yaml",
             new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),

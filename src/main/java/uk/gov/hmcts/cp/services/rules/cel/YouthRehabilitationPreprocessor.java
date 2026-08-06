@@ -23,7 +23,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Preprocesses Youth Rehabilitation Order result lines into per-defendant
- * {@link YouthRehabilitationContext} summaries for DR-YRO-001. Shared result-line grouping,
+ * {@link YouthRehabilitationContext} summaries for DR-YRO-004. Shared result-line grouping,
  * short-code matching, defendant-name assembly, and prompt-date parsing live in
  * {@link PreprocessorHelper}.
  *
