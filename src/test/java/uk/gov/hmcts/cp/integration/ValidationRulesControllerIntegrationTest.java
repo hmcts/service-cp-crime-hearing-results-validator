@@ -25,11 +25,12 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count", is(4)))
-                .andExpect(jsonPath("$.enabledCount", is(2)))
-                .andExpect(jsonPath("$.rules", hasSize(4)))
+                .andExpect(jsonPath("$.count", is(5)))
+                .andExpect(jsonPath("$.enabledCount", is(3)))
+                .andExpect(jsonPath("$.rules", hasSize(5)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
-                        contains("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001")));
+                        contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
+                                "DR-COEW-005")));
     }
 
     /**
@@ -37,11 +38,11 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
      */
     @Test
     void get_rule_by_id_should_return_ok_with_rule_detail() throws Exception {
-        mockMvc.perform(get("/api/validation/rules/{ruleId}", "DR-SENT-002")
+        mockMvc.perform(get("/api/validation/rules/{ruleId}", "DR-SENT-001")
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules-detail"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.enabled", is(true)));
     }
 

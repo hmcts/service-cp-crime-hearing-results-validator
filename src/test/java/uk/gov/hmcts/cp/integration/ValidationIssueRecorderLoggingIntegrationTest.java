@@ -45,7 +45,7 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         MDC.put("clientCorrelationId", "corr-abc");
         ByteArrayOutputStream capturedStdOut = captureStdOut();
 
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz",
+        recorder.record("DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz",
                 "Validates that custodial sentences have correct concurrent/consecutive "
                         + "information per defendant across all cases in a hearing.",
                 "Multiple offences missing info",
@@ -58,7 +58,7 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
 
         Map<String, Object> fields = new ObjectMapper().readValue(issueLine, new TypeReference<>() {
         });
-        assertThat(fields.get("ruleId")).isEqualTo("DR-SENT-002");
+        assertThat(fields.get("ruleId")).isEqualTo("DR-SENT-001");
         assertThat(fields.get("conditionId")).isEqualTo("AC2");
         assertThat(fields.get("severity")).isEqualTo("ERROR");
         assertThat(fields.get("hearingId")).isEqualTo("hearing-xyz");

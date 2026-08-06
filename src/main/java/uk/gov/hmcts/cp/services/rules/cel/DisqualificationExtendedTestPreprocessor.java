@@ -14,7 +14,7 @@ import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Per-offence preprocessor for the DR-DISQ-001 extended-test disqualification rule. Produces one
+ * Per-offence preprocessor for the DR-DISQ-002 extended-test disqualification rule. Produces one
  * {@link DisqualificationContext} per offence in the request, with counts that drive the YAML CEL
  * condition {@code qualifyingCount > 0}.
  *

@@ -5,7 +5,7 @@
 
 ## Summary
 
-Adds `DR-YRO-001.yaml` — a Youth Rehabilitation Order end-date validation rule covering AC2 (YRO end date must not precede any linked curfew requirement end date).
+Adds `DR-YRO-004.yaml` — a Youth Rehabilitation Order end-date validation rule covering AC2 (YRO end date must not precede any linked curfew requirement end date).
 
 > **Design note (supersedes the original plan).** The first revision proposed reusing the
 > `community-order-end-date` preprocessor with no new Java. That was reversed in favour of a dedicated
@@ -58,7 +58,7 @@ specs/002-yro-date-validation/
 
 ```text
 src/main/resources/rules/
-└── DR-YRO-001.yaml                                # NEW — YRO date validation rule
+└── DR-YRO-004.yaml                                # NEW — YRO date validation rule
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── YouthRehabilitationPreprocessor.java           # NEW — youth-rehabilitation-order preprocessor (AC2)
@@ -80,9 +80,9 @@ src/test/java/uk/gov/hmcts/cp/services/rules/cel/
 |---|---|
 | `PreprocessorRegistry` | Dispatches on `preprocessing.type = "youth-rehabilitation-order"` |
 | `CelValidationRule` | Evaluates CEL conditions against context; auto-discovers YAML |
-| `ValidationRuleAutoConfiguration` | Discovers `DR-YRO-001.yaml` at startup via `classpath*:rules/DR-*.yaml` |
+| `ValidationRuleAutoConfiguration` | Discovers `DR-YRO-004.yaml` at startup via `classpath*:rules/DR-*.yaml` |
 
-## Rule Design: DR-YRO-001
+## Rule Design: DR-YRO-004
 
 ### Preprocessing configuration
 

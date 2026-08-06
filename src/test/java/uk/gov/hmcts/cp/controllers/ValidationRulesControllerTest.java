@@ -72,13 +72,13 @@ class ValidationRulesControllerTest {
     void updateValidationRule_should_delegate_to_service_and_return_ok() {
         UpdateRuleRequest request = new UpdateRuleRequest(false, null);
         RuleDetailResponse expected = RuleDetailResponse.builder()
-                .ruleId("DR-SENT-002")
+                .ruleId("DR-SENT-001")
                 .enabled(false)
                 .build();
-        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+        when(validationRulesService.updateRule("DR-SENT-001", request, "user1")).thenReturn(expected);
 
         ResponseEntity<RuleDetailResponse> response =
-                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+                validationRulesController.updateValidationRule("DR-SENT-001", "user1", request, "corr1");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
@@ -92,13 +92,13 @@ class ValidationRulesControllerTest {
     void updateValidationRule_severityOnly_should_delegate_to_service_and_return_ok() {
         UpdateRuleRequest request = new UpdateRuleRequest(null, UpdateRuleRequest.SeverityEnum.WARNING);
         RuleDetailResponse expected = RuleDetailResponse.builder()
-                .ruleId("DR-SENT-002")
+                .ruleId("DR-SENT-001")
                 .severity(RuleDetailResponse.SeverityEnum.WARNING)
                 .build();
-        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+        when(validationRulesService.updateRule("DR-SENT-001", request, "user1")).thenReturn(expected);
 
         ResponseEntity<RuleDetailResponse> response =
-                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+                validationRulesController.updateValidationRule("DR-SENT-001", "user1", request, "corr1");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);
@@ -112,14 +112,14 @@ class ValidationRulesControllerTest {
     void updateValidationRule_bothFields_should_delegate_to_service_and_return_ok() {
         UpdateRuleRequest request = new UpdateRuleRequest(false, UpdateRuleRequest.SeverityEnum.WARNING);
         RuleDetailResponse expected = RuleDetailResponse.builder()
-                .ruleId("DR-SENT-002")
+                .ruleId("DR-SENT-001")
                 .enabled(false)
                 .severity(RuleDetailResponse.SeverityEnum.WARNING)
                 .build();
-        when(validationRulesService.updateRule("DR-SENT-002", request, "user1")).thenReturn(expected);
+        when(validationRulesService.updateRule("DR-SENT-001", request, "user1")).thenReturn(expected);
 
         ResponseEntity<RuleDetailResponse> response =
-                validationRulesController.updateValidationRule("DR-SENT-002", "user1", request, "corr1");
+                validationRulesController.updateValidationRule("DR-SENT-001", "user1", request, "corr1");
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expected);

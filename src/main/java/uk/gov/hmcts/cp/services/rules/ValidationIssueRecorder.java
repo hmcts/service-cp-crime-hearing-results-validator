@@ -40,7 +40,7 @@ public class ValidationIssueRecorder {
     /**
      * Records a single triggered validation issue as a counter increment and a structured log line.
      *
-     * @param ruleId rule that triggered (e.g. {@code DR-SENT-002})
+     * @param ruleId rule that triggered (e.g. {@code DR-SENT-001})
      * @param conditionId condition within the rule that triggered (e.g. {@code AC2})
      * @param severity resolved severity of the issue
      * @param hearingId hearing the draft results belong to

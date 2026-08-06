@@ -40,7 +40,7 @@ You are a senior code reviewer for the HMCTS Crime Hearing Results Validator ser
 
 ## Validation Rules (CEL/YAML)
 
-- Rule IDs must follow the pattern `DR-<CATEGORY>-<NUMBER>` (e.g. `DR-SENT-002`)
+- Rule IDs must follow the pattern `DR-<CATEGORY>-<NUMBER>` (e.g. `DR-SENT-001`)
 - CEL expressions should be reviewed for correctness against the preprocessing context variables
 - Condition severity: `ERROR` blocks sharing, `WARNING` allows with acknowledgement
 - The DB severity column acts as a **ceiling** — it caps downward, never upgrades. Verify any documentation or code mentioning severity overrides reflects this model correctly.

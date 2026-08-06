@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link YouthRehabilitationPreprocessor} with DR-YRO-001 configuration
+ * Unit tests for {@link YouthRehabilitationPreprocessor} with DR-YRO-004 configuration
  * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew).
  */
 class YouthRehabilitationPreprocessorTest {

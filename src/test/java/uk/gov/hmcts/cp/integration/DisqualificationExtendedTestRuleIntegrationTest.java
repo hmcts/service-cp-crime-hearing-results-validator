@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * End-to-end tests for DR-DISQ-001 (extended-test disqualification warning) over the public
+ * End-to-end tests for DR-DISQ-002 (extended-test disqualification warning) over the public
  * validate endpoint. Covers Phase 3 / User Story 1 — the MVP path where a relevant Road
  * Traffic Act 1988 offence with a non-excluded final result and no DDOTE / DDOTEL recorded
  * surfaces as a single non-blocking warning above the affected offence, plus suppression
@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Every scenario pins three response slices:
  * <ul>
  *   <li>{@code $.errors} is empty (no other rule produced an error on the payload).</li>
- *   <li>{@code $.warnings[?(@.ruleId=='DR-DISQ-001')]} is the expected size for this rule.</li>
+ *   <li>{@code $.warnings[?(@.ruleId=='DR-DISQ-002')]} is the expected size for this rule.</li>
  *   <li>{@code $.warnings} (the total warnings list) is the expected size, so a future
  *       unrelated rule emitting a warning on the same payload cannot make these tests pass
  *       silently.</li>
@@ -43,8 +43,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
-    private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-001')]";
-    private static final String RULE_ID = "DR-DISQ-001";
+    private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-002')]";
+    private static final String RULE_ID = "DR-DISQ-002";
 
     @Resource
     private ValidationRuleRepository repository;
@@ -120,7 +120,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
@@ -161,7 +161,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
@@ -229,7 +229,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
@@ -460,7 +460,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
@@ -591,7 +591,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(3)))
                     .andExpect(jsonPath("$.warnings", hasSize(3)))
                     .andExpect(jsonPath("$.warnings[*].ruleId",
-                            containsInAnyOrder("DR-DISQ-001", "DR-DISQ-001", "DR-DISQ-001")))
+                            containsInAnyOrder("DR-DISQ-002", "DR-DISQ-002", "DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[*].affectedOffences[0].offenceId",
                             containsInAnyOrder("off1", "off2", "off3")));
         }
@@ -641,7 +641,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
@@ -789,7 +789,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(2)))
                     .andExpect(jsonPath("$.warnings", hasSize(2)))
                     .andExpect(jsonPath("$.warnings[*].ruleId",
-                            containsInAnyOrder("DR-DISQ-001", "DR-DISQ-001")))
+                            containsInAnyOrder("DR-DISQ-002", "DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[*].affectedOffences[0].offenceId",
                             containsInAnyOrder("off1", "off2")));
         }
@@ -842,7 +842,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_DISQ_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-001")))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-DISQ-002")))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }

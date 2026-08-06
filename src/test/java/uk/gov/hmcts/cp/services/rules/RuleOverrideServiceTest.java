@@ -34,17 +34,17 @@ class RuleOverrideServiceTest {
     @Test
     void findOverride_should_return_entity_when_found() {
         ValidationRuleEntity entity = ValidationRuleEntity.builder()
-                .id("DR-SENT-002")
+                .id("DR-SENT-001")
                 .enabled(false)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
                 .build();
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.of(entity));
+        when(ruleRepository.findById("DR-SENT-001")).thenReturn(Optional.of(entity));
 
-        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-002");
+        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getId()).isEqualTo("DR-SENT-002");
+        assertThat(result.get().getId()).isEqualTo("DR-SENT-001");
         assertThat(result.get().isEnabled()).isFalse();
     }
 
@@ -65,9 +65,9 @@ class RuleOverrideServiceTest {
      */
     @Test
     void findOverride_should_return_empty_when_db_throws() {
-        when(ruleRepository.findById("DR-SENT-002")).thenThrow(new RuntimeException("DB error"));
+        when(ruleRepository.findById("DR-SENT-001")).thenThrow(new RuntimeException("DB error"));
 
-        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-002");
+        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-001");
 
         assertThat(result).isEmpty();
     }
@@ -79,7 +79,7 @@ class RuleOverrideServiceTest {
     @Test
     void saveOverride_should_delegate_to_repository_and_return_saved_entity() {
         ValidationRuleEntity entity = ValidationRuleEntity.builder()
-                .id("DR-SENT-002")
+                .id("DR-SENT-001")
                 .enabled(false)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
