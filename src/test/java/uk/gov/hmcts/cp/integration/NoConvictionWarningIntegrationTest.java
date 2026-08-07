@@ -60,9 +60,14 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
 
     @AfterEach
     void restoreRule() {
+        // DR-CONV-006's steady-state default (V1.007__insert_dr_conv_006.sql) is enabled=true,
+        // unlike DR-DISQ-001/DR-CTL-001/DR-YRO-001 (which default to false). Restoring to true
+        // here — not false — keeps the shared TestContainers DB's rule state correct for whatever
+        // IT class runs next in the same JVM (see ValidationRulesControllerIntegrationTest, which
+        // asserts enabledCount against this steady state).
         repository.save(ValidationRuleEntity.builder()
                 .id(RULE_ID)
-                .enabled(false)
+                .enabled(true)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
                 .updatedBy("test-teardown")

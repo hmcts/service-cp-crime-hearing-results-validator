@@ -1,6 +1,5 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,7 @@ public class NoConvictionPreprocessor implements ValidationPreprocessor {
                                                         final PreprocessingDefinition config) {
         final Set<String> excludedShortCodes = PreprocessorHelper.upperSet(config.getExcludedFinalShortCodes());
 
-        final Map<String, List<ResultLineDto>> resultsByOffence = groupResultsByOffence(request);
+        final Map<String, List<ResultLineDto>> resultsByOffence = PreprocessorHelper.groupResultsByOffence(request);
         final Map<String, NoConvictionContext> result = new LinkedHashMap<>();
 
         if (request.getOffences() != null) {
@@ -83,19 +82,5 @@ public class NoConvictionPreprocessor implements ValidationPreprocessor {
                 isConvicted ? 1L : 0L,
                 unconvictedSentence ? List.of(offenceId) : List.of(),
                 List.of(offenceId));
-    }
-
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    private static Map<String, List<ResultLineDto>> groupResultsByOffence(
-            final DraftValidationRequest request) {
-        final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
-        if (request.getResultLines() != null) {
-            for (final ResultLineDto rl : request.getResultLines()) {
-                if (rl.getOffenceId() != null) {
-                    grouped.computeIfAbsent(rl.getOffenceId(), k -> new ArrayList<>()).add(rl);
-                }
-            }
-        }
-        return grouped;
     }
 }
