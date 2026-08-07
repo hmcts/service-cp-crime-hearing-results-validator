@@ -6,7 +6,7 @@ rule:
     of the excluded non-substantive disposals, and the offence is not
     convicted (no guilty plea, finding of guilt, or recorded date of
     conviction).
-  priority: 4000
+  priority: 6000
   enabled: true
 
   preprocessing:
