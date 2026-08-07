@@ -51,7 +51,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        contains("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001")));
+                        contains("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-CONV-006", "DR-YRO-001")));
     }
 
     /**

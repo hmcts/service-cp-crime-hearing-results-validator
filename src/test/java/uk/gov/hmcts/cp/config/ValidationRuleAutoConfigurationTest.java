@@ -11,6 +11,7 @@ import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
+import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
@@ -34,7 +35,8 @@ class ValidationRuleAutoConfigurationTest {
             new CustodialPreprocessor(),
             new DisqualificationExtendedTestPreprocessor(),
             new CtlMissingPreprocessor(),
-            new YouthRehabilitationPreprocessor()));
+            new YouthRehabilitationPreprocessor(),
+            new NoConvictionPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -69,10 +71,11 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(4);
+        assertThat(rules).hasSize(5);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001");
+                .containsExactlyInAnyOrder(
+                        "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001", "DR-CONV-006");
     }
 
     /**

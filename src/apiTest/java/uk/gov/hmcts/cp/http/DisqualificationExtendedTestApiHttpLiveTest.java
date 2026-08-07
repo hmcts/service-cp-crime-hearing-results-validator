@@ -72,7 +72,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -107,7 +107,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "RT88026",
-                     "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                     "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -174,7 +174,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;

@@ -104,7 +104,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                     {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery",
                      "orderIndex": 4},
                     {"offenceId": "off5", "offenceCode": "RT88026",
-                     "offenceTitle": "Dangerous driving", "orderIndex": 5}
+                     "offenceTitle": "Dangerous driving", "orderIndex": 5, "isConvicted": true}
                   ]
                 }
                 """;
@@ -128,7 +128,8 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off5")))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        containsInAnyOrder("DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-YRO-001")));
+                        containsInAnyOrder(
+                                "DR-SENT-002", "DR-DISQ-001", "DR-CTL-001", "DR-CONV-006", "DR-YRO-001")));
     }
 
     /**
@@ -160,7 +161,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
                     {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3}
+                    {"offenceId": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3, "isConvicted": true}
                   ]
                 }
                 """;
@@ -223,7 +224,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                     {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
                     {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
                     {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
-                    {"offenceId": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5}
+                    {"offenceId": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5, "isConvicted": true}
                   ]
                 }
                 """;
