@@ -57,10 +57,10 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
     }
 
     @AfterEach
-    void disableYroRule() {
+    void restoreYroRule() {
         repository.save(ValidationRuleEntity.builder()
                 .id(YRO_RULE_ID)
-                .enabled(false)
+                .enabled(true)
                 .severity("ERROR")
                 .updatedAt(Instant.now())
                 .updatedBy("test-teardown")

@@ -68,7 +68,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
     void restoreRule() {
         repository.save(ValidationRuleEntity.builder()
                 .id(RULE_ID)
-                .enabled(false)
+                .enabled(true)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
                 .updatedBy("test-teardown")

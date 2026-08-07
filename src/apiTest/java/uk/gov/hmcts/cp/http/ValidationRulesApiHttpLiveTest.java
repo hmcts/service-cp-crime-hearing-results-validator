@@ -43,11 +43,10 @@ class ValidationRulesApiHttpLiveTest {
     static void restoreDefaultRuleStates() throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = (id = 'DR-COEW-005') "
-                             + "WHERE id IN ('DR-YRO-001', 'DR-COEW-005')")) {
+                     "UPDATE validation_rule SET enabled = (id <> 'DR-YRO-001')")) {
             ps.executeUpdate();
         }
-        awaitEnabledCount(2);
+        awaitEnabledCount(4);
     }
 
     private static void awaitEnabledCount(final int expected) throws Exception {
@@ -91,7 +90,7 @@ class ValidationRulesApiHttpLiveTest {
 
         final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("count").asInt()).isEqualTo(5);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(2);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(4);
         assertThat(json.get("rules")).hasSize(5);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));

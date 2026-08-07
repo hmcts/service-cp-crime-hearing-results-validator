@@ -56,7 +56,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
     void restoreDisqRule() {
         repository.save(ValidationRuleEntity.builder()
                 .id(DISQ_RULE_ID)
-                .enabled(false)
+                .enabled(true)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
                 .updatedBy("test-teardown")
