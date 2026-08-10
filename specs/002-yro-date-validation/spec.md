@@ -50,7 +50,7 @@ A caseworker entering results has added a Youth Rehabilitation Order (YRO) to on
 
 ### Requirement ↔ rule-condition mapping
 
-| Functional requirement | Jira AC | DR-YRO-001 condition | CEL expression |
+| Functional requirement | Jira AC | DR-YRO-004 condition | CEL expression |
 |---|---|---|---|
 | FR-001 / FR-002 | AC2 | AC2a (YRC2) | `curViolationCount > 0` |
 | FR-001 / FR-002 | AC2 | AC2b (YRC1) | `cureViolationCount > 0` |

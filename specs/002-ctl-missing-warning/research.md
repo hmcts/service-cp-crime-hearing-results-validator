@@ -1,12 +1,12 @@
-# Research: CTL Missing Warning (DR-CTL-001)
+# Research: CTL Missing Warning (DR-CTL-003)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06
 
-## Decision 1: Preprocessor pattern — per-offence (matching DR-DISQ-001)
+## Decision 1: Preprocessor pattern — per-offence (matching DR-DISQ-002)
 
 **Decision**: Use a per-offence preprocessor, one `CtlOffenceContext` per offence in the request, mirroring `DisqualificationExtendedTestPreprocessor`.
 
-**Rationale**: The CTL check is independent for each offence — whether a given offence has a remand result, an existing CTL record, a CTL result in the current hearing, and a conviction status are all offence-scoped properties. The per-defendant pattern (DR-SENT-002) is inappropriate because there is no cross-defendant aggregation.
+**Rationale**: The CTL check is independent for each offence — whether a given offence has a remand result, an existing CTL record, a CTL result in the current hearing, and a conviction status are all offence-scoped properties. The per-defendant pattern (DR-SENT-001) is inappropriate because there is no cross-defendant aggregation.
 
 **Alternatives considered**:
 - A single aggregate context covering all offences (like CustodialPreprocessor) — rejected because the warning is issued per-offence and a flat aggregate would lose the per-offence scoping that `affectedOffenceSet` needs.
@@ -37,9 +37,9 @@
 
 ---
 
-## Decision 4: Rule ID `DR-CTL-001`, priority `3000`
+## Decision 4: Rule ID `DR-CTL-003`, priority `3000`
 
-**Decision**: `DR-CTL-001` (new category `CTL`, first rule in category). Priority `3000` (evaluated after DR-SENT-002 at 1000 and DR-DISQ-001 at 2000; lower urgency than sentencing structure checks).
+**Decision**: `DR-CTL-003` (new category `CTL`, first rule in category). Priority `3000` (evaluated after DR-SENT-001 at 1000 and DR-DISQ-002 at 2000; lower urgency than sentencing structure checks).
 
 **Rationale**: The CTL check is advisory (WARNING only) and is conceptually a reminder rather than a structural sentencing error. Running it last is fine; all rules are evaluated independently.
 

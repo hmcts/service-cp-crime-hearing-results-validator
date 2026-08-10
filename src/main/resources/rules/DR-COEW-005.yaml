@@ -6,7 +6,7 @@ rule:
     attached requirement (AC2: CUR, CURE, CURA, AAR), and that a CUR/CURE/AAR requirement's own
     recorded end date matches its calculated duration (Start date + period - 1 day, or
     hearing date + days - 1 day for AAR).
-  priority: 4000
+  priority: 5000
   enabled: true
 
   preprocessing:

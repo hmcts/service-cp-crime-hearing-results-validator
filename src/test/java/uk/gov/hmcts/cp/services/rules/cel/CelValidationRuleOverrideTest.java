@@ -45,16 +45,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void getRuleDetail_should_use_db_severity_override() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(true)
                         .severity("WARNING")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -72,16 +72,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void getRuleDetail_should_use_db_enabled_override() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(false)
                         .severity("ERROR")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -98,16 +98,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_skip_when_disabled_in_db() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(false)
                         .severity("ERROR")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -136,10 +136,10 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_work_when_no_db_override_exists() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.empty());
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.empty());
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -169,11 +169,11 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_fallback_to_yaml_when_db_throws_exception() {
-        when(ruleOverrideService.findOverride("DR-SENT-002"))
+        when(ruleOverrideService.findOverride("DR-SENT-001"))
                 .thenReturn(Optional.empty());
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -203,16 +203,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_cap_error_to_warning_when_db_severity_is_warning() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(true)
                         .severity("WARNING")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -243,16 +243,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_keep_error_when_db_severity_is_error() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(true)
                         .severity("ERROR")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -282,16 +282,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void evaluate_should_fallback_to_yaml_severity_when_db_value_is_malformed() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(true)
                         .severity("Warn")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -320,16 +320,16 @@ class CelValidationRuleOverrideTest {
      */
     @Test
     void getRuleDetail_should_fallback_to_error_when_db_severity_is_malformed() {
-        when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+        when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                 ValidationRuleEntity.builder()
-                        .id("DR-SENT-002")
+                        .id("DR-SENT-001")
                         .enabled(true)
                         .severity("Warn")
                         .updatedAt(Instant.now())
                         .build()));
 
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -348,7 +348,7 @@ class CelValidationRuleOverrideTest {
     @Test
     void getRuleDetail_should_fallback_to_yaml_when_no_override() {
         CelValidationRule rule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -357,7 +357,7 @@ class CelValidationRuleOverrideTest {
                 NO_OP_RECORDER);
         RuleDetailResponse detail = rule.getRuleDetail();
 
-        assertThat(detail.getRuleId()).isEqualTo("DR-SENT-002");
+        assertThat(detail.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(detail.getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.ERROR);
         assertThat(detail.getEnabled()).isTrue();
     }

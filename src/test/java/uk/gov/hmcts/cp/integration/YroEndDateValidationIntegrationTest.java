@@ -22,7 +22,7 @@ import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 /**
- * End-to-end integration tests for DR-YRO-001 covering the YRO end-date validation
+ * End-to-end integration tests for DR-YRO-004 covering the YRO end-date validation
  * scenario set (AC2) with hearing date 20/05/2026.
  *
  * <p>Scenarios map directly to the business acceptance criteria:
@@ -35,8 +35,8 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_YRO_ERRORS =
-            "$.errors.validationIssues[?(@.ruleId=='DR-YRO-001')]";
-    private static final String YRO_RULE_ID = "DR-YRO-001";
+            "$.errors.validationIssues[?(@.ruleId=='DR-YRO-004')]";
+    private static final String YRO_RULE_ID = "DR-YRO-004";
 
     @Resource
     private ValidationRuleRepository repository;
