@@ -100,7 +100,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Reed"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -134,7 +134,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Beth", "lastName": "Cole"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -168,7 +168,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Ethan", "lastName": "Grant"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -215,7 +215,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Fiona", "lastName": "Hart"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -250,7 +250,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -293,7 +293,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "James", "lastName": "King"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -336,7 +336,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -391,7 +391,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Noah", "lastName": "Blake"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -457,7 +457,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Shah"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;

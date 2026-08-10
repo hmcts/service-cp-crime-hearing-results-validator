@@ -135,7 +135,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -178,7 +178,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -218,7 +218,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Bob", "lastName": "Brown"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -258,7 +258,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -298,7 +298,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Valid", "lastName": "Order"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -339,7 +339,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Multi", "lastName": "Violator"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -396,11 +396,11 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 1},
+                         "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 2},
+                         "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 3}
+                         "offenceTitle": "Theft", "orderIndex": 3, "isConvicted": true}
                       ]
                     }
                     """;
@@ -446,7 +446,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Share", "lastName": "Test"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -485,7 +485,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -528,9 +528,9 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 1},
+                         "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 2}
+                         "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -599,11 +599,11 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "defendants": [{"defendantId": "d1", "firstName": "Scoping", "lastName": "Test"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 1},
+                         "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 2},
+                         "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 3}
+                         "offenceTitle": "Theft", "orderIndex": 3, "isConvicted": true}
                       ]
                     }
                     """;
@@ -646,9 +646,9 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       "defendants": [{"defendantId": "d1", "firstName": "Mixed", "lastName": "Scoping"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 1},
+                         "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 2}
+                         "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -718,7 +718,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -759,7 +759,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -800,7 +800,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -845,7 +845,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -903,8 +903,8 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                         {"defendantId": "d2", "firstName": "Second", "lastName": "Defendant"}
                       ],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2}
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
+                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -947,7 +947,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Combo", "lastName": "Violator"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -986,7 +986,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "All", "lastName": "Valid"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
