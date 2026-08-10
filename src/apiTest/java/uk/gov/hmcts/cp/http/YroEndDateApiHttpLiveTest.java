@@ -4,13 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,10 +19,9 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-YRO-004 (Youth Rehabilitation Order end-date validation) against a
  * running service instance.
  *
- * <p>DR-YRO-004 is inserted into the {@code validation_rule} table as disabled by the Flyway
- * migration. {@link #enableRule()} and {@link #disableRule()} mutate the DB row then poll
- * {@code GET /api/validation/rules/DR-YRO-004} until the service reflects the new state,
- * eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
+ * <p>DR-YRO-004 defaults to enabled by its Flyway seed migration, so no rule-state setup is
+ * needed here. {@code ValidationRulesApiHttpLiveTest} temporarily disables this rule to test the
+ * enabled/disabled rule-count summary, but restores it afterwards.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -65,11 +59,6 @@ class YroEndDateApiHttpLiveTest {
     private static final String MSG_YRC3 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Further curfew requirement made";
-
-    private static final String DB_URL =
-            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = System.getProperty("db.username", "postgres");
-    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -451,49 +440,6 @@ class YroEndDateApiHttpLiveTest {
                 MSG_YRC1 + ". This affects Noah Blake.",
                 MSG_YRC3 + ". This affects Noah Blake."
         );
-    }
-
-    @BeforeAll
-    static void enableRule() throws Exception {
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    @AfterAll
-    static void disableRule() throws Exception {
-        setRuleEnabled(false);
-        awaitRuleState(false);
-    }
-
-    private static void setRuleEnabled(final boolean enabled) throws Exception {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-YRO-004'")) {
-            ps.setBoolean(1, enabled);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void awaitRuleState(final boolean expected) throws Exception {
-        final RestTemplate client = new RestTemplate();
-        final HttpHeaders headers = new HttpHeaders();
-        headers.set("CJSCPPUID", "test-setup");
-        final HttpEntity<Void> request = new HttpEntity<>(headers);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
-                + "/api/validation/rules/" + RULE_ID;
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline) {
-            final ResponseEntity<String> response = client.exchange(
-                    url, HttpMethod.GET, request, String.class);
-            final JsonNode json = objectMapper.readTree(response.getBody());
-            if (json.get("enabled").asBoolean() == expected) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        throw new IllegalStateException(
-                "DR-YRO-004 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

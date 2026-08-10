@@ -4,13 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,12 +19,9 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-CONV-006 (no-conviction-on-sentenced-offence warning) against a
  * running service instance.
  *
- * <p>DR-CONV-006 is inserted into the {@code validation_rule} table as <em>enabled</em> by the
- * Flyway migration ({@code V1.007__insert_dr_conv_006.sql}) — unlike DR-DISQ-001/DR-CTL-001/
- * DR-YRO-001, which default to disabled. {@link #ensureRuleEnabled()} and
- * {@link #restoreRuleEnabled()} both pin the row to that same steady state before and after this
- * class runs, so a prior run leaving the row disabled cannot mask these scenarios, and this class
- * cannot leak a disabled row into whatever api-test class runs next.
+ * <p>DR-CONV-006 defaults to enabled by its Flyway seed migration
+ * ({@code V1.007__insert_dr_conv_006.sql}) and nothing else in this suite disables it, so no
+ * rule-state setup is needed here.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -54,11 +46,6 @@ class NoConvictionWarningApiHttpLiveTest {
     private static final String EXPECTED_MESSAGE =
             "No conviction has been added against the offence. Check whether you need to add a "
                     + "guilty plea or verdict";
-
-    private static final String DB_URL =
-            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = System.getProperty("db.username", "postgres");
-    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -228,52 +215,6 @@ class NoConvictionWarningApiHttpLiveTest {
         assertThat(json.get(WARNINGS)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
-    }
-
-    @BeforeAll
-    static void ensureRuleEnabled() throws Exception {
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    @AfterAll
-    static void restoreRuleEnabled() throws Exception {
-        // DR-CONV-006's steady-state default (V1.007__insert_dr_conv_006.sql) is enabled=true —
-        // unlike DR-DISQ-001/DR-CTL-001/DR-YRO-001. Restore to true, not false, so this class
-        // cannot leak a disabled row into whatever api-test class runs next.
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    private static void setRuleEnabled(final boolean enabled) throws Exception {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-CONV-006'")) {
-            ps.setBoolean(1, enabled);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void awaitRuleState(final boolean expected) throws Exception {
-        final RestTemplate client = new RestTemplate();
-        final HttpHeaders headers = new HttpHeaders();
-        headers.set("CJSCPPUID", "test-setup");
-        final HttpEntity<Void> request = new HttpEntity<>(headers);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
-                + "/api/validation/rules/" + RULE_ID;
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline) {
-            final ResponseEntity<String> response = client.exchange(
-                    url, HttpMethod.GET, request, String.class);
-            final JsonNode json = objectMapper.readTree(response.getBody());
-            if (json.get("enabled").asBoolean() == expected) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        throw new IllegalStateException(
-                "DR-CONV-006 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

@@ -5,12 +5,8 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,53 +19,18 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Live HTTP coverage for the rule metadata endpoints against a running service instance.
  *
- * <p>{@link #restoreDefaultRuleStates()} runs in {@code @BeforeAll} to ensure any rule
- * state left by other test classes does not affect these assertions.
+ * <p>Every rule ships enabled by its Flyway seed migration and nothing in this suite disables
+ * one, so these assertions run against that steady state with no rule-state setup. The
+ * enabled/disabled count math itself is covered by
+ * {@code DefaultValidationRulesServiceTest.listRules_should_return_all_rules()}.
  */
 class ValidationRulesApiHttpLiveTest {
 
     private static final String CJSCPPUID = "CJSCPPUID";
 
-    private static final String DB_URL =
-            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = System.getProperty("db.username", "postgres");
-    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
-
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
-
-    @BeforeAll
-    static void restoreDefaultRuleStates() throws Exception {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = (id <> 'DR-YRO-004')")) {
-            ps.executeUpdate();
-        }
-        awaitEnabledCount(5);
-    }
-
-    private static void awaitEnabledCount(final int expected) throws Exception {
-        final RestTemplate client = new RestTemplate();
-        final HttpHeaders headers = new HttpHeaders();
-        headers.set(CJSCPPUID, "test-setup");
-        final HttpEntity<Void> request = new HttpEntity<>(headers);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
-                + "/api/validation/rules";
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline) {
-            final ResponseEntity<String> response = client.exchange(
-                    url, HttpMethod.GET, request, String.class);
-            final JsonNode json = objectMapper.readTree(response.getBody());
-            if (json.get("enabledCount").asInt() == expected) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        throw new IllegalStateException(
-                "enabledCount did not reach " + expected + " within 5 s");
-    }
 
     /**
      * Verifies the rule-list endpoint returns the discovered rules and summary counts.
@@ -90,7 +51,7 @@ class ValidationRulesApiHttpLiveTest {
 
         final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("count").asInt()).isEqualTo(6);
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(5);
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(6);
         assertThat(json.get("rules")).hasSize(6);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));

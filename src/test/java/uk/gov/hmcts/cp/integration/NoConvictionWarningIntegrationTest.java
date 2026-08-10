@@ -7,21 +7,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import jakarta.annotation.Resource;
-import java.time.Instant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 /**
  * End-to-end tests for DR-CONV-006 (no conviction warning) over the public validate endpoint.
+ *
+ * <p>DR-CONV-006 defaults to enabled by its Flyway seed migration
+ * ({@code V1.007__insert_dr_conv_006.sql}) and nothing else in the test suite disables it, so no
+ * rule-state setup is needed here.
  *
  * <p>Every scenario pins three response slices:
  * <ul>
@@ -34,53 +30,10 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_CONV_WARNINGS = "$.warnings[?(@.ruleId=='DR-CONV-006')]";
-    private static final String RULE_ID = "DR-CONV-006";
 
     private static final String EXPECTED_MESSAGE =
             "No conviction has been added against the offence. Check whether you need to add a "
                     + "guilty plea or verdict";
-
-    @Resource
-    private ValidationRuleRepository repository;
-
-    @Resource
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void enableRule() {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("WARNING")
-                .updatedAt(Instant.now())
-                .updatedBy("test-setup")
-                .build());
-        evictOverrideCache();
-    }
-
-    @AfterEach
-    void restoreRule() {
-        // DR-CONV-006's steady-state default (V1.007__insert_dr_conv_006.sql) is enabled=true,
-        // unlike DR-DISQ-001/DR-CTL-001/DR-YRO-001 (which default to false). Restoring to true
-        // here — not false — keeps the shared TestContainers DB's rule state correct for whatever
-        // IT class runs next in the same JVM (see ValidationRulesControllerIntegrationTest, which
-        // asserts enabledCount against this steady state).
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("WARNING")
-                .updatedAt(Instant.now())
-                .updatedBy("test-teardown")
-                .build());
-        evictOverrideCache();
-    }
-
-    private void evictOverrideCache() {
-        final Cache cache = cacheManager.getCache("ruleOverrides");
-        if (cache != null) {
-            cache.evict(RULE_ID);
-        }
-    }
 
     @Nested
     @DisplayName("WarnsWhenSentencedAndUnconvicted — US1")
