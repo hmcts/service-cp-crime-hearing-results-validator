@@ -4,13 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,10 +19,8 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-COEW-005 (community order end-date validation) against a
  * running service instance.
  *
- * <p>DR-COEW-005 is inserted into the {@code validation_rule} table as enabled by the Flyway
- * migration. {@link #enableRule()} re-asserts that state (guarding against leakage from other
- * test classes) then polls {@code GET /api/validation/rules/DR-COEW-005} until the service
- * reflects it, eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
+ * <p>DR-COEW-005 defaults to enabled by its Flyway seed migration and nothing else in this suite
+ * disables it, so no rule-state setup is needed here.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -71,11 +64,6 @@ class CommunityOrderEndDateApiHttpLiveTest {
                     + "requirement. The current recorded period would mean the end date "
                     + "should be 30/09/2026.";
 
-    private static final String DB_URL =
-            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = System.getProperty("db.username", "postgres");
-    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
-
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -100,7 +88,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Reed"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -134,7 +122,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Beth", "lastName": "Cole"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -168,7 +156,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Ethan", "lastName": "Grant"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -215,7 +203,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Fiona", "lastName": "Hart"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -250,7 +238,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "George", "lastName": "Hill"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -293,7 +281,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "James", "lastName": "King"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -336,7 +324,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Sarah", "lastName": "Green"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -391,7 +379,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Noah", "lastName": "Blake"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -457,7 +445,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Shah"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -475,50 +463,6 @@ class CommunityOrderEndDateApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualToIgnoringWhitespace(MSG_DUR_CUR_SUMMARY + ". This affects Priya Shah.");
-    }
-
-    @BeforeAll
-    static void enableRule() throws Exception {
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    @AfterAll
-    static void restoreRule() throws Exception {
-        // restore the Flyway seed default (DR-COEW-005 ships enabled)
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    private static void setRuleEnabled(final boolean enabled) throws Exception {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-COEW-005'")) {
-            ps.setBoolean(1, enabled);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void awaitRuleState(final boolean expected) throws Exception {
-        final RestTemplate client = new RestTemplate();
-        final HttpHeaders headers = new HttpHeaders();
-        headers.set("CJSCPPUID", "test-setup");
-        final HttpEntity<Void> request = new HttpEntity<>(headers);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
-                + "/api/validation/rules/" + RULE_ID;
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline) {
-            final ResponseEntity<String> response = client.exchange(
-                    url, HttpMethod.GET, request, String.class);
-            final JsonNode json = objectMapper.readTree(response.getBody());
-            if (json.get("enabled").asBoolean() == expected) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        throw new IllegalStateException(
-                "DR-COEW-005 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

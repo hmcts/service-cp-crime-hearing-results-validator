@@ -8,22 +8,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import jakarta.annotation.Resource;
-import java.time.Instant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 /**
  * End-to-end integration tests for DR-YRO-004 covering the YRO end-date validation
  * scenario set (AC2) with hearing date 20/05/2026.
+ *
+ * <p>DR-YRO-004 defaults to enabled by its Flyway seed migration and nothing else in the test
+ * suite disables it, so no rule-state setup is needed here.
  *
  * <p>Scenarios map directly to the business acceptance criteria:
  * <ul>
@@ -36,44 +31,6 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_YRO_ERRORS =
             "$.errors.validationIssues[?(@.ruleId=='DR-YRO-004')]";
-    private static final String YRO_RULE_ID = "DR-YRO-004";
-
-    @Resource
-    private ValidationRuleRepository repository;
-
-    @Resource
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void enableYroRule() {
-        repository.save(ValidationRuleEntity.builder()
-                .id(YRO_RULE_ID)
-                .enabled(true)
-                .severity("ERROR")
-                .updatedAt(Instant.now())
-                .updatedBy("test-setup")
-                .build());
-        evictOverrideCache(YRO_RULE_ID);
-    }
-
-    @AfterEach
-    void restoreYroRule() {
-        repository.save(ValidationRuleEntity.builder()
-                .id(YRO_RULE_ID)
-                .enabled(true)
-                .severity("ERROR")
-                .updatedAt(Instant.now())
-                .updatedBy("test-teardown")
-                .build());
-        evictOverrideCache(YRO_RULE_ID);
-    }
-
-    private void evictOverrideCache(final String ruleId) {
-        Cache cache = cacheManager.getCache("ruleOverrides");
-        if (cache != null) {
-            cache.evict(ruleId);
-        }
-    }
 
     // AC2 inline messages
     private static final String MSG_YRC2 =
@@ -117,7 +74,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "David", "lastName": "Evans"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -170,8 +127,10 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                         {"defendantId": "d2", "firstName": "Chloe", "lastName": "Black"}
                       ],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2}
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
+                         "isConvicted": true},
+                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
+                         "isConvicted": true}
                       ]
                     }
                     """;
@@ -220,8 +179,10 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Frances", "lastName": "Morgan"}],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2}
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
+                         "isConvicted": true},
+                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
+                         "isConvicted": true}
                       ]
                     }
                     """;
@@ -271,7 +232,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -321,7 +282,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -354,7 +315,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -384,7 +345,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Nadia", "lastName": "Khan"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 
@@ -426,7 +387,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Oliver", "lastName": "Bennett"}],
                       "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
-                                    "offenceTitle": "Theft", "orderIndex": 1}]
+                                    "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
 

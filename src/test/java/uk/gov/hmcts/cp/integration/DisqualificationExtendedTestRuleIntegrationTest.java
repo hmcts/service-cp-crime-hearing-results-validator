@@ -1,17 +1,9 @@
 package uk.gov.hmcts.cp.integration;
 
-import jakarta.annotation.Resource;
-import java.time.Instant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -29,6 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * smoke tests for the two negative branches and the multi-defendant per-offence-grouping
  * property.
  *
+ * <p>DR-DISQ-002 defaults to enabled by its Flyway seed migration and nothing else in the test
+ * suite disables it, so no rule-state setup is needed here.
+ *
  * <p>Every scenario pins three response slices:
  * <ul>
  *   <li>{@code $.errors} is empty (no other rule produced an error on the payload).</li>
@@ -44,44 +39,6 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-002')]";
-    private static final String RULE_ID = "DR-DISQ-002";
-
-    @Resource
-    private ValidationRuleRepository repository;
-
-    @Resource
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void enableRule() {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("WARNING")
-                .updatedAt(Instant.now())
-                .updatedBy("test-setup")
-                .build());
-        evictOverrideCache();
-    }
-
-    @AfterEach
-    void restoreRule() {
-        repository.save(ValidationRuleEntity.builder()
-                .id(RULE_ID)
-                .enabled(true)
-                .severity("WARNING")
-                .updatedAt(Instant.now())
-                .updatedBy("test-teardown")
-                .build());
-        evictOverrideCache();
-    }
-
-    private void evictOverrideCache() {
-        Cache cache = cacheManager.getCache("ruleOverrides");
-        if (cache != null) {
-            cache.evict(RULE_ID);
-        }
-    }
 
     private static final String EXPECTED_MESSAGE =
             "Check whether you need to add extended test disqualification with DDOTE "
@@ -106,7 +63,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -147,7 +104,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       ],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -180,7 +137,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 1}
+                         "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -213,9 +170,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "TH68001",
-                         "offenceTitle": "Theft", "orderIndex": 2}
+                         "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -253,7 +210,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -286,7 +243,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -337,10 +294,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving",
-                         "orderIndex": 2}
+                         "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -370,7 +327,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """.formatted(shortCode);
@@ -408,7 +365,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1}
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true}
                       ]
                     }
                     """;
@@ -443,10 +400,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88046",
                          "offenceTitle": "Causing death by dangerous driving",
-                         "orderIndex": 2}
+                         "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -570,13 +527,14 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88046",
-                         "offenceTitle": "Causing death by dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Causing death by dangerous driving", "orderIndex": 1,
+                         "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 2},
+                         "orderIndex": 2, "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "RT88530",
                          "offenceTitle": "Causing death by driving: disqualified drivers",
-                         "orderIndex": 3}
+                         "orderIndex": 3, "isConvicted": true}
                       ]
                     }
                     """;
@@ -624,10 +582,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       ],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 2}
+                         "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -674,12 +632,13 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88046",
-                         "offenceTitle": "Causing death by dangerous driving", "orderIndex": 2},
+                         "offenceTitle": "Causing death by dangerous driving", "orderIndex": 2,
+                         "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 3},
+                         "orderIndex": 3, "isConvicted": true},
                         {"offenceId": "off4", "offenceCode": "RT88530",
                          "offenceTitle": "Causing death by driving: disqualified drivers",
                          "orderIndex": 4}
@@ -726,10 +685,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 2}
+                         "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -771,10 +730,10 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       ],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 2}
+                         "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -822,13 +781,13 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
-                         "offenceTitle": "Dangerous driving", "orderIndex": 1},
+                         "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
                          "offenceTitle": "Causing serious injury by dangerous driving",
-                         "orderIndex": 2},
+                         "orderIndex": 2, "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "RT88530",
                          "offenceTitle": "Causing death by driving: disqualified drivers",
-                         "orderIndex": 3}
+                         "orderIndex": 3, "isConvicted": true}
                       ]
                     }
                     """;
