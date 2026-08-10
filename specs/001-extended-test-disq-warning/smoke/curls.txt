@@ -1,5 +1,5 @@
 # =============================================================================
-# T041 — Manual smoke test for DR-DISQ-001
+# T041 — Manual smoke test for DR-DISQ-002
 # =============================================================================
 # Companion to specs/001-extended-test-disq-warning/quickstart.md §3.
 # Each scenario is independently paste-able (no shell variables).
@@ -24,7 +24,7 @@
 # 3.1  Triggers the warning
 # -----------------------------------------------------------------------------
 # RT88026 (dangerous driving) + COEW + no DDOTE/DDOTEL.
-# Expect: errors=[], warnings=[{ruleId="DR-DISQ-001", severity="WARNING",
+# Expect: errors=[], warnings=[{ruleId="DR-DISQ-002", severity="WARNING",
 #         message="Check whether you need to add extended test disqualification
 #                  with DDOTE (disqualification and extended test) or DDOTEL
 #                  (disqualification for life and extended test)",
@@ -54,8 +54,8 @@ Response:
   "mode": "advisory",
   "processingTimeMs": 175,
   "rulesEvaluated": [
-    "DR-SENT-002",
-    "DR-DISQ-001"
+    "DR-SENT-001",
+    "DR-DISQ-002"
   ],
   "timestamp": "2026-04-26T22:59:45.290242646Z",
   "validationId": "val-f6fbf710-9948-415f-bdb6-477be536510c",
@@ -69,7 +69,7 @@ Response:
       ],
       "affectedResultCodes": [],
       "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
-      "ruleId": "DR-DISQ-001",
+      "ruleId": "DR-DISQ-002",
       "severity": "WARNING"
     }
   ]
@@ -106,8 +106,8 @@ Response:
   "mode": "advisory",
   "processingTimeMs": 3,
   "rulesEvaluated": [
-    "DR-SENT-002",
-    "DR-DISQ-001"
+    "DR-SENT-001",
+    "DR-DISQ-002"
   ],
   "timestamp": "2026-04-26T23:01:00.936884257Z",
   "validationId": "val-ced7c681-7428-4511-933f-86793345d474",
@@ -144,8 +144,8 @@ Response:
   "mode": "advisory",
   "processingTimeMs": 2,
   "rulesEvaluated": [
-    "DR-SENT-002",
-    "DR-DISQ-001"
+    "DR-SENT-001",
+    "DR-DISQ-002"
   ],
   "timestamp": "2026-04-26T23:01:49.376979885Z",
   "validationId": "val-dfea6be3-87e4-4d9f-9b13-63d789b5d2f3",
@@ -156,7 +156,7 @@ Response:
 # 3.4  Two qualifying offences → two warnings
 # -----------------------------------------------------------------------------
 # RT88026 + COEW (offence o1) and RT88046 + FO (offence o2).
-# Expect: errors=[], warnings.length()=2, both with ruleId="DR-DISQ-001",
+# Expect: errors=[], warnings.length()=2, both with ruleId="DR-DISQ-002",
 #         each affectedOffences carries its own offenceId (o1 / o2).
 # -----------------------------------------------------------------------------
 curl -sX POST http://localhost:8048/api/validation/validate \
@@ -185,8 +185,8 @@ Response:
   "mode": "advisory",
   "processingTimeMs": 3,
   "rulesEvaluated": [
-    "DR-SENT-002",
-    "DR-DISQ-001"
+    "DR-SENT-001",
+    "DR-DISQ-002"
   ],
   "timestamp": "2026-04-26T23:02:39.340044463Z",
   "validationId": "val-c5d46a2c-c2f4-48dd-8e77-53a8d0d1d6ca",
@@ -200,7 +200,7 @@ Response:
       ],
       "affectedResultCodes": [],
       "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
-      "ruleId": "DR-DISQ-001",
+      "ruleId": "DR-DISQ-002",
       "severity": "WARNING"
     },
     {
@@ -212,7 +212,7 @@ Response:
       ],
       "affectedResultCodes": [],
       "message": "Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)",
-      "ruleId": "DR-DISQ-001",
+      "ruleId": "DR-DISQ-002",
       "severity": "WARNING"
     }
   ]
@@ -237,7 +237,7 @@ Response:
 # Step 1 — disable the rule at runtime (works under cpp-dev-environment Postgres)
 PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validator-db -c "
   INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)
-  VALUES ('DR-DISQ-001', false, 'WARNING', now(), 'manual-smoke-test')
+  VALUES ('DR-DISQ-002', false, 'WARNING', now(), 'manual-smoke-test')
   ON CONFLICT (id) DO UPDATE
     SET enabled=false, severity='WARNING', updated_at=now(), updated_by='manual-smoke-test';
 "
@@ -268,14 +268,14 @@ Response:
   "errors": [],
   "warnings": [],
   "rulesEvaluated": [
-    "DR-SENT-002",
-    "DR-DISQ-001"
+    "DR-SENT-001",
+    "DR-DISQ-002"
   ]
 }
 
 # Step 3 — clean up so the next session is back to default (rule enabled per YAML)
 PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validator-db -c "
-  DELETE FROM validation_rule WHERE id='DR-DISQ-001';
+  DELETE FROM validation_rule WHERE id='DR-DISQ-002';
 "
 
 
@@ -286,10 +286,10 @@ PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validato
 # Envoy + cp-auth-rules-filter + the assembled JAR running in the
 # hearing-results-validator container against real Postgres.
 #
-#   3.1  RT88026 + COEW + no DDOTE   → 1 DR-DISQ-001 WARNING on offenceId=o1   PASS
+#   3.1  RT88026 + COEW + no DDOTE   → 1 DR-DISQ-002 WARNING on offenceId=o1   PASS
 #   3.2  RT88026 + wdrn               → no warnings (excluded final suppresses) PASS
 #   3.3  RT88026 + COEW + DDOTE       → no warnings (DDOTE suppresses)          PASS
-#   3.4  RT88026/o1 + RT88046/o2      → 2 DR-DISQ-001 warnings, one per offence PASS
+#   3.4  RT88026/o1 + RT88046/o2      → 2 DR-DISQ-002 warnings, one per offence PASS
 #   3.5  validation_rule enabled=false → no warnings after Caffeine TTL          PASS
 #
 # Latency for the smoke-1 trigger path: 175 ms cold, ~3 ms warm. SC-005 holds.

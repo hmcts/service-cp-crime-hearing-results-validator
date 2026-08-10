@@ -67,8 +67,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_rules_id_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -105,8 +105,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_override_spoofed_rules_detail_header_on_patch_with_rules_update_action() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
         request.addHeader("CPP-ACTION", "validation-service.rules-detail");
 
         filter.doFilterInternal(request, response, filterChain);
@@ -186,8 +186,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_deep_sub_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002/extra");
-        request.setServletPath("/api/validation/rules/DR-SENT-002/extra");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-001/extra");
+        request.setServletPath("/api/validation/rules/DR-SENT-001/extra");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -218,8 +218,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_update_action_for_patch_rules_id_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -235,8 +235,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_put_rules_id_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -253,8 +253,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_delete_rules_id_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 

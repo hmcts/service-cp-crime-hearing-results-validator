@@ -24,11 +24,11 @@ A caseworker has entered a remand-type result against an offence. The offence ha
 
 ### User Story 2 – Warning suppressed when any bypass condition is satisfied (Priority: P2)
 
-A caseworker enters a remand-type result but one of the four bypass conditions is true. In each case no warning should appear for that offence.
+A caseworker enters a remand-type result but one of the five bypass conditions is true. In each case no warning should appear for that offence.
 
 **Why this priority**: Avoiding false positives is critical — unnecessary warnings erode trust and cause unnecessary rework.
 
-**Independent Test**: Can be fully tested by running four separate validation requests, each satisfying exactly one bypass condition, and asserting no warning is returned in any case.
+**Independent Test**: Can be fully tested by running five separate validation requests, each satisfying exactly one bypass condition, and asserting no warning is returned in any case.
 
 **Acceptance Scenarios**:
 
@@ -36,6 +36,7 @@ A caseworker enters a remand-type result but one of the four bypass conditions i
 2. **Given** an offence has a remand-type result **And** a CTL result is recorded against that offence in the current hearing, **When** validation is triggered, **Then** no warning is produced for that offence.
 3. **Given** an offence has a remand-type result **And** the offence is convicted (guilty plea, finding of guilt, or date of conviction recorded), **When** validation is triggered, **Then** no warning is produced for that offence.
 4. **Given** an offence has only non-remand results (none of `RI`, `RIYDA`, `RIH`, `RIB`, `RILA`, `RILAB`, `REMYD`), **When** validation is triggered, **Then** no warning is produced for that offence.
+5. **Given** an offence has a remand-type result **And** a result line on that offence carries a `CTLDATE` prompt, **When** validation is triggered, **Then** no warning is produced for that offence.
 
 ---
 
@@ -60,6 +61,8 @@ When a warning is raised the caseworker can still share results without making a
 - What happens when every offence in the hearing meets the warning condition? → A warning is produced for each offence independently.
 - What happens when the same offence has multiple result lines, some triggering and some not? → The trigger check is satisfied if any result line carries a trigger short code; bypass checks operate at the offence level.
 - What happens when the offence has no results at all? → No trigger result is present; no warning is produced.
+- What happens when a `CTLDATE` prompt is recorded on a result line other than the triggering one, but on the same offence? → No warning (CTLDATE bypass applies at the offence level, not the result-line level).
+- What happens when a `CTLDATE` prompt is recorded on an offence's result line but a different offence in the same hearing has no such prompt? → Only the offence carrying the `CTLDATE` prompt is bypassed; the other offence is evaluated independently.
 
 ## Requirements *(mandatory)*
 
@@ -70,15 +73,16 @@ When a warning is raised the caseworker can still share results without making a
 - **FR-003**: For each offence that has a trigger result, the system MUST check whether an existing CTL record is already associated with that offence from a previous hearing. If one exists, no warning is produced for that offence.
 - **FR-004**: For each offence that has a trigger result and no existing CTL record, the system MUST check whether the current hearing includes a CTL result (short code `CTL`) against that offence. If one exists, no warning is produced for that offence.
 - **FR-005**: For each offence that has a trigger result, no existing CTL record, and no CTL result in the current hearing, the system MUST check whether the offence is convicted (guilty plea, finding of guilt, or date of conviction recorded). If it is convicted, no warning is produced for that offence.
-- **FR-006**: When all four conditions in FR-002 through FR-005 indicate the warning state, the system MUST produce a WARNING issue for that offence.
+- **FR-006**: When all conditions in FR-002 through FR-005 and FR-010 indicate the warning state, the system MUST produce a WARNING issue for that offence.
 - **FR-007**: The warning message text MUST be exactly: "This offence does not have a CTL. If the trial has started a CTL is not needed. It is your responsibility to check and confirm."
 - **FR-008**: The warning MUST be scoped to the individual offence that breaches the rule; other offences in the same hearing MUST NOT be affected.
 - **FR-009**: The warning issue MUST carry severity WARNING, not ERROR, so that it does not block result sharing.
+- **FR-010**: For each offence that has a trigger result, no existing CTL record, and no CTL result in the current hearing, the system MUST check whether any result line on that offence carries a `CTLDATE` prompt. If one exists, no warning is produced for that offence.
 
 ### Key Entities
 
 - **Offence**: A charge in the hearing. Has an identifier, a list of result lines for the current hearing, a conviction status (convicted / not convicted), and an indicator of whether an existing CTL record is associated from a previous hearing.
-- **Result line**: A recorded outcome on an offence. Carries a short code (e.g. `RI`, `CTL`) that identifies the type of result.
+- **Result line**: A recorded outcome on an offence. Carries a short code (e.g. `RI`, `CTL`) that identifies the type of result, and may carry a list of prompts (reference/value pairs); a prompt with reference `CTLDATE` indicates a CTL date has already been recorded for that offence.
 - **Existing CTL record**: A custody time limit record associated with the offence from a prior hearing. Distinct from a CTL result entered in the current hearing.
 - **Conviction status**: Whether the offence has a guilty plea, a finding of guilt, or a recorded date of conviction.
 
@@ -86,8 +90,8 @@ When a warning is raised the caseworker can still share results without making a
 
 ### Measurable Outcomes
 
-- **SC-001**: Every offence satisfying all four warning conditions receives the exact prescribed warning message — zero omissions across all test scenarios.
-- **SC-002**: No false positives: offences where any single bypass condition is satisfied produce zero warnings — validated across at least four distinct bypass scenarios.
+- **SC-001**: Every offence satisfying all warning conditions receives the exact prescribed warning message — zero omissions across all test scenarios.
+- **SC-002**: No false positives: offences where any single bypass condition is satisfied produce zero warnings — validated across at least five distinct bypass scenarios.
 - **SC-003**: The warning is returned at WARNING severity in 100% of triggered cases, never at ERROR severity.
 - **SC-004**: Validation results for a multi-offence hearing correctly isolate the warning to breaching offences only, with no spillover to non-breaching offences.
 - **SC-005**: Result sharing is not blocked when the only issues present are warnings from this rule.
@@ -99,3 +103,7 @@ When a warning is raised the caseworker can still share results without making a
 - The warning is produced at the point of validation (when the user navigates to Manage Hearings), not at the point of entering results.
 - The rule applies regardless of offence type or court type — no filtering by offence code is required for this rule.
 - Multiple defendants sharing the same offence are not a concern for this rule — the rule operates at the offence level, not per-defendant.
+
+## Amendments
+
+- **2026-08-05**: Added FR-010 — a `CTLDATE` prompt recorded on any result line for the offence is a fifth bypass condition, suppressing the warning in the same way as an existing CTL record, a CTL result, or a conviction. Matching (case-sensitive) follows the existing `promptRef` convention used elsewhere in the codebase (e.g. `endDate` on YRO rules).

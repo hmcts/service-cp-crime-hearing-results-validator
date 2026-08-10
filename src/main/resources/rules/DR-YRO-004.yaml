@@ -1,10 +1,10 @@
 rule:
-  id: "DR-YRO-001"
+  id: "DR-YRO-004"
   title: "Youth Rehabilitation Order End Date Validation"
   description: >-
     Validates that a Youth Rehabilitation Order's end date is not earlier
     than the end date of any attached curfew requirement (AC2: YRC2, YRC1, YRC3).
-  priority: 5000
+  priority: 4000
   enabled: true
 
   preprocessing:

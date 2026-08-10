@@ -1,4 +1,4 @@
-# Research: YRO Date Validation (DR-YRO-001)
+# Research: YRO Date Validation (DR-YRO-004)
 
 **Phase 0 — All decisions resolved. No NEEDS CLARIFICATION markers remain.**
 
@@ -12,9 +12,9 @@
 
 ## Decision 2: Rule ID
 
-**Decision**: `DR-YRO-001`
+**Decision**: `DR-YRO-004`
 
-**Rationale**: Follows the existing `DR-<CATEGORY>-<NNN>` naming convention (DR-COEW-001, DR-CTL-001, DR-DISQ-001, DR-SENT-002). YRO is the natural category acronym for Youth Rehabilitation Order rules. 001 is the first rule in this category. AC2a, AC2b, and AC2c are *conditions within* the rule, not separate rules.
+**Rationale**: Follows the existing `DR-<CATEGORY>-<NNN>` naming convention (DR-COEW-001, DR-CTL-003, DR-DISQ-002, DR-SENT-001). YRO is the natural category acronym for Youth Rehabilitation Order rules; `004` places it next in the single global rule-id sequence shared across all categories. AC2a, AC2b, and AC2c are *conditions within* the rule, not separate rules.
 
 ---
 
@@ -33,13 +33,13 @@
 
 **Decision**: Priority `5000` (community order DR-COEW-001 is `4000`).
 
-**Rationale**: YRO rules are a distinct order category evaluated after community order rules. Priority 5000 places DR-YRO-001 next in the evaluation chain and leaves gap for future YRO rules or interleaved rules.
+**Rationale**: YRO rules are a distinct order category evaluated after community order rules. Priority 5000 places DR-YRO-004 next in the evaluation chain and leaves gap for future YRO rules or interleaved rules.
 
 ---
 
 ## Decision 5: New Java source files (revised)
 
-> **⚠️ Revised during implementation.** The original plan delivered only `DR-YRO-001.yaml`. A dedicated
+> **⚠️ Revised during implementation.** The original plan delivered only `DR-YRO-004.yaml`. A dedicated
 > preprocessor was introduced for clean separation, so this feature delivers:
 > `YouthRehabilitationPreprocessor`, `YouthRehabilitationContext`, and the shared `PreprocessorHelper`
 > (production), plus `YroEndDateValidationIntegrationTest`, `YouthRehabilitationPreprocessorTest`,

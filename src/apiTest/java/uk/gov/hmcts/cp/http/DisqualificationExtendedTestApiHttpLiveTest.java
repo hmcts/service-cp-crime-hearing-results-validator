@@ -19,7 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Live HTTP coverage for DR-DISQ-001 (extended-test disqualification warning) against a
+ * Live HTTP coverage for DR-DISQ-002 (extended-test disqualification warning) against a
  * running service instance.
  */
 class DisqualificationExtendedTestApiHttpLiveTest {
@@ -29,7 +29,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     private static final String VALIDATION_ISSUES = "validationIssues";
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
-    private static final String RULE_ID = "DR-DISQ-001";
+    private static final String RULE_ID = "DR-DISQ-002";
 
     /**
      * Wait long enough to outlast the server-side rule-override Caffeine cache
@@ -56,7 +56,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
     /**
      * Covers the scenario where the hearing contains no relevant Road Traffic Act 1988 offences.
-     * DR-DISQ-001 must not fire and the response must be valid with no warnings.
+     * DR-DISQ-002 must not fire and the response must be valid with no warnings.
      */
     @Test
     void validate_non_relevant_offence_should_return_valid_with_no_disq_warning() throws Exception {
@@ -89,7 +89,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
     /**
      * Covers the DDOTE suppression path: a relevant offence that carries an extended-test
-     * disqualification result must not produce a DR-DISQ-001 warning.
+     * disqualification result must not produce a DR-DISQ-002 warning.
      */
     @Test
     void ac1_relevant_offence_with_ddote_should_suppress_warning() throws Exception {
@@ -121,7 +121,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
     /**
      * Covers the excluded-result suppression path: a relevant offence whose only final result
-     * is in the excluded set (wdrn — withdrawn) must not produce a DR-DISQ-001 warning.
+     * is in the excluded set (wdrn — withdrawn) must not produce a DR-DISQ-002 warning.
      */
     @Test
     void ac1_excluded_result_on_relevant_offence_should_suppress_warning() throws Exception {
@@ -150,7 +150,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     }
 
     /**
-     * Covers AC1 where DR-DISQ-001 is enabled at runtime: a relevant Road Traffic Act 1988
+     * Covers AC1 where DR-DISQ-002 is enabled at runtime: a relevant Road Traffic Act 1988
      * offence with a non-excluded final result and no DDOTE must produce a single non-blocking
      * warning. The rule is pinned enabled via JDBC for this test and restored to the seeded
      * default (enabled) in a finally block; a 2-second sleep ensures the 1-second Caffeine
@@ -203,7 +203,7 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     private void setRuleEnabled(final boolean enabled) throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-DISQ-001'")) {
+                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-DISQ-002'")) {
             ps.setBoolean(1, enabled);
             ps.executeUpdate();
         }

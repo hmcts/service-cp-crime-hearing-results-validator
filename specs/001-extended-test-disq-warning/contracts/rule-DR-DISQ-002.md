@@ -1,4 +1,4 @@
-# Contract — `DR-DISQ-001` Extended Test Disqualification Warning
+# Contract — `DR-DISQ-002` Extended Test Disqualification Warning
 
 This is the contract for the new validation rule. The HTTP API contract (`POST /api/validation/validate`) is owned upstream by `libs.api.hearing.results.validator`. **As of the 2026-04-28 revision, `ResultLineDto` is being extended** to add `category: enum [A, I, F]` (Ancillary / Intermediary / Final). All other DTOs (`DraftValidationRequest`, `OffenceDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`) are unchanged.
 
@@ -44,11 +44,11 @@ Notes:
 
 ## YAML rule definition
 
-File: `src/main/resources/rules/DR-DISQ-001.yaml`
+File: `src/main/resources/rules/DR-DISQ-002.yaml`
 
 ```yaml
 rule:
-  id: "DR-DISQ-001"
+  id: "DR-DISQ-002"
   title: "Extended test disqualification check"
   description: >-
     Warns when a relevant Road Traffic Act 1988 offence has a non-excluded
@@ -95,7 +95,7 @@ rule:
 ```
 
 Notes:
-- `priority: 2000` runs after `DR-SENT-002` (priority 1000). Order is not behaviourally significant — rules evaluate independently — but a stable ordering keeps integration-test assertions deterministic.
+- `priority: 2000` runs after `DR-SENT-001` (priority 1000). Order is not behaviourally significant — rules evaluate independently — but a stable ordering keeps integration-test assertions deterministic.
 - All short-code matching is case-insensitive; the YAML uses the casing from the source ticket for readability.
 - `messageTemplate` carries the literal AC1A text. No `${placeholder}` tokens — the offence linkage rides on `affectedOffences`, see below.
 
@@ -121,7 +121,7 @@ For each context where the condition fires, exactly one `ValidationIssue` is emi
 
 | Field | Value |
 |-------|-------|
-| `ruleId` | `"DR-DISQ-001"` |
+| `ruleId` | `"DR-DISQ-002"` |
 | `severity` | `WARNING` (capped downward only by DB ceiling — see Constitution VI) |
 | `message` | `"Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)"` (exact text, no leading or trailing whitespace) |
 | `affectedOffences[]` | Singleton list. The single `AffectedOffence` has `offenceId` set to that context's offence id. `OffenceDisplayHelper` resolves `orderIndex` for stable display ordering. |
@@ -137,7 +137,7 @@ The rule honours the existing `validation_rule` table:
 
 | Column | Behaviour |
 |--------|-----------|
-| `id = 'DR-DISQ-001'` | identifies the rule |
+| `id = 'DR-DISQ-002'` | identifies the rule |
 | `enabled = false` | rule produces no issues |
 | `severity = 'WARNING'` | no observable change (already WARNING) |
 | `severity = 'ERROR'` | no observable change (ceiling never promotes — Constitution VI) |
@@ -147,7 +147,7 @@ The rule honours the existing `validation_rule` table:
 
 ## Feature toggle contract
 
-When the Azure App Configuration `RESULTS_VALIDATION` feature flag is OFF, `DefaultValidationService` short-circuits the entire validation pipeline and returns `mode="disabled"` — this rule is *not* evaluated and produces no issues, matching the existing behaviour for `DR-SENT-002`.
+When the Azure App Configuration `RESULTS_VALIDATION` feature flag is OFF, `DefaultValidationService` short-circuits the entire validation pipeline and returns `mode="disabled"` — this rule is *not* evaluated and produces no issues, matching the existing behaviour for `DR-SENT-001`.
 
 ---
 
@@ -155,5 +155,5 @@ When the Azure App Configuration `RESULTS_VALIDATION` feature flag is OFF, `Defa
 
 - **HTTP API contract** (revised 2026-04-28) — `ResultLineDto.category` is added as an **optional** field. Existing callers that omit it produce valid payloads; the validator treats them under FR-015 fail-safe (no recognised F line → no warning). This ensures the lib bump can be rolled out before all callers populate `category`.
 - **Older payloads transitional behaviour** — for the period between the lib publish and all callers being upgraded, the rule will be silent on relevant offences (because no F line is identifiable). This is preferable to a noisy false-positive period; ops can monitor `finalCategoryCount = 0` rates to track caller-upgrade progress.
-- **Existing rule `DR-SENT-002` is unchanged in behaviour.** Its preprocessor wiring moves from "constructor parameter" to "registry lookup" but its YAML, its `CustodialPreprocessor` algorithm, and its emitted issues are byte-identical. `DR-SENT-002` does not consume `category`.
-- **Validator `/api/validation/rules` endpoint** — returns both rules. The `GET /api/validation/rules/{ruleId}` endpoint will work for `DR-DISQ-001`.
+- **Existing rule `DR-SENT-001` is unchanged in behaviour.** Its preprocessor wiring moves from "constructor parameter" to "registry lookup" but its YAML, its `CustodialPreprocessor` algorithm, and its emitted issues are byte-identical. `DR-SENT-001` does not consume `category`.
+- **Validator `/api/validation/rules` endpoint** — returns both rules. The `GET /api/validation/rules/{ruleId}` endpoint will work for `DR-DISQ-002`.

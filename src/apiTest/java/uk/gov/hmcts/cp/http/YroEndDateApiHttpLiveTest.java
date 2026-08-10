@@ -21,12 +21,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Live HTTP coverage for DR-YRO-001 (Youth Rehabilitation Order end-date validation) against a
+ * Live HTTP coverage for DR-YRO-004 (Youth Rehabilitation Order end-date validation) against a
  * running service instance.
  *
- * <p>DR-YRO-001 is inserted into the {@code validation_rule} table as disabled by the Flyway
+ * <p>DR-YRO-004 is inserted into the {@code validation_rule} table as disabled by the Flyway
  * migration. {@link #enableRule()} and {@link #disableRule()} mutate the DB row then poll
- * {@code GET /api/validation/rules/DR-YRO-001} until the service reflects the new state,
+ * {@code GET /api/validation/rules/DR-YRO-004} until the service reflects the new state,
  * eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
  *
  * <p>Acceptance criteria covered:
@@ -46,7 +46,7 @@ class YroEndDateApiHttpLiveTest {
     private static final String ERROR_MESSAGES = "errorMessages";
     private static final String WARNINGS = "warnings";
     private static final String RULES_EVALUATED = "rulesEvaluated";
-    private static final String RULE_ID = "DR-YRO-001";
+    private static final String RULE_ID = "DR-YRO-004";
 
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String AFFECTED_OFFENCES = "affectedOffences";
@@ -76,7 +76,7 @@ class YroEndDateApiHttpLiveTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * No YRO result lines in the hearing; DR-YRO-001 must not fire and the response must be
+     * No YRO result lines in the hearing; DR-YRO-004 must not fire and the response must be
      * valid with no errors or warnings.
      */
     @Test
@@ -110,7 +110,7 @@ class YroEndDateApiHttpLiveTest {
 
     /**
      * Valid YRO with a future end date (2027-06-17) and no curfew requirements.
-     * DR-YRO-001 must not fire and the response must be valid.
+     * DR-YRO-004 must not fire and the response must be valid.
      */
     @Test
     void validate_yro_with_future_end_date_should_return_valid() throws Exception {
@@ -140,7 +140,7 @@ class YroEndDateApiHttpLiveTest {
     }
 
     /**
-     * AC2a — YRC2 (curfew) end date is strictly after the YRO end date. DR-YRO-001 must produce
+     * AC2a — YRC2 (curfew) end date is strictly after the YRO end date. DR-YRO-004 must produce
      * a single ERROR for the curfew breach.
      */
     @Test
@@ -187,7 +187,7 @@ class YroEndDateApiHttpLiveTest {
     }
 
     /**
-     * AC2a suppression — YRC2 end date matches the YRO end date (equal, not later). DR-YRO-001
+     * AC2a suppression — YRC2 end date matches the YRO end date (equal, not later). DR-YRO-004
      * must not fire because the curfew does not exceed the order.
      */
     @Test
@@ -222,7 +222,7 @@ class YroEndDateApiHttpLiveTest {
 
     /**
      * AC2b — YRC1 (curfew with electronic monitoring) end date is strictly after the YRO end date.
-     * DR-YRO-001 must produce a single ERROR.
+     * DR-YRO-004 must produce a single ERROR.
      */
     @Test
     void ac2b_yrc1_end_date_after_yro_end_date_should_produce_error() throws Exception {
@@ -269,7 +269,7 @@ class YroEndDateApiHttpLiveTest {
     }
 
     /**
-     * AC2b suppression — YRC1 end date matches the YRO end date (equal, not later). DR-YRO-001
+     * AC2b suppression — YRC1 end date matches the YRO end date (equal, not later). DR-YRO-004
      * must not fire.
      */
     @Test
@@ -305,7 +305,7 @@ class YroEndDateApiHttpLiveTest {
 
     /**
      * AC2c — YRC3 (further curfew) end date is strictly after the YRO end date.
-     * DR-YRO-001 must produce a single ERROR.
+     * DR-YRO-004 must produce a single ERROR.
      */
     @Test
     void ac2c_yrc3_end_date_after_yro_end_date_should_produce_error() throws Exception {
@@ -352,7 +352,7 @@ class YroEndDateApiHttpLiveTest {
     }
 
     /**
-     * AC2c suppression — YRC3 end date matches the YRO end date (equal, not later). DR-YRO-001
+     * AC2c suppression — YRC3 end date matches the YRO end date (equal, not later). DR-YRO-004
      * must not fire.
      */
     @Test
@@ -388,7 +388,7 @@ class YroEndDateApiHttpLiveTest {
 
     /**
      * Combined AC2a + AC2b + AC2c — all three curfew requirements breach the YRO end date in a
-     * single hearing. DR-YRO-001 must produce three independent ERRORs, one per condition.
+     * single hearing. DR-YRO-004 must produce three independent ERRORs, one per condition.
      */
     @Test
     void ac2_all_three_curfew_requirements_breach_simultaneously_should_produce_three_errors()
@@ -468,7 +468,7 @@ class YroEndDateApiHttpLiveTest {
     private static void setRuleEnabled(final boolean enabled) throws Exception {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-YRO-001'")) {
+                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-YRO-004'")) {
             ps.setBoolean(1, enabled);
             ps.executeUpdate();
         }
@@ -493,7 +493,7 @@ class YroEndDateApiHttpLiveTest {
             Thread.sleep(100);
         }
         throw new IllegalStateException(
-                "DR-YRO-001 did not reach enabled=" + expected + " within 5 s");
+                "DR-YRO-004 did not reach enabled=" + expected + " within 5 s");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

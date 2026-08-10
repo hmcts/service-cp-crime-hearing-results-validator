@@ -48,7 +48,7 @@ You are a senior Java / Spring Boot code reviewer for the **service-cp-crime-hea
 - Silent exception swallowing (must log or rethrow)
 - Incorrect HTTP status codes on controller responses
 - CEL expression compiled per-request instead of via the cached `CelExpressionEvaluator`
-- Rule IDs not following the `DR-<CATEGORY>-<NUMBER>` pattern (e.g. `DR-SENT-002`)
+- Rule IDs not following the `DR-<CATEGORY>-<NUMBER>` pattern (e.g. `DR-SENT-001`)
 - Message templates referencing `${variable}` placeholders not actually supplied by the preprocessing step
 - A new per-rule integration test duplicating framework-level override/severity-ceiling coverage already proven in `ValidationRuleOverrideIntegrationTest.java` (see `.claude/rules/design_rules.md`) — flag as unnecessary duplication, not a missing test
 - Mocked database tests sitting alongside integration tests that should exercise real infrastructure

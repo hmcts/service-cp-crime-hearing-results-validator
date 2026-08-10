@@ -20,7 +20,7 @@ The companion artifacts in this directory have parallel revision blocks at the t
 
 - [research.md](./research.md) — R3 marked superseded, R3-revised added with the new gate, branch coordination, and OOS reaffirmed.
 - [data-model.md](./data-model.md) — `DisqualificationContext` algorithm switches to `category = 'F'`; CEL variable `finalCategoryCount` (count of F-category lines on the offence) is added as a diagnostic alongside the existing `excludedFinalCount` (semantics tightened to F-category lines only); no PreprocessingDefinition schema change.
-- [contracts/rule-DR-DISQ-001.md](./contracts/rule-DR-DISQ-001.md) — upstream `ResultLineDto` extended with `category`; YAML rule definition unchanged; preprocessor contract updated.
+- [contracts/rule-DR-DISQ-002.md](./contracts/rule-DR-DISQ-002.md) — upstream `ResultLineDto` extended with `category`; YAML rule definition unchanged; preprocessor contract updated.
 - [quickstart.md](./quickstart.md) — `curl` examples updated to include `category` on each result line; new adjournment-`'A'` smoke scenario added.
 
 `tasks.md` is now stale relative to this plan and must be regenerated via `/speckit-tasks` after `/speckit-plan` completes.
@@ -32,7 +32,7 @@ Add a new YAML+CEL validation rule that raises a non-blocking `WARNING` when a h
 The rule cannot reuse `CustodialPreprocessor` — its outputs (`noInfoCount`, `hasBothCount`, etc.) are concurrent/consecutive-specific and group by defendant, whereas this rule is per-offence and needs different counts and offence-id sets. A new `ValidationPreprocessor` is therefore required, which under **Constitution Principle III** means the hard-wired `CustodialPreprocessor` field in `CelValidationRule` and `ValidationRuleAutoConfiguration` MUST first be replaced with a registry-based dispatch driven by the YAML `preprocessing.type` field. The plan therefore has two ordered parts:
 
 1. **Refactor**: introduce a `ValidationPreprocessor` interface, a sealed `RuleEvaluationContext` type (`toCelContext()` + `getOffenceIdSet(String)`), and a Spring-aware `PreprocessorRegistry` that resolves preprocessors by qualifier. Wire `CelValidationRule` and `ValidationRuleAutoConfiguration` through the registry. Move `CustodialPreprocessor` and `DefendantContext` behind the interface, qualifier `custodial-concurrent-consecutive`. No behaviour change; existing tests stay green.
-2. **Add the new rule**: implement `DisqualificationExtendedTestPreprocessor` (qualifier `disqualification-extended-test`) producing a `DisqualificationContext` with counts and a `qualifyingOffenceIds` set, then add `src/main/resources/rules/DR-DISQ-001.yaml` with one CEL condition firing on `qualifyingCount > 0`. No change to the upstream API contract.
+2. **Add the new rule**: implement `DisqualificationExtendedTestPreprocessor` (qualifier `disqualification-extended-test`) producing a `DisqualificationContext` with counts and a `qualifyingOffenceIds` set, then add `src/main/resources/rules/DR-DISQ-002.yaml` with one CEL condition firing on `qualifyingCount > 0`. No change to the upstream API contract.
 
 The trigger point in the UI (Save and continue / Manage hearing tab) is wiring outside this service.
 
@@ -41,7 +41,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 **Language/Version**: Java 25
 **Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Caffeine cache, Logback + LogstashEncoder, SnakeYAML, Lombok, Spring Data JPA + PostgreSQL driver
 **External DTOs**: `libs.api.hearing.results.validator` (root package `uk.gov.hmcts.cp.openapi.model`) — `DraftValidationRequest`, `OffenceDto`, `ResultLineDto`, `DefendantDto`, `ValidationIssue`, `AffectedOffence`. Spec source: `/home/sachin/moj/api-cp-crime-hearing-results-validator/src/main/resources/openapi/openapi-spec.yml`. **Upstream contract change is required** (2026-04-28 revision — supersedes the original "no upstream change" line): `ResultLineDto` is extended to add `category: enum [A, I, F]`. The lib version is bumped and published from the API repo's `main` branch (ACR publish pipeline runs only on `main`). This service pulls the new lib version once published; until then this service builds against the previous lib and the new field is unavailable.
-**Storage**: PostgreSQL 15.3 (TestContainers in tests, real instance in non-prod). Only the existing `validation_rule` table is touched — a new row keyed by the rule's id (e.g. `DR-DISQ-001`) controls runtime enable/severity.
+**Storage**: PostgreSQL 15.3 (TestContainers in tests, real instance in non-prod). Only the existing `validation_rule` table is touched — a new row keyed by the rule's id (e.g. `DR-DISQ-002`) controls runtime enable/severity.
 **Testing**: JUnit 5 + Mockito + AssertJ for unit tests; MockMvc for controller tests; WireMock for external-service stubs; TestContainers for `*IT` integration tests (extend `IntegrationTestBase`); `gradle api` for live API tests via docker-compose; Gatling for performance.
 **Target Platform**: Linux server, AKS (Azure Kubernetes Service), behind the CPP STE gateway. Default port 4550.
 **Project Type**: Single-module Spring Boot web service.
@@ -66,7 +66,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 
 | Principle | Compliance | Notes |
 |-----------|------------|-------|
-| **I. YAML/CEL Rule-First** | PASS | The new rule lives in `src/main/resources/rules/DR-DISQ-001.yaml`. CEL condition is a single boolean expression. Severity, message text, and the relevant offence codes / excluded codes / disqualification codes are all in the YAML — BAs can amend without touching Java. The new preprocessor publishes a documented set of CEL variables that the YAML references by name. **Phase 7 (2026-04-28) modifies the preprocessor and context record to consume the new `category` field — covered by Principle I's exception clause ("if [adding a new rule without writing Java is] not [possible], the preprocessor or context model has a gap that MUST be fixed in the same change"); the YAML rule itself remains the contract a BA reads.** |
+| **I. YAML/CEL Rule-First** | PASS | The new rule lives in `src/main/resources/rules/DR-DISQ-002.yaml`. CEL condition is a single boolean expression. Severity, message text, and the relevant offence codes / excluded codes / disqualification codes are all in the YAML — BAs can amend without touching Java. The new preprocessor publishes a documented set of CEL variables that the YAML references by name. **Phase 7 (2026-04-28) modifies the preprocessor and context record to consume the new `category` field — covered by Principle I's exception clause ("if [adding a new rule without writing Java is] not [possible], the preprocessor or context model has a gap that MUST be fixed in the same change"); the YAML rule itself remains the contract a BA reads.** |
 | **II. Constructor Injection & Immutable DTOs** | PASS | `DisqualificationExtendedTestPreprocessor` uses constructor injection (no fields needed beyond Spring's stereotype). `DisqualificationContext` is a Java record with `toCelContext()` and `getOffenceIdSet()`. `RuleEvaluationContext` is a sealed interface (Constitution II's "sealed interfaces for polymorphic types"). |
 | **III. Layered Architecture & Data-Driven Preprocessor Dispatch** | PASS *(after the prerequisite refactor)* | The current `CelValidationRule` hard-wires `CustodialPreprocessor` — Principle III explicitly calls this out as a transitional state that "MUST be removed before any second preprocessor type ships". This plan removes that wiring **first**, then adds the new preprocessor. After the refactor, dispatch is by YAML `preprocessing.type` via a Spring registry, which is exactly what Principle III mandates. |
 | **IV. Spec-Driven Build Loop** | PASS | This plan is the `/speckit-plan` output following `/speckit-specify`. `/speckit-tasks` will produce `tasks.md` next; `/speckit-implement` runs the build loop with `code-reviewer`, `qa`, `spec-validator` agents. |
@@ -89,7 +89,7 @@ specs/001-extended-test-disq-warning/
 ├── data-model.md        # Phase 1 output (this command)
 ├── quickstart.md        # Phase 1 output (this command)
 ├── contracts/
-│   └── rule-DR-DISQ-001.md   # Rule contract (YAML schema + CEL variables)
+│   └── rule-DR-DISQ-002.md   # Rule contract (YAML schema + CEL variables)
 ├── checklists/
 │   └── requirements.md  # From /speckit-specify (already exists)
 └── tasks.md             # From /speckit-tasks (NOT created by this command)
@@ -114,8 +114,8 @@ src/
 │   │           ├── DisqualificationExtendedTestPreprocessor.java  # NEW: qualifier "disqualification-extended-test"
 │   │           └── DisqualificationContext.java              # NEW: record implementing RuleEvaluationContext
 │   └── resources/rules/
-│       ├── DR-SENT-002.yaml                                  # UNCHANGED
-│       └── DR-DISQ-001.yaml                                  # NEW: the rule
+│       ├── DR-SENT-001.yaml                                  # UNCHANGED
+│       └── DR-DISQ-002.yaml                                  # NEW: the rule
 └── test/
     └── java/uk/gov/hmcts/cp/services/rules/cel/
         ├── PreprocessorRegistryTest.java                     # NEW
@@ -138,7 +138,7 @@ The `category = 'F'` refinement requires a coordinated change across **four repo
 | 1 | `api-cp-crime-hearing-results-validator` | `main` (no feature branch) | The ACR-publish pipeline runs **only on `main`**. To make a new lib version available to consumers, the OpenAPI edit + version bump must land directly on `main` (or via a short-lived PR that merges to `main`). | Add `category: enum [A, I, F]` to `ResultLineDto` in `src/main/resources/openapi/openapi-spec.yml`. Bump `version` in `build.gradle` / `pom.xml`. Trigger the publish-to-ACR job. |
 | 2 | `cpp-context-hearing` | `DD-41656-results-validation-warning` (off `team/DD-41715-results-validator`) | The DD-41715 branch already wires `ShareResultsCommandHandler` to call the validator HTTP endpoint with the four new pre-share ops (only one of which is the validator call — see project memory `project_hearing_validator_integration.md`). DD-41656 builds on that wiring; rebasing onto a fresh branch off integration would lose the HTTP wiring and force re-implementation. | Add `private String category` + `withCategory(...)` builder to the locally hand-written `ResultLineDto` at `hearing-command/.../service/validation/ResultLineDto.java` (parallel mirror — **not** regenerated from the OpenAPI contract; must be maintained alongside it). Populate `.category(line.getCategory())` in `ValidationRequestMapper.toValidationRequest`. Add unit-test coverage on the mapper. |
 | 3 | `cpp-ui-hearing` | `DD-41656-results-validation-warning` (off `team/result-validation`) | The team integration branch for the validator-call work in the UI; branching off it preserves the in-flight pre-share validation wiring. | Extend `buildResultLines` (`src/app/results/core/helpers/results-validation.ts`) to map `line.category` from the resolved draft line onto the validation request body. Add unit-test coverage on `buildResultLines`. |
-| 4 | `service-cp-crime-hearing-results-validator` (this repo) | `DD-41656-results-validation-warning` (already open, off main) | Continues from the original 001 implementation; staying here preserves the existing Phase A registry refactor commits and the in-flight DR-DISQ-001 implementation. | Pull the new lib version once published. Tighten `DisqualificationExtendedTestPreprocessor` to gate on `category = 'F'`. Add positive IT for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. No YAML schema change. |
+| 4 | `service-cp-crime-hearing-results-validator` (this repo) | `DD-41656-results-validation-warning` (already open, off main) | Continues from the original 001 implementation; staying here preserves the existing Phase A registry refactor commits and the in-flight DR-DISQ-002 implementation. | Pull the new lib version once published. Tighten `DisqualificationExtendedTestPreprocessor` to gate on `category = 'F'`. Add positive IT for BA scenario 5 (adjournment `'A'` → no warning). Adjust the existing edge-case unit/IT tests that asserted the inference behaviour. No YAML schema change. |
 
 ### Dependency ordering
 
