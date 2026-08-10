@@ -20,8 +20,7 @@ import org.springframework.web.client.RestTemplate;
  * running service instance.
  *
  * <p>DR-YRO-004 defaults to enabled by its Flyway seed migration, so no rule-state setup is
- * needed here. {@code ValidationRulesApiHttpLiveTest} temporarily disables this rule to test the
- * enabled/disabled rule-count summary, but restores it afterwards.
+ * needed here.
  *
  * <p>Acceptance criteria covered:
  * <ul>

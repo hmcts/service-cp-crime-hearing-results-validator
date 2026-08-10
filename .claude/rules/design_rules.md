@@ -102,6 +102,8 @@ What it SHOULD NOT cover (already proven framework-level):
 
 If the framework-level IT is missing a scenario you need, **extend `ValidationRuleOverrideIntegrationTest.java`** rather than copying it into a new per-rule IT.
 
+The same principle applies to the live api suite: the packaged rule-update write path (PATCH → override → list summary) is exercised exactly once, by the PATCH round-trip test in `ValidationRulesApiHttpLiveTest` (which restores the enabled steady state within the test). Per-rule live test classes must not toggle rule state, and that one test must not be deleted as "duplicative" — it is the only live-HTTP coverage of the write path.
+
 ## Out-of-Scope (do not add)
 
 - Business logic in CEL expressions beyond simple count comparisons. If an expression needs branching, add the branching to the preprocessor and expose a single boolean / count to CEL.

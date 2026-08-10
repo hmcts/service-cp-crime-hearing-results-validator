@@ -47,7 +47,7 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-07-31",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"resultLineId": "rl1", "shortCode": "COEW", "label": "Committed for sentence",
+                        {"resultLineId": "rl1", "shortCode": "FO", "label": "Fine",
                          "defendantId": "d1", "offenceId": "off1", "category": "F"}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
@@ -153,7 +153,7 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-07-31",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"resultLineId": "rl1", "shortCode": "COEW", "label": "Committed for sentence",
+                        {"resultLineId": "rl1", "shortCode": "FO", "label": "Fine",
                          "defendantId": "d1", "offenceId": "off1", "category": "F"}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
@@ -188,7 +188,7 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
                       "hearingDay": "2026-07-31",
                       "courtType": "MAGISTRATES",
                       "resultLines": [
-                        {"resultLineId": "rl1", "shortCode": "COEW", "label": "Committed for sentence",
+                        {"resultLineId": "rl1", "shortCode": "FO", "label": "Fine",
                          "defendantId": "d1", "offenceId": "off1", "category": "F"},
                         {"resultLineId": "rl2", "shortCode": "wdrn", "label": "Withdrawn",
                          "defendantId": "d1", "offenceId": "off2", "category": "F"}
@@ -212,6 +212,7 @@ class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_CONV_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")));
         }
     }

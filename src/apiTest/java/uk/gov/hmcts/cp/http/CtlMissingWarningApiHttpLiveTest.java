@@ -243,6 +243,7 @@ class CtlMissingWarningApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).hasSize(1);
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
     }

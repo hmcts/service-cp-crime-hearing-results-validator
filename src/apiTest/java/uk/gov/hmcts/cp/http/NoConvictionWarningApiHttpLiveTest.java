@@ -64,8 +64,8 @@ class NoConvictionWarningApiHttpLiveTest {
                   "hearingDay": "2026-07-31",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
-                     "label": "Committed for sentence", "defendantId": "d1", "offenceId": "off1"}
+                    {"resultLineId": "rl1", "shortCode": "FO", "category": "F",
+                     "label": "Fine", "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
@@ -163,8 +163,8 @@ class NoConvictionWarningApiHttpLiveTest {
                   "hearingDay": "2026-07-31",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
-                     "label": "Committed for sentence", "defendantId": "d1", "offenceId": "off1"}
+                    {"resultLineId": "rl1", "shortCode": "FO", "category": "F",
+                     "label": "Fine", "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
@@ -193,8 +193,8 @@ class NoConvictionWarningApiHttpLiveTest {
                   "hearingDay": "2026-07-31",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
-                     "label": "Committed for sentence", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl1", "shortCode": "FO", "category": "F",
+                     "label": "Fine", "defendantId": "d1", "offenceId": "off1"},
                     {"resultLineId": "rl2", "shortCode": "wdrn", "category": "F",
                      "label": "Withdrawn", "defendantId": "d1", "offenceId": "off2"}
                   ],
@@ -213,6 +213,7 @@ class NoConvictionWarningApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
         assertThat(json.get(WARNINGS)).hasSize(1);
+        assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES)).hasSize(1);
         assertThat(json.get(WARNINGS).get(0).get(AFFECTED_OFFENCES).get(0).get("offenceId").asText())
                 .isEqualTo("off1");
     }
