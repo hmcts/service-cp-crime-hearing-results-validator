@@ -43,5 +43,5 @@ Key design decisions captured as assumptions:
 This checklist and spec were authored retrospectively on 2026-08-05 after comparing
 `team/DD-41653` (where the feature was originally specified as `DR-COEW-001`) against
 `dev/DD-42678-co-end-date-rule` (where the code had already shipped as `DR-COEW-005` without a
-corresponding `specs/003-community-order-date-validation/` folder). No functional gaps were found
+corresponding `specs/005-community-order-date-validation/` folder). No functional gaps were found
 during that comparison — this folder closes a documentation gap only.

@@ -1,6 +1,6 @@
 # Tasks: CTL Missing Warning (DR-CTL-003)
 
-**Input**: Design documents from `specs/002-ctl-missing-warning/`
+**Input**: Design documents from `specs/003-ctl-missing-warning/`
 **Branch**: `DD-41663-ctl-missing-warning`
 
 **Organization**: Tasks grouped by user story to enable independent implementation and testing.

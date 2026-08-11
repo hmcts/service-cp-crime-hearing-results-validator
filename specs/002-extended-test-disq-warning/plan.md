@@ -1,7 +1,7 @@
 # Implementation Plan: Extended Test Disqualification Warning (DD-41656)
 
 **Branch**: `DD-41656-results-validation-warning` | **Date**: 2026-04-25 | **Revised**: 2026-04-28 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-extended-test-disq-warning/spec.md`
+**Input**: Feature specification from `/specs/002-extended-test-disq-warning/spec.md`
 
 ## Revision — 2026-04-28
 
@@ -82,7 +82,7 @@ The trigger point in the UI (Save and continue / Manage hearing tab) is wiring o
 ### Documentation (this feature)
 
 ```text
-specs/001-extended-test-disq-warning/
+specs/002-extended-test-disq-warning/
 ├── plan.md              # This file
 ├── spec.md              # Feature spec (already exists)
 ├── research.md          # Phase 0 output (this command)

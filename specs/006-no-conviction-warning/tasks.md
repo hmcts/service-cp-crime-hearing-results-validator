@@ -1,6 +1,6 @@
 # Tasks: No Conviction Warning (DR-CONV-006)
 
-**Input**: Design documents from `specs/003-no-conviction-warning/`
+**Input**: Design documents from `specs/006-no-conviction-warning/`
 **Branch**: `DD-43039-no-conviction-warning`
 
 **Organization**: Tasks grouped by user story to enable independent implementation and testing.

@@ -60,7 +60,7 @@ No violations. Complexity Tracking section not required.
 ### Documentation (this feature)
 
 ```text
-specs/003-community-order-date-validation/
+specs/005-community-order-date-validation/
 ├── spec.md          ✅ complete
 ├── research.md      ✅ complete
 ├── data-model.md     ✅ complete
@@ -231,7 +231,7 @@ gradle build                   # full build clean
 
 This spec folder did not exist on `dev/DD-42678-co-end-date-rule` even though the corresponding
 code had already shipped (commits `1ace279`, `d00bc34`, `37c7600`, `46763eb`, `9ab8a30`). It was
-authored after the fact by porting `specs/003-community-order-date-validation/` from
+authored after the fact by porting `specs/005-community-order-date-validation/` from
 `team/DD-41653` and updating it to match what actually landed here:
 
 1. Rule id `DR-COEW-001` → `DR-COEW-005` (migration `V1.005`, not `V1.004`).
