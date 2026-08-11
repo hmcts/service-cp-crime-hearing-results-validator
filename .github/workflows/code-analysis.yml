@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - 'team/**'
 
 permissions:
   contents: read
