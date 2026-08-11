@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     order's end date is not earlier than the end date of any attached requirement (`CUR`,
     `CURE`, `CURA`, `AAR`), plus new `DUR-CUR`/`DUR-CURE`/`DUR-AAR` conditions checking that a
     `CUR`/`CURE`/`AAR` requirement's own recorded end date matches its calculated duration
-    (start date + period − 1 day, or hearing date + days − 1 day for `AAR`) (DD-41655,
+    (start date + period − 1 day, or hearing date + days − 1 day for `AAR`) (DD-41653, DD-41655,
     DD-42678).
 - `DR-CTL-003` gains a `CTLDATE` prompt-reference bypass as a fifth suppression condition
   for the CTL-missing warning.
