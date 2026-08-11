@@ -1,7 +1,7 @@
 # Implementation Plan: No Conviction Warning (DR-CONV-006)
 
 **Branch**: `DD-43039-no-conviction-warning` | **Date**: 2026-07-31 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/003-no-conviction-warning/spec.md`
+**Input**: Feature specification from `specs/006-no-conviction-warning/spec.md`
 
 ## Summary
 
@@ -43,7 +43,7 @@ No violations. Complexity Tracking table omitted (no exceptions required).
 ### Documentation (this feature)
 
 ```text
-specs/003-no-conviction-warning/
+specs/006-no-conviction-warning/
 ├── plan.md              ← this file
 ├── research.md          ← Phase 0 output
 ├── data-model.md         ← Phase 1 output

@@ -1,7 +1,7 @@
 # =============================================================================
 # T041 — Manual smoke test for DR-DISQ-002
 # =============================================================================
-# Companion to specs/001-extended-test-disq-warning/quickstart.md §3.
+# Companion to specs/002-extended-test-disq-warning/quickstart.md §3.
 # Each scenario is independently paste-able (no shell variables).
 #
 # Targets the cpp-dev-environment stack: hearing-results-validator behind
@@ -295,7 +295,7 @@ PGPASSWORD=password123 psql -h localhost -p 5433 -U cpp_user -d results-validato
 # Latency for the smoke-1 trigger path: 175 ms cold, ~3 ms warm. SC-005 holds.
 #
 # PR description one-liner:
-#   "T041: ran specs/001-extended-test-disq-warning/smoke/curls.txt against the
+#   "T041: ran specs/002-extended-test-disq-warning/smoke/curls.txt against the
 #    cpp-dev-environment stack on localhost:8048. All five scenarios produced
 #    the expected response shape; rule disable verified via validation_rule row."
 # =============================================================================

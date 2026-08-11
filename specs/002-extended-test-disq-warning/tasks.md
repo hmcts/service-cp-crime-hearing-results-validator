@@ -5,7 +5,7 @@ description: "Tasks for DD-41656 — Extended Test Disqualification Warning"
 
 # Tasks: Extended Test Disqualification Warning (DD-41656)
 
-**Input**: Design documents from `/specs/001-extended-test-disq-warning/`
+**Input**: Design documents from `/specs/002-extended-test-disq-warning/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
 ## Revision — 2026-04-28
@@ -272,7 +272,7 @@ Single-module Spring Boot service:
 
 **Purpose**: Open four PRs (one per repo) with cross-references in each description so reviewers can traverse the change set.
 
-- [ ] T132 [PR] Open PR in `api-cp-crime-hearing-results-validator` (or merge to `main` directly per repo policy). PR title: `feat(contract): add category enum to ResultLineDto for DD-41656`. Description cites the four-repo coordination plan and links to this `specs/001-extended-test-disq-warning/` directory.
+- [ ] T132 [PR] Open PR in `api-cp-crime-hearing-results-validator` (or merge to `main` directly per repo policy). PR title: `feat(contract): add category enum to ResultLineDto for DD-41656`. Description cites the four-repo coordination plan and links to this `specs/002-extended-test-disq-warning/` directory.
 - [ ] T133 [PR] Open PR in `cpp-context-hearing` (`DD-41656-results-validation-warning` → `team/DD-41715-results-validator`). PR title: `feat(validation): thread category through to validator request for DD-41656`. Description references T132 and the parallel-mirror DTO.
 - [ ] T134 [PR] Open PR in `cpp-ui-hearing` (`DD-41656-results-validation-warning` → `team/result-validation`). PR title: `feat(results): include category on pre-share validation request for DD-41656`. Description references T132.
 - [ ] T135 [PR] Open PR in this repo (`DD-41656-results-validation-warning` → `main`). PR title: `feat(rules): tighten DR-DISQ-002 to gate on category='F' for DD-41656`. Description cites Constitution Principles I, III, VI, VIII (per Workflow / Governance) and references the original 001 work plus T132/T133/T134.

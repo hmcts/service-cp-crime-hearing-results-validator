@@ -1,7 +1,7 @@
 # Implementation Plan: CTL Missing Warning (DR-CTL-003)
 
 **Branch**: `DD-41663-ctl-missing-warning` | **Date**: 2026-05-06 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/002-ctl-missing-warning/spec.md`
+**Input**: Feature specification from `specs/003-ctl-missing-warning/spec.md`
 
 ## Summary
 
@@ -41,7 +41,7 @@ No violations. Complexity Tracking table omitted (no exceptions required).
 ### Documentation (this feature)
 
 ```text
-specs/002-ctl-missing-warning/
+specs/003-ctl-missing-warning/
 ├── plan.md              ← this file
 ├── research.md          ← Phase 0 output
 ├── data-model.md        ← Phase 1 output

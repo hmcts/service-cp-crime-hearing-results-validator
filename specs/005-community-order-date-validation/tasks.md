@@ -1,7 +1,7 @@
 # Tasks: Community Order End Date Validation (DR-COEW-005)
 
 **Branch**: `dev/DD-42678-co-end-date-rule`
-**Input**: Design documents from `specs/003-community-order-date-validation/`
+**Input**: Design documents from `specs/005-community-order-date-validation/`
 **Prerequisites**: plan.md ✅ spec.md ✅ research.md ✅ data-model.md ✅
 
 > This tasks list is a **retrofit**, authored 2026-08-05 after the fact. The work below already
@@ -104,7 +104,7 @@ confirmed failing before its corresponding implementation task, per the commit h
 
 ## Phase 7: Retrofit Documentation *(2026-08-05, this pass)*
 
-- [X] T020 Author `specs/003-community-order-date-validation/{spec,plan,research,data-model,tasks}.md` and `checklists/requirements.md` on `dev/DD-42678-co-end-date-rule`, ported from `team/DD-41653` and updated to describe the `DR-COEW-005` rename, `PreprocessorHelper` extraction, `masterDefendantId` grouping, and `enabled: true` default that actually shipped here
+- [X] T020 Author `specs/005-community-order-date-validation/{spec,plan,research,data-model,tasks}.md` and `checklists/requirements.md` on `dev/DD-42678-co-end-date-rule`, ported from `team/DD-41653` and updated to describe the `DR-COEW-005` rename, `PreprocessorHelper` extraction, `masterDefendantId` grouping, and `enabled: true` default that actually shipped here
 
 ---
 
@@ -123,7 +123,7 @@ confirmed failing before its corresponding implementation task, per the commit h
 - [X] T029 Write `CommunityOrderEndDateRuleIntegrationTest` User Stories 4–7 (DUR-CUR, DUR-CURE, DUR-AAR, and combined-display scenarios)
 - [X] T030 [P] Extend `RuleDefinitionTest` and `MessageTemplateResolverTest` with coverage for the new YAML fields/overload
 - [X] T031 [P] Add a DUR-CUR scenario to `CommunityOrderEndDateApiHttpLiveTest.java` (live HTTP, `gradle api`)
-- [X] T032 Update `specs/003-community-order-date-validation/{spec,plan,data-model}.md` with User Story 4, FR-015–FR-017, SC-008, A-012/A-013, and the Port Notes section
+- [X] T032 Update `specs/005-community-order-date-validation/{spec,plan,data-model}.md` with User Story 4, FR-015–FR-017, SC-008, A-012/A-013, and the Port Notes section
 - [X] T033 Code-review pass (2 rounds) against this repo's own git history: carried forward two post-PR#116 fixes discovered in `team/DD-41655-CO-duration-validation` (unit-aware period parsing — commit `1dd5dba`; corrected AAR prompt-ref key — commit `6199910`) and fixed one additional overflow-handling gap found during the port itself (`ArithmeticException` alongside `DateTimeException` around `LocalDate.plus(...)`) — see plan.md Port Notes
 
 **Checkpoint**: `./gradlew test checkstyleMain checkstyleTest pmdMain` all green; all 7 `DR-COEW-005` conditions covered end-to-end; no DB migration required.
