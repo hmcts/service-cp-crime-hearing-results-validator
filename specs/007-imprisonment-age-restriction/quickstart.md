@@ -19,8 +19,8 @@ merged, and published as a real upstream version before this ships to a shared e
    - One `resultLine` with `shortCode: "IMP"`, linked to that offence and defendant.
 3. Expect the response to contain a `validationIssues` entry with `ruleId: "DR-AGE-007"`,
    `severity: "ERROR"`, `validationLevel: "OFFENCE"`, and the offence in `affectedOffences`; and
-   `errors.errorMessages` containing: `"The defendant is under 21 years of age and cannot receive
-   a sentence of imprisonment. This affects: <defendant name>."`
+   `errors.errorMessages` containing: `"The defendant is under 21 so cannot be sentenced to
+   imprisonment. Amend the result or the date of birth. This affects: <defendant name>."`
 4. Re-submit with `dateOfBirth` moved to 21+ years before `hearingDay` (e.g. `"2004-07-19"`).
    Expect no `DR-AGE-007` issue in the response.
 

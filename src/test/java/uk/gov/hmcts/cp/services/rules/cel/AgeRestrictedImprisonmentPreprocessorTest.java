@@ -74,6 +74,17 @@ class AgeRestrictedImprisonmentPreprocessorTest {
     }
 
     @Test
+    void defendant_whose_21st_birthday_is_the_day_after_the_hearing_day_should_be_under21() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1")),
+                List.of(defendant("d1", HEARING_DAY.minusYears(21).plusDays(1))));
+
+        Map<String, AgeRestrictedResultContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result.get("d1").isUnder21()).isTrue();
+    }
+
+    @Test
     void defendant_with_no_qualifying_result_should_yield_no_context_entry() {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", "FINE", "d1", "off1")),

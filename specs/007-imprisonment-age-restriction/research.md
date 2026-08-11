@@ -58,7 +58,7 @@ than adding fields to `DefendantContext` / reusing `custodial-concurrent-consecu
 **Rationale**: `DefendantContext` and `CustodialPreprocessor` are shaped around counting
 concurrent/consecutive/no-info *offence combinations*; none of that logic or those counts are
 relevant here. This rule needs exactly two things per defendant: (a) does at least one offence
-carry a qualifying short code (`IMP`/`EXTIVS`/`SPECC`), and (b) is the defendant under 21 on the
+carry a qualifying short code (`IMP`/`EXTIVS`/`SPECC`/`SUSPS`/`SUSPSNR`), and (b) is the defendant under 21 on the
 hearing date. Bolting an unrelated boolean onto `DefendantContext` would couple two independent
 policy domains in one preprocessor, contradicting the precedent already set by
 `CtlMissingPreprocessor` and `DisqualificationExtendedTestPreprocessor` each owning their own
@@ -99,8 +99,9 @@ spec's "reported once, not once per offence" edge case without extra dedup logic
 **Decision**: Treat "There is a problem" as the existing GOV.UK Design System error-summary panel
 heading, rendered by the consuming UI for any blocking validation error — not literal text this
 rule needs to emit. This rule's `messageTemplate`/`errorMessageTemplate` supplies only "The
-defendant is under 21 years of age and cannot receive a sentence of imprisonment" (+ the
-aggregate "This affects" sentence); the panel heading is out of scope for this backend service.
+defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of
+birth." (+ the aggregate "This affects" sentence); the panel heading is out of scope for this
+backend service.
 
 **Rationale**: No other rule in this service (`DR-SENT-002`, `DR-CTL-001`, `DR-DISQ-001`) emits a
 "There is a problem"-style heading in its message templates; it is a standard UI-layer

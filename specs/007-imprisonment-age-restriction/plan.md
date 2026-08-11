@@ -9,7 +9,7 @@
 
 Add a new validation rule, `DR-AGE-007`, that raises a blocking `ERROR` when a defendant under
 21 years of age (as of the hearing date) has an imprisonment-type result (`IMP`, `EXTIVS`,
-`SPECC`) recorded against one or more of their offences. The rule follows the existing
+`SPECC`, `SUSPS`, `SUSPSNR`) recorded against one or more of their offences. The rule follows the existing
 YAML+CEL, preprocessor-registry pattern (Principle I / III): a new `ValidationPreprocessor`
 (`AgeRestrictedImprisonmentPreprocessor`, qualifier `age-restricted-imprisonment`) groups result
 lines per defendant (reusing the master-defendant grouping already proven in

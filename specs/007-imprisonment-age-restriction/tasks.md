@@ -68,13 +68,14 @@ exercise. No user story can be tested end-to-end until this phase is complete.
       covering: (a) a defendant with an `IMP` result and `dateOfBirth` making them under 21 on
       `hearingDay` yields a context with `isUnder21=true` and the offence id in
       `qualifyingOffenceIds`; (b) a defendant whose 21st birthday falls exactly on `hearingDay`
-      yields `isUnder21=false`; (c) a defendant with no `IMP`/`EXTIVS`/`SPECC` result yields no
+      yields `isUnder21=false`; (c) a defendant with no `IMP`/`EXTIVS`/`SPECC`/`SUSPS`/`SUSPSNR` result yields no
       context entry at all; (d) two defendant records sharing a `masterDefendantId` are grouped
       into one context, combining both defendants' qualifying offences; (e) a defendant with
       `dateOfBirth=null` yields `isUnder21=false` (fail-safe, never omits the flag as `true`) and
       **`preprocess()` completes without throwing**; (f) a request with `hearingDay=null` behaves
       the same way — no exception, `isUnder21=false` for every defendant; (g) short-code matching
-      against `IMP`/`EXTIVS`/`SPECC` is case-insensitive (test with `imp`, `Extivs`, `SPECC`);
+      against `IMP`/`EXTIVS`/`SPECC`/`SUSPS`/`SUSPSNR` is case-insensitive (test with `imp`,
+      `Extivs`, `SPECC`, `susps`, `Suspsnr`);
       (h) a request with two defendants, one with `dateOfBirth=null` and one with a valid
       under-21 `dateOfBirth`, yields a context entry for the under-21 defendant with
       `isUnder21=true` and a context entry for the null-DOB defendant with `isUnder21=false` —
@@ -93,7 +94,7 @@ exercise. No user story can be tested end-to-end until this phase is complete.
 
 - [X] T006 [P] Add `src/main/resources/rules/DR-AGE-007.yaml` per
       `contracts/DR-AGE-007.yaml`: `preprocessing.type: age-restricted-imprisonment`,
-      `filterShortCodes: [IMP, EXTIVS, SPECC]`, condition `AC2` with
+      `filterShortCodes: [IMP, EXTIVS, SPECC, SUSPS, SUSPSNR]`, condition `AC2` with
       `expression: "isUnder21 == 1"`, `severity: ERROR`, `validationLevel: OFFENCE`,
       `affectedOffenceSet: "qualifyingOffenceIds"`, `affectedDefendantSet: "defendantId"`, and
       `errorMessageTemplate` containing `${defendantNames}`.
@@ -146,6 +147,9 @@ contains no `DR-AGE-007` issue.
       `entersExtivsOrSpeccResult_defendantWellOver21_shouldNotRaiseError` covering `EXTIVS` and
       `SPECC` short codes against a defendant well over 21; assert no `DR-AGE-007` issue in
       either case. (Depends on T009 — same file.)
+      **Extended**: `SUSPS`/`SUSPSNR` coverage for this same well-over-21 scenario was added later
+      alongside T023 (see Phase 6 addendum) when those two short codes were added to the rule's
+      `filterShortCodes`.
 
 **Checkpoint**: User Story 1 passes independently. The rule pipeline exists end-to-end and does
 not false-positive on eligible defendants — demonstrable as an MVP slice.
@@ -160,8 +164,8 @@ defendant blocks sharing with the exact required message and defendant-affected 
 **Independent Test**: Submit a request with one defendant under 21 on `hearingDay` and an `IMP`
 result against one of their offences. Assert the response contains a `DR-AGE-007` issue with
 `severity=ERROR`, `validationLevel=OFFENCE`, the offence in `affectedOffences`, `isValid=false`,
-and `errors.errorMessages` containing exactly: "The defendant is under 21 years of age and
-cannot receive a sentence of imprisonment. This affects: <name>."
+and `errors.errorMessages` containing exactly: "The defendant is under 21 so cannot be sentenced
+to imprisonment. Amend the result or the date of birth. This affects: <name>."
 
 - [X] T011 [US2] Write failing integration test
       `entersImprisonmentResult_defendantUnder21_shouldRaiseBlockingError` in
@@ -264,6 +268,15 @@ only if evaluating `DR-AGE-007` surfaces a genuine gap in the shared override me
       end-to-end (docker-compose up → 22 apiTest cases including all 8 new ones → compose down);
       all passed, 0 failures. (An earlier `gradle build`'s `composeBuild` failure noted in T019
       turned out to be transient — `docker` was reachable on a direct `./gradlew composeUp` retry.)
+
+- [X] T023 [P] Addendum: extend `filterShortCodes` to also recognise `SUSPS` ("Suspended
+      sentence") and `SUSPSNR` ("Suspended sentence not revoked") as imprisonment-type results,
+      per FR-001's updated scope. Updated `DR-AGE-007.yaml` (`filterShortCodes: [IMP, EXTIVS,
+      SPECC, SUSPS, SUSPSNR]`), `AgeRestrictedImprisonmentPreprocessorTest` (new short-code and
+      case-insensitivity cases for `susps`/`Suspsnr`), `AgeRestrictedImprisonmentRuleIT` (US1/US2
+      scenarios re-run with the two new codes), and
+      `AgeRestrictedImprisonmentApiHttpLiveTest` (live coverage for both new codes). Documented in
+      `CHANGELOG.md`.
 
 ---
 

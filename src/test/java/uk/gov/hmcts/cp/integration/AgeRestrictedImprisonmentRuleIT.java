@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -165,9 +167,13 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
     @DisplayName("User Story 2 - blocking error for under-21 defendants")
     class Under21Blocked {
 
-        @Test
-        void entersImprisonmentResult_defendantUnder21_shouldRaiseBlockingError() throws Exception {
-            String request = singleUnder21DefendantRequest();
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"IMP", "EXTIVS", "SPECC", "SUSPS", "SUSPSNR"})
+        void entersImprisonmentTypeResult_defendantUnder21_shouldRaiseBlockingError(final String shortCode)
+                throws Exception {
+            // Runs against the packaged DR-AGE-007.yaml, not a hard-coded list, so if any of the
+            // five short codes were accidentally dropped from filterShortCodes this fails.
+            String request = singleUnder21DefendantRequest(shortCode);
 
             performValidate(request)
                     .andExpect(status().isOk())
@@ -176,36 +182,6 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].validationLevel", is("OFFENCE")))
-                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
-        }
-
-        @Test
-        void entersSuspsResult_defendantUnder21_shouldRaiseBlockingError() throws Exception {
-            String request = """
-                    {
-                      "hearingId": "h1",
-                      "hearingDay": "2026-07-20",
-                      "courtType": "MAGISTRATES",
-                      "resultLines": [
-                        {"resultLineId": "rl1", "shortCode": "SUSPSNR", "label": "Suspended sentence not revoked",
-                         "defendantId": "d1", "offenceId": "off1"}
-                      ],
-                      "defendants": [
-                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
-                         "dateOfBirth": "2006-08-01"}
-                      ],
-                      "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
-                      ]
-                    }
-                    """;
-
-            performValidate(request)
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.isValid", is(false)))
-                    .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
                             EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
@@ -244,6 +220,8 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[*].offenceId",
+                            containsInAnyOrder("off1", "off2")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
                             EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
@@ -279,6 +257,9 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.isValid", is(false)))
                     .andExpect(jsonPath("$.errors.validationIssues", hasSize(1)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].ruleId", is(RULE_ID)))
+                    // off2 belongs to the 21+ defendant (d2) and must NOT appear here.
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
                             EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
         }
@@ -313,6 +294,10 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isValid", is(false)))
                     .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-AGE-007')]", hasSize(2)))
+                    // One issue per defendant context, emitted in request order (d1 then d2) — each
+                    // must carry only its own defendant's offence, not the other's.
+                    .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.errors.validationIssues[1].affectedOffences[0].offenceId", is("off2")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]", is(
                             EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith and Alex Jones.")));
@@ -356,13 +341,17 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
     }
 
     private static String singleUnder21DefendantRequest() {
+        return singleUnder21DefendantRequest("IMP");
+    }
+
+    private static String singleUnder21DefendantRequest(final String shortCode) {
         return """
                 {
                   "hearingId": "h1",
                   "hearingDay": "2026-07-20",
                   "courtType": "MAGISTRATES",
                   "resultLines": [
-                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                    {"resultLineId": "rl1", "shortCode": "%s", "label": "%s",
                      "defendantId": "d1", "offenceId": "off1"}
                   ],
                   "defendants": [
@@ -373,7 +362,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
                   ]
                 }
-                """;
+                """.formatted(shortCode, shortCode + " label");
     }
 
     private ResultActions performValidate(String request) throws Exception {

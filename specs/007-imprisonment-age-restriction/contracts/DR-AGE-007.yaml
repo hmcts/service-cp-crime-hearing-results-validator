@@ -9,8 +9,8 @@ rule:
   title: "Imprisonment result age restriction"
   description: >-
     Blocks sharing when a defendant under 21 years of age on the hearing date
-    has an imprisonment-type result (IMP, EXTIVS, SPECC) recorded against one
-    or more of their offences.
+    has an imprisonment-type result (IMP, EXTIVS, SPECC, SUSPS, SUSPSNR)
+    recorded against one or more of their offences.
   priority: 7000
   enabled: true
 
@@ -20,6 +20,8 @@ rule:
       - IMP
       - EXTIVS
       - SPECC
+      - SUSPS
+      - SUSPSNR
 
   conditions:
     - id: "AC2"

@@ -30,7 +30,7 @@ public record AgeRestrictedResultContext(
 | `defendantId` | `String` | Defendant id, or master-defendant id when the defendant is linked to a master defendant (same grouping convention as `DefendantContext`/`CustodialPreprocessor`). |
 | `defendantName` | `String` | `"first last"`, falling back to whichever of first/last name is present, `"Unknown"` if neither (same convention as `CustodialPreprocessor.buildFullName`). |
 | `isUnder21` | `boolean` | `true` when the defendant's 21st birthday falls **after** the hearing date (`request.getHearingDay()`); `false` when it falls on or before. `false` (fail-safe, never `true`) when `dateOfBirth` is null/absent. |
-| `qualifyingOffenceIds` | `List<String>` | Ids of offences belonging to this defendant that carry at least one result line whose short code is `IMP`, `EXTIVS`, or `SPECC` (case-insensitive). |
+| `qualifyingOffenceIds` | `List<String>` | Ids of offences belonging to this defendant that carry at least one result line whose short code is `IMP`, `EXTIVS`, `SPECC`, `SUSPS`, or `SUSPSNR` (case-insensitive). |
 
 **Validation rules encoded here** (not in CEL, per the "no branching in CEL" convention):
 - Age comparison: `Period.between(dateOfBirth, hearingDay).getYears() >= 21` → `isUnder21 = false`;
@@ -75,15 +75,15 @@ the `RuleEvaluationContext` interface's default-method pattern.)
 
 - **Qualifier / `type()`**: `age-restricted-imprisonment`
 - **Input**: `DraftValidationRequest` (`resultLines`, `defendants`, `hearingDay`),
-  `PreprocessingDefinition` (`filterShortCodes: [IMP, EXTIVS, SPECC]`)
+  `PreprocessingDefinition` (`filterShortCodes: [IMP, EXTIVS, SPECC, SUSPS, SUSPSNR]`)
 - **Algorithm**:
   1. Build the defendant grouping map and defendant-name map exactly as
      `CustodialPreprocessor.buildDefendantGrouping` / `buildDefendantNames` do (master-defendant
      aware).
   2. Group `resultLines` by that grouping key.
   3. For each defendant group, filter lines whose `shortCode` (uppercased) is in
-     `{IMP, EXTIVS, SPECC}`. If none, skip this defendant (no context emitted) — same
-     "skip if nothing qualifies" shape as `CustodialPreprocessor`.
+     `{IMP, EXTIVS, SPECC, SUSPS, SUSPSNR}`. If none, skip this defendant (no context emitted) —
+     same "skip if nothing qualifies" shape as `CustodialPreprocessor`.
   4. Collect the distinct `offenceId`s of the qualifying lines → `qualifyingOffenceIds`.
   5. Look up the corresponding `DefendantDto`'s `dateOfBirth`; compute `isUnder21` against
      `request.getHearingDay()` per the fail-safe rule above. **This step MUST be null-safe and
@@ -113,8 +113,8 @@ the `RuleEvaluationContext` interface's default-method pattern.)
 | `validationLevel` | `OFFENCE` (mandatory for `ERROR` per `ValidationIssue` javadoc) |
 | `affectedOffenceSet` | `qualifyingOffenceIds` |
 | `affectedDefendantSet` | `defendantId` |
-| `messageTemplate` | `"The defendant is under 21 years of age and cannot receive a sentence of imprisonment."` |
-| `errorMessageTemplate` | `"The defendant is under 21 years of age and cannot receive a sentence of imprisonment. This affects: ${defendantNames}."` |
+| `messageTemplate` | `"The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth."` |
+| `errorMessageTemplate` | `"The defendant is under 21 so cannot be sentenced to imprisonment. Amend the result or the date of birth. This affects: ${defendantNames}."` |
 
 No state transitions apply — this is a stateless, per-request evaluation like every other rule
 in this service.
