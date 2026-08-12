@@ -1,10 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -13,6 +8,11 @@ import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 /**
  * End-to-end integration tests for DR-COEW-005 (community order end date validation).
@@ -65,6 +65,14 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     private static final String ERR_MSG_BASE_AAR =
             "The end date of the order must match or be longer than the end date of "
                     + "Alcohol abstinence and monitoring. This affects ";
+
+    // ── Requirement duration end date error-summary base messages (User Stories 4–7) ──
+    private static final String MSG_DUR_CURFEW_SUMMARY_BASE =
+            "The end date for the Curfew Requirement does not match the period of the "
+                    + "requirement. This affects ";
+    private static final String MSG_DUR_AAR_SUMMARY_BASE =
+            "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
+                    + "the period of the requirement. This affects ";
 
     // ═════════════════════════════════════════════════════════════════════════
     // AC2 Scenarios 6–13
@@ -628,13 +636,6 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     // ═════════════════════════════════════════════════════════════════════════
     // Requirement duration end date validation (User Stories 4–7)
     // ═════════════════════════════════════════════════════════════════════════
-
-    private static final String MSG_DUR_CURFEW_SUMMARY_BASE =
-            "The end date for the Curfew Requirement does not match the period of the "
-                    + "requirement. This affects ";
-    private static final String MSG_DUR_AAR_SUMMARY_BASE =
-            "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
-                    + "the period of the requirement. This affects ";
 
     private static String durCurfewInlineMessage(String calculatedEndDate) {
         return "The end date for the Curfew Requirement does not match the period of the "

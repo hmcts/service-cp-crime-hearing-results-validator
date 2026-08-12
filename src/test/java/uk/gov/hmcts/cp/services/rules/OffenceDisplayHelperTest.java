@@ -1,5 +1,7 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -8,8 +10,6 @@ import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
 import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link OffenceDisplayHelper}.

@@ -70,7 +70,7 @@ public class ValidationRulesController implements ValidationRulesApi {
             final UpdateRuleRequest updateRuleRequest,
             final String cppClientCorrelationId) {
 
-        log.info("Update validation rule request received for ruleId={}", ruleId);
+        log.info("Update validation rule request received");
         return ResponseEntity.ok(validationRulesService.updateRule(ruleId, updateRuleRequest, cjsCppUid));
     }
 }

@@ -1,17 +1,5 @@
 package uk.gov.hmcts.cp.services.feature;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Map;
-
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -19,6 +7,18 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
+import java.util.TimeZone;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link AzureAppConfigFetcher}.
@@ -95,6 +95,33 @@ class AzureAppConfigFetcherTest {
         Map<String, Boolean> features = AzureAppConfigFetcher.parseFeatures(json);
 
         assertThat(features).isEmpty();
+    }
+
+    /**
+     * A value-schema drift (or a hand-edited flag) that omits the "enabled" field must not be
+     * silently treated as disabled — that would flip the documented fail-open contract into
+     * fail-closed for that one feature. The key must be left out of the map entirely so
+     * {@link AzureFeatureToggleService#isFeatureEnabled} falls through to its own fail-open
+     * default via {@code getOrDefault(featureName, true)}.
+     */
+    @Test
+    void parseFeatures_omits_key_when_enabled_field_is_missing() {
+        String json = """
+                {
+                  "items": [
+                    {
+                      "key": ".appconfig.featureflag/ResultsValidation",
+                      "value": "{\\"id\\":\\"ResultsValidation\\"}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    }
+                  ]
+                }
+                """;
+
+        Map<String, Boolean> features = AzureAppConfigFetcher.parseFeatures(json);
+
+        assertThat(features).doesNotContainKey("ResultsValidation");
     }
 
     @Test
@@ -179,6 +206,39 @@ class AzureAppConfigFetcherTest {
                     .withHeader("Authorization", matching("HMAC-SHA256 Credential=test-id.*Signature=.+"))
                     .withHeader("x-ms-content-sha256", equalTo(EMPTY_BODY_SHA256))
                     .withHeader("x-ms-date", matching(".+")));
+        }
+
+        /**
+         * Azure expects {@code x-ms-date} in RFC1123 GMT (e.g. "Wed, 21 Oct 2015 07:28:00 GMT").
+         * Pins the JVM default time zone to a non-UTC zone for the duration of the call to prove
+         * the header is computed in a fixed zone rather than {@code ZonedDateTime.now()}'s
+         * system-default zone — otherwise this would only happen to work on UTC-configured hosts
+         * and every fetch would 401 (then fail-open) anywhere else.
+         */
+        @Test
+        void fetchFeatures_should_send_x_ms_date_in_rfc1123_gmt_regardless_of_default_timezone() {
+            String body = """
+                    { "items": [] }
+                    """;
+            wireMock.stubFor(get(urlPathEqualTo("/kv"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(body)));
+
+            TimeZone originalDefault = TimeZone.getDefault();
+            try {
+                TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+
+                AzureAppConfigFetcher fetcher = new AzureAppConfigFetcher(connectionString);
+                fetcher.fetchFeatures("STE86");
+            } finally {
+                TimeZone.setDefault(originalDefault);
+            }
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo("/kv"))
+                    .withHeader("x-ms-date", matching(
+                            "^[A-Za-z]{3}, \\d{2} [A-Za-z]{3} \\d{4} \\d{2}:\\d{2}:\\d{2} GMT$")));
         }
 
         /**

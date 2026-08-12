@@ -1,12 +1,15 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import java.util.ArrayList;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.anyShortCodeIn;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupResultsByOffence;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -46,9 +49,9 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
     @Override
     public Map<String, DisqualificationContext> preprocess(final DraftValidationRequest request,
                                                             final PreprocessingDefinition config) {
-        final Set<String> relevantCodes = upperSet(config.getRelevantOffenceCodes());
-        final Set<String> excludedShortCodes = upperSet(config.getExcludedFinalShortCodes());
-        final Set<String> extendedTestShortCodes = upperSet(config.getExtendedTestShortCodes());
+        final Set<String> relevantCodes = upperSet(config.relevantOffenceCodes());
+        final Set<String> excludedShortCodes = upperSet(config.excludedFinalShortCodes());
+        final Set<String> extendedTestShortCodes = upperSet(config.extendedTestShortCodes());
 
         final Map<String, List<ResultLineDto>> resultsByOffence = groupResultsByOffence(request);
         final Map<String, DisqualificationContext> result = new LinkedHashMap<>();
@@ -92,14 +95,13 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
 
         final long finalCategoryCount = finalLines.size();
         final long excludedFinalCount = finalLines.stream()
-                .filter(rl -> {
-                    final String upper = upperOrNull(rl.getShortCode());
-                    return upper != null && excludedShortCodes.contains(upper);
-                }).count();
-        final boolean finalNonExcluded = finalLines.stream().anyMatch(rl -> {
-            final String upper = upperOrNull(rl.getShortCode());
-            return upper != null && !excludedShortCodes.contains(upper);
-        });
+                .filter(rl -> hasUpperCode(rl, excludedShortCodes))
+                .count();
+        // A null/unrecognised shortCode is not a member of excludedShortCodes, so it counts as
+        // non-excluded (conservative-by-design: novel final outcomes fire rather than being
+        // silently dropped) -- matches DR-CONV-006's identical hasUpperCode-based gate.
+        final boolean finalNonExcluded = finalLines.stream()
+                .anyMatch(rl -> !hasUpperCode(rl, excludedShortCodes));
         final boolean disqExtTest = anyShortCodeIn(lines, extendedTestShortCodes);
 
         final boolean qualifying = relevant && finalNonExcluded && !disqExtTest;
@@ -113,38 +115,5 @@ public class DisqualificationExtendedTestPreprocessor implements ValidationPrepr
                 disqExtTest ? 1L : 0L,
                 qualifying ? List.of(offenceId) : List.of(),
                 List.of(offenceId));
-    }
-
-    private static Set<String> upperSet(final List<String> values) {
-        final List<String> source = values == null ? List.of() : values;
-        return source.stream()
-                .map(s -> s.toUpperCase(Locale.ROOT))
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
-    private static Map<String, List<ResultLineDto>> groupResultsByOffence(
-            final DraftValidationRequest request) {
-        final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
-        if (request.getResultLines() != null) {
-            for (final ResultLineDto rl : request.getResultLines()) {
-                if (rl.getOffenceId() != null) {
-                    grouped.computeIfAbsent(rl.getOffenceId(), k -> new ArrayList<>()).add(rl);
-                }
-            }
-        }
-        return grouped;
-    }
-
-    private static boolean anyShortCodeIn(final List<ResultLineDto> lines,
-                                           final Set<String> upperCodes) {
-        return lines.stream().anyMatch(rl -> {
-            final String upper = upperOrNull(rl.getShortCode());
-            return upper != null && upperCodes.contains(upper);
-        });
-    }
-
-    private static String upperOrNull(final String value) {
-        return value == null ? null : value.toUpperCase(Locale.ROOT);
     }
 }

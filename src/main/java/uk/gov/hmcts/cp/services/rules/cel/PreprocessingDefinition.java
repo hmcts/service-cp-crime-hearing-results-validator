@@ -1,38 +1,31 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * YAML-backed preprocessing configuration for a CEL validation rule.
  */
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class PreprocessingDefinition {
+public record PreprocessingDefinition(
+        String type,
+        List<String> filterShortCodes,
+        String groupBy,
+        int skipWhenGroupCount,
+        List<String> relevantOffenceCodes,
+        List<String> excludedFinalShortCodes,
+        List<String> extendedTestShortCodes,
+        List<String> remandShortCodes,
+        List<String> ctlShortCodes,
 
-    private String type;
-    private List<String> filterShortCodes;
-    private String groupBy;
-    private int skipWhenGroupCount;
-    private List<String> relevantOffenceCodes;
-    private List<String> excludedFinalShortCodes;
-    private List<String> extendedTestShortCodes;
-    private List<String> remandShortCodes;
-    private List<String> ctlShortCodes;
+        // YRO-specific short-code lists (used by YouthRehabilitationPreprocessor)
+        List<String> yroOrderShortCodes,
+        List<String> curfewShortCodes,
+        List<String> curfewTagShortCodes,
+        List<String> furtherCurfewShortCodes,
 
-    // YRO-specific short-code lists (used by YouthRehabilitationPreprocessor)
-    private List<String> yroOrderShortCodes;
-    private List<String> curfewShortCodes;
-    private List<String> curfewTagShortCodes;
-    private List<String> furtherCurfewShortCodes;
-
-    // Community-order-specific short-code lists (used by CommunityOrderEndDatePreprocessor;
-    // the curfew* lists above are shared with YRO)
-    private List<String> communityOrderShortCodes;
-    private List<String> alcoholAbstinenceShortCodes;
+        // Community-order-specific short-code lists (used by CommunityOrderEndDatePreprocessor;
+        // the curfew* lists above are shared with YRO)
+        List<String> communityOrderShortCodes,
+        List<String> alcoholAbstinenceShortCodes) {
 }

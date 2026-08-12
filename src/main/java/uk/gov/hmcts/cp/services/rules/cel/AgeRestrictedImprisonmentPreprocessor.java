@@ -46,7 +46,7 @@ public class AgeRestrictedImprisonmentPreprocessor implements ValidationPreproce
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, AgeRestrictedResultContext> preprocess(final DraftValidationRequest request,
                                                                final PreprocessingDefinition config) {
-        final Set<String> shortCodes = config.getFilterShortCodes().stream()
+        final Set<String> shortCodes = config.filterShortCodes().stream()
                 .map(s -> s.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
 

@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
@@ -111,9 +112,16 @@ public class AzureAppConfigFetcher {
                     if (!contentType.isEmpty()) {
                         final String key = item.get("key").asText().replace(FEATURE_PREFIX, "");
                         final JsonNode valueNode = OBJECT_MAPPER.readTree(item.get("value").asText());
-                        final boolean enabled = valueNode.has("enabled")
-                                && valueNode.get("enabled").asBoolean();
-                        features.put(key, enabled);
+                        if (valueNode.has("enabled")) {
+                            features.put(key, valueNode.get("enabled").asBoolean());
+                        } else {
+                            // Schema drift or a hand-edited flag with no "enabled" field: leave the
+                            // key out of the map rather than defaulting to false here, so the
+                            // documented fail-open contract (AzureFeatureToggleService's
+                            // getOrDefault(featureName, true)) still applies for this flag.
+                            log.warn("Feature flag '{}' value is missing 'enabled' field; "
+                                    + "omitting it so the caller's fail-open default applies", key);
+                        }
                     }
                 }
             }
@@ -124,7 +132,13 @@ public class AzureAppConfigFetcher {
     }
 
     private HttpRequest buildSignedRequest(final String path) {
-        final String requestTime = ZonedDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        // Azure expects x-ms-date as RFC1123 GMT (e.g. "Wed, 21 Oct 2015 07:28:00 GMT"). Must be
+        // pinned to UTC explicitly -- ZonedDateTime.now() alone uses the JVM's default time zone,
+        // which only happens to be UTC because containers run UTC; on any other host every
+        // signed request would use the wrong offset, Azure would reject it with 401, and the
+        // fetch would fail-open (feature permanently unable to be disabled via this path).
+        final String requestTime = ZonedDateTime.now(ZoneOffset.UTC)
+                .format(DateTimeFormatter.RFC_1123_DATE_TIME);
         final String contentHash = buildContentHash();
         final String host = connectionInfo.getHost();
 

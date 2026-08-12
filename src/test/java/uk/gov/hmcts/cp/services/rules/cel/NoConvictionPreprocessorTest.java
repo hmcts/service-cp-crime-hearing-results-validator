@@ -102,8 +102,8 @@ class NoConvictionPreprocessorTest {
 
         @ParameterizedTest
         @ValueSource(strings = {
-                "wdrn", "WDRNOFF", "dism", "dine", "dini",
-                "disch", "disc", "ctrof", "iremfile"
+            "wdrn", "WDRNOFF", "dism", "dine", "dini",
+            "disch", "disc", "ctrof", "iremfile"
         })
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(
@@ -134,6 +134,25 @@ class NoConvictionPreprocessorTest {
                     .as("mixed-case excluded code %s should suppress", mixedCase)
                     .isEqualTo(0L);
             assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+        }
+
+        /**
+         * A null shortCode is not a member of {@code excludedFinalShortCodes}, so it must count as
+         * non-excluded and can trigger the warning — pins the behaviour that {@code
+         * PreprocessorHelper.hasUpperCode} already gives here, matching DR-DISQ-002's
+         * (spec-mandated) treatment of the same case.
+         */
+        @Test
+        void null_short_code_on_final_line_should_be_treated_as_non_excluded() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", null, "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offence("off1", 1, "Theft").isConvicted(false)));
+
+            NoConvictionContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.unconvictedSentenceCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
         }
     }
 

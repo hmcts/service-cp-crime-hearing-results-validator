@@ -1,5 +1,13 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import jakarta.annotation.Resource;
 import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
@@ -8,14 +16,6 @@ import org.springframework.http.MediaType;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Framework-level integration tests for the runtime override mechanism: enable/disable, severity
