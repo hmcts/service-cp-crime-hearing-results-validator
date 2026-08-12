@@ -1,7 +1,11 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -146,14 +150,23 @@ class RuleDefinitionTest {
      * token mid-sentence, or terminates its clause with something other than a full stop, would
      * otherwise leak a raw token or a mangled message into production error responses with no
      * other test in the suite catching it -- this test exists so that drift fails loudly here
-     * instead.
+     * instead. Rule files are discovered from the classpath (the same {@code rules/DR-*.yaml} scan
+     * {@link uk.gov.hmcts.cp.config.ValidationRuleAutoConfiguration} uses) rather than hard-coded,
+     * so every current and future rule template is covered automatically.
      */
     @Test
-    void defendantNames_clause_should_be_fully_removable_for_every_rule_template() {
+    void defendantNames_clause_should_be_fully_removable_for_every_rule_template() throws IOException {
         final MessageTemplateResolver resolver = new MessageTemplateResolver(new OffenceDisplayHelper());
-        final List<String> ruleFiles = List.of(
-                "rules/DR-COEW-005.yaml", "rules/DR-CONV-006.yaml", "rules/DR-CTL-003.yaml",
-                "rules/DR-DISQ-002.yaml", "rules/DR-SENT-001.yaml", "rules/DR-YRO-004.yaml");
+        final Resource[] resources = new PathMatchingResourcePatternResolver()
+                .getResources("classpath*:rules/*.yaml");
+        final List<String> ruleFiles = new ArrayList<>();
+        for (final Resource resource : resources) {
+            final String filename = resource.getFilename();
+            if (filename != null && filename.startsWith("DR-")) {
+                ruleFiles.add("rules/" + filename);
+            }
+        }
+        assertThat(ruleFiles).isNotEmpty();
 
         for (final String ruleFile : ruleFiles) {
             final RuleDefinition rule = RuleDefinitionLoader.load(ruleFile);
