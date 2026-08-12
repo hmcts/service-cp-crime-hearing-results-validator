@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -133,5 +135,45 @@ class RuleDefinitionTest {
         ConditionDefinition ac2a = rule.getConditions().get(0);
         assertThat(ac2a.getId()).isEqualTo("AC2a");
         assertThat(ac2a.getCalculatedValueSet()).isNull();
+    }
+
+    /**
+     * Guards the sentence-removal behaviour that {@link MessageTemplateResolver#resolveDefendantNames}
+     * relies on for single-defendant-hearing suppression (AC1-AC4): running every rule's real
+     * templates containing {@code ${defendantNames}} through the single-defendant branch must fully
+     * remove both the token and the "This affects" clause it belongs to, leaving a well-formed,
+     * non-empty message with no leftover double punctuation. A future template that embeds the
+     * token mid-sentence, or terminates its clause with something other than a full stop, would
+     * otherwise leak a raw token or a mangled message into production error responses with no
+     * other test in the suite catching it -- this test exists so that drift fails loudly here
+     * instead.
+     */
+    @Test
+    void defendantNames_clause_should_be_fully_removable_for_every_rule_template() {
+        final MessageTemplateResolver resolver = new MessageTemplateResolver(new OffenceDisplayHelper());
+        final List<String> ruleFiles = List.of(
+                "rules/DR-COEW-005.yaml", "rules/DR-CONV-006.yaml", "rules/DR-CTL-003.yaml",
+                "rules/DR-DISQ-002.yaml", "rules/DR-SENT-001.yaml", "rules/DR-YRO-004.yaml");
+
+        for (final String ruleFile : ruleFiles) {
+            final RuleDefinition rule = RuleDefinitionLoader.load(ruleFile);
+            for (final ConditionDefinition condition : rule.getConditions()) {
+                final String[] templates = {
+                        condition.getMessageTemplate(), condition.getErrorMessageTemplate()};
+                for (final String template : templates) {
+                    if (template != null && template.contains("${defendantNames}")) {
+                        final String stripped = resolver.resolveDefendantNames(
+                                template, List.of("Any Name"), 1);
+                        assertThat(stripped)
+                                .as("rule=%s condition=%s template=%s",
+                                        rule.getId(), condition.getId(), template)
+                                .isNotBlank()
+                                .doesNotContain("${defendantNames}")
+                                .doesNotContain("This affects")
+                                .doesNotContain("..");
+                    }
+                }
+            }
+        }
     }
 }

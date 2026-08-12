@@ -120,10 +120,12 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
+        final int hearingDefendantCount = request.getDefendants() == null ? 0 : request.getDefendants().size();
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
         for (final Map.Entry<String, String> entry : errorBaseByTemplate.entrySet()) {
             final List<String> names = errorNamesByTemplate.get(entry.getKey());
-            errorMessages.add(messageTemplateResolver.resolveDefendantNames(entry.getValue(), names));
+            errorMessages.add(messageTemplateResolver.resolveDefendantNames(
+                    entry.getValue(), names, hearingDefendantCount));
         }
 
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);

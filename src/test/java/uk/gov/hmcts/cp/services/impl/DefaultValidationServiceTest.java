@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.impl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
+import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
@@ -292,7 +293,8 @@ class DefaultValidationServiceTest {
     }
 
     /**
-     * Verifies that a single defendant name in an error message is rendered as-is (no joining).
+     * Verifies that a single defendant name in an error message is rendered as-is (no joining)
+     * when the hearing has more than one defendant (AC5 — one of several defendants is affected).
      */
     @Test
     void formatDefendantNames_single_name_should_appear_unjoined() {
@@ -302,7 +304,7 @@ class DefaultValidationServiceTest {
                                 .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                         "Affects ${defendantNames}.", "Alice")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
 
         assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice.");
     }
@@ -323,7 +325,7 @@ class DefaultValidationServiceTest {
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                                 "Affects ${defendantNames}.", "Bob")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
 
         assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Bob.");
     }
@@ -348,7 +350,7 @@ class DefaultValidationServiceTest {
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                                 "Affects ${defendantNames}.", "Charlie")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(3));
 
         assertThat(response.getErrors().getErrorMessages())
                 .containsExactly("Affects Alice, Bob and Charlie.");
@@ -372,14 +374,89 @@ class DefaultValidationServiceTest {
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
                                 "Condition B affects ${defendantNames}.", "Bob")));
         DraftValidationResponse response = new DefaultValidationService(
-                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
 
         assertThat(response.getErrors().getErrorMessages())
                 .containsExactly("Condition A affects Alice.", "Condition B affects Bob.");
     }
 
+    /**
+     * AC1-AC4: when the current hearing contains only one defendant, the "This affects &lt;name&gt;"
+     * clause must not appear in the error message at all, regardless of how many cases or offences
+     * that defendant's triggered condition spans.
+     */
+    @Test
+    void validate_should_omit_this_affects_clause_when_hearing_has_single_defendant() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Some offences are missing information. This affects ${defendantNames}.",
+                        "Alex Driver")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(1));
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Some offences are missing information.");
+    }
+
+    /**
+     * AC5: when the current hearing contains two or more defendants, the "This affects &lt;name&gt;"
+     * clause is retained exactly as it does today.
+     */
+    @Test
+    void validate_should_retain_this_affects_clause_when_hearing_has_multiple_defendants() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Some offences are missing information. This affects ${defendantNames}.",
+                        "Alex Driver")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Some offences are missing information. This affects Alex Driver.");
+    }
+
+    /**
+     * Defensive edge case: a request with no defendants recorded at all is treated the same as a
+     * single-defendant hearing, so the clause is omitted rather than substituting an empty name.
+     */
+    @Test
+    void validate_should_omit_this_affects_clause_when_request_has_no_defendants_recorded() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Some offences are missing information. This affects ${defendantNames}.",
+                        "Alex Driver")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(minimalRequest());
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Some offences are missing information.");
+    }
+
     private static DraftValidationRequest minimalRequest() {
         return DraftValidationRequest.builder().hearingId("h1").build();
+    }
+
+    /**
+     * Builds a request carrying exactly {@code count} defendants, used to drive the
+     * hearing-defendant-count-dependent "This affects" clause behaviour (AC1-AC5). Defendant
+     * identity/names are irrelevant to that behaviour — only the list size matters.
+     */
+    private static DraftValidationRequest requestWithDefendantCount(final int count) {
+        final List<DefendantDto> defendants = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            defendants.add(DefendantDto.builder()
+                    .defendantId("d" + i)
+                    .firstName("First" + i)
+                    .lastName("Last" + i)
+                    .build());
+        }
+        return DraftValidationRequest.builder().hearingId("h1").defendants(defendants).build();
     }
 
     private static ValidationRule stubRule(String ruleId, List<ValidationIssueResult> results) {

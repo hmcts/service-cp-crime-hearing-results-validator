@@ -178,7 +178,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_CUR);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_CUR + ". This affects Ethan Grant.");
+                .isEqualToIgnoringWhitespace(MSG_CUR + ".");
     }
 
     /**
@@ -255,7 +255,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_CURE);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_CURE + ". This affects George Hill.");
+                .isEqualToIgnoringWhitespace(MSG_CURE + ".");
     }
 
     /**
@@ -298,7 +298,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_CURA);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_CURA + ". This affects James King.");
+                .isEqualToIgnoringWhitespace(MSG_CURA + ".");
     }
 
     /**
@@ -341,7 +341,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_AAR);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_AAR + ". This affects Sarah Green.");
+                .isEqualToIgnoringWhitespace(MSG_AAR + ".");
     }
 
     /**
@@ -405,15 +405,14 @@ class CommunityOrderEndDateApiHttpLiveTest {
         }
         assertThat(inlineMessages).containsExactlyInAnyOrder(MSG_CUR, MSG_CURE, MSG_CURA, MSG_AAR);
 
-        final String affectsSuffix = ". This affects Noah Blake.";
         final List<String> errorMessages = new ArrayList<>();
         json.get(ERRORS).get(ERROR_MESSAGES).forEach(n -> errorMessages.add(n.asText()));
         assertThat(errorMessages).hasSize(4);
         assertThat(errorMessages).containsExactlyInAnyOrder(
-                MSG_CUR + affectsSuffix,
-                MSG_CURE + affectsSuffix,
-                MSG_CURA + affectsSuffix,
-                MSG_AAR + affectsSuffix
+                MSG_CUR + ".",
+                MSG_CURE + ".",
+                MSG_CURA + ".",
+                MSG_AAR + "."
         );
     }
 
@@ -462,7 +461,7 @@ class CommunityOrderEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_DUR_CUR_INLINE);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_DUR_CUR_SUMMARY + ". This affects Priya Shah.");
+                .isEqualToIgnoringWhitespace(MSG_DUR_CUR_SUMMARY + ".");
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {

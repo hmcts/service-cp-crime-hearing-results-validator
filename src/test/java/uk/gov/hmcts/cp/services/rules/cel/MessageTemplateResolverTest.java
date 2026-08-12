@@ -216,11 +216,12 @@ class MessageTemplateResolverTest {
     }
 
     /**
-     * Verifies that a single defendant name in a ${defendantNames} template is rendered as-is.
+     * Verifies that a single defendant name in a ${defendantNames} template is rendered as-is
+     * when the hearing has more than one defendant (AC5 — current behaviour retained).
      */
     @Test
     void resolveDefendantNames_single_name_should_appear_unjoined() {
-        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice"));
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice"), 2);
         assertThat(result).isEqualTo("Affects Alice.");
     }
 
@@ -229,7 +230,7 @@ class MessageTemplateResolverTest {
      */
     @Test
     void resolveDefendantNames_two_names_should_be_joined_with_and() {
-        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice", "Bob"));
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of("Alice", "Bob"), 2);
         assertThat(result).isEqualTo("Affects Alice and Bob.");
     }
 
@@ -239,16 +240,17 @@ class MessageTemplateResolverTest {
     @Test
     void resolveDefendantNames_three_names_should_be_comma_separated_with_and() {
         String result = resolver.resolveDefendantNames(
-                "Affects ${defendantNames}.", List.of("Alice", "Bob", "Charlie"));
+                "Affects ${defendantNames}.", List.of("Alice", "Bob", "Charlie"), 3);
         assertThat(result).isEqualTo("Affects Alice, Bob and Charlie.");
     }
 
     /**
-     * Verifies an empty list produces an empty string in place of the placeholder.
+     * Verifies an empty list produces an empty string in place of the placeholder when the
+     * hearing has more than one defendant (defensive edge case, current behaviour retained).
      */
     @Test
     void resolveDefendantNames_empty_list_should_produce_empty_string() {
-        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of());
+        String result = resolver.resolveDefendantNames("Affects ${defendantNames}.", List.of(), 2);
         assertThat(result).isEqualTo("Affects .");
     }
 
@@ -258,7 +260,57 @@ class MessageTemplateResolverTest {
     @Test
     void resolveDefendantNames_no_placeholder_should_return_unchanged() {
         String template = "No placeholder here.";
-        assertThat(resolver.resolveDefendantNames(template, List.of("Alice"))).isEqualTo(template);
+        assertThat(resolver.resolveDefendantNames(template, List.of("Alice"), 2)).isEqualTo(template);
+    }
+
+    /**
+     * AC1-AC4: when the hearing has only one defendant, the "This affects &lt;name&gt;" clause is
+     * removed entirely rather than substituting in the redundant name — the user is already
+     * looking at that defendant's own results.
+     */
+    @Test
+    void resolveDefendantNames_should_strip_affects_clause_when_hearing_has_single_defendant() {
+        String result = resolver.resolveDefendantNames(
+                "Some offences are missing information. This affects ${defendantNames}.",
+                List.of("Alex Driver"),
+                1);
+        assertThat(result).isEqualTo("Some offences are missing information.");
+    }
+
+    /**
+     * Defensive edge case: a request with no defendants recorded at all is treated the same as a
+     * single-defendant hearing rather than substituting an empty name.
+     */
+    @Test
+    void resolveDefendantNames_should_strip_affects_clause_when_hearing_has_no_defendants_recorded() {
+        String result = resolver.resolveDefendantNames(
+                "Some offences are missing information. This affects ${defendantNames}.",
+                List.of("Alex Driver"),
+                0);
+        assertThat(result).isEqualTo("Some offences are missing information.");
+    }
+
+    /**
+     * Verifies the clause-stripping preserves any text that follows it in the template, not just
+     * text that precedes it.
+     */
+    @Test
+    void resolveDefendantNames_should_strip_affects_clause_and_preserve_trailing_text() {
+        String result = resolver.resolveDefendantNames(
+                "Some offences are missing information. This affects ${defendantNames}. Check before sharing.",
+                List.of("Alex Driver"),
+                1);
+        assertThat(result).isEqualTo("Some offences are missing information. Check before sharing.");
+    }
+
+    /**
+     * Verifies that when the whole template is just the affects clause, stripping it for a
+     * single-defendant hearing leaves an empty string rather than throwing.
+     */
+    @Test
+    void resolveDefendantNames_should_return_empty_string_when_template_is_only_affects_clause() {
+        String result = resolver.resolveDefendantNames("This affects ${defendantNames}.", List.of("Alex Driver"), 1);
+        assertThat(result).isEmpty();
     }
 
     /**
