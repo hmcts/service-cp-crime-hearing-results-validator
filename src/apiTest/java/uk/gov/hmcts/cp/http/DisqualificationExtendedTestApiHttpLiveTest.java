@@ -152,9 +152,9 @@ class DisqualificationExtendedTestApiHttpLiveTest {
     /**
      * Covers AC1 where DR-DISQ-001 is enabled at runtime: a relevant Road Traffic Act 1988
      * offence with a non-excluded final result and no DDOTE must produce a single non-blocking
-     * warning. The rule is enabled via JDBC for this test and restored to disabled in a
-     * finally block; a 2-second sleep ensures the 1-second Caffeine cache TTL has expired
-     * before the validate call is made.
+     * warning. The rule is pinned enabled via JDBC for this test and restored to the seeded
+     * default (enabled) in a finally block; a 2-second sleep ensures the 1-second Caffeine
+     * cache TTL has expired before the validate call is made.
      */
     @Test
     void ac1_relevant_offence_without_ddote_should_produce_warning_when_rule_enabled() throws Exception {
@@ -192,10 +192,10 @@ class DisqualificationExtendedTestApiHttpLiveTest {
             assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
                     .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
         } finally {
-            setRuleEnabled(false);
-            // Restore shared state fully: the DB row is reset above, but the app still caches the
-            // toggled override for up to the TTL. Wait it out so no stale enabled=true leaks into
-            // other test classes (see CACHE_TTL_EVICTION_WAIT_MS).
+            setRuleEnabled(true);
+            // Restore shared state fully: the DB row is reset to the seeded default (enabled), but
+            // the app may still cache a stale override for up to the TTL. Wait it out so no stale
+            // value leaks into other test classes (see CACHE_TTL_EVICTION_WAIT_MS).
             Thread.sleep(CACHE_TTL_EVICTION_WAIT_MS);
         }
     }
