@@ -42,8 +42,8 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
     private static final String MSG_YRC3 =
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Further curfew requirement made";
-    // AC2 error summary bases
-    private static final String ERR_MSG_BASE_YRC2 = MSG_YRC2 + ". This affects ";
+    // AC2 error summary bases — used only where the hearing has 2+ defendants (AC5);
+    // single-defendant scenarios assert the plain MSG_YRCx text with the clause omitted (AC1-AC4).
     private static final String ERR_MSG_BASE_YRC1 = MSG_YRC1 + ". This affects ";
     private static final String ERR_MSG_BASE_YRC3 = MSG_YRC3 + ". This affects ";
 
@@ -94,7 +94,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                             is(MSG_YRC2)))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            is(ERR_MSG_BASE_YRC2 + "David Evans.")));
+                            is(MSG_YRC2 + ".")));
         }
 
         @Test
@@ -202,7 +202,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                             is(MSG_YRC2)))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            is(ERR_MSG_BASE_YRC2 + "Frances Morgan.")));
+                            is(MSG_YRC2 + ".")));
         }
 
         @Test
@@ -250,9 +250,9 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(3)))
                     .andExpect(jsonPath("$.errors.errorMessages",
                             containsInAnyOrder(
-                                    ERR_MSG_BASE_YRC2 + "Sam Taylor.",
-                                    ERR_MSG_BASE_YRC1 + "Sam Taylor.",
-                                    ERR_MSG_BASE_YRC3 + "Sam Taylor.")));
+                                    MSG_YRC2 + ".",
+                                    MSG_YRC1 + ".",
+                                    MSG_YRC3 + ".")));
         }
     }
 

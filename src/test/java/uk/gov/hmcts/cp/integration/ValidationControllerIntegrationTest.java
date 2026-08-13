@@ -130,7 +130,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         "Some offences do not include details of whether they are concurrent or"
                                 + " consecutive. There should be only one primary sentence for each"
                                 + " defendant, therefore one result without concurrent or consecutive"
-                                + " information. This affects John Doe.")));
+                                + " information.")));
     }
 
     /**

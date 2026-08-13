@@ -171,7 +171,7 @@ class YroEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_YRC2);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_YRC2 + ". This affects Ethan Grant.");
+                .isEqualToIgnoringWhitespace(MSG_YRC2 + ".");
     }
 
     /**
@@ -253,7 +253,7 @@ class YroEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_YRC1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_YRC1 + ". This affects George Hill.");
+                .isEqualToIgnoringWhitespace(MSG_YRC1 + ".");
     }
 
     /**
@@ -336,7 +336,7 @@ class YroEndDateApiHttpLiveTest {
                 .isEqualToIgnoringWhitespace(MSG_YRC3);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_YRC3 + ". This affects James King.");
+                .isEqualToIgnoringWhitespace(MSG_YRC3 + ".");
     }
 
     /**
@@ -435,9 +435,9 @@ class YroEndDateApiHttpLiveTest {
         json.get(ERRORS).get(ERROR_MESSAGES).forEach(n -> errorMessages.add(n.asText()));
         assertThat(errorMessages).hasSize(3);
         assertThat(errorMessages).containsExactlyInAnyOrder(
-                MSG_YRC2 + ". This affects Noah Blake.",
-                MSG_YRC1 + ". This affects Noah Blake.",
-                MSG_YRC3 + ". This affects Noah Blake."
+                MSG_YRC2 + ".",
+                MSG_YRC1 + ".",
+                MSG_YRC3 + "."
         );
     }
 
