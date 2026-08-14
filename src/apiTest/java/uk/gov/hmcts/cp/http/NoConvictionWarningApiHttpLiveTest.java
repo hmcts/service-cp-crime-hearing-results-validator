@@ -1,11 +1,13 @@
 package uk.gov.hmcts.cp.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,9 +21,14 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-CONV-006 (no-conviction-on-sentenced-offence warning) against a
  * running service instance.
  *
- * <p>DR-CONV-006 defaults to enabled by its Flyway seed migration
- * ({@code V1.007__insert_dr_conv_006.sql}) and nothing else in this suite disables it, so no
- * rule-state setup is needed here.
+ * <p>DR-CONV-006 ships <b>disabled</b> by its Flyway seed migration
+ * ({@code V1.007__insert_dr_conv_006.sql} — DD-43039). Per-rule live test classes must not
+ * toggle rule state (see design_rules.md, "Test the framework once" — the rule-update write
+ * path is exercised exactly once, by {@code ValidationRulesApiHttpLiveTest}), so this suite
+ * never PATCHes the rule. Instead {@link #assumeRuleEnabled()} reads the current live state
+ * before each test and skips the warning-producing scenarios when the rule is off — the
+ * assertions still cover DR-CONV-006's actual logic in any environment where it has been
+ * enabled, without this suite mutating shared state itself.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -50,6 +57,29 @@ class NoConvictionWarningApiHttpLiveTest {
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * DR-CONV-006 ships disabled (V1.007 seed). This suite reads (never writes) the live enabled
+     * flag and skips every scenario when the rule is off, rather than PATCHing it — per-rule live
+     * tests must not toggle rule state (design_rules.md, "Test the framework once").
+     */
+    @BeforeEach
+    void assumeRuleEnabled() throws Exception {
+        final HttpHeaders headers = new HttpHeaders();
+        headers.set("CJSCPPUID", "test-user");
+
+        final ResponseEntity<String> response = http.exchange(
+                baseUrl + "/api/validation/rules/" + RULE_ID,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        final boolean enabled = mapper.readTree(response.getBody()).get("enabled").asBoolean();
+        assumeTrue(enabled, RULE_ID + " is disabled in this environment (ships disabled by the "
+                + "V1.007 seed migration); skipping rather than toggling it from this suite.");
+    }
 
     /**
      * Covers US1 AC1: a non-excluded final result recorded against an offence with no guilty
