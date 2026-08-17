@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Verifies V1.009's collision guard for the V1.006 rule-id renumbering.
+ * Verifies V1.006's collision-guarded rule-id renumbering.
  *
  * <p>Runs Flyway directly (via the Java API) against a throwaway PostgreSQL container so that
  * each scenario can control exactly which migrations have applied before a stale row is injected
@@ -27,13 +27,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * migrates the full, collision-free chain once at startup.
  */
 @Testcontainers
-@DisplayName("V1.009 guard_renumbered_rule_ids migration")
-class GuardRenumberedRuleIdsMigrationTest {
+@DisplayName("V1.006 renumber_rule_ids migration")
+class RuleIdRenumberingMigrationTest {
 
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:15.3")
-                    .withDatabaseName("guard_migration_test")
+                    .withDatabaseName("rule_id_renumbering_test")
                     .withUsername("postgres")
                     .withPassword("postgres");
 
@@ -96,15 +96,6 @@ class GuardRenumberedRuleIdsMigrationTest {
         }
     }
 
-    private void deleteRule(final String id) throws Exception {
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement("DELETE FROM validation_rule WHERE id = ?")) {
-            statement.setString(1, id);
-            statement.executeUpdate();
-        }
-    }
-
     @Nested
     @DisplayName("fresh environment (no collision)")
     class FreshEnvironment {
@@ -131,43 +122,23 @@ class GuardRenumberedRuleIdsMigrationTest {
 
         @Test
         void migrate_should_drop_stale_old_id_row_and_keep_existing_new_id_row() throws Exception {
-            flywayTargeting("1.006").migrate();
-
-            // V1.006 already renamed DR-SENT-002 -> DR-SENT-001 with no collision at this point.
-            assertThat(ruleExists("DR-SENT-002")).isFalse();
-            assertThat(ruleRow("DR-SENT-001")).containsExactly(true, "ERROR");
-
-            // Simulate a stale PATCH-created (or reseeded) row landing back on the pre-renumbering
-            // id before this migration runs -- now both the old and new ids exist.
-            insertRule("DR-SENT-002", false, "WARNING");
+            // V1.001-V1.005 seed the pre-renumbering rows; V1.006 (the renumbering migration under
+            // test) has not run yet.
+            flywayTargeting("1.005").migrate();
             assertThat(ruleExists("DR-SENT-002")).isTrue();
+            assertThat(ruleExists("DR-SENT-001")).isFalse();
+
+            // Simulate an STE reseed (or a PATCH-created override row) landing on the new id ahead
+            // of this migration -- now both the old and new ids exist when V1.006 runs.
+            insertRule("DR-SENT-001", false, "WARNING");
 
             assertThatCode(() -> flywayTargeting("latest").migrate()).doesNotThrowAnyException();
 
-            // The stale old-id row is dropped; the pre-existing new-id row is left untouched
-            // (not overwritten by the stale row's values).
-            assertThat(ruleExists("DR-SENT-002")).isFalse();
-            assertThat(ruleRow("DR-SENT-001")).containsExactly(true, "ERROR");
-        }
-    }
-
-    @Nested
-    @DisplayName("old id reappears with new id absent (plain rename)")
-    class OldIdOnly {
-
-        @Test
-        void migrate_should_rename_old_id_when_new_id_absent() throws Exception {
-            flywayTargeting("1.006").migrate();
-
-            // Simulate the new-id row having been removed, then a stale row reappearing under the
-            // old (pre-renumbering) id -- only the old id exists when V1.009 runs.
-            deleteRule("DR-SENT-001");
-            insertRule("DR-SENT-002", false, "WARNING");
-
-            assertThatCode(() -> flywayTargeting("latest").migrate()).doesNotThrowAnyException();
-
+            // The stale old-id row is dropped; the row already occupying the new id is left
+            // untouched (not overwritten by the old row's values).
             assertThat(ruleExists("DR-SENT-002")).isFalse();
             assertThat(ruleRow("DR-SENT-001")).containsExactly(false, "WARNING");
         }
     }
+
 }
