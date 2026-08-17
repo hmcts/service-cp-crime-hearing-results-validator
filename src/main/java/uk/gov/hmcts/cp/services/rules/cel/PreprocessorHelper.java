@@ -173,13 +173,13 @@ public final class PreprocessorHelper {
         LocalDate result = null;
         if (value == null || value.isBlank()) {
             log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
-                promptRef, shortCode, offenceId);
+                promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
         } else {
             try {
                 result = LocalDate.parse(value.trim());
             } catch (DateTimeParseException e) {
                 log.warn("Unparseable date '{}' for promptRef={} on shortCode={} offenceId={}",
-                    Encode.forJava(value), promptRef, shortCode, offenceId);
+                    Encode.forJava(value), promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
             }
         }
         return result;

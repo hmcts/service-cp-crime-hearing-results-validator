@@ -299,7 +299,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
             // instead, but both failure modes mean "period out of range" and must warn-and-skip
             // rather than propagate out of preprocess().
             log.warn("Period out of range for promptRef={} on shortCode={} offenceId={}",
-                    periodPromptRef, line.getShortCode(), offenceId);
+                    periodPromptRef, Encode.forJava(line.getShortCode()), Encode.forJava(offenceId));
             return;
         }
         if (!endDate.isEqual(expectedEndDate)) {
@@ -343,7 +343,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         ParsedPeriod result = null;
         if (value == null || value.isBlank()) {
             log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
-                    promptRef, shortCode, offenceId);
+                    promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
         } else {
             final String trimmed = value.trim();
             final Matcher periodMatcher = PERIOD_PATTERN.matcher(trimmed);
@@ -355,7 +355,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                 result = new ParsedPeriod(Long.parseLong(digits), unit);
             } catch (NumberFormatException e) {
                 log.warn("Unparseable integer '{}' for promptRef={} on shortCode={} offenceId={}",
-                        Encode.forJava(value), promptRef, shortCode, offenceId);
+                        Encode.forJava(value), promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
             }
         }
         return result;

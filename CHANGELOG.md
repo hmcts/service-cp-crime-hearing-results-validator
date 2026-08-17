@@ -53,13 +53,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Existing integration/API test fixtures updated for the `DR-CONV-006` rollout: result
   lines with no `isConvicted` flag now set it explicitly where the fixture's intent was
   unrelated to conviction status, avoiding unexpected `DR-CONV-006` firings.
-- V1.006's rule-id renumbering (`UPDATE validation_rule SET id = '<new>' WHERE id = '<old>'`)
-  had no guard against the target id already being occupied (e.g. an STE rebuild reseeding
-  rows under the new ids ahead of Flyway, or a PATCH-created `validation_rule` row), which
-  hit a primary-key violation and crashlooped the service at startup. Added
-  `V1.009__guard_renumbered_rule_ids.sql`, a new, collision-safe migration that re-applies
-  the same four renumbering pairs defensively rather than editing the already-applied V1.006
-  in place, which would break Flyway checksum validation (DD-43134).
 - Raw `promptValue` free text was logged verbatim in two `Unparseable date/integer` warn lines
   (`PreprocessorHelper`, `CommunityOrderEndDatePreprocessor`) — a CodeQL log-injection finding.
   Both now pass the value through `Encode.forJava`, matching the existing `TracingFilter`

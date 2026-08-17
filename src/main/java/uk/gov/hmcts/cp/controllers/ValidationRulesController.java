@@ -2,6 +2,7 @@ package uk.gov.hmcts.cp.controllers;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.encoder.Encode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.hmcts.cp.openapi.api.ValidationRulesApi;
@@ -70,7 +71,7 @@ public class ValidationRulesController implements ValidationRulesApi {
             final UpdateRuleRequest updateRuleRequest,
             final String cppClientCorrelationId) {
 
-        log.info("Update validation rule request received");
+        log.info("Update validation rule request received for ruleId={}", Encode.forJava(ruleId));
         return ResponseEntity.ok(validationRulesService.updateRule(ruleId, updateRuleRequest, cjsCppUid));
     }
 }
