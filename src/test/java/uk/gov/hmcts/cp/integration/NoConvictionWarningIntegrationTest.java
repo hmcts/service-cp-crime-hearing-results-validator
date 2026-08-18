@@ -7,17 +7,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.annotation.Resource;
+import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 
 /**
  * End-to-end tests for DR-CONV-006 (no conviction warning) over the public validate endpoint.
  *
- * <p>DR-CONV-006 defaults to enabled by its Flyway seed migration
- * ({@code V1.007__insert_dr_conv_006.sql}) and nothing else in the test suite disables it, so no
- * rule-state setup is needed here.
+ * <p>DR-CONV-006 ships <b>disabled</b> by its Flyway seed migration
+ * ({@code V1.007__insert_dr_conv_006.sql} — DD-43039). This suite enables it via a
+ * {@link RuleOverrideService} override in {@link #enableRuleForThisSuite()} so the rule's CEL
+ * logic can still be exercised, and restores the seeded disabled default in
+ * {@link #restoreSeededDisabledDefault()} so the change doesn't leak into other test classes
+ * sharing the same TestContainers database.
  *
  * <p>Every scenario pins three response slices:
  * <ul>
@@ -29,11 +38,37 @@ import org.springframework.http.MediaType;
 class NoConvictionWarningIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+    private static final String RULE_ID = "DR-CONV-006";
     private static final String DR_CONV_WARNINGS = "$.warnings[?(@.ruleId=='DR-CONV-006')]";
 
     private static final String EXPECTED_MESSAGE =
             "No conviction has been added against the offence. Check whether you need to add a "
                     + "guilty plea or verdict";
+
+    @Resource
+    private RuleOverrideService ruleOverrideService;
+
+    @BeforeEach
+    void enableRuleForThisSuite() {
+        ruleOverrideService.saveOverride(ValidationRuleEntity.builder()
+                .id(RULE_ID)
+                .enabled(true)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-enabled")
+                .build());
+    }
+
+    @AfterEach
+    void restoreSeededDisabledDefault() {
+        ruleOverrideService.saveOverride(ValidationRuleEntity.builder()
+                .id(RULE_ID)
+                .enabled(false)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-reset")
+                .build());
+    }
 
     @Nested
     @DisplayName("WarnsWhenSentencedAndUnconvicted — US1")

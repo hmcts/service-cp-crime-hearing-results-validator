@@ -150,19 +150,16 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                             PROMPT_END_DATE, orderEndDate, offenceId)) {
                         curViolationIds.add(offenceId);
                     }
-
                     // AC2b — CURE: end-of-tagging date after order end date
                     if (isRequirementViolated(offenceLines, cureCodes,
                             PROMPT_END_DATE_OF_TAG, orderEndDate, offenceId)) {
                         cureViolationIds.add(offenceId);
                     }
-
                     // AC2c — CURA: further curfew end date after order end date
                     if (isRequirementViolated(offenceLines, curaCodes,
                             PROMPT_END_DATE, orderEndDate, offenceId)) {
                         curaViolationIds.add(offenceId);
                     }
-
                     // AC2d — AAR: alcohol abstinence "until" date after order end date
                     if (isRequirementViolated(offenceLines, aarCodes,
                             PROMPT_UNTIL, orderEndDate, offenceId)) {

@@ -26,7 +26,8 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count", is(7)))
-                .andExpect(jsonPath("$.enabledCount", is(7)))
+                // DR-CONV-006 ships disabled by its Flyway seed (V1.007), so 6 of 7 are enabled.
+                .andExpect(jsonPath("$.enabledCount", is(6)))
                 .andExpect(jsonPath("$.rules", hasSize(7)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
                         contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
