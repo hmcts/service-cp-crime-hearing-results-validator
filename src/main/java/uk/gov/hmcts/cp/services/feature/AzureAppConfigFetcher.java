@@ -110,6 +110,13 @@ public class AzureAppConfigFetcher {
                     final String contentType = item.has("content_type")
                             ? item.get("content_type").asText() : "";
                     if (!contentType.isEmpty()) {
+                        if (!item.hasNonNull("key") || !item.hasNonNull("value")) {
+                            // Malformed item -- Azure returning a flag with no "key" or "value"
+                            // field (or an explicit JSON null for either) would otherwise NPE and
+                            // abandon the whole batch. Skip just this entry instead.
+                            log.warn("Skipping feature flag item with missing key or value: {}", item);
+                            continue;
+                        }
                         final String key = item.get("key").asText().replace(FEATURE_PREFIX, "");
                         final JsonNode valueNode = OBJECT_MAPPER.readTree(item.get("value").asText());
                         if (valueNode.has("enabled")) {

@@ -124,6 +124,103 @@ class AzureAppConfigFetcherTest {
         assertThat(features).doesNotContainKey("ResultsValidation");
     }
 
+    /**
+     * A malformed item with no "key" field (e.g. a truncated/corrupted Azure response) must not
+     * NPE and abandon the whole batch -- the well-formed sibling item must still be parsed.
+     */
+    @Test
+    void parseFeatures_skips_item_with_missing_key_field() {
+        String json = """
+                {
+                  "items": [
+                    {
+                      "value": "{\\"id\\":\\"ResultsValidation\\",\\"enabled\\":true}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    },
+                    {
+                      "key": ".appconfig.featureflag/OPA",
+                      "value": "{\\"id\\":\\"OPA\\",\\"enabled\\":true}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    }
+                  ]
+                }
+                """;
+
+        Map<String, Boolean> features = AzureAppConfigFetcher.parseFeatures(json);
+
+        assertThat(features).hasSize(1);
+        assertThat(features).containsEntry("OPA", true);
+    }
+
+    /**
+     * A malformed item with no "value" field must not NPE and abandon the whole batch -- the
+     * well-formed sibling item must still be parsed.
+     */
+    @Test
+    void parseFeatures_skips_item_with_missing_value_field() {
+        String json = """
+                {
+                  "items": [
+                    {
+                      "key": ".appconfig.featureflag/ResultsValidation",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    },
+                    {
+                      "key": ".appconfig.featureflag/OPA",
+                      "value": "{\\"id\\":\\"OPA\\",\\"enabled\\":true}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    }
+                  ]
+                }
+                """;
+
+        Map<String, Boolean> features = AzureAppConfigFetcher.parseFeatures(json);
+
+        assertThat(features).hasSize(1);
+        assertThat(features).containsEntry("OPA", true);
+    }
+
+    /**
+     * A JSON explicit {@code null} for "key" or "value" (distinct from the field being absent)
+     * must be treated the same as a missing field, not passed through to {@code asText()}.
+     */
+    @Test
+    void parseFeatures_skips_item_with_explicit_null_key_or_value() {
+        String json = """
+                {
+                  "items": [
+                    {
+                      "key": null,
+                      "value": "{\\"id\\":\\"ResultsValidation\\",\\"enabled\\":true}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    },
+                    {
+                      "key": ".appconfig.featureflag/HearingNows",
+                      "value": null,
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    },
+                    {
+                      "key": ".appconfig.featureflag/OPA",
+                      "value": "{\\"id\\":\\"OPA\\",\\"enabled\\":true}",
+                      "content_type": "application/vnd.microsoft.appconfig.ff+json;charset=utf-8",
+                      "label": "STE86"
+                    }
+                  ]
+                }
+                """;
+
+        Map<String, Boolean> features = AzureAppConfigFetcher.parseFeatures(json);
+
+        assertThat(features).hasSize(1);
+        assertThat(features).containsEntry("OPA", true);
+    }
+
     @Test
     void fetchFeatures_returns_empty_map_when_connection_string_blank() {
         AzureAppConfigFetcher fetcher = new AzureAppConfigFetcher("");
