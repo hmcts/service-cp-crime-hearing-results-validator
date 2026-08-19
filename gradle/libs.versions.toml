@@ -2,7 +2,7 @@
 api-hearing-results-validator = "rv-2624-3425cc7"
 spring-boot = "4.1.0"
 spring-dependency-management = "1.1.7"
-ben-manes-versions = "0.58.0"
+ben-manes-versions = "0.60.0"
 cyclonedx-bom = "3.3.0"
 gradle-git-properties = "4.0.1"
 avast-docker-compose = "0.17.21"
@@ -18,7 +18,7 @@ cel-tools = "0.6.2"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.2.4"
-gatling = "3.15.1.1"
+gatling = "3.15.1.2"
 
 [libraries]
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
