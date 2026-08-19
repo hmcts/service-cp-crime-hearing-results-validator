@@ -1,15 +1,21 @@
 package uk.gov.hmcts.cp.services.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
@@ -19,12 +25,6 @@ import uk.gov.hmcts.cp.openapi.model.UpdateRuleRequest;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link DefaultValidationRulesService}.
@@ -81,6 +81,15 @@ class DefaultValidationRulesServiceTest {
                 .hasMessageContaining("Rule not found: UNKNOWN");
     }
 
+    /**
+     * {@code updateRule} now applies the PATCH via a single atomic upsert
+     * ({@link RuleOverrideService#applyPartialUpdate}) rather than a read-modify-write against a
+     * separately-fetched entity, so there is no longer an "existing row" vs. "no existing row"
+     * branch at this layer — the database's {@code ON CONFLICT} handles that distinction. These
+     * tests verify the service passes the right override/default arguments through; the atomic
+     * merge behaviour itself is covered against a real database in
+     * {@code ValidationRuleRepositoryIntegrationTest}.
+     */
     @Nested
     class UpdateRule {
 
@@ -93,50 +102,40 @@ class DefaultValidationRulesServiceTest {
         }
 
         @Test
-        void updateRule_withEnabledFalse_should_persist_and_return_detail() {
-            stubExistingDbRow();
+        void updateRule_withEnabledFalse_should_apply_enabled_override_and_return_detail() {
             UpdateRuleRequest request = new UpdateRuleRequest(false, null);
 
             RuleDetailResponse response = service.updateRule("DR-SENT-001", request, "test-user");
 
-            ArgumentCaptor<ValidationRuleEntity> saved =
-                    ArgumentCaptor.forClass(ValidationRuleEntity.class);
-            verify(ruleOverrideService).saveOverride(saved.capture());
-            assertThat(saved.getValue().isEnabled()).isFalse();
-            assertThat(saved.getValue().getSeverity()).isEqualTo("ERROR");
-            assertThat(saved.getValue().getUpdatedBy()).isEqualTo("test-user");
+            verify(ruleOverrideService).applyPartialUpdate(
+                    eq("DR-SENT-001"), eq(Boolean.FALSE), isNull(),
+                    eq(true), eq("ERROR"), any(Instant.class), eq("test-user"));
             assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         }
 
         @Test
-        void updateRule_withSeverityWarning_should_persist_and_return_detail() {
-            stubExistingDbRow();
+        void updateRule_withSeverityWarning_should_apply_severity_override_and_return_detail() {
             UpdateRuleRequest request =
                     new UpdateRuleRequest(null, UpdateRuleRequest.SeverityEnum.WARNING);
 
             RuleDetailResponse response = service.updateRule("DR-SENT-001", request, "test-user");
 
-            ArgumentCaptor<ValidationRuleEntity> saved =
-                    ArgumentCaptor.forClass(ValidationRuleEntity.class);
-            verify(ruleOverrideService).saveOverride(saved.capture());
-            assertThat(saved.getValue().getSeverity()).isEqualTo("WARNING");
-            assertThat(saved.getValue().isEnabled()).isTrue();
+            verify(ruleOverrideService).applyPartialUpdate(
+                    eq("DR-SENT-001"), isNull(), eq("WARNING"),
+                    eq(true), eq("ERROR"), any(Instant.class), eq("test-user"));
             assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         }
 
         @Test
-        void updateRule_withBothFields_should_persist_both() {
-            stubExistingDbRow();
+        void updateRule_withBothFields_should_apply_both_overrides() {
             UpdateRuleRequest request =
                     new UpdateRuleRequest(false, UpdateRuleRequest.SeverityEnum.WARNING);
 
             service.updateRule("DR-SENT-001", request, "test-user");
 
-            ArgumentCaptor<ValidationRuleEntity> saved =
-                    ArgumentCaptor.forClass(ValidationRuleEntity.class);
-            verify(ruleOverrideService).saveOverride(saved.capture());
-            assertThat(saved.getValue().isEnabled()).isFalse();
-            assertThat(saved.getValue().getSeverity()).isEqualTo("WARNING");
+            verify(ruleOverrideService).applyPartialUpdate(
+                    eq("DR-SENT-001"), eq(Boolean.FALSE), eq("WARNING"),
+                    eq(true), eq("ERROR"), any(Instant.class), eq("test-user"));
         }
 
         @Test
@@ -146,6 +145,7 @@ class DefaultValidationRulesServiceTest {
             assertThatThrownBy(() -> service.updateRule("DR-SENT-001", request, "test-user"))
                     .isInstanceOf(InvalidRuleUpdateException.class)
                     .hasMessageContaining("At least one of 'enabled' or 'severity' must be provided");
+            verifyNoInteractions(ruleOverrideService);
         }
 
         @Test
@@ -155,32 +155,7 @@ class DefaultValidationRulesServiceTest {
             assertThatThrownBy(() -> service.updateRule("DR-UNKNOWN", request, "test-user"))
                     .isInstanceOf(RuleNotFoundException.class)
                     .hasMessageContaining("Rule not found: DR-UNKNOWN");
-        }
-
-        @Test
-        void updateRule_withNoExistingDbRow_should_seed_from_yaml_defaults() {
-            when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.empty());
-            when(ruleOverrideService.saveOverride(any())).thenAnswer(inv -> inv.getArgument(0));
-            UpdateRuleRequest request = new UpdateRuleRequest(false, null);
-
-            service.updateRule("DR-SENT-001", request, "test-user");
-
-            ArgumentCaptor<ValidationRuleEntity> saved =
-                    ArgumentCaptor.forClass(ValidationRuleEntity.class);
-            verify(ruleOverrideService).saveOverride(saved.capture());
-            assertThat(saved.getValue().getId()).isEqualTo("DR-SENT-001");
-            assertThat(saved.getValue().isEnabled()).isFalse();
-            assertThat(saved.getValue().getSeverity()).isEqualTo("ERROR");
-        }
-
-        private void stubExistingDbRow() {
-            when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
-                    ValidationRuleEntity.builder()
-                            .id("DR-SENT-001")
-                            .enabled(true)
-                            .severity("ERROR")
-                            .build()));
-            when(ruleOverrideService.saveOverride(any())).thenAnswer(inv -> inv.getArgument(0));
+            verifyNoInteractions(ruleOverrideService);
         }
     }
 

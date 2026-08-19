@@ -1,5 +1,7 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -11,8 +13,6 @@ import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.Prompt;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link CommunityOrderEndDatePreprocessor}.

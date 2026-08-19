@@ -140,6 +140,26 @@ class DisqualificationExtendedTestPreprocessorTest {
             assertThat(ctx.qualifyingCount()).isEqualTo(1L);
         }
 
+        /**
+         * A null shortCode is not a member of {@code excludedFinalShortCodes} (set-membership
+         * semantics, per research.md's {@code line.shortCode ∉ excludedFinalShortCodes} gate), and
+         * spec.md's edge-case note treats any final line that's "unknown ... and not in the
+         * excluded list" as conservative-by-design ⇒ fires. Must match DR-CONV-006's
+         * {@code PreprocessorHelper.hasUpperCode}-based treatment of the same case.
+         */
+        @Test
+        void null_short_code_on_final_line_should_be_treated_as_non_excluded() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", null, "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
+        }
+
         @Test
         void two_defendants_charged_with_same_relevant_offence_should_produce_one_context() {
             DraftValidationRequest request = buildRequest(
@@ -302,8 +322,8 @@ class DisqualificationExtendedTestPreprocessorTest {
 
         @ParameterizedTest
         @ValueSource(strings = {
-                "wdrn", "WDRNOFF", "dism", "dine", "dini",
-                "disch", "disc", "ctrof", "iremfile"
+            "wdrn", "WDRNOFF", "dism", "dine", "dini",
+            "disch", "disc", "ctrof", "iremfile"
         })
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(

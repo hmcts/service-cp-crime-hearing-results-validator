@@ -1,6 +1,11 @@
 package uk.gov.hmcts.cp.filters;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -9,12 +14,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link ActionHeaderFilter}.

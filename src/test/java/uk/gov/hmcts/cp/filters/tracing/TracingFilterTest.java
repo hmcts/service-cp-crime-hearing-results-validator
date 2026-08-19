@@ -1,21 +1,5 @@
 package uk.gov.hmcts.cp.filters.tracing;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.slf4j.MDC;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -27,6 +11,21 @@ import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.CORRELATION_HEADER;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.SPAN_ID;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.TRACE_ID;
 import static uk.gov.hmcts.cp.filters.tracing.TracingFilter.USER_ID;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.slf4j.MDC;
 
 /**
  * Unit tests for {@link TracingFilter}.

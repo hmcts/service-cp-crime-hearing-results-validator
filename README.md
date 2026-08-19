@@ -30,17 +30,26 @@ Rule files are located in `src/main/resources/rules/`.
 |---------|-------------|
 | DR-SENT-001 | Custodial sentence concurrent/consecutive check |
 | DR-DISQ-002 | Extended test disqualification check |
+| DR-CTL-003 | CTL missing check |
+| DR-YRO-004 | Youth Rehabilitation Order end date validation |
+| DR-COEW-005 | Community order end date validation |
+| DR-CONV-006 | No conviction on sentenced offence check |
+| DR-AGE-007 | Imprisonment result age restriction |
 
 ### Adding a New Rule
 
 1. Create a YAML rule file named `DR-<category>-<number>.yaml` in `src/main/resources/rules/`
 2. Define the preprocessing configuration, CEL conditions, and message templates
 3. The rule is auto-discovered at startup by `ValidationRuleAutoConfiguration`
+4. If no existing `preprocessing.type` fits the rule's context shape, add a new
+   `ValidationPreprocessor` bean (see below) — no other Java changes are required
 
-> **Note:** "no Java code needed" currently holds only for **custodial-shaped** rules. The service
-> today ships a single hard-wired `CustodialPreprocessor`; the YAML `preprocessing.type` field is
-> not yet dispatched. A rule that needs a different preprocessing/context shape requires the
-> preprocessor-registry refactor (planned). See `.claude/rules/design_rules.md` → *Known limitations*.
+> **Preprocessor dispatch is data-driven.** `ValidationPreprocessor` beans register themselves
+> under a `type()` qualifier; `PreprocessorRegistry` builds a qualifier → bean map at startup
+> (failing fast on a duplicate qualifier) and `CelValidationRule` resolves each rule's preprocessor
+> via `PreprocessorRegistry.require(preprocessing.type)`. Seven preprocessors are registered today
+> (one per rule above); adding an eighth is a case of implementing `ValidationPreprocessor` with a
+> new qualifier and pointing a rule's YAML `preprocessing.type` at it — no dispatch code to touch.
 
 ### Runtime Rule Overrides
 

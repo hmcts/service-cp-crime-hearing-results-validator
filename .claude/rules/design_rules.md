@@ -17,17 +17,19 @@ Controller (ValidationController)
 
 NEVER put business logic in controllers.
 NEVER access repositories directly from controllers.
-Hard-wiring a single preprocessor implementation into `CelValidationRule` is a tolerated
-**transitional** state; it MUST be removed (replaced by registry dispatch on `preprocessing.type`)
-before any second preprocessor type ships — see Constitution Principle III.
+Hard-wiring a single preprocessor implementation into `CelValidationRule`, bypassing
+`PreprocessorRegistry` dispatch on `preprocessing.type`, is a Constitution Principle III
+violation — see `ValidationPreprocessor` / `PreprocessorRegistry` for the registry that MUST be
+used instead.
 
-> **Current state (transitional).** The `ValidationPreprocessor` interface, the preprocessor
-> registry, and `preprocessing.type` dispatch described in this section are the **target**
-> architecture. On the current `main` branch, `CelValidationRule` is wired directly to the single
-> `CustodialPreprocessor` and the YAML `preprocessing.type` field is **not yet read** — only the
-> custodial rule (`DR-SENT-001`) ships today. Treat the registry/dispatch wording above as
-> aspirational until the preprocessor-registry refactor lands (tracked under *Known limitations*
-> below).
+> **Current state (shipped).** `PreprocessorRegistry` builds a `preprocessing.type` → bean map at
+> startup from all `ValidationPreprocessor` beans, failing fast on a duplicate qualifier;
+> `CelValidationRule` resolves each rule's preprocessor via `PreprocessorRegistry.require(...)` —
+> the registry/dispatch description in this section is the actual, current architecture, not a
+> target. Seven preprocessors are registered today (`CustodialPreprocessor`,
+> `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`,
+> `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`,
+> `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`), one per shipped rule.
 
 ## Domain Concepts
 
@@ -77,7 +79,7 @@ rule:
 
 ## Adding a New Rule
 
-1. **YAML first.** Create `src/main/resources/rules/DR-<CATEGORY>-<NNN>.yaml`. The rule auto-loads at startup — no Java code change is required if an existing preprocessor type fits. *(On `main` today the only existing type is the hard-wired custodial preprocessor; a rule needing a different context shape requires the registry refactor — see Known limitations.)*
+1. **YAML first.** Create `src/main/resources/rules/DR-<CATEGORY>-<NNN>.yaml`. The rule auto-loads at startup — no Java code change is required if an existing `preprocessing.type` fits one of the seven registered preprocessors.
 2. **If a new preprocessor type is needed:**
    - Add a `ValidationPreprocessor` `@Component` whose qualifier matches the YAML `preprocessing.type` string
    - Add a corresponding context record (extending or sibling to `DefendantContext`) with a `toCelContext()` returning `Map<String, Long>`
@@ -113,14 +115,6 @@ The same principle applies to the live api suite: the packaged rule-update write
 
 ## Known limitations / planned work
 
-- **Preprocessor registry not yet on `main` (drift).** The layer diagram and rule-engine flow above
-  describe `preprocessing.type`-driven dispatch via a `ValidationPreprocessor` registry. `main` does
-  not implement this: `CelValidationRule` and `ValidationRuleAutoConfiguration` depend directly on
-  the concrete `CustodialPreprocessor`, and `PreprocessingDefinition.type` is read by nothing — a
-  YAML declaring any other `type` is silently routed to the custodial preprocessor. Planned fix:
-  port the `ValidationPreprocessor` + `PreprocessorRegistry` + `RuleEvaluationContext` abstractions
-  so dispatch is data-driven (removes the DIP/OCP coupling and the drift). Until then this is a
-  Constitution Principle III "transitional state".
 - **Per-request override lookup is resolved twice** (`DefaultValidationService` reads
   `getRuleDetail()` and `CelValidationRule.evaluate()` re-resolves the override). Caffeine-cached, so
   cheap, but worth consolidating when the engine is next touched.

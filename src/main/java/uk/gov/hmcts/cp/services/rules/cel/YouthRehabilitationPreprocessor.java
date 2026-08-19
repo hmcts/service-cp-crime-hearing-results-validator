@@ -1,11 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantDedupeKeys;
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByDefendant;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.findOrderEndDate;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByOffence;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupLinesByDedupedDefendant;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.isRequirementViolated;
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.parsePromptDate;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
 
 import java.time.LocalDate;
@@ -14,9 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
@@ -58,23 +55,14 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
     public Map<String, YouthRehabilitationContext> preprocess(final DraftValidationRequest request,
                                                                final PreprocessingDefinition config) {
 
-        final Set<String> orderCodes = upperSet(config.getYroOrderShortCodes());
-        final Set<String> curCodes = upperSet(config.getCurfewShortCodes());
-        final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
-        final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
+        final Set<String> orderCodes = upperSet(config.yroOrderShortCodes());
+        final Set<String> curCodes = upperSet(config.curfewShortCodes());
+        final Set<String> cureCodes = upperSet(config.curfewTagShortCodes());
+        final Set<String> curaCodes = upperSet(config.furtherCurfewShortCodes());
 
-        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
-        final Map<String, String> defendantNames = buildDefendantNames(request);
-        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
-
-        final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
-        final Map<String, String> groupNames = new LinkedHashMap<>();
-        for (final Map.Entry<String, List<ResultLineDto>> entry : linesByDefendant.entrySet()) {
-            final String defendantId = entry.getKey();
-            final String groupKey = dedupeKeys.getOrDefault(defendantId, defendantId);
-            linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).addAll(entry.getValue());
-            groupNames.putIfAbsent(groupKey, defendantNames.getOrDefault(defendantId, "Unknown"));
-        }
+        final PreprocessorHelper.DedupedLineGroups groups = groupLinesByDedupedDefendant(request);
+        final Map<String, List<ResultLineDto>> linesByGroup = groups.linesByGroup();
+        final Map<String, String> groupNames = groups.groupNames();
 
         final Map<String, YouthRehabilitationContext> result = new LinkedHashMap<>();
 
@@ -91,11 +79,7 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
             final List<String> cureViolationIds = new ArrayList<>();
             final List<String> curaViolationIds = new ArrayList<>();
 
-            final Map<String, List<ResultLineDto>> linesByOffence = lines.stream()
-                    .collect(Collectors.groupingBy(
-                            ResultLineDto::getOffenceId,
-                            LinkedHashMap::new,
-                            Collectors.toList()));
+            final Map<String, List<ResultLineDto>> linesByOffence = groupByOffence(lines);
 
             final Set<String> allOffenceIds = new LinkedHashSet<>();
 
@@ -105,12 +89,8 @@ public class YouthRehabilitationPreprocessor implements ValidationPreprocessor {
 
                 allOffenceIds.add(offenceId);
 
-                final LocalDate orderEndDate = offenceLines.stream()
-                        .filter(rl -> hasUpperCode(rl, orderCodes))
-                        .map(rl -> parsePromptDate(rl, PROMPT_END_DATE, offenceId))
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null);
+                final LocalDate orderEndDate =
+                        findOrderEndDate(offenceLines, orderCodes, PROMPT_END_DATE, offenceId);
 
                 if (orderEndDate == null) {
                     continue;
