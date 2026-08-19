@@ -1,5 +1,11 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import jakarta.annotation.Resource;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -8,12 +14,6 @@ import org.springframework.http.MediaType;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Integration tests for the PATCH /api/validation/rules/{ruleId} endpoint.

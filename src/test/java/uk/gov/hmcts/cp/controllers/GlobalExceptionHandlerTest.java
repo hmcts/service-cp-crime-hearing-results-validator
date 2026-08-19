@@ -1,8 +1,14 @@
 package uk.gov.hmcts.cp.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.micrometer.tracing.Span;
-import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.TraceContext;
+import io.micrometer.tracing.Tracer;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -15,12 +21,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.ErrorResponse;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link GlobalExceptionHandler}.

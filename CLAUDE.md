@@ -33,13 +33,14 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
 2. Each YAML file becomes a `CelValidationRule` bean (sorted by priority)
 3. `DefaultValidationService.validate()` iterates all rules, calling `rule.evaluate(request)`
 4. `CelValidationRule.evaluate()` runs the preprocessing pipeline, then evaluates CEL conditions:
-   - `CustodialPreprocessor.preprocess()` transforms hearing result lines into `DefendantContext` records (counts like `noInfoCount`, `hasBothCount`, etc.)
-   - `DefendantContext.toCelContext()` converts to `Map<String, Long>` for CEL evaluation
+   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (seven registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`), failing fast if the qualifier has no match
+   - `preprocessor.preprocess()` transforms hearing result lines into a context record (e.g. `DefendantContext`, counts like `noInfoCount`, `hasBothCount`, etc.)
+   - the context's `toCelContext()` converts it to `Map<String, Long>` for CEL evaluation
    - `CelExpressionEvaluator` compiles and caches CEL expressions
    - `MessageTemplateResolver` expands `${placeholder}` tokens in message templates
 5. `RuleOverrideService` checks the `validation_rule` DB table for runtime overrides (enable/disable, severity ceiling), cached via Caffeine with configurable TTL
 
-**Adding a new rule:** Create a `DR-<category>-<number>.yaml` in `src/main/resources/rules/` -- the auto-configuration discovers it. "No Java code needed" holds only for **custodial-shaped** rules: `CelValidationRule` is currently wired directly to the single `CustodialPreprocessor`, and the YAML `preprocessing.type` field is **not yet dispatched**. A rule needing a different context shape requires the preprocessor-registry refactor (see `.claude/rules/design_rules.md` → *Known limitations*).
+**Adding a new rule:** Create a `DR-<category>-<number>.yaml` in `src/main/resources/rules/` -- the auto-configuration discovers it. "No Java code needed" holds as long as an existing `preprocessing.type` fits; a rule needing a different context shape adds a new `ValidationPreprocessor` `@Component` with a matching `type()` qualifier -- `PreprocessorRegistry` picks it up automatically, no dispatch code to touch (see `.claude/rules/design_rules.md`).
 
 ### Severity Ceiling Model
 

@@ -39,7 +39,7 @@ public class NoConvictionPreprocessor implements ValidationPreprocessor {
     @Override
     public Map<String, NoConvictionContext> preprocess(final DraftValidationRequest request,
                                                         final PreprocessingDefinition config) {
-        final Set<String> excludedShortCodes = PreprocessorHelper.upperSet(config.getExcludedFinalShortCodes());
+        final Set<String> excludedShortCodes = PreprocessorHelper.upperSet(config.excludedFinalShortCodes());
 
         final Map<String, List<ResultLineDto>> resultsByOffence = PreprocessorHelper.groupResultsByOffence(request);
         final Map<String, NoConvictionContext> result = new LinkedHashMap<>();

@@ -1,5 +1,8 @@
 package uk.gov.hmcts.cp.db.migration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,9 +17,6 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Verifies V1.006's collision-guarded rule-id renumbering.
@@ -79,7 +79,8 @@ class RuleIdRenumberingMigrationTest {
                         "SELECT enabled, severity FROM validation_rule WHERE id = ?")) {
             statement.setString(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
-                assertThat(resultSet.next()).as("row for %s should exist", id).isTrue();
+                final boolean hasRow = resultSet.next();
+                assertThat(hasRow).as("row for %s should exist", id).isTrue();
                 return new Object[] {resultSet.getBoolean("enabled"), resultSet.getString("severity")};
             }
         }

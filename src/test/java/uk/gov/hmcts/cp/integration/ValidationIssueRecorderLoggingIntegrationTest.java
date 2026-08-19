@@ -1,21 +1,21 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies the recorder's structured log line surfaces as top-level JSON fields when emitted
@@ -51,7 +51,8 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
                 "Multiple offences missing info",
                 ValidationIssue.ValidationLevelEnum.OFFENCE);
 
-        String issueLine = Arrays.stream(capturedStdOut.toString().split(System.lineSeparator()))
+        String issueLine = Arrays.stream(
+                        capturedStdOut.toString(StandardCharsets.UTF_8).split(System.lineSeparator()))
                 .filter(line -> line.contains(ValidationIssueRecorder.ISSUE_LOG_MESSAGE))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("No issue log line captured"));
@@ -77,7 +78,7 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
 
     private ByteArrayOutputStream captureStdOut() {
         final ByteArrayOutputStream capturedStdOut = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(capturedStdOut));
+        System.setOut(new PrintStream(capturedStdOut, false, StandardCharsets.UTF_8));
         return capturedStdOut;
     }
 }

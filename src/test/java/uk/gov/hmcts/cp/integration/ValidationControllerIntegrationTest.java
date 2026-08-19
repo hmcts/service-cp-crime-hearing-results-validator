@@ -1,8 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -12,6 +9,9 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 /**
  * End-to-end tests for the draft validation endpoint and its main acceptance scenarios.
@@ -29,6 +29,77 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
               "resultLines": [],
               "defendants": [],
               "offences": []
+            }
+            """;
+
+    private static final String NO_HEARING_ID_ARRAYS_REQUEST = """
+            {
+               "caseId": "c1",
+              "hearingDay": "2026-03-11",
+              "courtType": "MAGISTRATES",
+              "resultLines": [],
+              "defendants": [],
+              "offences": []
+            }
+            """;
+
+    private static final String MISSING_RESULT_LINE_ID_REQUEST = """
+            {
+              "hearingId": "4d0af157-4f04-4f87-a368-1e1a3e970bc4",
+              "hearingDay": "2026-07-08",
+              "courtType": "MAGISTRATES",
+              "resultLines": [
+                {
+                  "shortCode": "yroew",
+                  "label": "Youth Rehabilitation Order England and Wales",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "F"
+                },
+                {
+                  "resultLineId": "80c464b2-a2ec-40be-8492-57d98750d118",
+                  "shortCode": "rehr",
+                  "label": "Rehabilitation requirements",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "A"
+                },
+                {
+                  "resultLineId": "525e701a-3008-472d-a0cc-e4d397acc65b",
+                  "shortCode": "yrc2",
+                  "label": "Youth rehabilitation requirement: Curfew",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "A"
+                },
+                {
+                  "resultLineId": "1a08bb8a-2a9d-447b-82b3-4c3d2ec58e1f",
+                  "shortCode": "emreq",
+                  "label": "Is electronic monitoring required",
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "category": "I"
+                }
+              ],
+              "defendants": [
+                {
+                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
+                  "firstName": "MO",
+                  "lastName": "MO Bloggs",
+                  "masterDefendantId": "e617b06e-db09-4417-a0be-02933bee11f2"
+                }
+              ],
+              "offences": [
+                {
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "offenceCode": "TH68010",
+                  "offenceTitle": "Theft from a shop",
+                  "orderIndex": 1,
+                  "caseUrn": "19BH5952026",
+                  "hasExistingCtlRecord": false,
+                  "isConvicted": false
+                }
+              ]
             }
             """;
 
@@ -250,16 +321,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                         .content("not valid json"))
                 .andExpect(status().isBadRequest());
     }
-    private static final String NO_HEARING_ID_ARRAYS_REQUEST = """
-            {
-               "caseId": "c1",
-              "hearingDay": "2026-03-11",
-              "courtType": "MAGISTRATES",
-              "resultLines": [],
-              "defendants": [],
-              "offences": []
-            }
-            """;
+
 
     /**
      * Verifies invalid JSON with missing field is translated into the standard bad-request response.
@@ -274,65 +336,6 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
             .andExpect(status().isBadRequest());
     }
 
-    private static final String MISSING_RESULT_LINE_ID_REQUEST = """
-            {
-              "hearingId": "4d0af157-4f04-4f87-a368-1e1a3e970bc4",
-              "hearingDay": "2026-07-08",
-              "courtType": "MAGISTRATES",
-              "resultLines": [
-                {
-                  "shortCode": "yroew",
-                  "label": "Youth Rehabilitation Order England and Wales",
-                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
-                  "category": "F"
-                },
-                {
-                  "resultLineId": "80c464b2-a2ec-40be-8492-57d98750d118",
-                  "shortCode": "rehr",
-                  "label": "Rehabilitation requirements",
-                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
-                  "category": "A"
-                },
-                {
-                  "resultLineId": "525e701a-3008-472d-a0cc-e4d397acc65b",
-                  "shortCode": "yrc2",
-                  "label": "Youth rehabilitation requirement: Curfew",
-                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
-                  "category": "A"
-                },
-                {
-                  "resultLineId": "1a08bb8a-2a9d-447b-82b3-4c3d2ec58e1f",
-                  "shortCode": "emreq",
-                  "label": "Is electronic monitoring required",
-                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
-                  "category": "I"
-                }
-              ],
-              "defendants": [
-                {
-                  "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
-                  "firstName": "MO",
-                  "lastName": "MO Bloggs",
-                  "masterDefendantId": "e617b06e-db09-4417-a0be-02933bee11f2"
-                }
-              ],
-              "offences": [
-                {
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
-                  "offenceCode": "TH68010",
-                  "offenceTitle": "Theft from a shop",
-                  "orderIndex": 1,
-                  "caseUrn": "19BH5952026",
-                  "hasExistingCtlRecord": false,
-                  "isConvicted": false
-                }
-              ]
-            }
-            """;
 
     /**
      * Verifies that a result line missing resultLineId returns a 400 ErrorResponse
