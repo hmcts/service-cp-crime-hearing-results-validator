@@ -1,18 +1,17 @@
 package uk.gov.hmcts.cp.logging;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
-import org.slf4j.MDC;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 
 /**
  * Verifies the JSON logging configuration used during plain JUnit execution.

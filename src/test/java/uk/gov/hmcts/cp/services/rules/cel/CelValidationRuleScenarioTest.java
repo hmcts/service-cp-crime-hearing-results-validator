@@ -1,26 +1,25 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
-import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
-import uk.gov.hmcts.cp.openapi.model.DefendantDto;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.AffectedDefendant;
+import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
+import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
+import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 
 /**
  * Scenario-oriented acceptance tests for DR-SENT-001 grouped by acceptance condition.
@@ -582,7 +581,7 @@ class CelValidationRuleScenarioTest {
                     .containsOnly(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList).allSatisfy(issue -> assertThat(issue.getAffectedDefendants()).isNullOrEmpty());
             assertThat(issueList).flatExtracting(i -> i.getAffectedOffences()
-                    .stream().map(o -> o.getOffenceId()).toList())
+                    .stream().map(AffectedOffence::getOffenceId).toList())
                     .containsExactlyInAnyOrder("off1", "off2", "off3", "off4");
             assertThat(issueList).allSatisfy(issue ->
                     assertThat(issue.getAffectedOffences()).hasSize(2));
@@ -621,7 +620,7 @@ class CelValidationRuleScenarioTest {
                     .containsOnly(ValidationIssue.ValidationLevelEnum.DEFENDANT);
             assertThat(issueList).allSatisfy(issue -> assertThat(issue.getAffectedOffences()).isNullOrEmpty());
             assertThat(issueList).flatExtracting(i -> i.getAffectedDefendants()
-                    .stream().map(d -> d.getDefendantId()).toList())
+                    .stream().map(AffectedDefendant::getDefendantId).toList())
                     .containsExactlyInAnyOrder("d1", "d2");
             assertThat(issueList).allSatisfy(issue ->
                     assertThat(issue.getAffectedDefendants()).hasSize(1));
@@ -660,7 +659,7 @@ class CelValidationRuleScenarioTest {
             assertThat(issueList).extracting(ValidationIssue::getValidationLevel)
                     .containsOnly(ValidationIssue.ValidationLevelEnum.OFFENCE);
             assertThat(issueList).flatExtracting(i -> i.getAffectedOffences()
-                    .stream().map(o -> o.getOffenceId()).toList())
+                    .stream().map(AffectedOffence::getOffenceId).toList())
                     .containsExactlyInAnyOrder("off1", "off3");
         }
     }

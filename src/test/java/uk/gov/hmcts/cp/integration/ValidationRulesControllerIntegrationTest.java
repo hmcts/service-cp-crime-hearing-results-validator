@@ -1,7 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -10,6 +8,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * End-to-end tests for the validation-rule metadata endpoints.

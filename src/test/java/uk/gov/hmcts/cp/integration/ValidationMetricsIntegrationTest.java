@@ -1,13 +1,13 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 /**
  * Verifies that a triggered validation issue is exposed as a Prometheus counter via the actuator

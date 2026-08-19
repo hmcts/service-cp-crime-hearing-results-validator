@@ -1,5 +1,9 @@
 package uk.gov.hmcts.cp.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,11 +15,6 @@ import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.RuleListResponse;
 import uk.gov.hmcts.cp.openapi.model.UpdateRuleRequest;
 import uk.gov.hmcts.cp.services.ValidationRulesService;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link ValidationRulesController}.

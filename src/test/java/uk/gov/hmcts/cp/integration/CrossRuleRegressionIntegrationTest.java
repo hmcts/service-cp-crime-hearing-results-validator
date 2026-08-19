@@ -1,16 +1,16 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.empty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 
 /**
  * Cross-rule regression coverage. Proves that DR-SENT-001 and DR-DISQ-002 evaluate

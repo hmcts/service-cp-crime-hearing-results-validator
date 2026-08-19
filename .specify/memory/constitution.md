@@ -95,11 +95,12 @@ Controller (ValidationController)
 - Each `CelValidationRule` owns the YAML for one rule and runs its
   preprocessing pipeline followed by CEL condition evaluation.
 - Preprocessor selection MUST be data-driven through the YAML
-  `preprocessing.type` field, dispatched via a Spring-aware registry that
-  resolves a `ValidationPreprocessor` bean by qualifier. Hard-wiring a
-  single preprocessor implementation into `CelValidationRule` is a
-  transitional state; it MUST be removed before any second preprocessor
-  type ships.
+  `preprocessing.type` field, dispatched via a Spring-aware registry
+  (`PreprocessorRegistry`) that resolves a `ValidationPreprocessor` bean by
+  qualifier, failing fast on an unresolvable or duplicate qualifier. This is
+  the shipped mechanism, not a target state — hard-wiring a single
+  preprocessor implementation into `CelValidationRule`, bypassing the
+  registry, is a violation of this principle.
 - Cross-cutting concerns (`SecurityConfig`, filters under
   `uk.gov.hmcts.cp.filters`, tracing, action-header mapping) live in their
   dedicated config/filters packages and are not invoked from rule code.

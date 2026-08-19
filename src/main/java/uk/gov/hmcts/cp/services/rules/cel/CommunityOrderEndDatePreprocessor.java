@@ -1,8 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantDedupeKeys;
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
-import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByDefendant;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.findOrderEndDate;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByOffence;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupLinesByDedupedDefendant;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.hasUpperCode;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.isRequirementViolated;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.parsePromptDate;
@@ -18,12 +18,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.encoder.Encode;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.Prompt;
@@ -98,25 +97,16 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
     public Map<String, CommunityOrderContext> preprocess(final DraftValidationRequest request,
                                                          final PreprocessingDefinition config) {
 
-        final Set<String> orderCodes = upperSet(config.getCommunityOrderShortCodes());
-        final Set<String> curCodes = upperSet(config.getCurfewShortCodes());
-        final Set<String> cureCodes = upperSet(config.getCurfewTagShortCodes());
-        final Set<String> curaCodes = upperSet(config.getFurtherCurfewShortCodes());
-        final Set<String> aarCodes = upperSet(config.getAlcoholAbstinenceShortCodes());
+        final Set<String> orderCodes = upperSet(config.communityOrderShortCodes());
+        final Set<String> curCodes = upperSet(config.curfewShortCodes());
+        final Set<String> cureCodes = upperSet(config.curfewTagShortCodes());
+        final Set<String> curaCodes = upperSet(config.furtherCurfewShortCodes());
+        final Set<String> aarCodes = upperSet(config.alcoholAbstinenceShortCodes());
 
-        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
-        final Map<String, String> defendantNames = buildDefendantNames(request);
-        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
         final LocalDate hearingDay = request.getHearingDay();
-
-        final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
-        final Map<String, String> groupNames = new LinkedHashMap<>();
-        for (final Map.Entry<String, List<ResultLineDto>> entry : linesByDefendant.entrySet()) {
-            final String defendantId = entry.getKey();
-            final String groupKey = dedupeKeys.getOrDefault(defendantId, defendantId);
-            linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).addAll(entry.getValue());
-            groupNames.putIfAbsent(groupKey, defendantNames.getOrDefault(defendantId, "Unknown"));
-        }
+        final PreprocessorHelper.DedupedLineGroups groups = groupLinesByDedupedDefendant(request);
+        final Map<String, List<ResultLineDto>> linesByGroup = groups.linesByGroup();
+        final Map<String, String> groupNames = groups.groupNames();
 
         final Map<String, CommunityOrderContext> result = new LinkedHashMap<>();
 
@@ -141,11 +131,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
             final Map<String, String> cureCalculatedEndDates = new LinkedHashMap<>();
             final Map<String, String> aarCalculatedEndDates = new LinkedHashMap<>();
 
-            final Map<String, List<ResultLineDto>> linesByOffence = lines.stream()
-                    .collect(Collectors.groupingBy(
-                            ResultLineDto::getOffenceId,
-                            LinkedHashMap::new,
-                            Collectors.toList()));
+            final Map<String, List<ResultLineDto>> linesByOffence = groupByOffence(lines);
 
             final Set<String> allOffenceIds = new LinkedHashSet<>();
 
@@ -155,12 +141,8 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
 
                 allOffenceIds.add(offenceId);
 
-                final LocalDate orderEndDate = offenceLines.stream()
-                        .filter(rl -> hasUpperCode(rl, orderCodes))
-                        .map(rl -> parsePromptDate(rl, PROMPT_END_DATE, offenceId))
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null);
+                final LocalDate orderEndDate =
+                        findOrderEndDate(offenceLines, orderCodes, PROMPT_END_DATE, offenceId);
 
                 if (orderEndDate != null) {
                     // AC2a — CUR: curfew end date after order end date
@@ -168,19 +150,16 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                             PROMPT_END_DATE, orderEndDate, offenceId)) {
                         curViolationIds.add(offenceId);
                     }
-
                     // AC2b — CURE: end-of-tagging date after order end date
                     if (isRequirementViolated(offenceLines, cureCodes,
                             PROMPT_END_DATE_OF_TAG, orderEndDate, offenceId)) {
                         cureViolationIds.add(offenceId);
                     }
-
                     // AC2c — CURA: further curfew end date after order end date
                     if (isRequirementViolated(offenceLines, curaCodes,
                             PROMPT_END_DATE, orderEndDate, offenceId)) {
                         curaViolationIds.add(offenceId);
                     }
-
                     // AC2d — AAR: alcohol abstinence "until" date after order end date
                     if (isRequirementViolated(offenceLines, aarCodes,
                             PROMPT_UNTIL, orderEndDate, offenceId)) {
@@ -317,7 +296,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
             // instead, but both failure modes mean "period out of range" and must warn-and-skip
             // rather than propagate out of preprocess().
             log.warn("Period out of range for promptRef={} on shortCode={} offenceId={}",
-                    periodPromptRef, line.getShortCode(), offenceId);
+                    periodPromptRef, Encode.forJava(line.getShortCode()), Encode.forJava(offenceId));
             return;
         }
         if (!endDate.isEqual(expectedEndDate)) {
@@ -361,7 +340,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
         ParsedPeriod result = null;
         if (value == null || value.isBlank()) {
             log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
-                    promptRef, shortCode, offenceId);
+                    promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
         } else {
             final String trimmed = value.trim();
             final Matcher periodMatcher = PERIOD_PATTERN.matcher(trimmed);
@@ -373,7 +352,7 @@ public class CommunityOrderEndDatePreprocessor implements ValidationPreprocessor
                 result = new ParsedPeriod(Long.parseLong(digits), unit);
             } catch (NumberFormatException e) {
                 log.warn("Unparseable integer '{}' for promptRef={} on shortCode={} offenceId={}",
-                        value, promptRef, shortCode, offenceId);
+                        Encode.forJava(value), promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
             }
         }
         return result;

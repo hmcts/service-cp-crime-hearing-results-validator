@@ -1,5 +1,14 @@
 package uk.gov.hmcts.cp.acl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -9,17 +18,6 @@ import org.kie.api.builder.KieFileSystem;
 import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
-
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import uk.gov.moj.cpp.authz.drools.Action;
 import uk.gov.moj.cpp.authz.drools.Outcome;
 import uk.gov.moj.cpp.authz.http.providers.UserAndGroupProvider;
@@ -49,6 +47,7 @@ class ValidationDroolsRulesTest {
         return fireRuleWithGroups(action, simulatedUserGroup);
     }
 
+    @SuppressWarnings("PMD.CloseResource") // closed on every path via the try/finally below
     private static boolean fireRuleWithGroups(String action, String... userGroups) {
         KieSession session = kieContainer.newKieSession();
         try {
