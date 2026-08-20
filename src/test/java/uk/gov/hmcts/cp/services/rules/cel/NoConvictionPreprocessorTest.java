@@ -11,25 +11,62 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for the per-offence preprocessor that drives DR-CONV-006.
+ *
+ * <p>{@code excludedFinalShortCodes} is read from the real {@code DR-CONV-006.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as a literal, so {@link #config} always
+ * matches what ships in production, and {@link ExcludedFinalBypass}'s parameterized suppression
+ * test (backed by {@link #excludedFinalShortCodes()}) automatically covers every code the YAML
+ * declares. {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()} pins that
+ * set against a known baseline: if a code is ever added to or removed from the YAML without the
+ * baseline being updated to match, that assertion fails loudly instead of the parameterized test
+ * silently covering a different set of codes than intended.
  */
 class NoConvictionPreprocessorTest {
 
-    private static final List<String> EXCLUDED_SHORT_CODES = List.of(
+    private static final RuleDefinition RULE_DEFINITION =
+            RuleDefinitionLoader.load("rules/DR-CONV-006.yaml");
+
+    private static final List<String> EXCLUDED_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.getPreprocessing().getExcludedFinalShortCodes());
+
+    /**
+     * Every short code this suite expects DR-CONV-006.yaml's {@code excludedFinalShortCodes} to
+     * declare -- kept in exact lockstep with the YAML by
+     * {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()}, so both a code
+     * removed from the YAML and one added to it are caught here, and every code the YAML declares
+     * is guaranteed to also flow into {@link ExcludedFinalBypass}'s parameterized suppression test
+     * via the YAML-backed {@link #excludedFinalShortCodes()} method source.
+     */
+    private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
-            "err", "errf", "dead");
+            "err", "errf", "dhd");
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type(NoConvictionPreprocessor.QUALIFIER)
-            .excludedFinalShortCodes(EXCLUDED_SHORT_CODES)
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.getPreprocessing();
+
+    @Test
+    @DisplayName("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match the known baseline")
+    void excludedFinalShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(EXCLUDED_SHORT_CODES)
+                .as("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match "
+                        + "EXPECTED_EXCLUDED_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by ExcludedFinalBypass's parameterized suppression test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_EXCLUDED_SHORT_CODES);
+    }
+
+    /** Factory method for {@code ExcludedFinalBypass}'s {@code @MethodSource}; YAML-backed. */
+    static List<String> excludedFinalShortCodes() {
+        return EXCLUDED_SHORT_CODES;
+    }
 
     @Nested
     @DisplayName("PositivePath — US1")
@@ -102,11 +139,7 @@ class NoConvictionPreprocessorTest {
     class ExcludedFinalBypass {
 
         @ParameterizedTest
-        @ValueSource(strings = {
-                "wdrn", "WDRNOFF", "dism", "dine", "dini",
-                "disch", "disc", "ctrof", "iremfile",
-                "err", "errf", "dead"
-        })
+        @MethodSource("uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessorTest#excludedFinalShortCodes")
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", excludedCode, "d1", "off1")
