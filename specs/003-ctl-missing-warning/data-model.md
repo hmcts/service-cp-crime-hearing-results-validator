@@ -88,7 +88,7 @@ Two new fields added:
 | Field | Type | Purpose |
 |-------|------|---------|
 | `remandShortCodes` | `List<String>` | Trigger result short codes (RI, RIYDA, …) |
-| `ctlShortCodes` | `List<String>` | CTL result short codes in current hearing (CTL) |
+| `ctlShortCodes` | `List<String>` | CTL result short codes in current hearing (CTL, CCII, CCIIB, CCIILA, CCIITDH, CCIIYDA, CCQB) |
 
 No existing fields removed or renamed.
 
@@ -98,13 +98,19 @@ No existing fields removed or renamed.
 
 **File**: `src/main/resources/rules/DR-CTL-003.yaml`
 
+**Updated 2026-08-20**: `ctlShortCodes` widened from `CTL` alone to include `CCII`, `CCIIB`,
+`CCIILA`, `CCIITDH`, `CCIIYDA`, and `CCQB` (see [spec.md Amendments](./spec.md#amendments) and
+[research.md Decision 3](./research.md#decision-3-new-remandshortcodes-and-ctlshortcodes-fields-in-preprocessingdefinition)).
+
 ```yaml
 rule:
   id: "DR-CTL-003"
   title: "CTL missing check"
   description: >-
     Warns when a remand-type result is recorded against an offence that has no
-    existing CTL record, no CTL result in the current hearing, and is not convicted.
+    existing CTL record from a previous hearing, no CTL result in the current
+    hearing, no CTLDATE prompt recorded against a result line on the offence,
+    and is not convicted.
   priority: 3000
   enabled: true
 
@@ -120,6 +126,12 @@ rule:
       - REMYD
     ctlShortCodes:
       - CTL
+      - CCII
+      - CCIIB
+      - CCIILA
+      - CCIITDH
+      - CCIIYDA
+      - CCQB
 
   conditions:
     - id: "AC1"
