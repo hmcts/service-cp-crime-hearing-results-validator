@@ -18,7 +18,7 @@
 
 **Rationale**: The user stories explicitly reuse the same excluded short-code set (`wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`) as DR-DISQ-001, word for word. Re-deriving this logic independently would duplicate a proven implementation for no benefit and risks the two rules silently drifting apart on what counts as a "final, substantive" result.
 
-**Update**: DR-CONV-006's `excludedFinalShortCodes` was later extended with `err`, `errf`, `dead` — non-substantive disposals not on DR-DISQ-002's list. The two rules' lists are configured independently per YAML file (Decision 4) and are not required to stay identical; this addition only widens DR-CONV-006's excluded set.
+**Update**: DR-CONV-006's `excludedFinalShortCodes` was later extended with `err`, `errf`, `dhd` — non-substantive disposals not on DR-DISQ-002's list. The two rules' lists are configured independently per YAML file (Decision 4) and are not required to stay identical; this addition only widens DR-CONV-006's excluded set.
 
 **Alternatives considered**: Introducing a shared `FinalResultClassifier` helper used by both `DisqualificationExtendedTestPreprocessor` and the new preprocessor — considered but rejected for this change. It would touch an already-shipped, tested class (`DisqualificationExtendedTestPreprocessor`) for a refactor that isn't required by this feature, and the constitution's Spec-Driven Build Loop discourages incidental refactors riding on a feature change. Flagged as a follow-up opportunity, not done here.
 
@@ -40,7 +40,7 @@
 
 **Rationale**: `PreprocessingDefinition` fields are already rule-agnostic (each `CelValidationRule` parses its own YAML into its own `PreprocessingDefinition` instance) — reusing the field name across two unrelated rule YAMLs is exactly how the class is designed to be used, not a coupling risk.
 
-**Alternatives considered**: Adding a differently-named field (e.g. `nonConvictionExcludedShortCodes`) to avoid any appearance of coupling between the two rules' YAML — rejected as unnecessary indirection; the values started out identical per the user's own instruction to reuse existing logic (later diverging by design when `err`, `errf`, `dead` were added to DR-CONV-006 only — see the Decision 2 update), and a second field name would only invite the two lists to drift apart by accident rather than by an explicit, documented decision.
+**Alternatives considered**: Adding a differently-named field (e.g. `nonConvictionExcludedShortCodes`) to avoid any appearance of coupling between the two rules' YAML — rejected as unnecessary indirection; the values started out identical per the user's own instruction to reuse existing logic (later diverging by design when `err`, `errf`, `dhd` were added to DR-CONV-006 only — see the Decision 2 update), and a second field name would only invite the two lists to drift apart by accident rather than by an explicit, documented decision.
 
 ---
 
@@ -76,7 +76,7 @@
 
 | Unknown | Resolution |
 |---------|------------|
-| Excluded final short-code list | Started identical to `DR-DISQ-002`'s `excludedFinalShortCodes` (confirmed by user instruction to reuse); later extended with `err`, `errf`, `dead` on DR-CONV-006 only |
+| Excluded final short-code list | Started identical to `DR-DISQ-002`'s `excludedFinalShortCodes` (confirmed by user instruction to reuse); later extended with `err`, `errf`, `dhd` on DR-CONV-006 only |
 | Conviction signal | `OffenceDto.isConvicted`, already present upstream (added for `DR-CTL-001`); no distinction needed between plea- and verdict-driven conviction |
 | Offence-code scope | Applies to all offences — no `relevantOffenceCodes` restriction, unlike `DR-DISQ-001` |
 | Preprocessor pattern | Per-offence, matching `DisqualificationExtendedTestPreprocessor` / `CtlMissingPreprocessor` |

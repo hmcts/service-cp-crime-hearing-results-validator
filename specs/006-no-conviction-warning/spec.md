@@ -17,7 +17,7 @@ A Legal Adviser or Court Clerk records a final result against an offence (e.g. `
 
 **Acceptance Scenarios**:
 
-1. **Given** an offence has a final result recorded against it (a result that makes the offence inactive, e.g. `COEW`, `FO`, `SSO`), **And** that final result is not one of `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dead`, **And** the offence is not convicted (no guilty plea, no finding of guilt, no recorded date of conviction), **When** the user selects "Save and continue" and validation is triggered, **Then** a WARNING is returned for that offence with the message "No conviction has been added against the offence. Check whether you need to add a guilty plea or verdict", displayed above the offence in Manage Hearings.
+1. **Given** an offence has a final result recorded against it (a result that makes the offence inactive, e.g. `COEW`, `FO`, `SSO`), **And** that final result is not one of `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd`, **And** the offence is not convicted (no guilty plea, no finding of guilt, no recorded date of conviction), **When** the user selects "Save and continue" and validation is triggered, **Then** a WARNING is returned for that offence with the message "No conviction has been added against the offence. Check whether you need to add a guilty plea or verdict", displayed above the offence in Manage Hearings.
 2. **Given** a hearing with multiple offences where only one meets all warning conditions, **When** validation is triggered, **Then** the warning appears only on the breaching offence and not on the compliant offences.
 3. **Given** the warning is displayed, **When** the user navigates back to "Enter results", "Enter pleas", or "Enter verdicts", **Then** they can make changes, including recording a guilty plea and/or verdict against the affected offence(s).
 
@@ -67,7 +67,7 @@ When the warning is raised, the user can still progress and share the result wit
 ### Functional Requirements
 
 - **FR-001**: The system MUST treat a result line as a "final result" using the same result-line category indicator already used to identify final dispositions (category `F`).
-- **FR-002**: The system MUST recognise the following short codes as non-substantive disposals that are excluded from this rule regardless of conviction status: `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dead`. Short-code matching MUST be case-insensitive.
+- **FR-002**: The system MUST recognise the following short codes as non-substantive disposals that are excluded from this rule regardless of conviction status: `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd`. Short-code matching MUST be case-insensitive.
 - **FR-003**: For each offence, the system MUST check whether at least one result line is a final result (FR-001) whose short code is not in the excluded list (FR-002). If none, no further evaluation is performed for that offence.
 - **FR-004**: For each offence with a qualifying final, non-excluded result, the system MUST check whether the offence is convicted (guilty plea, finding of guilt, or a recorded date of conviction). If convicted, no warning is produced for that offence.
 - **FR-005**: When an offence has a qualifying final, non-excluded result (FR-003) and is not convicted (FR-004), the system MUST produce a WARNING issue for that offence.
@@ -96,7 +96,7 @@ When the warning is raised, the user can still progress and share the result wit
 ## Assumptions
 
 - The conviction status used by this rule is the same offence-level "convicted" indicator already published on the offence object and already consumed by the existing CTL-missing rule — no new upstream field is required, and this feature is not blocked on an API change.
-- The excluded final short-code list starts from the same set already used by the existing extended-test disqualification rule (DR-DISQ-002), on the basis that both rules treat the same set of outcomes as "not a substantive final disposal requiring a conviction check", and additionally excludes `err`, `errf`, `dead` — non-substantive disposals not currently on DR-DISQ-002's list. The two rules' lists are configured independently in their respective YAML files and are not required to stay identical.
+- The excluded final short-code list starts from the same set already used by the existing extended-test disqualification rule (DR-DISQ-002), on the basis that both rules treat the same set of outcomes as "not a substantive final disposal requiring a conviction check", and additionally excludes `err`, `errf`, `dhd` — non-substantive disposals not currently on DR-DISQ-002's list. The two rules' lists are configured independently in their respective YAML files and are not required to stay identical.
 - The "final result" concept (a result that makes the offence inactive) is the same result-line category already used to identify final dispositions elsewhere in this service.
 - This rule applies at the offence level, independent of which defendant the offence is charged against, and independent of court type.
 - Multiple result lines per offence are not a concern beyond checking whether any one of them is a qualifying final, non-excluded result.

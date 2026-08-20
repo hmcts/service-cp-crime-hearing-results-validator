@@ -132,7 +132,7 @@ rule:
       - iremfile
       - err
       - errf
-      - dead
+      - dhd
 
   conditions:
     - id: "AC1"
