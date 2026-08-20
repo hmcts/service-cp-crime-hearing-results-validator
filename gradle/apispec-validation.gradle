@@ -5,8 +5,8 @@
 // but must not be present in release builds.
 //
 // This task resolves the apiSpec configuration and rejects any version that does not match
-// the strict X.Y.Z semver pattern. It is intended to be run as a gate in the release workflow
-// to prevent publishing against draft API specs.
+// a fixed release pattern (X.Y or X.Y.Z). It is intended to be run as a gate in the release
+// workflow to prevent publishing against draft API specs.
 //
 // Usage: ./gradlew validateApiSpecVersions
 
@@ -14,7 +14,7 @@ tasks.register('validateApiSpecVersions') {
   description = 'Validates that the apiSpec dependency uses a fixed release version (no pre-release suffixes)'
   group = 'verification'
   doLast {
-    def fixedVersionPattern = ~/^\d+\.\d+\.\d+$/
+    def fixedVersionPattern = ~/^\d+\.\d+(\.\d+)?$/
     def failures = []
     configurations.apiSpec.dependencies.each { dep ->
       if (!(dep.version ==~ fixedVersionPattern)) {
@@ -24,7 +24,7 @@ tasks.register('validateApiSpecVersions') {
     if (failures) {
       throw new GradleException(
         "apiSpec contains non-fixed versions:\n  ${failures.join('\n  ')}\n" +
-        "Release builds require fixed versions (X.Y.Z). Draft versions (e.g. vX.Y.Z-<short-sha>) are not allowed."
+        "Release builds require fixed versions (X.Y or X.Y.Z). Draft versions (e.g. vX.Y.Z-<short-sha>) are not allowed."
       )
     }
     println "apiSpec dependency version is a valid fixed release version."
