@@ -130,6 +130,9 @@ rule:
       - disc
       - ctrof
       - iremfile
+      - err
+      - errf
+      - dead
 
   conditions:
     - id: "AC1"

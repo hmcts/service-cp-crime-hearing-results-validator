@@ -21,10 +21,12 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  *
  * <p>{@code excludedFinalShortCodes} is read from the real {@code DR-CONV-006.yaml} rule file via
  * {@link RuleDefinitionLoader} rather than duplicated here as a literal, so {@link #config} always
- * matches what ships in production. {@link #excludedFinalShortCodes_should_not_lose_a_known_code()}
- * pins the set of codes this suite depends on: if a code is ever removed from the YAML, that
- * assertion fails loudly instead of {@link ExcludedFinalBypass}'s parameterized suppression test
- * silently running with fewer cases.
+ * matches what ships in production, and {@link ExcludedFinalBypass}'s parameterized suppression
+ * test (backed by {@link #excludedFinalShortCodes()}) automatically covers every code the YAML
+ * declares. {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()} pins that
+ * set against a known baseline: if a code is ever added to or removed from the YAML without the
+ * baseline being updated to match, that assertion fails loudly instead of the parameterized test
+ * silently covering a different set of codes than intended.
  */
 class NoConvictionPreprocessorTest {
 
@@ -35,9 +37,12 @@ class NoConvictionPreprocessorTest {
             RULE_DEFINITION.getPreprocessing().getExcludedFinalShortCodes();
 
     /**
-     * Baseline of short codes this suite is known to depend on. Guards against a silent
-     * regression: if any of these disappears from DR-CONV-006.yaml's {@code excludedFinalShortCodes},
-     * {@link #excludedFinalShortCodes_should_not_lose_a_known_code()} fails.
+     * Every short code this suite expects DR-CONV-006.yaml's {@code excludedFinalShortCodes} to
+     * declare -- kept in exact lockstep with the YAML by
+     * {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()}, so both a code
+     * removed from the YAML and one added to it are caught here, and every code the YAML declares
+     * is guaranteed to also flow into {@link ExcludedFinalBypass}'s parameterized suppression test
+     * via the YAML-backed {@link #excludedFinalShortCodes()} method source.
      */
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
@@ -51,13 +56,14 @@ class NoConvictionPreprocessorTest {
             .build();
 
     @Test
-    @DisplayName("DR-CONV-006.yaml must not lose a short code this suite depends on")
-    void excludedFinalShortCodes_should_not_lose_a_known_code() {
+    @DisplayName("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match the known baseline")
+    void excludedFinalShortCodes_should_match_the_known_baseline_exactly() {
         assertThat(EXCLUDED_SHORT_CODES)
-                .as("DR-CONV-006.yaml's excludedFinalShortCodes must still contain every code this "
-                        + "suite depends on; if a removal was intentional, update "
-                        + "EXPECTED_EXCLUDED_SHORT_CODES (and the ExcludedFinalBypass tests) here")
-                .containsAll(EXPECTED_EXCLUDED_SHORT_CODES);
+                .as("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match "
+                        + "EXPECTED_EXCLUDED_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by ExcludedFinalBypass's parameterized suppression test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_EXCLUDED_SHORT_CODES);
     }
 
     /** Factory method for {@code ExcludedFinalBypass}'s {@code @MethodSource}; YAML-backed. */
