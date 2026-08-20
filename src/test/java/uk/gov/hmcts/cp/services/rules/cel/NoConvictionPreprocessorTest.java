@@ -34,7 +34,7 @@ class NoConvictionPreprocessorTest {
             RuleDefinitionLoader.load("rules/DR-CONV-006.yaml");
 
     private static final List<String> EXCLUDED_SHORT_CODES =
-            RULE_DEFINITION.getPreprocessing().getExcludedFinalShortCodes();
+            List.copyOf(RULE_DEFINITION.getPreprocessing().getExcludedFinalShortCodes());
 
     /**
      * Every short code this suite expects DR-CONV-006.yaml's {@code excludedFinalShortCodes} to
@@ -50,10 +50,7 @@ class NoConvictionPreprocessorTest {
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type(NoConvictionPreprocessor.QUALIFIER)
-            .excludedFinalShortCodes(EXCLUDED_SHORT_CODES)
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.getPreprocessing();
 
     @Test
     @DisplayName("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match the known baseline")
