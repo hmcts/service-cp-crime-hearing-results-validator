@@ -72,7 +72,7 @@ Expected response includes a warning for `offence-1`:
 | Bypass | Change to request |
 |--------|------------------|
 | Existing CTL record | Set `"hasExistingCtlRecord": true` on the offence |
-| CTL result in current hearing | Add a result line `{"shortCode": "CTL", "offenceId": "offence-1"}` |
+| CTL result in current hearing | Add a result line with any configured `ctlShortCodes` entry — `{"shortCode": "CTL", "offenceId": "offence-1"}` (also accepted: `CCII`, `CCIIB`, `CCIILA`, `CCIITDH`, `CCIIYDA`, `CCQB`) |
 | Offence convicted | Set `"isConvicted": true` on the offence |
 | No trigger result | Change `"RI"` to a non-remand short code (e.g. `"IMP"`) |
 

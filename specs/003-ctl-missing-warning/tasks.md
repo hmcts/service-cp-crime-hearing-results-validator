@@ -112,6 +112,18 @@ warning message at WARNING severity.
 
 ---
 
+## Phase 7: Post-release change — widen `ctlShortCodes` (2026-08-20)
+
+**Purpose**: Add six additional CTL result short codes (`CCII`, `CCIIB`, `CCIILA`, `CCIITDH`, `CCIIYDA`, `CCQB`) to the existing `ctlShortCodes` bypass list, per [spec.md Amendments](./spec.md#amendments). No preprocessor change required — `CtlMissingPreprocessor` already treats `ctlShortCodes` as a YAML-configured set (Decision 3, research.md).
+
+- [X] T020 Add `CCII`, `CCIIB`, `CCIILA`, `CCIITDH`, `CCIIYDA`, `CCQB` to `ctlShortCodes` in `src/main/resources/rules/DR-CTL-003.yaml`
+- [X] T021 [P] Add parameterised unit test `each_ctl_short_code_should_suppress_warning` to `CtlMissingPreprocessorTest.java`, covering all seven `ctlShortCodes` entries against a local preprocessor config
+- [X] T022 [P] Add parameterised integration test `each_ctl_short_code_should_suppress_warning` to `CtlMissingWarningIntegrationTest.java`, exercising the real YAML-configured list end-to-end via `/api/validation/validate`
+- [X] T023 [P] Add parameterised live-HTTP test `each_ctl_short_code_should_suppress_warning` to `CtlMissingWarningApiHttpLiveTest.java` (no rule-state toggling, per `.claude/rules/design_rules.md`)
+- [X] T024 Run `gradle build` (Checkstyle + PMD + unit/integration/API tests) — confirm green, including the `pmdApiTest` final-parameter check on the new parameterised test method
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
