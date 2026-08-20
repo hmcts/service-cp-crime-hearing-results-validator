@@ -21,7 +21,8 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 class NoConvictionPreprocessorTest {
 
     private static final List<String> EXCLUDED_SHORT_CODES = List.of(
-            "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile");
+            "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
+            "err", "errf", "dead");
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 
@@ -103,7 +104,8 @@ class NoConvictionPreprocessorTest {
         @ParameterizedTest
         @ValueSource(strings = {
                 "wdrn", "WDRNOFF", "dism", "dine", "dini",
-                "disch", "disc", "ctrof", "iremfile"
+                "disch", "disc", "ctrof", "iremfile",
+                "err", "errf", "dead"
         })
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(
