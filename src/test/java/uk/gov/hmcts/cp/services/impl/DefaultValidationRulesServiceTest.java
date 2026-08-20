@@ -58,13 +58,13 @@ class DefaultValidationRulesServiceTest {
      */
     @Test
     void getRuleById_should_return_matching_rule() {
-        ValidationRule rule = stubRule("DR-SENT-002", true);
+        ValidationRule rule = stubRule("DR-SENT-001", true);
         DefaultValidationRulesService service =
                 new DefaultValidationRulesService(List.of(rule), ruleOverrideService);
 
-        RuleDetailResponse response = service.getRuleById("DR-SENT-002");
+        RuleDetailResponse response = service.getRuleById("DR-SENT-001");
 
-        assertThat(response.getRuleId()).isEqualTo("DR-SENT-002");
+        assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(response.getEnabled()).isTrue();
     }
 
@@ -88,7 +88,7 @@ class DefaultValidationRulesServiceTest {
 
         @BeforeEach
         void setUp() {
-            ValidationRule existingRule = stubRule("DR-SENT-002", true);
+            ValidationRule existingRule = stubRule("DR-SENT-001", true);
             service = new DefaultValidationRulesService(List.of(existingRule), ruleOverrideService);
         }
 
@@ -97,7 +97,7 @@ class DefaultValidationRulesServiceTest {
             stubExistingDbRow();
             UpdateRuleRequest request = new UpdateRuleRequest(false, null);
 
-            RuleDetailResponse response = service.updateRule("DR-SENT-002", request, "test-user");
+            RuleDetailResponse response = service.updateRule("DR-SENT-001", request, "test-user");
 
             ArgumentCaptor<ValidationRuleEntity> saved =
                     ArgumentCaptor.forClass(ValidationRuleEntity.class);
@@ -105,7 +105,7 @@ class DefaultValidationRulesServiceTest {
             assertThat(saved.getValue().isEnabled()).isFalse();
             assertThat(saved.getValue().getSeverity()).isEqualTo("ERROR");
             assertThat(saved.getValue().getUpdatedBy()).isEqualTo("test-user");
-            assertThat(response.getRuleId()).isEqualTo("DR-SENT-002");
+            assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         }
 
         @Test
@@ -114,14 +114,14 @@ class DefaultValidationRulesServiceTest {
             UpdateRuleRequest request =
                     new UpdateRuleRequest(null, UpdateRuleRequest.SeverityEnum.WARNING);
 
-            RuleDetailResponse response = service.updateRule("DR-SENT-002", request, "test-user");
+            RuleDetailResponse response = service.updateRule("DR-SENT-001", request, "test-user");
 
             ArgumentCaptor<ValidationRuleEntity> saved =
                     ArgumentCaptor.forClass(ValidationRuleEntity.class);
             verify(ruleOverrideService).saveOverride(saved.capture());
             assertThat(saved.getValue().getSeverity()).isEqualTo("WARNING");
             assertThat(saved.getValue().isEnabled()).isTrue();
-            assertThat(response.getRuleId()).isEqualTo("DR-SENT-002");
+            assertThat(response.getRuleId()).isEqualTo("DR-SENT-001");
         }
 
         @Test
@@ -130,7 +130,7 @@ class DefaultValidationRulesServiceTest {
             UpdateRuleRequest request =
                     new UpdateRuleRequest(false, UpdateRuleRequest.SeverityEnum.WARNING);
 
-            service.updateRule("DR-SENT-002", request, "test-user");
+            service.updateRule("DR-SENT-001", request, "test-user");
 
             ArgumentCaptor<ValidationRuleEntity> saved =
                     ArgumentCaptor.forClass(ValidationRuleEntity.class);
@@ -143,7 +143,7 @@ class DefaultValidationRulesServiceTest {
         void updateRule_withNoFields_should_throw_400() {
             UpdateRuleRequest request = new UpdateRuleRequest(null, null);
 
-            assertThatThrownBy(() -> service.updateRule("DR-SENT-002", request, "test-user"))
+            assertThatThrownBy(() -> service.updateRule("DR-SENT-001", request, "test-user"))
                     .isInstanceOf(InvalidRuleUpdateException.class)
                     .hasMessageContaining("At least one of 'enabled' or 'severity' must be provided");
         }
@@ -159,24 +159,24 @@ class DefaultValidationRulesServiceTest {
 
         @Test
         void updateRule_withNoExistingDbRow_should_seed_from_yaml_defaults() {
-            when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.empty());
+            when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.empty());
             when(ruleOverrideService.saveOverride(any())).thenAnswer(inv -> inv.getArgument(0));
             UpdateRuleRequest request = new UpdateRuleRequest(false, null);
 
-            service.updateRule("DR-SENT-002", request, "test-user");
+            service.updateRule("DR-SENT-001", request, "test-user");
 
             ArgumentCaptor<ValidationRuleEntity> saved =
                     ArgumentCaptor.forClass(ValidationRuleEntity.class);
             verify(ruleOverrideService).saveOverride(saved.capture());
-            assertThat(saved.getValue().getId()).isEqualTo("DR-SENT-002");
+            assertThat(saved.getValue().getId()).isEqualTo("DR-SENT-001");
             assertThat(saved.getValue().isEnabled()).isFalse();
             assertThat(saved.getValue().getSeverity()).isEqualTo("ERROR");
         }
 
         private void stubExistingDbRow() {
-            when(ruleOverrideService.findOverride("DR-SENT-002")).thenReturn(Optional.of(
+            when(ruleOverrideService.findOverride("DR-SENT-001")).thenReturn(Optional.of(
                     ValidationRuleEntity.builder()
-                            .id("DR-SENT-002")
+                            .id("DR-SENT-001")
                             .enabled(true)
                             .severity("ERROR")
                             .build()));

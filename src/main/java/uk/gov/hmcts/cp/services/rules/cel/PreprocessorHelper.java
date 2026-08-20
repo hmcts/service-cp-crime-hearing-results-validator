@@ -51,6 +51,22 @@ public final class PreprocessorHelper {
         return lines.stream().anyMatch(rl -> hasUpperCode(rl, upperCodes));
     }
 
+    /**
+     * True if the line carries a prompt whose {@code promptRef} matches exactly. Comparison is
+     * case-sensitive, matching the convention used by {@link #parsePromptDate}: {@code promptRef}
+     * values are Java constants defined by the caller, not user input, so case normalisation is
+     * unnecessary (unlike short codes, which are YAML-configurable and compared case-insensitively).
+     */
+    public static boolean hasPromptRef(final ResultLineDto line, final String promptRef) {
+        return line.getPrompts() != null && line.getPrompts().stream()
+            .anyMatch((Prompt prompt) -> promptRef.equals(prompt.getPromptRef()));
+    }
+
+    /** True if any line carries a prompt whose {@code promptRef} matches exactly (case-sensitive). */
+    public static boolean anyPromptRefIn(final List<ResultLineDto> lines, final String promptRef) {
+        return lines.stream().anyMatch(rl -> hasPromptRef(rl, promptRef));
+    }
+
     /** Groups result lines by defendant id, preserving order; skips lines with a null id. */
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public static Map<String, List<ResultLineDto>> groupByDefendant(
@@ -165,5 +181,20 @@ public final class PreprocessorHelper {
             }
         }
         return result;
+    }
+
+    /** Groups result lines by offence id, preserving order; skips lines with a null id. */
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public static Map<String, List<ResultLineDto>> groupResultsByOffence(
+        final DraftValidationRequest request) {
+        final Map<String, List<ResultLineDto>> grouped = new LinkedHashMap<>();
+        if (request.getResultLines() != null) {
+            for (final ResultLineDto rl : request.getResultLines()) {
+                if (rl.getOffenceId() != null) {
+                    grouped.computeIfAbsent(rl.getOffenceId(), k -> new ArrayList<>()).add(rl);
+                }
+            }
+        }
+        return grouped;
     }
 }

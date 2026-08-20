@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * Per-offence context produced by {@link CtlMissingPreprocessor} for the CTL missing check rule
- * (DR-CTL-001). One instance per offence in the request; {@code ctlWarningCount} is 0 or 1
+ * (DR-CTL-003). One instance per offence in the request; {@code ctlWarningCount} is 0 or 1
  * because each context represents exactly one offence.
  */
 public record CtlOffenceContext(
