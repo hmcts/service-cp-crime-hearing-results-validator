@@ -10,6 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.MediaType;
 
 /**
@@ -191,6 +193,39 @@ class CtlMissingWarningIntegrationTest extends IntegrationTestBase {
                       ]
                     }
                     """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_CTL_WARNINGS, hasSize(0)))
+                    .andExpect(jsonPath("$.warnings", hasSize(0)));
+        }
+
+        @ParameterizedTest(name = "CTL short code {0} should suppress warning")
+        @ValueSource(strings = {"CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB"})
+        void each_ctl_short_code_should_suppress_warning(String ctlShortCode) throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-05-06",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "%s", "label": "CTL result",
+                         "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                         "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
+                      ]
+                    }
+                    """.formatted(ctlShortCode);
 
             mockMvc.perform(post(VALIDATE_URL)
                             .header("CJSCPPUID", "test-user")

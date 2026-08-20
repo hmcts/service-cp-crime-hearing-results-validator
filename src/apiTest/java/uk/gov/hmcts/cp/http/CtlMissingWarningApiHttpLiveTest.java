@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -26,7 +28,9 @@ import org.springframework.web.client.RestTemplate;
  *   <li>AC1 — a remand-type result with no existing CTL record, no CTL result in the current
  *       hearing, and no recorded conviction produces a warning</li>
  *   <li>Bypass — an existing CTL record from a previous hearing suppresses the warning</li>
- *   <li>Bypass — a CTL result in the current hearing suppresses the warning</li>
+ *   <li>Bypass — a CTL result in the current hearing suppresses the warning, for every
+ *       configured {@code ctlShortCodes} entry (CTL, CCII, CCIIB, CCIILA, CCIITDH, CCIIYDA,
+ *       CCQB)</li>
  *   <li>Bypass — a convicted offence suppresses the warning</li>
  *   <li>Bypass — a result whose short code is not a remand code produces no warning</li>
  *   <li>Multi-offence scoping — the warning is scoped to the breaching offence only</li>
@@ -143,6 +147,40 @@ class CtlMissingWarningApiHttpLiveTest {
                   ]
                 }
                 """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * Covers the current-hearing-CTL bypass for every configured {@code ctlShortCodes} entry
+     * (not just {@code CTL}) — DR-CTL-003.yaml lists CTL, CCII, CCIIB, CCIILA, CCIITDH, CCIIYDA
+     * and CCQB as short codes that all suppress the warning.
+     */
+    @ParameterizedTest(name = "CTL short code {0} should suppress warning")
+    @ValueSource(strings = {"CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB"})
+    void each_ctl_short_code_should_suppress_warning(final String ctlShortCode) throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h3-%s",
+                  "hearingDay": "2026-05-06",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "RI", "label": "Remand in custody",
+                     "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "%s", "label": "CTL result",
+                     "defendantId": "d1", "offenceId": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                  "offences": [
+                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                     "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
+                  ]
+                }
+                """.formatted(ctlShortCode, ctlShortCode);
 
         final JsonNode json = postValidate(body);
 
