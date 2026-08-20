@@ -10,7 +10,7 @@ Rules are defined in YAML files using [CEL (Common Expression Language)](https:/
 
 ```yaml
 rule:
-  id: "DR-SENT-002"
+  id: "DR-SENT-001"
   title: "Custodial sentence concurrent/consecutive check"
   conditions:
     - id: "AC2"
@@ -28,8 +28,8 @@ Rule files are located in `src/main/resources/rules/`.
 
 | Rule ID | Description |
 |---------|-------------|
-| DR-SENT-002 | Custodial sentence concurrent/consecutive check |
-| DR-DISQ-001 | Extended test disqualification check |
+| DR-SENT-001 | Custodial sentence concurrent/consecutive check |
+| DR-DISQ-002 | Extended test disqualification check |
 
 ### Adding a New Rule
 
@@ -48,7 +48,7 @@ Rules can be toggled or have their severity adjusted at runtime via the `validat
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | VARCHAR(20) | Rule ID, must match the YAML file (e.g. `DR-SENT-002`) |
+| `id` | VARCHAR(20) | Rule ID, must match the YAML file (e.g. `DR-SENT-001`) |
 | `enabled` | BOOLEAN | `false` disables the rule entirely |
 | `severity` | VARCHAR(20) | Maximum severity ceiling (see below) |
 | `updated_at` | TIMESTAMP | Last modification time |
@@ -56,7 +56,7 @@ Rules can be toggled or have their severity adjusted at runtime via the `validat
 
 #### Severity Ceiling Model
 
-A single rule can contain multiple conditions with different severities. For example, DR-SENT-002 has:
+A single rule can contain multiple conditions with different severities. For example, DR-SENT-001 has:
 
 - **AC2** (missing concurrent/consecutive info) — `ERROR` (blocks sharing)
 - **AC3** (both concurrent and consecutive) — `WARNING` (advisory)

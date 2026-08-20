@@ -1,0 +1,37 @@
+rule:
+  id: "DR-CONV-006"
+  title: "No conviction on sentenced offence check"
+  description: >-
+    Warns when a final result is recorded against an offence that is not one
+    of the excluded non-substantive disposals, and the offence is not
+    convicted (no guilty plea, finding of guilt, or recorded date of
+    conviction).
+  priority: 6000
+  enabled: true
+
+  preprocessing:
+    type: "no-conviction-check"
+    excludedFinalShortCodes:
+      - wdrn
+      - WDRNOFF
+      - dism
+      - dine
+      - dini
+      - disch
+      - disc
+      - ctrof
+      - iremfile
+      - err
+      - errf
+      - dhd
+
+  conditions:
+    - id: "AC1"
+      name: "Sentenced offence not convicted"
+      expression: "unconvictedSentenceCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        No conviction has been added against the offence. Check whether you
+        need to add a guilty plea or verdict
+      affectedOffenceSet: "warningOffenceIds"
+      validationLevel: OFFENCE

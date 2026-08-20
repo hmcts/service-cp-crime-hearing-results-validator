@@ -13,9 +13,9 @@ import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Per-offence preprocessor for the DR-CTL-001 CTL missing check rule. Produces one
+ * Per-offence preprocessor for the DR-CTL-003 CTL missing check rule. Produces one
  * {@link CtlOffenceContext} per offence in the request, with {@code ctlWarningCount} set to 1
- * when all four warning conditions are met:
+ * when all five warning conditions are met:
  *
  * <ol>
  *   <li>At least one result line on the offence carries a trigger short code from the YAML
@@ -24,6 +24,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  *       ({@code hasExistingCtlRecord} is null or false).</li>
  *   <li>No result line on the offence carries a CTL short code from the YAML
  *       {@code ctlShortCodes} list (e.g. CTL).</li>
+ *   <li>No result line on the offence carries a {@value #PROMPT_CTL_DATE} prompt.</li>
  *   <li>The offence is not convicted ({@code isConvicted} is null or false).</li>
  * </ol>
  *
@@ -34,6 +35,9 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
 
     /** YAML {@code preprocessing.type} qualifier for this preprocessor. */
     public static final String QUALIFIER = "ctl-missing";
+
+    /** Prompt reference indicating a CTL date has already been recorded on a result line. */
+    private static final String PROMPT_CTL_DATE = "CTLDATE";
 
     @Override
     public String type() {
@@ -69,9 +73,11 @@ public class CtlMissingPreprocessor implements ValidationPreprocessor {
         final boolean hasRemandResult = anyShortCodeIn(lines, remandCodes);
         final boolean hasExistingCtl = Boolean.TRUE.equals(offence.getHasExistingCtlRecord());
         final boolean hasCtlResult = anyShortCodeIn(lines, ctlCodes);
+        final boolean hasCtlDatePrompt = PreprocessorHelper.anyPromptRefIn(lines, PROMPT_CTL_DATE);
         final boolean isConvicted = Boolean.TRUE.equals(offence.getIsConvicted());
 
-        final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult && !isConvicted;
+        final boolean ctlWarning = hasRemandResult && !hasExistingCtl && !hasCtlResult
+                && !hasCtlDatePrompt && !isConvicted;
 
         return new CtlOffenceContext(
                 offenceId,

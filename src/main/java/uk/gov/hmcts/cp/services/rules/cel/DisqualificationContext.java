@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * Per-offence context produced by {@link DisqualificationExtendedTestPreprocessor} for the
- * extended-test disqualification rule (DR-DISQ-001). One instance per offence in the request;
+ * extended-test disqualification rule (DR-DISQ-002). One instance per offence in the request;
  * counts are 0 or 1 because each context represents exactly one offence.
  */
 public record DisqualificationContext(

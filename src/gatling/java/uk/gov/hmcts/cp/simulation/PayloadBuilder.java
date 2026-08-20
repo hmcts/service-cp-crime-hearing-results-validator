@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Builds JSON payloads for the POST /api/validation/validate endpoint.
  * Each static method returns a complete DraftValidationRequest JSON string
- * matching one of the DR-SENT-002 acceptance criteria scenarios.
+ * matching one of the DR-SENT-001 acceptance criteria scenarios.
  */
 public final class PayloadBuilder {
 
