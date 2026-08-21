@@ -43,6 +43,19 @@ apply {
 configurations {
   apiSpec
   implementation.extendsFrom apiSpec
+
+  all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+      // cel-generated-pb (see the explicit dependency below) is compiled against protobuf gencode
+      // 4.35.1; the Spring Boot BOM and opentelemetry-proto pull protobuf-java to 4.34.x, which
+      // fails at runtime with ProtobufRuntimeVersionException. Force the higher version across
+      // all configurations. This conflict is unchanged from 0.6.x -> 0.8.0.
+      if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protobuf-java') {
+        details.useVersion '4.35.1'
+        details.because 'cel-generated-pb:0.8.0 requires protobuf gencode >= 4.35.1'
+      }
+    }
+  }
 }
 
 springBoot {
@@ -71,6 +84,9 @@ dependencies {
 
   // --- CEL (Common Expression Language) for YAML-driven validation rules ---
   implementation libs.cel.tools
+  // cel-core marks cel-generated-pb "optional" from 0.8.0 onward; Decls/Env/Ast still require
+  // its protobuf-generated types, so it must be declared explicitly.
+  implementation libs.cel.generated.pb
 
   // Should come in with the api
   implementation libs.swagger.core

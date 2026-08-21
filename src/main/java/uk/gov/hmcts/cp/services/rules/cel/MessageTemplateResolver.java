@@ -39,8 +39,9 @@ public class MessageTemplateResolver {
 
     /**
      * Resolves placeholders as {@link #resolve(String, String, List, Map, List)} does, then
-     * substitutes any {@code ${key}} token for each entry in {@code extraPlaceholders} (e.g.
-     * {@code ${calculatedEndDate}}).
+     * additionally replaces {@code ${key}} for each entry in {@code extraPlaceholders}. Used for
+     * per-offence, condition-specific computed values (e.g. {@code ${calculatedEndDate}}) that
+     * have no fixed token name known to this resolver.
      */
     public String resolve(final String template,
                           final String defendantName,

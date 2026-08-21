@@ -1,5 +1,5 @@
 rule:
-  id: "DR-DISQ-001"
+  id: "DR-DISQ-002"
   title: "Extended test disqualification check"
   description: >-
     Warns when a relevant Road Traffic Act 1988 offence has a non-excluded final
@@ -19,7 +19,6 @@ rule:
       - RT88026B  # s.2   — dangerous driving (variant B)
       - RT88530   # s.3ZC — causing death by driving: disqualified drivers
       - RT88531   # s.3ZD — causing serious injury by driving: disqualified drivers
-
     excludedFinalShortCodes:
       - wdrn      # withdrawn
       - WDRNOFF   # withdrawn in favour of another offence

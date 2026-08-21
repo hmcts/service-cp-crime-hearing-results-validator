@@ -1,18 +1,5 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
-import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
-import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,30 +14,43 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
+import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+
 /**
- * Focused unit tests for the DR-SENT-002 CEL validation rule implementation.
+ * Focused unit tests for the DR-SENT-001 CEL validation rule implementation.
  */
 class CelValidationRuleTest {
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
     private final ValidationIssueRecorder issueRecorder = mock(ValidationIssueRecorder.class);
     private final CelValidationRule rule = new CelValidationRule(
-            "rules/DR-SENT-002.yaml",
+            "rules/DR-SENT-001.yaml",
             new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+            mock(RuleOverrideService.class),
             issueRecorder);
 
     /**
-     * Verifies the rule exposes the expected metadata loaded from DR-SENT-002.
+     * Verifies the rule exposes the expected metadata loaded from DR-SENT-001.
      */
     @Test
-    void getRuleDetail_should_return_DR_SENT_002() {
+    void getRuleDetail_should_return_DR_SENT_001() {
         RuleDetailResponse detail = rule.getRuleDetail();
 
-        assertThat(detail.getRuleId()).isEqualTo("DR-SENT-002");
+        assertThat(detail.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(detail.getTitle()).isNotBlank();
         assertThat(detail.getSeverity()).isEqualTo(RuleDetailResponse.SeverityEnum.ERROR);
         assertThat(detail.getEnabled()).isTrue();
@@ -108,7 +108,7 @@ class CelValidationRuleTest {
         ValidationIssueResult result = results.getFirst();
         ValidationIssue error = result.issue();
         assertThat(error.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
-        assertThat(error.getRuleId()).isEqualTo("DR-SENT-002");
+        assertThat(error.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(result.errorMessage()).isEqualTo(
                 "Some offences do not include details of whether they are concurrent or"
                         + " consecutive. There should be only one primary sentence for each"
@@ -117,7 +117,7 @@ class CelValidationRuleTest {
         assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
         assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);
-        assertThat(error.getAffectedOffences()).extracting(o -> o.getOffenceId())
+        assertThat(error.getAffectedOffences()).extracting(AffectedOffence::getOffenceId)
                 .containsExactlyInAnyOrder("off1", "off2", "off3");
         assertThat(error.getAffectedDefendants()).isNullOrEmpty();
     }
@@ -288,10 +288,10 @@ class CelValidationRuleTest {
      */
     @Test
     void getPriority_should_not_call_override_service() {
-        uk.gov.hmcts.cp.services.rules.RuleOverrideService mockOverrideService =
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class);
+        RuleOverrideService mockOverrideService =
+                mock(RuleOverrideService.class);
         CelValidationRule localRule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -355,7 +355,7 @@ class CelValidationRuleTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 mock(ValidationIssueRecorder.class));
 
         DraftValidationRequest request = buildRequest(
@@ -393,7 +393,7 @@ class CelValidationRuleTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 mock(ValidationIssueRecorder.class));
 
         DraftValidationRequest request = buildRequest(
@@ -429,12 +429,12 @@ class CelValidationRuleTest {
         PreprocessorRegistry emptyRegistry = new PreprocessorRegistry(List.of());
 
         assertThatThrownBy(() -> new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 emptyRegistry,
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 issueRecorder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("custodial-concurrent-consecutive");
@@ -464,8 +464,10 @@ class CelValidationRuleTest {
 
         rule.evaluate(request);
 
-        verify(issueRecorder).record("DR-SENT-002", "AC2",
-                ValidationIssue.SeverityEnum.ERROR, "h1");
+        verify(issueRecorder).record(eq("DR-SENT-001"), eq("AC2"),
+                eq(ValidationIssue.SeverityEnum.ERROR), eq("h1"),
+                anyString(), eq("Multiple offences missing info"),
+                eq(ValidationIssue.ValidationLevelEnum.OFFENCE));
     }
 
     /**
@@ -474,11 +476,11 @@ class CelValidationRuleTest {
     @Test
     void disabled_rule_should_not_record_any_issue() {
         RuleOverrideService disabledOverride = mock(RuleOverrideService.class);
-        when(disabledOverride.findOverride("DR-SENT-002")).thenReturn(Optional.of(
-                ValidationRuleEntity.builder().id("DR-SENT-002").enabled(false).build()));
+        when(disabledOverride.findOverride("DR-SENT-001")).thenReturn(Optional.of(
+                ValidationRuleEntity.builder().id("DR-SENT-001").enabled(false).build()));
         ValidationIssueRecorder localRecorder = mock(ValidationIssueRecorder.class);
         CelValidationRule disabledRule = new CelValidationRule(
-                "rules/DR-SENT-002.yaml",
+                "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
@@ -499,7 +501,8 @@ class CelValidationRuleTest {
         List<ValidationIssueResult> issues = disabledRule.evaluate(request);
 
         assertThat(issues).isEmpty();
-        verify(localRecorder, never()).record(anyString(), anyString(), any(), anyString());
+        verify(localRecorder, never()).record(anyString(), anyString(), any(), anyString(),
+                anyString(), anyString(), any());
     }
 
     /**
@@ -509,7 +512,7 @@ class CelValidationRuleTest {
     @Test
     void recorder_failure_should_not_suppress_issue() {
         doThrow(new RuntimeException("recorder down")).when(issueRecorder)
-                .record(eq("DR-SENT-002"), eq("AC2"), any(), eq("h1"));
+                .record(eq("DR-SENT-001"), eq("AC2"), any(), eq("h1"), any(), any(), any());
         DraftValidationRequest request = buildRequest(
                 List.of(
                         resultLine("rl1", "IMP", "d1", "off1"),

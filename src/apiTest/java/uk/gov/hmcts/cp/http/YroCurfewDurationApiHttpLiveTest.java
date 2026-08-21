@@ -4,11 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -19,13 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * Live HTTP coverage for the DD-42850 extension to DR-YRO-001 (curfew requirement duration
+ * Live HTTP coverage for the DD-42850 extension to DR-YRO-004 (curfew requirement duration
  * validation) against a running service instance.
  *
- * <p>DR-YRO-001 is inserted into the {@code validation_rule} table as disabled by the Flyway
- * migration. {@link #enableRule()} and {@link #disableRule()} mutate the DB row then poll
- * {@code GET /api/validation/rules/DR-YRO-001} until the service reflects the new state,
- * eliminating fixed sleeps and the flakiness they cause when cache TTL varies.
+ * <p>DR-YRO-004 defaults to enabled by its Flyway seed migration, so no rule-state setup is
+ * needed here.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -44,7 +37,7 @@ class YroCurfewDurationApiHttpLiveTest {
     private static final String VALIDATION_ISSUES = "validationIssues";
     private static final String ERROR_MESSAGES = "errorMessages";
     private static final String WARNINGS = "warnings";
-    private static final String RULE_ID = "DR-YRO-001";
+    private static final String RULE_ID = "DR-YRO-004";
 
     private static final String RULE_ID_FIELD = "ruleId";
     private static final String AFFECTED_OFFENCES = "affectedOffences";
@@ -60,18 +53,13 @@ class YroCurfewDurationApiHttpLiveTest {
             "The end date of the order must match or be longer than the end date of "
                     + "Youth Rehabilitation Requirement: Curfew";
 
-    private static final String DB_URL =
-            System.getProperty("db.url", "jdbc:postgresql://localhost:5432/results-validator-db");
-    private static final String DB_USER = System.getProperty("db.username", "postgres");
-    private static final String DB_PASSWORD = System.getProperty("db.password", "postgres");
-
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
      * DUR-YRC2 — YRC2 end date is one day early relative to Start date + Curfew period − 1 day.
-     * DR-YRO-001 must produce a single ERROR with the correct calculated end date inline.
+     * DR-YRO-004 must produce a single ERROR with the correct calculated end date inline.
      */
     @Test
     void dur_yrc2_end_date_mismatch_should_produce_error_with_calculated_date() throws Exception {
@@ -95,7 +83,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -123,7 +111,7 @@ class YroCurfewDurationApiHttpLiveTest {
 
     /**
      * DUR-YRC2 suppression — YRC2 end date exactly matches Start date + Curfew period − 1 day.
-     * DR-YRO-001 must not fire.
+     * DR-YRO-004 must not fire.
      */
     @Test
     void dur_yrc2_end_date_matching_formula_should_not_produce_error() throws Exception {
@@ -147,7 +135,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -161,7 +149,7 @@ class YroCurfewDurationApiHttpLiveTest {
 
     /**
      * DUR-YRC1 — YRC1 end date of tagging does not match Start date of tagging + period − 1 day.
-     * DR-YRO-001 must produce a single ERROR with the correct calculated end date inline.
+     * DR-YRO-004 must produce a single ERROR with the correct calculated end date inline.
      */
     @Test
     void dur_yrc1_end_date_of_tagging_mismatch_should_produce_error_with_calculated_date()
@@ -187,7 +175,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -215,7 +203,7 @@ class YroCurfewDurationApiHttpLiveTest {
 
     /**
      * DUR-YRC1 suppression — YRC1 end date of tagging exactly matches Start date of tagging +
-     * period − 1 day. DR-YRO-001 must not fire.
+     * period − 1 day. DR-YRO-004 must not fire.
      */
     @Test
     void dur_yrc1_end_date_of_tagging_matching_formula_should_not_produce_error() throws Exception {
@@ -240,7 +228,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Marcus", "lastName": "Reid"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -254,7 +242,7 @@ class YroCurfewDurationApiHttpLiveTest {
 
     /**
      * Combined case — a single offence fails both the existing AC2a order-end-date check and the
-     * new DUR-YRC2 duration-mismatch check simultaneously. DR-YRO-001 must produce two separate
+     * new DUR-YRC2 duration-mismatch check simultaneously. DR-YRO-004 must produce two separate
      * ERRORs referencing the same offence.
      */
     @Test
@@ -280,7 +268,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
                   "offences": [
                     {"offenceId": "off1", "offenceCode": "TH68001",
-                     "offenceTitle": "Theft", "orderIndex": 1}
+                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
                 """;
@@ -305,49 +293,6 @@ class YroCurfewDurationApiHttpLiveTest {
                 .isTrue();
         assertThat(firstMessage.startsWith(MSG_DUR_BASE) || secondMessage.startsWith(MSG_DUR_BASE))
                 .isTrue();
-    }
-
-    @BeforeAll
-    static void enableRule() throws Exception {
-        setRuleEnabled(true);
-        awaitRuleState(true);
-    }
-
-    @AfterAll
-    static void disableRule() throws Exception {
-        setRuleEnabled(false);
-        awaitRuleState(false);
-    }
-
-    private static void setRuleEnabled(final boolean enabled) throws Exception {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement ps = conn.prepareStatement(
-                     "UPDATE validation_rule SET enabled = ? WHERE id = 'DR-YRO-001'")) {
-            ps.setBoolean(1, enabled);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void awaitRuleState(final boolean expected) throws Exception {
-        final RestTemplate client = new RestTemplate();
-        final HttpHeaders headers = new HttpHeaders();
-        headers.set("CJSCPPUID", "test-setup");
-        final HttpEntity<Void> request = new HttpEntity<>(headers);
-        final ObjectMapper objectMapper = new ObjectMapper();
-        final String url = System.getProperty("app.baseUrl", "http://localhost:8082")
-                + "/api/validation/rules/" + RULE_ID;
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (System.currentTimeMillis() < deadline) {
-            final ResponseEntity<String> response = client.exchange(
-                    url, HttpMethod.GET, request, String.class);
-            final JsonNode json = objectMapper.readTree(response.getBody());
-            if (json.get("enabled").asBoolean() == expected) {
-                return;
-            }
-            Thread.sleep(100);
-        }
-        throw new IllegalStateException(
-                "DR-YRO-001 did not reach enabled=" + expected + " within 5 s");
     }
 
     private JsonNode postValidate(final String body) throws Exception {
