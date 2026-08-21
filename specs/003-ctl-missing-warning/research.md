@@ -28,9 +28,9 @@
 
 **Decision**: Add two new fields to `PreprocessingDefinition`:
 - `remandShortCodes: List<String>` — configures the set of trigger short codes (`RI`, `RIYDA`, `RIH`, `RIB`, `RILA`, `RILAB`, `REMYD`)
-- `ctlShortCodes: List<String>` — configures the short codes that count as a CTL result in the current hearing (initially `CTL`)
+- `ctlShortCodes: List<String>` — configures the short codes that count as a CTL result in the current hearing (initially `CTL`; widened on 2026-08-20 to also include `CCII`, `CCIIB`, `CCIILA`, `CCIITDH`, `CCIIYDA`, `CCQB`)
 
-**Rationale**: Keeping these code lists in YAML (not hard-wired in Java) preserves the YAML/CEL Rule-First principle. If the policy changes (e.g., a new remand code is introduced), a BA can update the YAML without a Java change. Making it a list rather than a single string for `ctlShortCodes` future-proofs against multiple CTL codes.
+**Rationale**: Keeping these code lists in YAML (not hard-wired in Java) preserves the YAML/CEL Rule-First principle. If the policy changes (e.g., a new remand code is introduced), a BA can update the YAML without a Java change. Making it a list rather than a single string for `ctlShortCodes` future-proofs against multiple CTL codes — this paid off directly when the six additional codes were added, requiring only a YAML edit and no preprocessor change.
 
 **Alternatives considered**:
 - Hard-coding the short code lists in the preprocessor — rejected; violates Constitution Principle I (YAML is the contract, non-technical stakeholders must be able to amend it).
@@ -75,7 +75,7 @@
 
 | Unknown | Resolution |
 |---------|------------|
-| CTL result short code | `CTL` (confirmed by user) |
+| CTL result short code | `CTL`, `CCII`, `CCIIB`, `CCIILA`, `CCIITDH`, `CCIIYDA`, `CCQB` (widened 2026-08-20; originally just `CTL`) |
 | `existingCtlRecord` field presence | Absent from `OffenceDto` v0.1.1 — upstream change required |
 | `convicted` / conviction-status field presence | Absent from `OffenceDto` v0.1.1 — upstream change required |
 | Preprocessor pattern (per-offence vs per-defendant) | Per-offence, matching `DisqualificationExtendedTestPreprocessor` |
