@@ -25,10 +25,9 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Live HTTP coverage for the rule metadata endpoints against a running service instance.
  *
- * <p>Every rule ships enabled by its Flyway seed migration except DR-CONV-006, which ships
- * disabled (V1.007__insert_dr_conv_006.sql), so these assertions run against that steady state
- * with no rule-state setup. The single exception is the PATCH round-trip test below, which
- * temporarily disables DR-SENT-001 and restores it within the same test — the only place
+ * <p>Every rule ships enabled by its Flyway seed migration, so these assertions run against that
+ * steady state with no rule-state setup. The single exception is the PATCH round-trip test below,
+ * which temporarily disables DR-SENT-001 and restores it within the same test — the only place
  * the live suite exercises the rule-update write path (per-rule live tests must not toggle rule
  * state; see design_rules.md, "Test the framework once"). The enabled/disabled count math itself
  * is covered by {@code DefaultValidationRulesServiceTest.listRules_should_return_all_rules()}.
@@ -64,8 +63,8 @@ class ValidationRulesApiHttpLiveTest {
 
         final JsonNode json = mapper.readTree(response.getBody());
         assertThat(json.get("count").asInt()).isEqualTo(7);
-        // DR-CONV-006 ships disabled by its Flyway seed (V1.007), so 6 of 7 are enabled.
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(6);
+        // All 7 rules ship enabled by their Flyway seed migrations.
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(7);
         assertThat(json.get("rules")).hasSize(7);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));

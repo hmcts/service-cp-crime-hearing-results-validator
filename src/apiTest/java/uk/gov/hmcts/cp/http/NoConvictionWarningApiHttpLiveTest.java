@@ -21,14 +21,15 @@ import org.springframework.web.client.RestTemplate;
  * Live HTTP coverage for DR-CONV-006 (no-conviction-on-sentenced-offence warning) against a
  * running service instance.
  *
- * <p>DR-CONV-006 ships <b>disabled</b> by its Flyway seed migration
+ * <p>DR-CONV-006 ships <b>enabled</b> by its Flyway seed migration
  * ({@code V1.007__insert_dr_conv_006.sql} — DD-43039). Per-rule live test classes must not
  * toggle rule state (see design_rules.md, "Test the framework once" — the rule-update write
  * path is exercised exactly once, by {@code ValidationRulesApiHttpLiveTest}), so this suite
  * never PATCHes the rule. Instead {@link #assumeRuleEnabled()} reads the current live state
  * before each test and skips the warning-producing scenarios when the rule is off — the
- * assertions still cover DR-CONV-006's actual logic in any environment where it has been
- * enabled, without this suite mutating shared state itself.
+ * assertions still cover DR-CONV-006's actual logic against the steady state, without this
+ * suite mutating shared state itself, and remain safe should some environment ever run with
+ * the rule disabled.
  *
  * <p>Acceptance criteria covered:
  * <ul>
@@ -59,7 +60,7 @@ class NoConvictionWarningApiHttpLiveTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     /**
-     * DR-CONV-006 ships disabled (V1.007 seed). This suite reads (never writes) the live enabled
+     * DR-CONV-006 ships enabled (V1.007 seed). This suite reads (never writes) the live enabled
      * flag and skips every scenario when the rule is off, rather than PATCHing it — per-rule live
      * tests must not toggle rule state (design_rules.md, "Test the framework once").
      */
@@ -77,8 +78,8 @@ class NoConvictionWarningApiHttpLiveTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         final boolean enabled = mapper.readTree(response.getBody()).get("enabled").asBoolean();
-        assumeTrue(enabled, RULE_ID + " is disabled in this environment (ships disabled by the "
-                + "V1.007 seed migration); skipping rather than toggling it from this suite.");
+        assumeTrue(enabled, RULE_ID + " is disabled in this environment; skipping rather than "
+                + "toggling it from this suite.");
     }
 
     /**
