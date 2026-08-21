@@ -8,10 +8,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * Boots a reusable PostgreSQL test container and injects its connection details into Spring tests.
  */
+@SuppressWarnings("PMD.TestClassWithoutTestCases") // an initializer, not a JUnit test class
 public class TestContainersInitialise
         implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
-    private static final PostgreSQLContainer<?> postgreSQLContainer =
+    private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER =
             new PostgreSQLContainer<>("postgres:15.3")
                     .withDatabaseName("postgres")
                     .withUsername("postgres")
@@ -19,7 +20,7 @@ public class TestContainersInitialise
                     .withReuse(true);
 
     static {
-        postgreSQLContainer.start(); // start once
+        POSTGRE_SQL_CONTAINER.start(); // start once
     }
 
     /**
@@ -31,9 +32,9 @@ public class TestContainersInitialise
     public void initialize(ConfigurableApplicationContext context) {
 
         TestPropertyValues.of(
-                "spring.datasource.url=" + postgreSQLContainer.getJdbcUrl(),
-                "spring.datasource.username=" + postgreSQLContainer.getUsername(),
-                "spring.datasource.password=" + postgreSQLContainer.getPassword(),
+                "spring.datasource.url=" + POSTGRE_SQL_CONTAINER.getJdbcUrl(),
+                "spring.datasource.username=" + POSTGRE_SQL_CONTAINER.getUsername(),
+                "spring.datasource.password=" + POSTGRE_SQL_CONTAINER.getPassword(),
                 "spring.jms.listener.auto-startup=false",
                 "management.health.jms.enabled=false",
                 "spring.autoconfigure.exclude=uk.gov.hmcts.cp.filter.audit.config.ArtemisAuditAutoConfiguration"

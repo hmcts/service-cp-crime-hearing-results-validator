@@ -6,45 +6,47 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-
-import java.util.List;
-
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 
 /**
  * Expanded AC2 scenario coverage for the custodial concurrent or consecutive validation rule.
  */
 @DisplayName("AC2 – Error scenarios")
 @TestMethodOrder(MethodOrderer.MethodName.class)
-public class ConcurrentAndConsecutiveValidationAC2Scenarios {
+class ConcurrentAndConsecutiveValidationAC2ScenariosTest {
 
     /*
     AC2 – Custodial sentence – More than one offence for a defendants cases in the hearing with no concurrent or consecutive information – ERROR
     Given I am a user with access to Manage hearings
     And I am recording a custodial sentence against the offences for a defendant in the hearing (see result codes below) - This includes multiple cases for a defendant in the same hearing
 And when recording whether the sentence is concurrent or consecutive to offence as part of each custodial result
-And I leave more than one of the defendants offences with no information about whether it’s concurrent or consecutive to offence (i.e. No tick in the current box and no text in the field labelled “Consecutive to offence”)
-Then when I navigate to “Manage hearings’ either using save and continue or selecting the manage hearings tab then I am presented with an ERROR message
-And the error reads “[Name of defendant] offence [offence numbers] do not include details of whether they are concurrent or consecutive. There should be only one primary sentence, therefore one result without concurrent or consecutive information”
+And I leave more than one of the defendants offences with no information about whether it’s concurrent
+or consecutive to offence (i.e. No tick in the current box and no text in the field labelled
+“Consecutive to offence”)
+Then when I navigate to “Manage hearings’ either using save and continue or selecting the manage
+hearings tab then I am presented with an ERROR message
+And the error reads “[Name of defendant] offence [offence numbers] do not include details of whether
+they are concurrent or consecutive. There should be only one primary sentence, therefore one result
+without concurrent or consecutive information”
 And if the offences are on different cases then the error includes the URN and offence number in the error (i.e. "Offence 1 (URN:52SB777777) and Offence 1 (URN:52SB888888) do not.....")
 And the error message includes details about which offences/counts do not have this information
 And I have to resolve the error before I can share the result (i.e sharing is not possible until the error is resolved)
 
      */
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
-    private final CelValidationRule rule = new CelValidationRule("rules/DR-SENT-002.yaml",
+    private final CelValidationRule rule = new CelValidationRule("rules/DR-SENT-001.yaml",
             new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
@@ -58,7 +60,7 @@ And I have to resolve the error before I can share the result (i.e sharing is no
      */
     @Test
     @DisplayName("AC2-S1: 1 custodial offence – 1 primary (primary missing info)- No Error")
-    void AC2_s1_one_primary_no_info() {
+    void ac2_s1_one_primary_no_info() {
         List<ResultLineDto> lines = List.of(
                 resultLine("rl1", "IMP", "d1", "off1"));
         DraftValidationRequest request = buildRequest(lines, List.of(

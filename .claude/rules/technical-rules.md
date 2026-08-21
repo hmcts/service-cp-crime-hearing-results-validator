@@ -31,7 +31,9 @@ private ValidationService validationService;
 
 - Custom exceptions extending `RuntimeException`
 - `@ControllerAdvice` for global exception handling
-- Return `ProblemDetail` (RFC 9457) for all error responses
+- Error responses use `ErrorResponse` (from `uk.gov.hmcts.cp.openapi.model`) with `application/json` — **not** `ProblemDetail`
+- Populate `details` (free-form map) for structured context, e.g. field-level validation errors
+- Throw domain-specific exceptions (e.g. `RuleNotFoundException`) — do not use `ResponseStatusException` to carry HTTP status codes at the throw site
 - NEVER swallow exceptions silently — always log or rethrow
 
 ## Logging
