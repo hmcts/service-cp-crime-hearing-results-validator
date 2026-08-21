@@ -79,7 +79,7 @@ Expected response includes a warning for `offence-1`:
 | Bypass | Change to request |
 |--------|------------------|
 | Offence convicted (AC1A / AC1B) | Set `"isConvicted": true` on the offence |
-| Excluded final disposal | Change `"shortCode": "COEW"` to one of `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile` |
+| Excluded final disposal | Change `"shortCode": "COEW"` to one of `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd` |
 | No final result yet | Change `"category": "F"` to `"I"` or `"A"`, or remove the result line |
 
 In all three cases `warnings` should be empty for `offence-1`.
