@@ -30,6 +30,10 @@ This revision spans **four repositories** under DD-41656 (no separate Jira), all
 
 The existing excluded-final short-code list (`wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`) is unchanged and continues to suppress as before — but only when present on the `'F'` line itself, not on any line.
 
+## Revision — 2026-08-24
+
+Three further excluded final-result short codes are added: `err` and `errf` (Entered in Error) and `dhd` (Defendant has died). Like the original nine, an offence whose `'F'` line carries one of these did not proceed to a substantive outcome, so the warning must not be raised. This extends FR-003 and User Story 2 to a twelve-code excluded list; no other behaviour changes.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Warn when a relevant offence has a final result but no extended test disqualification (Priority: P1)
@@ -52,7 +56,7 @@ A user with access to "Enter results" is recording the outcome of a hearing that
 
 ### User Story 2 - Suppress the warning when the final result is an excluded outcome (Priority: P2)
 
-When a relevant offence's final result is one of the excluded "did not proceed" outcomes (Withdrawn, Withdrawn-in-favour-of-another, Dismissed, Discharged, Discontinued, Count to remain on file, Indictment to remain on file), no extended test disqualification is legally required, so the warning must not be raised. This story protects the user from noisy false-positive warnings that would otherwise erode trust in the rule.
+When a relevant offence's final result is one of the excluded "did not proceed" outcomes (Withdrawn, Withdrawn-in-favour-of-another, Dismissed, Discharged, Discontinued, Count to remain on file, Indictment to remain on file, Entered in Error, Defendant has died), no extended test disqualification is legally required, so the warning must not be raised. This story protects the user from noisy false-positive warnings that would otherwise erode trust in the rule.
 
 **Why this priority**: Without this suppression the warning would fire on every withdrawn or dismissed dangerous-driving offence — a large volume of cases — and users would learn to ignore it. P2 because story 1 still delivers value alone, but this story is required before the rule is safe to ship to production.
 
@@ -62,7 +66,7 @@ When a relevant offence's final result is one of the excluded "did not proceed" 
 
 1. **Given** a relevant offence whose `category = 'F'` line carries short code `wdrn`, **When** validation runs, **Then** no warning is raised against that offence.
 2. **Given** a relevant offence whose `category = 'F'` line carries short code `WDRNOFF`, **When** validation runs, **Then** no warning is raised against that offence.
-3. **Given** a relevant offence whose `category = 'F'` line carries one of `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, **When** validation runs, **Then** no warning is raised against that offence.
+3. **Given** a relevant offence whose `category = 'F'` line carries one of `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd`, **When** validation runs, **Then** no warning is raised against that offence.
 4. **Given** a relevant offence whose `category = 'F'` line carries a short code matching an excluded value but in a different letter case (e.g. `WDRN`, `Wdrn`), **When** validation runs, **Then** no warning is raised (matching is case-insensitive).
 
 ---
@@ -125,7 +129,7 @@ When a relevant offence has only ancillary or intermediary lines recorded agains
 
 - **FR-001**: The system MUST identify a relevant offence as any offence whose Home Office offence code matches one of: `RT88046`, `RT88526`, `RT88526A`, `RT88526B`, `RT88026`, `RT88026B`, `RT88530`, `RT88531`.
 - **FR-002**: For each relevant offence, the system MUST identify a result line as the offence's **final result** by reading its `category` attribute and confirming it equals `'F'` (case-insensitive). The system MUST NOT infer final-result status from short-code-set membership. (Supersedes the original FR-002 wording.)
-- **FR-003**: The system MUST treat the following final result short codes as **excluded** (no warning, when they appear on a `'F'` line): `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`. Matching MUST be case-insensitive.
+- **FR-003**: The system MUST treat the following final result short codes as **excluded** (no warning, when they appear on a `'F'` line): `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd`. Matching MUST be case-insensitive. (2026-08-24: adds `err` / `errf` "Entered in Error" and `dhd` "Defendant has died" to the original nine.)
 - **FR-004**: For each relevant offence, the system MUST inspect the result short codes linked to that offence (regardless of `category`) and detect the presence of `DDOTE` or `DDOTEL`. Matching MUST be case-insensitive.
 - **FR-005**: The system MUST raise exactly one warning per relevant offence when **all** of the following hold:
   - The offence's Home Office code is in the relevant list (FR-001), AND
@@ -149,7 +153,7 @@ When a relevant offence has only ancillary or intermediary lines recorded agains
 - **Result line** — a recorded outcome linked to a specific offence id. Carries a short code (e.g. `COEW`, `wdrn`, `DDOTE`, `DDOTEL`) and a `category` attribute (`A`, `I`, or `F`). Several lines may sit on the same offence — the one with `category = 'F'` is the final result; lines carrying disqualifications or procedural status sit alongside it.
 - **Result line category** — closed enum on each result line: `A` (Ancillary, e.g. adjournment, listing), `I` (Intermediary, e.g. plea or hearing-internal), `F` (Final, the line that makes the offence inactive). Authoritative source of "is this the final result?" — supersedes the previous short-code-set heuristic.
 - **Final result** — the result line whose `category = 'F'`. Used by FR-002, FR-003, FR-005.
-- **Excluded final result short code** — the nine codes listed in FR-003 that suppress the warning.
+- **Excluded final result short code** — the twelve codes listed in FR-003 that suppress the warning.
 - **Disqualification with extended test** — a result line whose short code is `DDOTE` (obligatory disqualification with extended test) or `DDOTEL` (obligatory disqualification for life with extended test). Presence on the relevant offence suppresses the warning.
 - **Validation issue (warning)** — the output the rule produces. Severity `WARNING`, with the exact message text from FR-006 and a reference to the affected offence id.
 
