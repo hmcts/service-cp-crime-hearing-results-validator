@@ -11,31 +11,93 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for the per-offence preprocessor that drives DR-DISQ-002.
+ *
+ * <p>{@code relevantOffenceCodes}, {@code excludedFinalShortCodes} and
+ * {@code extendedTestShortCodes} are read from the real {@code DR-DISQ-002.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as literals, so {@link #config} always
+ * matches what ships in production, and the parameterized suppression tests (backed by
+ * {@link #excludedFinalShortCodes()} / {@link #extendedTestShortCodes()}) automatically cover every
+ * code the YAML declares. The {@code ..._should_match_the_known_baseline_exactly()} tests pin those
+ * sets against known baselines so a code added to or removed from the YAML without the baseline
+ * being updated fails loudly instead of silently changing what the parameterized tests cover.
  */
 class DisqualificationExtendedTestPreprocessorTest {
 
-    private static final List<String> RELEVANT_CODES = List.of(
+    private static final RuleDefinition RULE_DEFINITION =
+            RuleDefinitionLoader.load("rules/DR-DISQ-002.yaml");
+
+    private static final List<String> RELEVANT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().relevantOffenceCodes());
+    private static final List<String> EXCLUDED_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().excludedFinalShortCodes());
+    private static final List<String> EXTENDED_TEST_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().extendedTestShortCodes());
+
+    /** Kept in lockstep with the YAML by {@link #relevantCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_RELEVANT_CODES = List.of(
             "RT88046", "RT88526", "RT88526A", "RT88526B", "RT88026", "RT88026B", "RT88530", "RT88531");
-    private static final List<String> EXCLUDED_SHORT_CODES = List.of(
+
+    /** Kept in lockstep with the YAML by {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
             "err", "errf", "dhd");
-    private static final List<String> EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
+
+    /** Kept in lockstep with the YAML by {@link #extendedTestShortCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
 
     private final DisqualificationExtendedTestPreprocessor preprocessor =
             new DisqualificationExtendedTestPreprocessor();
 
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type(DisqualificationExtendedTestPreprocessor.QUALIFIER)
-            .relevantOffenceCodes(RELEVANT_CODES)
-            .excludedFinalShortCodes(EXCLUDED_SHORT_CODES)
-            .extendedTestShortCodes(EXTENDED_TEST_SHORT_CODES)
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
+
+    @Test
+    @DisplayName("DR-DISQ-002.yaml's relevantOffenceCodes must exactly match the known baseline")
+    void relevantCodes_should_match_the_known_baseline_exactly() {
+        assertThat(RELEVANT_CODES)
+                .as("DR-DISQ-002.yaml's relevantOffenceCodes must exactly match "
+                        + "EXPECTED_RELEVANT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_RELEVANT_CODES);
+    }
+
+    @Test
+    @DisplayName("DR-DISQ-002.yaml's excludedFinalShortCodes must exactly match the known baseline")
+    void excludedFinalShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(EXCLUDED_SHORT_CODES)
+                .as("DR-DISQ-002.yaml's excludedFinalShortCodes must exactly match "
+                        + "EXPECTED_EXCLUDED_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by the parameterized excluded-short-code test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_EXCLUDED_SHORT_CODES);
+    }
+
+    @Test
+    @DisplayName("DR-DISQ-002.yaml's extendedTestShortCodes must exactly match the known baseline")
+    void extendedTestShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(EXTENDED_TEST_SHORT_CODES)
+                .as("DR-DISQ-002.yaml's extendedTestShortCodes must exactly match "
+                        + "EXPECTED_EXTENDED_TEST_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by the parameterized extended-test-short-code test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_EXTENDED_TEST_SHORT_CODES);
+    }
+
+    /** Factory method for {@code each_excluded_short_code_should_suppress}; YAML-backed. */
+    static List<String> excludedFinalShortCodes() {
+        return EXCLUDED_SHORT_CODES;
+    }
+
+    /** Factory method for {@code extended_test_disqualification_codes_should_suppress}; YAML-backed. */
+    static List<String> extendedTestShortCodes() {
+        return EXTENDED_TEST_SHORT_CODES;
+    }
 
     @Nested
     @DisplayName("RelevanceGate")
@@ -322,11 +384,8 @@ class DisqualificationExtendedTestPreprocessorTest {
     class ExcludedFinalSuppression {
 
         @ParameterizedTest
-        @ValueSource(strings = {
-            "wdrn", "WDRNOFF", "dism", "dine", "dini",
-            "disch", "disc", "ctrof", "iremfile",
-            "err", "errf", "dhd"
-        })
+        @MethodSource(
+                "uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessorTest#excludedFinalShortCodes")
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", excludedCode, "d1", "off1")
@@ -391,7 +450,8 @@ class DisqualificationExtendedTestPreprocessorTest {
     class ExtendedTestSuppression {
 
         @ParameterizedTest
-        @ValueSource(strings = {"DDOTE", "DDOTEL"})
+        @MethodSource(
+                "uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessorTest#extendedTestShortCodes")
         void extended_test_disqualification_codes_should_suppress(final String code) {
             DraftValidationRequest request = buildRequest(
                     List.of(
