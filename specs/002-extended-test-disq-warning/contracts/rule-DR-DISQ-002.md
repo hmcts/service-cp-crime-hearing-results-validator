@@ -4,6 +4,10 @@ This is the contract for the new validation rule. The HTTP API contract (`POST /
 
 The original "unchanged by this feature" assertion is **superseded** — see the [Upstream contract delta](#upstream-contract-delta-2026-04-28) section below.
 
+## Revision — 2026-08-24
+
+Three additional short codes are added to `excludedFinalShortCodes`: `err` and `errf` (Entered in Error) and `dhd` (Defendant has died). Like the original nine codes, these mark a `'F'` line as a "did not proceed to a substantive outcome" result, so the extended-test-disqualification warning does not fire against it. The YAML rule definition below reflects the full, current twelve-code list. No CEL, preprocessor, or schema change is required — the field is already a plain `List<String>` read case-insensitively.
+
 ---
 
 ## Upstream contract delta (2026-04-28)
@@ -78,6 +82,9 @@ rule:
       - disc      # discontinued
       - ctrof     # count to remain on file
       - iremfile  # indictment to remain on file
+      - err       # Entered in Error
+      - errf      # Entered in Error
+      - dhd       # Defendant has died
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test

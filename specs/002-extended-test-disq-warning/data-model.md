@@ -141,7 +141,7 @@ Algorithm (revised 2026-04-28 — gate on `category = 'F'`):
 2. Build `Map<String, List<ResultLineDto>> resultsByOffence` by grouping `request.getResultLines()` on `offenceId`.
 3. Read the YAML config:
    - `relevantOffenceCodes: List<String>` (the five Home Office codes; matched case-insensitively against `OffenceDto.offenceCode`).
-   - `excludedFinalShortCodes: List<String>` (the nine excluded codes).
+   - `excludedFinalShortCodes: List<String>` (the twelve excluded codes — nine original plus `err`, `errf`, `dhd` added 2026-08-24).
    - `extendedTestShortCodes: List<String>` (`DDOTE`, `DDOTEL`).
 4. For each offence (iterating `offenceById.entrySet()`), iterate the result lines on that offence and compute:
    - `relevant = offenceCode ∈ relevantOffenceCodes` (case-insensitive).
