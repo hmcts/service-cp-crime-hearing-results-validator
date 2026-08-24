@@ -1,7 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -10,6 +8,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * End-to-end tests for the validation-rule metadata endpoints.
@@ -25,10 +25,13 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count", is(3)))
-                .andExpect(jsonPath("$.enabledCount", is(1)))
-                .andExpect(jsonPath("$.rules", hasSize(3)))
-                .andExpect(jsonPath("$.rules[*].ruleId", contains("DR-SENT-002", "DR-DISQ-001", "DR-YRO-001")));
+                .andExpect(jsonPath("$.count", is(7)))
+                // All 7 rules ship enabled by their Flyway seed migrations.
+                .andExpect(jsonPath("$.enabledCount", is(7)))
+                .andExpect(jsonPath("$.rules", hasSize(7)))
+                .andExpect(jsonPath("$.rules[*].ruleId",
+                        contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
+                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007")));
     }
 
     /**
@@ -36,11 +39,11 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
      */
     @Test
     void get_rule_by_id_should_return_ok_with_rule_detail() throws Exception {
-        mockMvc.perform(get("/api/validation/rules/{ruleId}", "DR-SENT-002")
+        mockMvc.perform(get("/api/validation/rules/{ruleId}", "DR-SENT-001")
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules-detail"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.ruleId", is("DR-SENT-002")))
+                .andExpect(jsonPath("$.ruleId", is("DR-SENT-001")))
                 .andExpect(jsonPath("$.enabled", is(true)));
     }
 
@@ -53,9 +56,8 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules-detail"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status", is(404)))
-                .andExpect(jsonPath("$.title", is("Not Found")))
-                .andExpect(jsonPath("$.detail", containsString("Rule not found")))
+                .andExpect(jsonPath("$.error", is("Rule not found")))
+                .andExpect(jsonPath("$.message", containsString("UNKNOWN-RULE")))
                 .andExpect(jsonPath("$.timestamp", notNullValue()))
                 .andExpect(jsonPath("$.traceId", notNullValue()));
     }

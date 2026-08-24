@@ -1,5 +1,11 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -7,12 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.repository.ValidationRuleRepository;
-
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link RuleOverrideService}.
@@ -33,17 +33,17 @@ class RuleOverrideServiceTest {
     @Test
     void findOverride_should_return_entity_when_found() {
         ValidationRuleEntity entity = ValidationRuleEntity.builder()
-                .id("DR-SENT-002")
+                .id("DR-SENT-001")
                 .enabled(false)
                 .severity("WARNING")
                 .updatedAt(Instant.now())
                 .build();
-        when(ruleRepository.findById("DR-SENT-002")).thenReturn(Optional.of(entity));
+        when(ruleRepository.findById("DR-SENT-001")).thenReturn(Optional.of(entity));
 
-        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-002");
+        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-001");
 
         assertThat(result).isPresent();
-        assertThat(result.get().getId()).isEqualTo("DR-SENT-002");
+        assertThat(result.get().getId()).isEqualTo("DR-SENT-001");
         assertThat(result.get().isEnabled()).isFalse();
     }
 
@@ -64,10 +64,31 @@ class RuleOverrideServiceTest {
      */
     @Test
     void findOverride_should_return_empty_when_db_throws() {
-        when(ruleRepository.findById("DR-SENT-002")).thenThrow(new RuntimeException("DB error"));
+        when(ruleRepository.findById("DR-SENT-001")).thenThrow(new RuntimeException("DB error"));
 
-        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-002");
+        Optional<ValidationRuleEntity> result = ruleOverrideService.findOverride("DR-SENT-001");
 
         assertThat(result).isEmpty();
+    }
+
+    /**
+     * Verifies saveOverride delegates persistence to the repository and returns its result
+     * unchanged, independent of the cache-eviction behaviour proven at the integration level.
+     */
+    @Test
+    void saveOverride_should_delegate_to_repository_and_return_saved_entity() {
+        ValidationRuleEntity entity = ValidationRuleEntity.builder()
+                .id("DR-SENT-001")
+                .enabled(false)
+                .severity("WARNING")
+                .updatedAt(Instant.now())
+                .updatedBy("test-user")
+                .build();
+        when(ruleRepository.save(entity)).thenReturn(entity);
+
+        ValidationRuleEntity result = ruleOverrideService.saveOverride(entity);
+
+        verify(ruleRepository).save(entity);
+        assertThat(result).isEqualTo(entity);
     }
 }

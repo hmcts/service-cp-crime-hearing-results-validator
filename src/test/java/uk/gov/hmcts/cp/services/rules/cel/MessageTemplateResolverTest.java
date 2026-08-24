@@ -1,13 +1,12 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 
 /**
  * Unit tests for {@link MessageTemplateResolver}.
@@ -262,41 +261,64 @@ class MessageTemplateResolverTest {
     }
 
     /**
-     * Verifies the 6-arg overload substitutes an extra placeholder token from
-     * {@code extraPlaceholders} in addition to the standard offence/defendant tokens.
+     * Verifies the 6-arg overload replaces an extra-placeholder token supplied via the
+     * {@code extraPlaceholders} map, in addition to the standard offence/defendant placeholders.
      */
     @Test
     void resolve_should_replace_extraPlaceholder_tokens() {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
         String result = resolver.resolve(
-                "${offenceNumber} end date should be ${calculatedEndDate}",
+                "${defendantName} ${offenceNumber}: should be ${calculatedEndDate}",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS,
-                Map.of("calculatedEndDate", "21/09/2026"));
+                Map.of("calculatedEndDate", "30/09/2026"));
 
-        assertThat(result).isEqualTo("Offence 1 (URN:32AH9105826) end date should be 21/09/2026");
+        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826): should be 30/09/2026");
     }
 
     /**
-     * Verifies the 6-arg overload leaves defendantName/offenceNumber substitution behaving
-     * identically to the existing 5-arg overload when extraPlaceholders is empty.
+     * Verifies that passing an empty {@code extraPlaceholders} map behaves identically to the
+     * existing 5-arg overload — no unintended side effects from the new parameter.
      */
     @Test
-    void resolve_should_leave_other_placeholders_unaffected_when_extraPlaceholders_used() {
+    void resolve_with_empty_extraPlaceholders_should_match_five_arg_overload() {
         Map<String, OffenceDto> offenceMap = Map.of("off1", offence("off1", 1));
 
-        String result = resolver.resolve(
+        String withExtra = resolver.resolve(
                 "${defendantName} ${offenceNumber} have issues",
                 "John Smith",
                 List.of("off1"),
                 offenceMap,
                 ALL_OFFENCE_IDS,
                 Map.of());
+        String withoutExtra = resolver.resolve(
+                "${defendantName} ${offenceNumber} have issues",
+                "John Smith",
+                List.of("off1"),
+                offenceMap,
+                ALL_OFFENCE_IDS);
 
-        assertThat(result).isEqualTo("John Smith Offence 1 (URN:32AH9105826) have issues");
+        assertThat(withExtra).isEqualTo(withoutExtra);
+    }
+
+    /**
+     * Verifies a token with no corresponding {@code extraPlaceholders} entry is left unexpanded
+     * rather than throwing.
+     */
+    @Test
+    void resolve_should_leave_unmatched_extraPlaceholder_token_unexpanded() {
+        String result = resolver.resolve(
+                "should be ${calculatedEndDate}",
+                "John Smith",
+                List.of("off1"),
+                Map.of("off1", offence("off1", 1)),
+                ALL_OFFENCE_IDS,
+                Map.of());
+
+        assertThat(result).isEqualTo("should be ${calculatedEndDate}");
     }
 
     private static OffenceDto offence(String id, int orderIndex) {

@@ -1,21 +1,21 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies the recorder's structured log line surfaces as top-level JSON fields when emitted
@@ -45,21 +45,31 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
         MDC.put("clientCorrelationId", "corr-abc");
         ByteArrayOutputStream capturedStdOut = captureStdOut();
 
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz");
+        recorder.record("DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "hearing-xyz",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
 
-        String issueLine = Arrays.stream(capturedStdOut.toString().split(System.lineSeparator()))
+        String issueLine = Arrays.stream(
+                        capturedStdOut.toString(StandardCharsets.UTF_8).split(System.lineSeparator()))
                 .filter(line -> line.contains(ValidationIssueRecorder.ISSUE_LOG_MESSAGE))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("No issue log line captured"));
 
         Map<String, Object> fields = new ObjectMapper().readValue(issueLine, new TypeReference<>() {
         });
-        assertThat(fields.get("ruleId")).isEqualTo("DR-SENT-002");
+        assertThat(fields.get("ruleId")).isEqualTo("DR-SENT-001");
         assertThat(fields.get("conditionId")).isEqualTo("AC2");
         assertThat(fields.get("severity")).isEqualTo("ERROR");
         assertThat(fields.get("hearingId")).isEqualTo("hearing-xyz");
         assertThat(fields.get("validationId")).isEqualTo("val-test-123");
         assertThat(fields.get("clientCorrelationId")).isEqualTo("corr-abc");
+        assertThat(fields.get("ruleDescription")).isEqualTo(
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.");
+        assertThat(fields.get("conditionDescription")).isEqualTo("Multiple offences missing info");
+        assertThat(fields.get("validationLevel")).isEqualTo("OFFENCE");
         assertThat(fields.get("message").toString())
                 .contains(ValidationIssueRecorder.ISSUE_LOG_MESSAGE);
         // No PII / issue detail leaks into the log.
@@ -68,7 +78,7 @@ class ValidationIssueRecorderLoggingIntegrationTest extends IntegrationTestBase 
 
     private ByteArrayOutputStream captureStdOut() {
         final ByteArrayOutputStream capturedStdOut = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(capturedStdOut));
+        System.setOut(new PrintStream(capturedStdOut, false, StandardCharsets.UTF_8));
         return capturedStdOut;
     }
 }

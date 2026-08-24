@@ -1,9 +1,9 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for loading YAML rule definitions into {@link RuleDefinition} objects.
@@ -11,17 +11,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RuleDefinitionTest {
 
     /**
-     * Verifies the DR-SENT-002 YAML file exposes the expected top-level metadata fields.
+     * Verifies the DR-SENT-001 YAML file exposes the expected top-level metadata fields.
      */
     @Test
     void loadFromYaml_should_parse_rule_id_and_title() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
-        assertThat(rule.getId()).isEqualTo("DR-SENT-002");
-        assertThat(rule.getTitle()).isEqualTo("Custodial sentence concurrent/consecutive check");
-        assertThat(rule.getDescription()).contains("concurrent/consecutive");
-        assertThat(rule.getPriority()).isEqualTo(1000);
-        assertThat(rule.isEnabled()).isTrue();
+        assertThat(rule.id()).isEqualTo("DR-SENT-001");
+        assertThat(rule.title()).isEqualTo("Custodial sentence concurrent/consecutive check");
+        assertThat(rule.description()).contains("concurrent/consecutive");
+        assertThat(rule.priority()).isEqualTo(1000);
+        assertThat(rule.enabled()).isTrue();
     }
 
     /**
@@ -30,16 +30,16 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_preprocessing() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
-        PreprocessingDefinition preprocessing = rule.getPreprocessing();
+        PreprocessingDefinition preprocessing = rule.preprocessing();
         assertThat(preprocessing).isNotNull();
-        assertThat(preprocessing.getType()).isEqualTo("custodial-concurrent-consecutive");
-        assertThat(preprocessing.getFilterShortCodes()).containsExactlyInAnyOrder(
+        assertThat(preprocessing.type()).isEqualTo("custodial-concurrent-consecutive");
+        assertThat(preprocessing.filterShortCodes()).containsExactlyInAnyOrder(
                 "IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs",
                 "STSDY", "specc", "speccc", "speccd");
-        assertThat(preprocessing.getGroupBy()).isEqualTo("defendant-then-offence");
-        assertThat(preprocessing.getSkipWhenGroupCount()).isEqualTo(1);
+        assertThat(preprocessing.groupBy()).isEqualTo("defendant-then-offence");
+        assertThat(preprocessing.skipWhenGroupCount()).isEqualTo(1);
     }
 
     /**
@@ -48,60 +48,32 @@ class RuleDefinitionTest {
      */
     @Test
     void loadFromYaml_should_parse_conditions() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-002.yaml");
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
-        assertThat(rule.getConditions()).hasSize(3);
+        assertThat(rule.conditions()).hasSize(3);
 
-        ConditionDefinition ac3 = rule.getConditions().get(0);
-        assertThat(ac3.getId()).isEqualTo("AC3");
-        assertThat(ac3.getExpression()).isEqualTo("hasBothCount > 0");
-        assertThat(ac3.getSeverity()).isEqualTo("WARNING");
-        assertThat(ac3.getMessageTemplate()).contains("both concurrent and consecutive");
-        assertThat(ac3.getErrorMessageTemplate()).isNull();
-        assertThat(ac3.getAffectedOffenceSet()).isEqualTo("hasBothOffenceIds");
-        assertThat(ac3.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+        ConditionDefinition ac3 = rule.conditions().get(0);
+        assertThat(ac3.id()).isEqualTo("AC3");
+        assertThat(ac3.expression()).isEqualTo("hasBothCount > 0");
+        assertThat(ac3.severity()).isEqualTo("WARNING");
+        assertThat(ac3.messageTemplate()).contains("both concurrent and consecutive");
+        assertThat(ac3.errorMessageTemplate()).isNull();
+        assertThat(ac3.affectedOffenceSet()).isEqualTo("hasBothOffenceIds");
+        assertThat(ac3.validationLevel()).isEqualTo(ValidationLevel.OFFENCE);
 
-        ConditionDefinition ac2 = rule.getConditions().get(1);
-        assertThat(ac2.getId()).isEqualTo("AC2");
-        assertThat(ac2.getExpression()).isEqualTo("noInfoCount > 0");
-        assertThat(ac2.getSeverity()).isEqualTo("ERROR");
-        assertThat(ac2.getErrorMessageTemplate()).contains("Some offences do not include details");
-        assertThat(ac2.getAffectedOffenceSet()).isEqualTo("allNoInfoOffenceIds");
-        assertThat(ac2.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+        ConditionDefinition ac2 = rule.conditions().get(1);
+        assertThat(ac2.id()).isEqualTo("AC2");
+        assertThat(ac2.expression()).isEqualTo("noInfoCount > 0");
+        assertThat(ac2.severity()).isEqualTo("ERROR");
+        assertThat(ac2.errorMessageTemplate()).contains("Some offences do not include details");
+        assertThat(ac2.affectedOffenceSet()).isEqualTo("allNoInfoOffenceIds");
+        assertThat(ac2.validationLevel()).isEqualTo(ValidationLevel.OFFENCE);
 
-        ConditionDefinition ac4 = rule.getConditions().get(2);
-        assertThat(ac4.getId()).isEqualTo("AC4");
-        assertThat(ac4.getExpression()).isEqualTo("noInfoCount == 0 && hasPrimaryCount == 0");
-        assertThat(ac4.getSeverity()).isEqualTo("WARNING");
-        assertThat(ac4.getValidationLevel()).isEqualTo(ValidationLevel.DEFENDANT);
-    }
-
-    /**
-     * Verifies DR-YRO-001.yaml loads all 5 conditions (3 existing AC2 checks plus the 2 new
-     * duration-mismatch conditions) and that the duration conditions parse {@code calculatedValueSet}.
-     */
-    @Test
-    void loadFromYaml_should_parse_dr_yro_001_duration_conditions_with_calculatedValueSet() {
-        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-YRO-001.yaml");
-
-        assertThat(rule.getConditions()).hasSize(5);
-
-        ConditionDefinition durYrc2 = rule.getConditions().get(3);
-        assertThat(durYrc2.getId()).isEqualTo("DUR-YRC2");
-        assertThat(durYrc2.getExpression()).isEqualTo("curDurationMismatchCount > 0");
-        assertThat(durYrc2.getSeverity()).isEqualTo("ERROR");
-        assertThat(durYrc2.getMessageTemplate()).contains("${calculatedEndDate}");
-        assertThat(durYrc2.getAffectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
-        assertThat(durYrc2.getCalculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
-        assertThat(durYrc2.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
-
-        ConditionDefinition durYrc1 = rule.getConditions().get(4);
-        assertThat(durYrc1.getId()).isEqualTo("DUR-YRC1");
-        assertThat(durYrc1.getExpression()).isEqualTo("cureDurationMismatchCount > 0");
-        assertThat(durYrc1.getSeverity()).isEqualTo("ERROR");
-        assertThat(durYrc1.getAffectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
-        assertThat(durYrc1.getCalculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
-        assertThat(durYrc1.getValidationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+        ConditionDefinition ac4 = rule.conditions().get(2);
+        assertThat(ac4.id()).isEqualTo("AC4");
+        assertThat(ac4.expression()).isEqualTo("noInfoCount == 0 && hasPrimaryCount == 0");
+        assertThat(ac4.severity()).isEqualTo("WARNING");
+        assertThat(ac4.validationLevel()).isEqualTo(ValidationLevel.DEFENDANT);
     }
 
     /**
@@ -122,5 +94,77 @@ class RuleDefinitionTest {
         assertThatThrownBy(() -> RuleDefinitionLoader.load("rules/no-rule-key.yaml"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must contain a top-level 'rule' key");
+    }
+
+    /**
+     * Verifies DR-COEW-005 loads all 7 conditions (4 order-end-date AC2 checks plus the 3
+     * duration-mismatch checks) and that the duration conditions parse {@code calculatedValueSet}
+     * to the expected named set.
+     */
+    @Test
+    void loadFromYaml_should_parse_duration_mismatch_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-COEW-005.yaml");
+
+        assertThat(rule.conditions()).hasSize(7);
+
+        ConditionDefinition durCur = rule.conditions().get(4);
+        assertThat(durCur.id()).isEqualTo("DUR-CUR");
+        assertThat(durCur.expression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durCur.severity()).isEqualTo("ERROR");
+        assertThat(durCur.messageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durCur.errorMessageTemplate()).contains("${defendantNames}");
+        assertThat(durCur.affectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durCur.calculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durCur.validationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durCure = rule.conditions().get(5);
+        assertThat(durCure.id()).isEqualTo("DUR-CURE");
+        assertThat(durCure.expression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durCure.affectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durCure.calculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+
+        ConditionDefinition durAar = rule.conditions().get(6);
+        assertThat(durAar.id()).isEqualTo("DUR-AAR");
+        assertThat(durAar.expression()).isEqualTo("aarDurationMismatchCount > 0");
+        assertThat(durAar.affectedOffenceSet()).isEqualTo("aarDurationMismatchOffenceIds");
+        assertThat(durAar.calculatedValueSet()).isEqualTo("aarCalculatedEndDateByOffenceId");
+
+        // Pre-existing AC2 conditions must not have calculatedValueSet set.
+        ConditionDefinition ac2a = rule.conditions().get(0);
+        assertThat(ac2a.id()).isEqualTo("AC2a");
+        assertThat(ac2a.calculatedValueSet()).isNull();
+    }
+
+    /**
+     * Verifies DR-YRO-004 loads all 5 conditions (3 existing AC2 checks plus the 2 new
+     * duration-mismatch conditions) and that the duration conditions parse
+     * {@code calculatedValueSet} to the expected named set (DD-42850).
+     */
+    @Test
+    void loadFromYaml_should_parse_yro_duration_mismatch_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-YRO-004.yaml");
+
+        assertThat(rule.conditions()).hasSize(5);
+
+        ConditionDefinition durYrc2 = rule.conditions().get(3);
+        assertThat(durYrc2.id()).isEqualTo("DUR-YRC2");
+        assertThat(durYrc2.expression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durYrc2.severity()).isEqualTo("ERROR");
+        assertThat(durYrc2.messageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durYrc2.errorMessageTemplate()).contains("${defendantNames}");
+        assertThat(durYrc2.affectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durYrc2.calculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durYrc2.validationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durYrc1 = rule.conditions().get(4);
+        assertThat(durYrc1.id()).isEqualTo("DUR-YRC1");
+        assertThat(durYrc1.expression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durYrc1.affectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durYrc1.calculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+
+        // Pre-existing AC2 conditions must not have calculatedValueSet set.
+        ConditionDefinition ac2a = rule.conditions().get(0);
+        assertThat(ac2a.id()).isEqualTo("AC2a");
+        assertThat(ac2a.calculatedValueSet()).isNull();
     }
 }

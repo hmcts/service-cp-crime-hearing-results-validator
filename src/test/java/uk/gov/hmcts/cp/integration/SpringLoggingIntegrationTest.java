@@ -1,21 +1,19 @@
 package uk.gov.hmcts.cp.integration;
 
-import ch.qos.logback.classic.AsyncAppender;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration test for the application JSON logging configuration in a Spring Boot test context.
@@ -39,7 +37,7 @@ class SpringLoggingIntegrationTest extends IntegrationTestBase {
         ByteArrayOutputStream capturedStdOut = captureStdOut();
         log.info("spring boot test message", new RuntimeException("MyException"));
 
-        String logMessage = capturedStdOut.toString();
+        String logMessage = capturedStdOut.toString(StandardCharsets.UTF_8);
         AssertionsForClassTypes.assertThat(logMessage).isNotEmpty();
         Map<String, Object> capturedFields = new ObjectMapper().readValue(logMessage, new TypeReference<>() {
         });
@@ -54,7 +52,7 @@ class SpringLoggingIntegrationTest extends IntegrationTestBase {
 
     private ByteArrayOutputStream captureStdOut() {
         final ByteArrayOutputStream capturedStdOut = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(capturedStdOut));
+        System.setOut(new PrintStream(capturedStdOut, false, StandardCharsets.UTF_8));
         return capturedStdOut;
     }
 }

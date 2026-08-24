@@ -1,17 +1,17 @@
 package uk.gov.hmcts.cp.services.rules;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
 
 /**
  * Unit tests for {@link ValidationIssueRecorder}.
@@ -27,10 +27,14 @@ class ValidationIssueRecorderTest {
      */
     @Test
     void record_should_increment_counter_with_rule_condition_severity_tags() {
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1");
+        recorder.record("DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
 
         Counter counter = meterRegistry.find(ValidationIssueRecorder.COUNTER_NAME)
-                .tag("ruleId", "DR-SENT-002")
+                .tag("ruleId", "DR-SENT-001")
                 .tag("conditionId", "AC2")
                 .tag("severity", "ERROR")
                 .counter();
@@ -45,9 +49,21 @@ class ValidationIssueRecorderTest {
      */
     @Test
     void record_should_keep_separate_series_per_condition_and_severity() {
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1");
-        recorder.record("DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1");
-        recorder.record("DR-SENT-002", "AC3", ValidationIssue.SeverityEnum.WARNING, "h1");
+        recorder.record("DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
+        recorder.record("DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
+        recorder.record("DR-SENT-001", "AC3", ValidationIssue.SeverityEnum.WARNING, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Both concurrent and consecutive",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
 
         assertThat(meterRegistry.find(ValidationIssueRecorder.COUNTER_NAME)
                 .tag("conditionId", "AC2").counter().count()).isEqualTo(2.0);
@@ -60,10 +76,28 @@ class ValidationIssueRecorderTest {
      */
     @Test
     void record_should_tolerate_null_severity() {
-        recorder.record("DR-SENT-002", "AC2", null, "h1");
+        recorder.record("DR-SENT-001", "AC2", null, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE);
 
         assertThat(meterRegistry.find(ValidationIssueRecorder.COUNTER_NAME)
                 .tag("severity", "UNKNOWN").counter().count()).isEqualTo(1.0);
+    }
+
+    /**
+     * Verifies a null validation level is recorded safely rather than throwing.
+     */
+    @Test
+    void record_should_tolerate_null_validation_level() {
+        assertThatCode(() -> recorder.record("DR-SENT-001", "AC2",
+                ValidationIssue.SeverityEnum.ERROR, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                null))
+                .doesNotThrowAnyException();
     }
 
     /**
@@ -79,7 +113,11 @@ class ValidationIssueRecorderTest {
         ValidationIssueRecorder failSafeRecorder = new ValidationIssueRecorder(throwingRegistry);
 
         assertThatCode(() -> failSafeRecorder.record(
-                "DR-SENT-002", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1"))
+                "DR-SENT-001", "AC2", ValidationIssue.SeverityEnum.ERROR, "h1",
+                "Validates that custodial sentences have correct concurrent/consecutive "
+                        + "information per defendant across all cases in a hearing.",
+                "Multiple offences missing info",
+                ValidationIssue.ValidationLevelEnum.OFFENCE))
                 .doesNotThrowAnyException();
     }
 }

@@ -41,7 +41,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
     @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     public Map<String, DefendantContext> preprocess(final DraftValidationRequest request,
                                                      final PreprocessingDefinition config) {
-        final Set<String> shortCodes = config.getFilterShortCodes().stream()
+        final Set<String> shortCodes = config.filterShortCodes().stream()
                 .map(s -> s.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -82,7 +82,7 @@ public class CustodialPreprocessor implements ValidationPreprocessor {
                             LinkedHashMap::new,
                             Collectors.toList()));
 
-            if (byOffence.size() <= config.getSkipWhenGroupCount()) {
+            if (byOffence.size() <= config.skipWhenGroupCount()) {
                 continue;
             }
 

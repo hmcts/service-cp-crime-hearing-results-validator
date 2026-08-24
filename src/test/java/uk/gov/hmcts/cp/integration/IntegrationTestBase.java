@@ -1,8 +1,13 @@
 package uk.gov.hmcts.cp.integration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import jakarta.annotation.Resource;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -12,15 +17,19 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import uk.gov.hmcts.cp.config.TestContainersInitialise;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-
+/**
+ * Base class for Spring-context integration tests. Boots the full application context against
+ * the shared TestContainers Postgres instance and stubs the identity endpoint via WireMock so
+ * every subclass starts from an authorised, deterministic baseline.
+ */
 @SpringBootTest
 @ContextConfiguration(initializers = TestContainersInitialise.class)
 @AutoConfigureMockMvc
 @Slf4j
+@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod") // never instantiated directly, always extended by a concrete test class
 public abstract class IntegrationTestBase {
 
     protected static final String IDENTITY_PATH =
@@ -52,6 +61,11 @@ public abstract class IntegrationTestBase {
         stubIdentityResponse("System Users");
     }
 
+    /**
+     * Replaces the default identity stub so a test can exercise a specific caller group.
+     *
+     * @param groupName the single group name to return for the logged-in user
+     */
     protected static void stubIdentityResponse(String groupName) {
         String responseBody = """
                 {
@@ -72,5 +86,21 @@ public abstract class IntegrationTestBase {
                         .withStatus(200)
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .withBody(responseBody)));
+    }
+
+    /**
+     * Restores a rule override row to its default enabled/ERROR state via
+     * {@link RuleOverrideService#saveOverride}, which both persists the row and evicts the
+     * cache entry in a single call — preventing DB overrides made by one test from leaking
+     * into others sharing the same TestContainers database.
+     */
+    protected static void resetRuleOverride(final RuleOverrideService ruleOverrideService, final String ruleId) {
+        ruleOverrideService.saveOverride(ValidationRuleEntity.builder()
+                .id(ruleId)
+                .enabled(true)
+                .severity("ERROR")
+                .updatedAt(Instant.now())
+                .updatedBy("test-reset")
+                .build());
     }
 }

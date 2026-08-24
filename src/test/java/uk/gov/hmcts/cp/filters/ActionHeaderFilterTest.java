@@ -1,6 +1,11 @@
 package uk.gov.hmcts.cp.filters;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -9,12 +14,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link ActionHeaderFilter}.
@@ -67,8 +66,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_rules_id_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002");
-        request.setServletPath("/api/validation/rules/DR-SENT-002");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -78,10 +77,13 @@ class ActionHeaderFilterTest {
     }
 
     /**
-     * Verifies the filter preserves a caller-supplied action header instead of overwriting it.
+     * Verifies the filter overrides a caller-supplied action header with the server-derived
+     * value for a path it recognises, rather than trusting the caller. Trusting a caller-supplied
+     * header would let a request be tagged with any action name regardless of what the request
+     * actually does.
      */
     @Test
-    void should_not_override_existing_action_header() throws Exception {
+    void should_override_client_supplied_action_header_for_known_path() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/validation/validate");
         request.setServletPath("/api/validation/validate");
         request.addHeader("CPP-ACTION", "custom-action");
@@ -90,7 +92,27 @@ class ActionHeaderFilterTest {
 
         ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
         verify(filterChain).doFilter(captor.capture(), any());
-        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("custom-action");
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.validate");
+    }
+
+    /**
+     * Reproduces the privilege-escalation scenario this filter must prevent: a caller sends a PATCH
+     * (which should resolve to the restricted rules-update action) but supplies the CPP-ACTION
+     * header value for the broader read-only rules-detail action, hoping Drools authorizes it under
+     * the read action's wider group list. The filter must ignore the caller's value and inject the
+     * write action derived from the actual HTTP method.
+     */
+    @Test
+    void should_override_spoofed_rules_detail_header_on_patch_with_rules_update_action() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
+        request.addHeader("CPP-ACTION", "validation-service.rules-detail");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-update");
     }
 
     /**
@@ -163,8 +185,8 @@ class ActionHeaderFilterTest {
      */
     @Test
     void should_set_rules_detail_action_for_deep_sub_path() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-002/extra");
-        request.setServletPath("/api/validation/rules/DR-SENT-002/extra");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/DR-SENT-001/extra");
+        request.setServletPath("/api/validation/rules/DR-SENT-001/extra");
 
         filter.doFilterInternal(request, response, filterChain);
 
@@ -181,6 +203,57 @@ class ActionHeaderFilterTest {
     void should_set_rules_detail_action_for_rules_trailing_slash_path() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/validation/rules/");
         request.setServletPath("/api/validation/rules/");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-detail");
+    }
+
+    /**
+     * Verifies a PATCH on the rule detail path is tagged with the distinct write action, so it can
+     * be authorized separately from the read-only rules-detail action.
+     */
+    @Test
+    void should_set_rules_update_action_for_patch_rules_id_path() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-update");
+    }
+
+    /**
+     * Documents current behavior: PUT on the rule detail path falls back to the read-only
+     * rules-detail action since only PATCH is special-cased for the write action. No PUT endpoint
+     * exists on this path today, so this locks in the fallback rather than a production gap.
+     */
+    @Test
+    void should_set_rules_detail_action_for_put_rules_id_path() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        ArgumentCaptor<HttpServletRequest> captor = ArgumentCaptor.forClass(HttpServletRequest.class);
+        verify(filterChain).doFilter(captor.capture(), any());
+        assertThat(captor.getValue().getHeader("CPP-ACTION")).isEqualTo("validation-service.rules-detail");
+    }
+
+    /**
+     * Documents current behavior: DELETE on the rule detail path falls back to the read-only
+     * rules-detail action since only PATCH is special-cased for the write action. No DELETE
+     * endpoint exists on this path today, so this locks in the fallback rather than a production
+     * gap.
+     */
+    @Test
+    void should_set_rules_detail_action_for_delete_rules_id_path() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("DELETE", "/api/validation/rules/DR-SENT-001");
+        request.setServletPath("/api/validation/rules/DR-SENT-001");
 
         filter.doFilterInternal(request, response, filterChain);
 
