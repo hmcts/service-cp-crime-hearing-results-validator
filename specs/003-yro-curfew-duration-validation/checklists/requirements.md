@@ -31,8 +31,8 @@
 
 ## Notes
 
-- All items pass on first validation pass. Domain terminology (`ValidationIssue`, `DR-YRO-001`)
-  is retained per this repository's established spec convention (see `specs/002-yro-date-validation/spec.md`),
+- All items pass on first validation pass. Domain terminology (`ValidationIssue`, `DR-YRO-004`)
+  is retained per this repository's established spec convention (see `specs/004-yro-date-validation/spec.md`),
   not as implementation prescription — this service's contract is itself a `ValidationIssue`-shaped API.
 - Scope intentionally excludes YRC3 (Further curfew requirement made) duration validation — not present
   in the Jira acceptance criteria supplied for DD-42850. Flag to the user if YRC3 duration validation
