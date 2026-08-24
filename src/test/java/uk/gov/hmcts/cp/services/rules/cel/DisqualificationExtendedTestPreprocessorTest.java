@@ -23,7 +23,8 @@ class DisqualificationExtendedTestPreprocessorTest {
     private static final List<String> RELEVANT_CODES = List.of(
             "RT88046", "RT88526", "RT88526A", "RT88526B", "RT88026", "RT88026B", "RT88530", "RT88531");
     private static final List<String> EXCLUDED_SHORT_CODES = List.of(
-            "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile");
+            "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
+            "err", "errf", "dhd");
     private static final List<String> EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
 
     private final DisqualificationExtendedTestPreprocessor preprocessor =
@@ -323,7 +324,8 @@ class DisqualificationExtendedTestPreprocessorTest {
         @ParameterizedTest
         @ValueSource(strings = {
             "wdrn", "WDRNOFF", "dism", "dine", "dini",
-            "disch", "disc", "ctrof", "iremfile"
+            "disch", "disc", "ctrof", "iremfile",
+            "err", "errf", "dhd"
         })
         void each_excluded_short_code_should_suppress(final String excludedCode) {
             DraftValidationRequest request = buildRequest(

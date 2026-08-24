@@ -29,6 +29,9 @@ rule:
       - disc      # discontinued
       - ctrof     # count to remain on file
       - iremfile  # indictment to remain on file
+      - err       # Entered in Error
+      - errf      # Entered in Error
+      - dhd       # Defendant has died
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test
