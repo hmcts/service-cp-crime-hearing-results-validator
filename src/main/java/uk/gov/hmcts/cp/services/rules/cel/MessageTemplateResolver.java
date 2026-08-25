@@ -15,6 +15,8 @@ public class MessageTemplateResolver {
 
     private static final int SINGLE_ELEMENT = 1;
     private static final int TWO_ELEMENTS = 2;
+    private static final int SOLE_DEFENDANT_IN_HEARING = 1;
+    private static final String DEFENDANT_NAMES_TOKEN = "${defendantNames}";
 
     private final OffenceDisplayHelper offenceDisplayHelper;
 
@@ -57,13 +59,45 @@ public class MessageTemplateResolver {
     }
 
     /**
-     * Expands {@code ${defendantNames}} in the template with the formatted list of defendant names.
-     * This is an aggregate token resolved at the service level after all per-context results are
-     * collected, distinct from the per-context {@code ${defendantName}} token handled by
-     * {@link #resolve}.
+     * Expands {@code ${defendantNames}} in the template with the formatted list of defendant
+     * names, unless the hearing itself has only one defendant (or none recorded) — in that case
+     * the "This affects &lt;name&gt;" clause is redundant, since the user is already looking at
+     * that sole defendant's own results, and is removed entirely rather than having their own
+     * name substituted back in. This is an aggregate token resolved at the service level after all
+     * per-context results are collected, distinct from the per-context {@code ${defendantName}}
+     * token handled by {@link #resolve}.
+     *
+     * @param hearingDefendantCount the total number of defendants on the current hearing (not the
+     *                              size of {@code names}, which is only the subset this particular
+     *                              message affects)
      */
-    public String resolveDefendantNames(final String template, final List<String> names) {
-        return template.replace("${defendantNames}", formatDefendantNames(names));
+    public String resolveDefendantNames(final String template, final List<String> names,
+                                        final int hearingDefendantCount) {
+        return hearingDefendantCount <= SOLE_DEFENDANT_IN_HEARING
+                ? stripAffectedDefendantsClause(template)
+                : template.replace(DEFENDANT_NAMES_TOKEN, formatDefendantNames(names));
+    }
+
+    /**
+     * Removes the sentence carrying the {@code ${defendantNames}} token in full -- e.g. "... This
+     * affects ${defendantNames}." becomes "..." -- rather than leaving an awkward "This affects ."
+     * fragment behind. Assumes the token's sentence ends at the next {@code '.'} after it (true of
+     * every current rule template); falls back to trimming to the end of the template if no
+     * closing '.' is found. Returns the template unchanged if the token is not present.
+     */
+    private static String stripAffectedDefendantsClause(final String template) {
+        final int tokenIndex = template.indexOf(DEFENDANT_NAMES_TOKEN);
+        final String result;
+        if (tokenIndex < 0) {
+            result = template;
+        } else {
+            final int sentenceStart = template.lastIndexOf('.', tokenIndex) + 1;
+            final int periodAfterToken = template.indexOf('.', tokenIndex);
+            final String before = template.substring(0, sentenceStart);
+            final String after = periodAfterToken >= 0 ? template.substring(periodAfterToken + 1) : "";
+            result = (before.stripTrailing() + after).stripLeading();
+        }
+        return result;
     }
 
     private static String formatDefendantNames(final List<String> names) {
