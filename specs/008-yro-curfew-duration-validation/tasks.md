@@ -1,7 +1,7 @@
 # Tasks: YRO Curfew Requirement Duration Validation (DR-YRO-001 extension)
 
 **Branch**: `dev/DD-42850-YRO-Duration`
-**Input**: Design documents from `specs/003-yro-curfew-duration-validation/`
+**Input**: Design documents from `specs/008-yro-curfew-duration-validation/`
 **Prerequisites**: plan.md ✅ spec.md ✅ research.md ✅ data-model.md ✅ contracts/ ✅ quickstart.md ✅
 
 **TDD is mandatory** (Constitution Principle VIII). Every test task MUST be written and confirmed

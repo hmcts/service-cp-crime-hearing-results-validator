@@ -70,7 +70,7 @@ required.
 ### Documentation (this feature)
 
 ```text
-specs/003-yro-curfew-duration-validation/
+specs/008-yro-curfew-duration-validation/
 ├── spec.md                          ✅ complete
 ├── research.md                      ✅ complete (this phase)
 ├── data-model.md                    ✅ complete (this phase)
