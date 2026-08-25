@@ -134,4 +134,37 @@ class RuleDefinitionTest {
         assertThat(ac2a.id()).isEqualTo("AC2a");
         assertThat(ac2a.calculatedValueSet()).isNull();
     }
+
+    /**
+     * Verifies DR-YRO-004 loads all 5 conditions (3 existing AC2 checks plus the 2 new
+     * duration-mismatch conditions) and that the duration conditions parse
+     * {@code calculatedValueSet} to the expected named set (DD-42850).
+     */
+    @Test
+    void loadFromYaml_should_parse_yro_duration_mismatch_conditions_with_calculatedValueSet() {
+        RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-YRO-004.yaml");
+
+        assertThat(rule.conditions()).hasSize(5);
+
+        ConditionDefinition durYrc2 = rule.conditions().get(3);
+        assertThat(durYrc2.id()).isEqualTo("DUR-YRC2");
+        assertThat(durYrc2.expression()).isEqualTo("curDurationMismatchCount > 0");
+        assertThat(durYrc2.severity()).isEqualTo("ERROR");
+        assertThat(durYrc2.messageTemplate()).contains("${calculatedEndDate}");
+        assertThat(durYrc2.errorMessageTemplate()).contains("${defendantNames}");
+        assertThat(durYrc2.affectedOffenceSet()).isEqualTo("curDurationMismatchOffenceIds");
+        assertThat(durYrc2.calculatedValueSet()).isEqualTo("curCalculatedEndDateByOffenceId");
+        assertThat(durYrc2.validationLevel()).isEqualTo(ValidationLevel.OFFENCE);
+
+        ConditionDefinition durYrc1 = rule.conditions().get(4);
+        assertThat(durYrc1.id()).isEqualTo("DUR-YRC1");
+        assertThat(durYrc1.expression()).isEqualTo("cureDurationMismatchCount > 0");
+        assertThat(durYrc1.affectedOffenceSet()).isEqualTo("cureDurationMismatchOffenceIds");
+        assertThat(durYrc1.calculatedValueSet()).isEqualTo("cureCalculatedEndDateByOffenceId");
+
+        // Pre-existing AC2 conditions must not have calculatedValueSet set.
+        ConditionDefinition ac2a = rule.conditions().get(0);
+        assertThat(ac2a.id()).isEqualTo("AC2a");
+        assertThat(ac2a.calculatedValueSet()).isNull();
+    }
 }
