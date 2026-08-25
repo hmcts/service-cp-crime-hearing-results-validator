@@ -104,9 +104,11 @@ class YroCurfewDurationApiHttpLiveTest {
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_DUR_BASE
                         + " The current recorded period would mean the end date should be 21/09/2026.");
+        // Single-defendant hearing: the "This affects <name>" clause is redundant and omitted
+        // (see MessageTemplateResolver#resolveDefendantNames).
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_DUR_BASE + " This affects Priya Nair.");
+                .isEqualToIgnoringWhitespace(MSG_DUR_BASE);
     }
 
     /**
@@ -196,9 +198,11 @@ class YroCurfewDurationApiHttpLiveTest {
                 .get(AFFECTED_OFFENCES).get(0).get(ISSUE_MESSAGE).asText())
                 .isEqualToIgnoringWhitespace(MSG_DUR_BASE
                         + " The current recorded period would mean the end date should be 30/10/2026.");
+        // Single-defendant hearing: the "This affects <name>" clause is redundant and omitted
+        // (see MessageTemplateResolver#resolveDefendantNames).
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(MSG_DUR_BASE + " This affects Jane Doe.");
+                .isEqualToIgnoringWhitespace(MSG_DUR_BASE);
     }
 
     /**
