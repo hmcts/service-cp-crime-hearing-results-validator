@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -498,6 +499,139 @@ class PreprocessorHelperTest {
             // correct ref — should trigger
             assertThat(PreprocessorHelper.isRequirementViolated(
                     lines, codes, "endDateOfTagging", orderEnd, "off1")).isTrue();
+        }
+    }
+
+    // ── parsePromptPeriod ────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("parsePromptPeriod")
+    class ParsePromptPeriod {
+
+        @Test
+        void parsePromptPeriod_null_prompts_returns_null() {
+            ResultLineDto line = resultLine("YRC2");
+            line.setPrompts(null);
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_prompt_ref_not_found_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "otherRef", "21 Days");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_blank_prompt_value_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "   ");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_null_prompt_value_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", null);
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_unparseable_integer_returns_null() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "not-a-period");
+
+            assertThat(PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1")).isNull();
+        }
+
+        @Test
+        void parsePromptPeriod_bare_integer_defaults_to_days() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "21");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_days_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "21 Days");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_singular_day_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "1 Day");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(1L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_weeks_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "3 Weeks");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(3L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.WEEKS);
+        }
+
+        @Test
+        void parsePromptPeriod_months_suffix_is_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "1 Months");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(1L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.MONTHS);
+        }
+
+        @Test
+        void parsePromptPeriod_unit_match_is_case_insensitive() {
+            ResultLineDto line = lineWithPrompt("YRC1", "curfewAndElectronicMonitoringPeriod", "60 days");
+
+            PreprocessorHelper.ParsedPeriod period = PreprocessorHelper.parsePromptPeriod(
+                    line, "curfewAndElectronicMonitoringPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(60L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_value_with_surrounding_whitespace_is_trimmed_and_parsed() {
+            ResultLineDto line = lineWithPrompt("YRC2", "curfewPeriod", "  21 Days  ");
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
+            assertThat(period.unit()).isEqualTo(ChronoUnit.DAYS);
+        }
+
+        @Test
+        void parsePromptPeriod_first_matching_prompt_wins_when_duplicates_exist() {
+            ResultLineDto line = resultLine("YRC2");
+            line.setPrompts(List.of(
+                    new Prompt("curfewPeriod", "21 Days"),
+                    new Prompt("curfewPeriod", "60 Days")));
+
+            PreprocessorHelper.ParsedPeriod period =
+                    PreprocessorHelper.parsePromptPeriod(line, "curfewPeriod", "off1");
+
+            assertThat(period.amount()).isEqualTo(21L);
         }
     }
 
