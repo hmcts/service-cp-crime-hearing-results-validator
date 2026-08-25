@@ -3,6 +3,7 @@ package uk.gov.hmcts.cp.services.impl;
 import io.micrometer.observation.annotation.Observed;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
+import uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper;
 
 /**
  * Runs every configured validation rule and aggregates their issues into the API response.
@@ -120,10 +122,12 @@ public class DefaultValidationService implements ValidationService {
             }
         }
 
+        final int hearingDefendantCount = countDistinctDefendants(request);
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
         for (final Map.Entry<String, String> entry : errorBaseByTemplate.entrySet()) {
             final List<String> names = errorNamesByTemplate.get(entry.getKey());
-            errorMessages.add(messageTemplateResolver.resolveDefendantNames(entry.getValue(), names));
+            errorMessages.add(messageTemplateResolver.resolveDefendantNames(
+                    entry.getValue(), names, hearingDefendantCount));
         }
 
         final long processingTimeMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
@@ -143,6 +147,17 @@ public class DefaultValidationService implements ValidationService {
                 .warnings(warnings)
                 .processingTimeMs((int) processingTimeMs)
                 .build();
+    }
+
+    /**
+     * Counts distinct defendants on the hearing, folding defendant records that share the same
+     * non-blank {@code masterDefendantId} into a single person (linked-case records), mirroring
+     * {@link PreprocessorHelper#buildDefendantDedupeKeys}. Used to decide whether the "This
+     * affects &lt;name&gt;" clause should be shown at all (AC1-AC5): two records for the same
+     * person must not be counted as two defendants.
+     */
+    private static int countDistinctDefendants(final DraftValidationRequest request) {
+        return new HashSet<>(PreprocessorHelper.buildDefendantDedupeKeys(request).values()).size();
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
