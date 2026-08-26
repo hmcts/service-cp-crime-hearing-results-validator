@@ -1,18 +1,5 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
-import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
-import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
-import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,6 +14,19 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
+import uk.gov.hmcts.cp.openapi.model.AffectedOffence;
+import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
+import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
+
 /**
  * Focused unit tests for the DR-SENT-001 CEL validation rule implementation.
  */
@@ -40,7 +40,7 @@ class CelValidationRuleTest {
             new CelExpressionEvaluator(),
             new MessageTemplateResolver(offenceDisplayHelper),
             offenceDisplayHelper,
-            mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+            mock(RuleOverrideService.class),
             issueRecorder);
 
     /**
@@ -117,7 +117,7 @@ class CelValidationRuleTest {
         assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
         assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);
-        assertThat(error.getAffectedOffences()).extracting(o -> o.getOffenceId())
+        assertThat(error.getAffectedOffences()).extracting(AffectedOffence::getOffenceId)
                 .containsExactlyInAnyOrder("off1", "off2", "off3");
         assertThat(error.getAffectedDefendants()).isNullOrEmpty();
     }
@@ -288,8 +288,8 @@ class CelValidationRuleTest {
      */
     @Test
     void getPriority_should_not_call_override_service() {
-        uk.gov.hmcts.cp.services.rules.RuleOverrideService mockOverrideService =
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class);
+        RuleOverrideService mockOverrideService =
+                mock(RuleOverrideService.class);
         CelValidationRule localRule = new CelValidationRule(
                 "rules/DR-SENT-001.yaml",
                 new PreprocessorRegistry(List.of(new CustodialPreprocessor())),
@@ -355,7 +355,7 @@ class CelValidationRuleTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 mock(ValidationIssueRecorder.class));
 
         DraftValidationRequest request = buildRequest(
@@ -393,7 +393,7 @@ class CelValidationRuleTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 mock(ValidationIssueRecorder.class));
 
         DraftValidationRequest request = buildRequest(
@@ -434,7 +434,7 @@ class CelValidationRuleTest {
                 new CelExpressionEvaluator(),
                 new MessageTemplateResolver(offenceDisplayHelper),
                 offenceDisplayHelper,
-                mock(uk.gov.hmcts.cp.services.rules.RuleOverrideService.class),
+                mock(RuleOverrideService.class),
                 issueRecorder))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("custodial-concurrent-consecutive");

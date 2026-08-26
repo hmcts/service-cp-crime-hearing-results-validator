@@ -1,7 +1,5 @@
 package uk.gov.hmcts.cp.integration;
 
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -10,6 +8,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * End-to-end tests for the validation-rule metadata endpoints.
@@ -26,8 +26,8 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count", is(7)))
-                // DR-CONV-006 ships disabled by its Flyway seed (V1.007), so 6 of 7 are enabled.
-                .andExpect(jsonPath("$.enabledCount", is(6)))
+                // All 7 rules ship enabled by their Flyway seed migrations.
+                .andExpect(jsonPath("$.enabledCount", is(7)))
                 .andExpect(jsonPath("$.rules", hasSize(7)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
                         contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",

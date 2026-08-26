@@ -1,8 +1,10 @@
 package uk.gov.hmcts.cp.services.rules;
 
+import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.encoder.Encode;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,7 @@ public class RuleOverrideService {
         try {
             result = ruleRepository.findById(ruleId);
         } catch (Exception e) {
-            log.warn("Failed to load rule override for {}: {}", ruleId, e.getMessage());
+            log.warn("Failed to load rule override for {}: {}", Encode.forJava(ruleId), e.getMessage());
             result = Optional.empty();
         }
         return result;
@@ -50,5 +52,39 @@ public class RuleOverrideService {
     @CacheEvict(value = "ruleOverrides", key = "#entity.id")
     public ValidationRuleEntity saveOverride(final ValidationRuleEntity entity) {
         return ruleRepository.save(entity);
+    }
+
+    /**
+     * Atomically applies a partial PATCH (enabled and/or severity) as a single database
+     * statement, merging against the row's current value rather than a value read earlier by the
+     * caller -- see {@link ValidationRuleRepository#upsertPartial} for why this matters. Evicts
+     * this pod's cache entry so the next evaluation on this pod picks up the change immediately;
+     * other pods still see it within the cache's TTL.
+     *
+     * <p>The transaction boundary lives on {@code upsertPartial} itself (like {@link #saveOverride}
+     * delegates to the individually-transactional {@code JpaRepository.save}), not on this method,
+     * so eviction is guaranteed to run only after that write has committed. Stacking
+     * {@code @Transactional} and {@code @CacheEvict} on the same method would leave their relative
+     * advisor ordering unpinned (both default to the same precedence), risking an eviction that
+     * fires before commit and gets silently repopulated with the stale pre-write value.
+     *
+     * @param ruleId identifier of the rule being updated
+     * @param enabledOverride requested enabled override, or {@code null} to leave it unchanged
+     * @param severityOverride requested severity override, or {@code null} to leave it unchanged
+     * @param defaultEnabled YAML-default enabled value, used only if no row exists yet
+     * @param defaultSeverity YAML-default severity value, used only if no row exists yet
+     * @param updatedAt audit timestamp
+     * @param updatedBy audit actor
+     */
+    @CacheEvict(value = "ruleOverrides", key = "#ruleId")
+    public void applyPartialUpdate(final String ruleId,
+                                    final Boolean enabledOverride,
+                                    final String severityOverride,
+                                    final boolean defaultEnabled,
+                                    final String defaultSeverity,
+                                    final Instant updatedAt,
+                                    final String updatedBy) {
+        ruleRepository.upsertPartial(ruleId, enabledOverride, severityOverride,
+                defaultEnabled, defaultSeverity, updatedAt, updatedBy);
     }
 }

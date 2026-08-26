@@ -5,7 +5,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.exceptions.InvalidRuleUpdateException;
 import uk.gov.hmcts.cp.exceptions.RuleNotFoundException;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
@@ -80,6 +79,11 @@ public class DefaultValidationRulesService implements ValidationRulesService {
     /**
      * Partially updates a rule's enabled status and/or severity override in the database.
      *
+     * <p>Applied as a single atomic upsert ({@link RuleOverrideService#applyPartialUpdate})
+     * rather than a read-modify-write against a (possibly stale, per-pod-cached) entity: the
+     * latter lets two concurrent or cross-pod PATCHes touching different fields silently revert
+     * each other's change (DD-43134).
+     *
      * @param ruleId    identifier of the rule to update
      * @param request   partial update — at least one field must be non-null
      * @param updatedBy caller identity for the audit column
@@ -98,31 +102,16 @@ public class DefaultValidationRulesService implements ValidationRulesService {
 
         final RuleDetailResponse currentDetail = findRuleDetail(ruleId);
 
-        final ValidationRuleEntity existing = ruleOverrideService.findOverride(ruleId)
-                .orElseGet(() -> buildDefaultEntity(ruleId, currentDetail));
+        ruleOverrideService.applyPartialUpdate(
+                ruleId,
+                request.getEnabled(),
+                request.getSeverity() != null ? request.getSeverity().getValue() : null,
+                Boolean.TRUE.equals(currentDetail.getEnabled()),
+                currentDetail.getSeverity().getValue(),
+                Instant.now(),
+                updatedBy);
 
-        final ValidationRuleEntity updated = ValidationRuleEntity.builder()
-                .id(existing.getId())
-                .enabled(request.getEnabled() != null ? request.getEnabled() : existing.isEnabled())
-                .severity(request.getSeverity() != null
-                        ? request.getSeverity().getValue()
-                        : existing.getSeverity())
-                .updatedAt(Instant.now())
-                .updatedBy(updatedBy)
-                .build();
-
-        ruleOverrideService.saveOverride(updated);
-        log.info("Updated validation rule ruleId={}", ruleId);
+        log.info("Updated validation rule ruleId={}", currentDetail.getRuleId());
         return getRuleById(ruleId);
-    }
-
-    private static ValidationRuleEntity buildDefaultEntity(
-            final String ruleId,
-            final RuleDetailResponse currentDetail) {
-        return ValidationRuleEntity.builder()
-                .id(ruleId)
-                .enabled(Boolean.TRUE.equals(currentDetail.getEnabled()))
-                .severity(currentDetail.getSeverity().getValue())
-                .build();
     }
 }

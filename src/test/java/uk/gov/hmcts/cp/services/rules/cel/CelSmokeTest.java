@@ -1,14 +1,13 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.projectnessie.cel.checker.Decls;
 import org.projectnessie.cel.tools.Script;
 import org.projectnessie.cel.tools.ScriptHost;
-
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Smoke tests proving the underlying CEL library behaves as expected in this project.

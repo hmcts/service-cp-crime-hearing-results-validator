@@ -1,5 +1,16 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -8,22 +19,10 @@ import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
-import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
+import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 
 /**
  * Unit tests for database-backed overrides applied to {@link CelValidationRule}.
