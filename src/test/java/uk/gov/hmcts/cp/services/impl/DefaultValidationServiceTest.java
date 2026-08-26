@@ -1,5 +1,10 @@
 package uk.gov.hmcts.cp.services.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
@@ -12,12 +17,6 @@ import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link DefaultValidationService}.
@@ -271,7 +270,9 @@ class DefaultValidationServiceTest {
      */
     @Test
     void validate_runs_rules_when_toggle_check_throws() {
-        FeatureToggleService broken = featureName -> { throw new RuntimeException("Toggle broken"); };
+        FeatureToggleService broken = featureName -> {
+            throw new RuntimeException("Toggle broken");
+        };
         ValidationRule rule = stubRule("RULE-001",
                 List.of(ValidationIssueResult.forError(
                         ValidationIssue.builder()
@@ -385,10 +386,35 @@ class DefaultValidationServiceTest {
     private static ValidationRule stubRule(String ruleId, List<ValidationIssueResult> results) {
         return stubRule(ruleId, 1000, results);
     }
-     /* Verifies the generated validation id is visible in the MDC while rules evaluate (so issue
+
+    private static ValidationRule stubRule(String ruleId, int priority, List<ValidationIssueResult> results) {
+        return new ValidationRule() {
+            @Override
+            public RuleDetailResponse getRuleDetail() {
+                return RuleDetailResponse.builder()
+                        .ruleId(ruleId)
+                        .title("Test rule " + ruleId)
+                        .description("Test description")
+                        .priority(priority)
+                        .severity(RuleDetailResponse.SeverityEnum.ERROR)
+                        .enabled(true)
+                        .build();
+            }
+
+            @Override
+            public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
+                if (results == null) {
+                    throw new RuntimeException("Simulated rule failure");
+                }
+                return results;
+            }
+        };
+    }
+
+    /**
+     * Verifies the generated validation id is visible in the MDC while rules evaluate (so issue
      * logs can carry it) and is removed once evaluation completes.
      */
-
     @Test
     void validate_should_expose_validationId_in_mdc_during_evaluation_and_remove_after() {
         AtomicReference<String> mdcDuringEvaluation = new AtomicReference<>();
@@ -449,30 +475,6 @@ class DefaultValidationServiceTest {
             public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
                 mdcHolder.set(MDC.get(MDC_VALIDATION_ID));
                 return List.of();
-            }
-        };
-    }
-
-    private static ValidationRule stubRule(String ruleId, int priority, List<ValidationIssueResult> results) {
-        return new ValidationRule() {
-            @Override
-            public RuleDetailResponse getRuleDetail() {
-                return RuleDetailResponse.builder()
-                        .ruleId(ruleId)
-                        .title("Test rule " + ruleId)
-                        .description("Test description")
-                        .priority(priority)
-                        .severity(RuleDetailResponse.SeverityEnum.ERROR)
-                        .enabled(true)
-                        .build();
-            }
-
-            @Override
-            public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
-                if (results == null) {
-                    throw new RuntimeException("Simulated rule failure");
-                }
-                return results;
             }
         };
     }

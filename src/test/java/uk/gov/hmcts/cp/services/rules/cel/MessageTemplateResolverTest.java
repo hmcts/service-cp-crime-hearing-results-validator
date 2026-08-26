@@ -1,13 +1,12 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
-import org.junit.jupiter.api.Test;
-import uk.gov.hmcts.cp.openapi.model.OffenceDto;
-import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
+import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 
 /**
  * Unit tests for {@link MessageTemplateResolver}.

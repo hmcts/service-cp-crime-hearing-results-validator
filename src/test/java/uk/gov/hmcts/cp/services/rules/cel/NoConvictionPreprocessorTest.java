@@ -34,7 +34,7 @@ class NoConvictionPreprocessorTest {
             RuleDefinitionLoader.load("rules/DR-CONV-006.yaml");
 
     private static final List<String> EXCLUDED_SHORT_CODES =
-            List.copyOf(RULE_DEFINITION.getPreprocessing().getExcludedFinalShortCodes());
+            List.copyOf(RULE_DEFINITION.preprocessing().excludedFinalShortCodes());
 
     /**
      * Every short code this suite expects DR-CONV-006.yaml's {@code excludedFinalShortCodes} to
@@ -50,7 +50,7 @@ class NoConvictionPreprocessorTest {
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 
-    private final PreprocessingDefinition config = RULE_DEFINITION.getPreprocessing();
+    private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
 
     @Test
     @DisplayName("DR-CONV-006.yaml's excludedFinalShortCodes must exactly match the known baseline")
@@ -169,6 +169,25 @@ class NoConvictionPreprocessorTest {
                     .as("mixed-case excluded code %s should suppress", mixedCase)
                     .isEqualTo(0L);
             assertThat(ctx.excludedFinalCount()).isEqualTo(1L);
+        }
+
+        /**
+         * A null shortCode is not a member of {@code excludedFinalShortCodes}, so it must count as
+         * non-excluded and can trigger the warning — pins the behaviour that {@code
+         * PreprocessorHelper.hasUpperCode} already gives here, matching DR-DISQ-002's
+         * (spec-mandated) treatment of the same case.
+         */
+        @Test
+        void null_short_code_on_final_line_should_be_treated_as_non_excluded() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", null, "d1", "off1")
+                            .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offence("off1", 1, "Theft").isConvicted(false)));
+
+            NoConvictionContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.unconvictedSentenceCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
         }
     }
 

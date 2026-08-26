@@ -1,6 +1,12 @@
 package uk.gov.hmcts.cp.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
@@ -16,13 +22,6 @@ import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
-
-import java.io.IOException;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for YAML-driven validation rule discovery.

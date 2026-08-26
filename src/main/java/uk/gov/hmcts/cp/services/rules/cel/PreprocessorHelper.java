@@ -7,9 +7,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.owasp.encoder.Encode;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.Prompt;
@@ -171,13 +173,13 @@ public final class PreprocessorHelper {
         LocalDate result = null;
         if (value == null || value.isBlank()) {
             log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
-                promptRef, shortCode, offenceId);
+                promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
         } else {
             try {
                 result = LocalDate.parse(value.trim());
             } catch (DateTimeParseException e) {
                 log.warn("Unparseable date '{}' for promptRef={} on shortCode={} offenceId={}",
-                    value, promptRef, shortCode, offenceId);
+                    Encode.forJava(value), promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
             }
         }
         return result;
@@ -196,5 +198,64 @@ public final class PreprocessorHelper {
             }
         }
         return grouped;
+    }
+
+    /**
+     * Result of {@link #groupLinesByDedupedDefendant}: result lines merged under each dedupe key,
+     * plus a representative display name per dedupe key.
+     */
+    public record DedupedLineGroups(Map<String, List<ResultLineDto>> linesByGroup,
+                                     Map<String, String> groupNames) {
+    }
+
+    /**
+     * Groups a request's result lines by defendant, then folds each defendantId into its dedupe
+     * key (see {@link #buildDefendantDedupeKeys}) so defendantIds representing the same linked-case
+     * person share one group. Shared by preprocessors that emit one context per person rather than
+     * per defendantId, e.g. {@link YouthRehabilitationPreprocessor} and
+     * {@link CommunityOrderEndDatePreprocessor}.
+     */
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    public static DedupedLineGroups groupLinesByDedupedDefendant(final DraftValidationRequest request) {
+        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
+        final Map<String, String> defendantNames = buildDefendantNames(request);
+        final Map<String, List<ResultLineDto>> linesByDefendant = groupByDefendant(request);
+
+        final Map<String, List<ResultLineDto>> linesByGroup = new LinkedHashMap<>();
+        final Map<String, String> groupNames = new LinkedHashMap<>();
+        for (final Map.Entry<String, List<ResultLineDto>> entry : linesByDefendant.entrySet()) {
+            final String defendantId = entry.getKey();
+            final String groupKey = dedupeKeys.getOrDefault(defendantId, defendantId);
+            linesByGroup.computeIfAbsent(groupKey, k -> new ArrayList<>()).addAll(entry.getValue());
+            groupNames.putIfAbsent(groupKey, defendantNames.getOrDefault(defendantId, "Unknown"));
+        }
+        return new DedupedLineGroups(linesByGroup, groupNames);
+    }
+
+    /**
+     * Groups an already-filtered line list by offence id, preserving encounter order of both
+     * offences and lines. Unlike {@link #groupResultsByOffence}, which reads the whole request,
+     * this groups a caller-supplied subset (e.g. one dedupe group's lines).
+     */
+    public static Map<String, List<ResultLineDto>> groupByOffence(final List<ResultLineDto> lines) {
+        return lines.stream()
+            .collect(Collectors.groupingBy(ResultLineDto::getOffenceId, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    /**
+     * The first parseable date (per {@link #parsePromptDate}, at {@code promptRef}) found on a
+     * line in {@code offenceLines} carrying one of {@code orderCodes}, or {@code null} if none
+     * does or none parses.
+     */
+    public static LocalDate findOrderEndDate(final List<ResultLineDto> offenceLines,
+                                              final Set<String> orderCodes,
+                                              final String promptRef,
+                                              final String offenceId) {
+        return offenceLines.stream()
+            .filter(rl -> hasUpperCode(rl, orderCodes))
+            .map(rl -> parsePromptDate(rl, promptRef, offenceId))
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
     }
 }
