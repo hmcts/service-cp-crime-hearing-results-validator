@@ -35,12 +35,19 @@ public abstract class IntegrationTestBase {
     protected static final String IDENTITY_PATH =
             "/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions";
 
+    protected static final String REFERENCEDATA_OFFENCE_PATH_PREFIX =
+            "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/";
+
     protected static final WireMockServer IDENTITY_WIRE_MOCK =
+            new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+
+    protected static final WireMockServer REFERENCEDATA_OFFENCE_WIRE_MOCK =
             new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
 
     static {
         IDENTITY_WIRE_MOCK.start();
         stubDefaultIdentityResponse();
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.start();
     }
 
     @Resource
@@ -50,6 +57,13 @@ public abstract class IntegrationTestBase {
     static void overrideIdentityUrl(DynamicPropertyRegistry registry) {
         registry.add("authz.http.identity-url-template",
                 () -> "http://localhost:" + IDENTITY_WIRE_MOCK.port() + IDENTITY_PATH);
+    }
+
+    @DynamicPropertySource
+    static void overrideReferencedataOffenceUrl(DynamicPropertyRegistry registry) {
+        registry.add("referencedata.offences.http.offence-url-template",
+                () -> "http://localhost:" + REFERENCEDATA_OFFENCE_WIRE_MOCK.port()
+                        + REFERENCEDATA_OFFENCE_PATH_PREFIX + "{offenceId}");
     }
 
     /**
@@ -86,6 +100,42 @@ public abstract class IntegrationTestBase {
                         .withStatus(200)
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs the reference-data offence lookup for a specific {@code offenceId}, returning the
+     * given {@code misCode} (or no {@code misCode} field at all when {@code misCode} is
+     * {@code null}, exercising the "not a relevant sexual offence" path).
+     *
+     * @param offenceId the offence id path segment to stub
+     * @param misCode the {@code misCode} to return, or {@code null} to omit the field
+     */
+    protected static void stubReferencedataOffenceResponse(final String offenceId, final String misCode) {
+        final String misCodeJson = misCode == null ? "" : "\"misCode\": \"%s\",".formatted(misCode);
+        final String responseBody = """
+                {
+                  "offenceId": "%s",
+                  %s
+                  "cjsOffenceCode": "SX03007C"
+                }
+                """.formatted(offenceId, misCodeJson);
+
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH_PREFIX + offenceId))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs the reference-data offence lookup for a specific {@code offenceId} to fail (404),
+     * exercising the fail-open path.
+     *
+     * @param offenceId the offence id path segment to stub
+     */
+    protected static void stubReferencedataOffenceNotFound(final String offenceId) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH_PREFIX + offenceId))
+                .willReturn(aResponse().withStatus(404)));
     }
 
     /**
