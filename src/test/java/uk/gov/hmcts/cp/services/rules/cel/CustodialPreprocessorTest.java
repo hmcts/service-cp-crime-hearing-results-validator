@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
@@ -15,17 +16,49 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for {@link CustodialPreprocessor} and the derived {@link DefendantContext}.
+ *
+ * <p>{@code filterShortCodes} is read from the real {@code DR-SENT-001.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as a literal, so {@link #config} always
+ * matches what ships in production, and {@code each_custodial_short_code_should_be_treated_as_custodial}'s
+ * parameterized test (backed by {@link #filterShortCodes()}) automatically covers every code the
+ * YAML declares. {@link #filterShortCodes_should_match_the_known_baseline_exactly()} pins that set
+ * against a known baseline so a code added to or removed from the YAML without the baseline being
+ * updated fails loudly instead of silently changing what the parameterized test covers.
  */
 class CustodialPreprocessorTest {
 
+    private static final RuleDefinition RULE_DEFINITION =
+            RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
+
+    private static final List<String> FILTER_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().filterShortCodes());
+
+    /**
+     * Every short code this suite expects DR-SENT-001.yaml's {@code filterShortCodes} to declare --
+     * kept in exact lockstep with the YAML by
+     * {@link #filterShortCodes_should_match_the_known_baseline_exactly()}.
+     */
+    private static final List<String> EXPECTED_FILTER_SHORT_CODES = List.of(
+            "IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd");
+
     private final CustodialPreprocessor preprocessor = new CustodialPreprocessor();
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type("custodial-concurrent-consecutive")
-            .filterShortCodes(List.of("IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs",
-                    "STSDY", "specc", "speccc", "speccd"))
-            .groupBy("defendant-then-offence")
-            .skipWhenGroupCount(1)
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
+
+    @Test
+    @DisplayName("DR-SENT-001.yaml's filterShortCodes must exactly match the known baseline")
+    void filterShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(FILTER_SHORT_CODES)
+                .as("DR-SENT-001.yaml's filterShortCodes must exactly match "
+                        + "EXPECTED_FILTER_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by the parameterized custodial-short-code test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_FILTER_SHORT_CODES);
+    }
+
+    /** Factory method for the parameterized custodial-short-code test; YAML-backed. */
+    static List<String> filterShortCodes() {
+        return FILTER_SHORT_CODES;
+    }
 
     /**
      * Verifies the preprocessor skips requests that contain no custodial result lines.
@@ -150,7 +183,7 @@ class CustodialPreprocessorTest {
      * defendant's total offence count, confirming the code is not silently excluded by the filter.
      */
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd"})
+    @MethodSource("filterShortCodes")
     void each_custodial_short_code_should_be_treated_as_custodial(final String code) {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", code, "d1", "off1"),

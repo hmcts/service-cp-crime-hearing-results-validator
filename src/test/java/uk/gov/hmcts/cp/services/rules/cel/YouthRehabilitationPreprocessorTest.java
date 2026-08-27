@@ -18,6 +18,10 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 /**
  * Unit tests for {@link YouthRehabilitationPreprocessor} with DR-YRO-004 configuration
  * (YROEW/YRONI/YROFEW/YROISS/YROINI orders; YRC2/YRC1/YRC3 curfew).
+ *
+ * <p>{@code yroConfig} is read from the real {@code DR-YRO-004.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as literals, so it always matches what
+ * ships in production.
  */
 class YouthRehabilitationPreprocessorTest {
 
@@ -26,12 +30,7 @@ class YouthRehabilitationPreprocessorTest {
 
     @BeforeAll
     static void setUpConfig() {
-        yroConfig = PreprocessingDefinition.builder()
-                .yroOrderShortCodes(List.of("YROEW", "YRONI", "YROFEW", "YROISS", "YROINI"))
-                .curfewShortCodes(List.of("YRC2"))
-                .curfewTagShortCodes(List.of("YRC1"))
-                .furtherCurfewShortCodes(List.of("YRC3"))
-                .build();
+        yroConfig = RuleDefinitionLoader.load("rules/DR-YRO-004.yaml").preprocessing();
     }
 
     @BeforeEach
