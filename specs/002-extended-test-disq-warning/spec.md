@@ -49,7 +49,7 @@ A user with access to "Enter results" is recording the outcome of a hearing that
 1. **Given** a hearing containing one offence with Home Office code `RT88026` (dangerous driving), and a result line with short code `COEW` and `category = 'F'` against that offence, and no `DDOTE` or `DDOTEL` result against that offence, **When** the validation request is submitted, **Then** the system returns one warning issue linked to that offence id with severity `WARNING`.
 2. **Given** the warning is raised, **When** the warning message is read, **Then** it reads exactly: `Check whether you need to add extended test disqualification with DDOTE (disqualification and extended test) or DDOTEL (disqualification for life and extended test)`.
 3. **Given** a warning is raised on a relevant offence, **When** the user proceeds to share the results, **Then** the warning does not block the share action.
-4. **Given** a hearing containing **two** relevant offences (e.g. `RT88026` and `RT88046`) each with a qualifying final result and neither carrying `DDOTE`/`DDOTEL`, **When** validation runs, **Then** the system returns two warnings, each linked to its respective offence id.
+4. **Given** a hearing containing **two** relevant offences (e.g. `RT88026` and `RA88046`) each with a qualifying final result and neither carrying `DDOTE`/`DDOTEL`, **When** validation runs, **Then** the system returns two warnings, each linked to its respective offence id.
 5. **Given** a hearing where all offences carry Home Office codes other than the five relevant ones, **When** validation runs, **Then** no warning is produced by this rule.
 
 ---
@@ -127,7 +127,7 @@ When a relevant offence has only ancillary or intermediary lines recorded agains
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST identify a relevant offence as any offence whose Home Office offence code matches one of: `RT88046`, `RT88526`, `RT88526A`, `RT88526B`, `RT88026`, `RT88026B`, `RT88530`, `RT88531`.
+- **FR-001**: The system MUST identify a relevant offence as any offence whose Home Office offence code matches one of: `RA88046`, `RT88526`, `RT88526A`, `RT88526B`, `RT88026`, `RT88026B`, `RT88530`, `RT88531`.
 - **FR-002**: For each relevant offence, the system MUST identify a result line as the offence's **final result** by reading its `category` attribute and confirming it equals `'F'` (case-insensitive). The system MUST NOT infer final-result status from short-code-set membership. (Supersedes the original FR-002 wording.)
 - **FR-003**: The system MUST treat the following final result short codes as **excluded** (no warning, when they appear on a `'F'` line): `wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`, `err`, `errf`, `dhd`. Matching MUST be case-insensitive. (2026-08-24: adds `err` / `errf` "Entered in Error" and `dhd` "Defendant has died" to the original nine.)
 - **FR-004**: For each relevant offence, the system MUST inspect the result short codes linked to that offence (regardless of `category`) and detect the presence of `DDOTE` or `DDOTEL`. Matching MUST be case-insensitive.

@@ -11,7 +11,7 @@ rule:
   preprocessing:
     type: "disqualification-extended-test"
     relevantOffenceCodes:
-      - RT88046   # s.1   — causing death by dangerous driving
+      - RA88046   # s.1   — causing death by dangerous driving
       - RT88526   # s.1A  — causing serious injury by dangerous driving
       - RT88526A  # s.1A  — attempt to cause serious injury by dangerous driving
       - RT88526B  # s.1A  — causing serious injury by dangerous driving (variant B)

@@ -80,7 +80,7 @@ Single-module Spring Boot service:
 
 ## Phase 3: User Story 1 — Warn when relevant offence has final result but no extended test disqualification (Priority: P1) 🎯 MVP
 
-**Goal**: A hearing containing a relevant Road Traffic Act 1988 offence (one of `RT88046`, `RT88526`, `RT88026`, `RT88530`, `RT88531`) that has at least one non-excluded result line and no `DDOTE` / `DDOTEL` recorded against it produces exactly one `WARNING` `ValidationIssue` with the exact AC1A message text and the offence id linked via `affectedOffences[0].offenceId`.
+**Goal**: A hearing containing a relevant Road Traffic Act 1988 offence (one of `RA88046`, `RT88526`, `RT88026`, `RT88530`, `RT88531`) that has at least one non-excluded result line and no `DDOTE` / `DDOTEL` recorded against it produces exactly one `WARNING` `ValidationIssue` with the exact AC1A message text and the offence id linked via `affectedOffences[0].offenceId`.
 
 **Independent Test**: `POST /api/validation/validate` with a payload containing one defendant, one offence with `offenceCode: "RT88026"`, and one result line with `shortCode: "COEW"` against that offence. The response must contain exactly one issue with `ruleId: "DR-DISQ-002"`, `severity: "WARNING"`, the literal message text, and `affectedOffences[0].offenceId` equal to that offence id.
 
