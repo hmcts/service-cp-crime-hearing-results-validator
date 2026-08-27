@@ -42,7 +42,7 @@ class DisqualificationExtendedTestPreprocessorTest {
 
     /** Kept in lockstep with the YAML by {@link #relevantCodes_should_match_the_known_baseline_exactly()}. */
     private static final List<String> EXPECTED_RELEVANT_CODES = List.of(
-            "RT88046", "RT88526", "RT88526A", "RT88526B", "RT88026", "RT88026B", "RT88530", "RT88531");
+            "RA88046", "RT88526", "RT88526A", "RT88526B", "RT88026", "RT88026B", "RT88530", "RT88531");
 
     /** Kept in lockstep with the YAML by {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()}. */
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
@@ -502,7 +502,7 @@ class DisqualificationExtendedTestPreprocessorTest {
                     List.of(
                             offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
                             offenceWithCode("off2", 2, "Causing death by dangerous driving",
-                                    "RT88046")));
+                                    "RA88046")));
 
             Map<String, DisqualificationContext> result = preprocess(request);
 
