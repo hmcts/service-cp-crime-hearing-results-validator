@@ -224,8 +224,7 @@ class ReferencedataOffenceClientTest {
             Optional<String> result = new ReferencedataOffenceClient(properties(false)).lookupMisCode(OFFENCE_ID);
 
             assertThat(result).isEmpty();
-            wireMock.verify(0, com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor(
-                    urlPathEqualTo(PATH_PREFIX + OFFENCE_ID)));
+            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID)));
         }
 
         @Test
