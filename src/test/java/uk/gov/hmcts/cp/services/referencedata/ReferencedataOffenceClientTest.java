@@ -1,7 +1,10 @@
 package uk.gov.hmcts.cp.services.referencedata;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
+import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
 
 /**
  * Unit tests for {@link ReferencedataOffenceClient} against a local {@link WireMockServer} — the
@@ -146,6 +151,63 @@ class ReferencedataOffenceClientTest {
             Optional<String> result = unreachableClient.lookupMisCode(OFFENCE_ID);
 
             assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("CJSCPPUID header forwarding")
+    class CjscppuidForwarding {
+
+        @AfterEach
+        void clearMdc() {
+            MDC.remove(TracingFilter.USER_ID);
+        }
+
+        @Test
+        void lookupMisCode_whenMdcHasUserId_shouldForwardCjscppuidHeader() {
+            MDC.put(TracingFilter.USER_ID, "test-user-123");
+            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
+                            .withBody("""
+                                    {"offenceId": "%s", "misCode": "SEX"}
+                                    """.formatted(OFFENCE_ID))));
+
+            client().lookupMisCode(OFFENCE_ID);
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .withHeader("CJSCPPUID", equalTo("test-user-123")));
+        }
+
+        @Test
+        void lookupMisCode_whenMdcHasNoUserId_shouldNotSendCjscppuidHeader() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
+                            .withBody("""
+                                    {"offenceId": "%s", "misCode": "SEX"}
+                                    """.formatted(OFFENCE_ID))));
+
+            client().lookupMisCode(OFFENCE_ID);
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .withHeader("CJSCPPUID", absent()));
+        }
+
+        @Test
+        void lookupMisCode_whenMdcUserIdBlank_shouldNotSendCjscppuidHeader() {
+            MDC.put(TracingFilter.USER_ID, "   ");
+            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
+                            .withBody("""
+                                    {"offenceId": "%s", "misCode": "SEX"}
+                                    """.formatted(OFFENCE_ID))));
+
+            client().lookupMisCode(OFFENCE_ID);
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+                    .withHeader("CJSCPPUID", absent()));
         }
     }
 

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
+import org.slf4j.MDC;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
 
 /**
  * Fail-open client for the {@code cpp-context-referencedata-offences} offence classification
@@ -25,10 +27,20 @@ import org.springframework.web.util.UriComponentsBuilder;
  * codebase's identity lookup ({@code IdentityClient}, in the {@code cp-auth-rules-filter}
  * library) and its own {@code AzureAppConfigFetcher}. See
  * {@code specs/009-sexual-offence-norr-warning/contracts/referencedata-offences-integration.md}.
+ *
+ * <p>The downstream service's Drools access-control rules require the caller's {@code CJSCPPUID}
+ * on every request. This client forwards the same value {@link TracingFilter} captured from the
+ * inbound {@code /validate} request's {@code CJSCPPUID} header into MDC ({@link
+ * TracingFilter#USER_ID}) — it does not re-derive or accept the identity independently. When MDC
+ * holds no value (e.g. a call outside a request context), the header is simply omitted and the
+ * downstream ACL rejection is absorbed by the same fail-open handling as any other failure.
  */
 @Slf4j
 @Component
 public class ReferencedataOffenceClient {
+
+    /** Header the {@code cpp-context-referencedata-offences} Drools ACL requires per request. */
+    private static final String CJSCPPUID_HEADER = "CJSCPPUID";
 
     private final ReferencedataOffenceProperties properties;
     private final RestTemplate restTemplate;
@@ -83,9 +95,13 @@ public class ReferencedataOffenceClient {
             // resulting path/query.
             final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
                     .build(Map.of("offenceId", offenceId));
-            final RequestEntity<Void> request = RequestEntity.get(uri)
-                    .header(HttpHeaders.ACCEPT, properties.acceptHeader())
-                    .build();
+            final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
+                    .header(HttpHeaders.ACCEPT, properties.acceptHeader());
+            final String userId = MDC.get(TracingFilter.USER_ID);
+            if (userId != null && !userId.isBlank()) {
+                requestBuilder.header(CJSCPPUID_HEADER, userId);
+            }
+            final RequestEntity<Void> request = requestBuilder.build();
             final ResponseEntity<ReferencedataOffenceResponse> response =
                     restTemplate.exchange(request, ReferencedataOffenceResponse.class);
             final ReferencedataOffenceResponse body = response.getBody();

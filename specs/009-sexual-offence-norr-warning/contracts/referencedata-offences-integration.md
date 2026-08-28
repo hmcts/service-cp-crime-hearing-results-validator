@@ -10,12 +10,19 @@ spec this service doesn't own for its own inbound contract (Constitution Princip
 ```
 GET {CP_BASE_URL}/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/{offenceId}
 Accept: application/vnd.referencedataoffences.offence+json
+CJSCPPUID: {userId}
 ```
 
 - `{offenceId}` — the reference-data catalog's offence UUID, passed as
   `OffenceDto.getOffenceId()` directly (per product-owner direction, R1 in `research.md` — this
   service's `OffenceDto.offenceId` already **is** the catalog UUID; no code-based resolution step
   is used).
+- `CJSCPPUID` — the real service's Drools ACL rejects the request without it (`403`,
+  `Access Control failed ... Reason: Rules failed to match`). `ReferencedataOffenceClient` forwards
+  the value `TracingFilter` already captured into MDC (`TracingFilter.USER_ID`) from the inbound
+  `/validate` request's own `CJSCPPUID` header — it is not re-derived independently. Omitted when
+  MDC holds no value (e.g. a call outside a request context), in which case the downstream ACL
+  rejection is absorbed by the same fail-open handling as any other failure.
 - Method: `ReferencedataOffenceQueryApi.findOffence`, action name
   `referencedataoffences.query.offence` (server-side handler; irrelevant to this consumer beyond
   confirming which HTTP resource fronts it).
