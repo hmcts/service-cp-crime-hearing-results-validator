@@ -238,7 +238,6 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void offenceWithNoResultLines_shouldYieldNoContextEntry() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(),
@@ -251,7 +250,6 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void jointOffence_multipleDistinctDefendantIds_shouldYieldNoContextEntry() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1"),
@@ -262,6 +260,19 @@ class SexualOffenceNotificationPreprocessorTest {
             Map<String, SexualOffenceNotificationContext> result = preprocessor.preprocess(request, config);
 
             assertThat(result).isEmpty();
+        }
+
+        @Test
+        void doesNotCallReferencedataClient_whenDefendantCannotBeResolved() {
+            DraftValidationRequest request = buildRequest(
+                    offence("off1", true),
+                    List.of(),
+                    List.of(defendant("d1", LocalDate.of(2000, 1, 1))));
+
+            preprocessor.preprocess(request, config);
+
+            org.mockito.Mockito.verify(referencedataOffenceClient, org.mockito.Mockito.never())
+                    .lookupMisCode(any());
         }
     }
 

@@ -23,6 +23,11 @@ import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
  * offence is excluded entirely (no context entry), including any offence whose reference-data
  * lookup fails (fail-open — see {@code contracts/referencedata-offences-integration.md}).
  *
+ * <p>The {@link ReferencedataOffenceClient#lookupMisCode(String)} call is a network round trip,
+ * so it is made only once every cheaper, local condition is already satisfied: the offence is
+ * convicted AND its defendant is resolvable (see below). An offence that fails either check is
+ * excluded without ever reaching the reference-data lookup.
+ *
  * <p>Age classification (Adult 18+ / Youth under 18, at {@code hearingDay}) determines which
  * short-code set clears the warning: {@code adultNotificationShortCodes} for Adults, {@code
  * youthNotificationShortCodes} for Youths. A defendant's date of birth resolves via the {@code
@@ -90,11 +95,11 @@ public class SexualOffenceNotificationPreprocessor implements ValidationPreproce
         Optional<SexualOffenceNotificationContext> context = Optional.empty();
         if (Boolean.TRUE.equals(offence.getIsConvicted())) {
             final String offenceId = offence.getOffenceId();
-            final Optional<String> misCode = referencedataOffenceClient.lookupMisCode(offenceId);
-            if (misCode.isPresent() && config.qualifyingMisCode().equals(misCode.get())) {
-                final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
-                final Optional<String> defendantId = resolveSingleDefendant(lines);
-                if (defendantId.isPresent()) {
+            final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
+            final Optional<String> defendantId = resolveSingleDefendant(lines);
+            if (defendantId.isPresent()) {
+                final Optional<String> misCode = referencedataOffenceClient.lookupMisCode(offenceId);
+                if (misCode.isPresent() && config.qualifyingMisCode().equalsIgnoreCase(misCode.get())) {
                     final boolean isYouth = isYouth(datesOfBirth.get(defendantId.get()), hearingDay);
                     final Set<String> requiredCodes = isYouth ? youthCodes : adultCodes;
                     final boolean hasQualifyingNotification = PreprocessorHelper.anyShortCodeIn(lines, requiredCodes);
