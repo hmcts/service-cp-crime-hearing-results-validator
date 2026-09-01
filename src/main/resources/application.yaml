@@ -81,6 +81,17 @@ validation:
   cache:
     override-ttl-seconds: ${RULE_OVERRIDE_CACHE_TTL:30}
 
+referencedata:
+  offences:
+    http:
+      enabled: ${REFERENCEDATA_OFFENCES_ENABLED:true}
+      offence-url-template: ${CP_BASE_URL:http://localhost:8080}/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/{offenceId}
+      accept-header: "application/vnd.referencedataoffences.offence+json"
+      connect-timeout-ms: ${REFERENCEDATA_OFFENCES_CONNECT_TIMEOUT_MS:2000}
+      read-timeout-ms: ${REFERENCEDATA_OFFENCES_READ_TIMEOUT_MS:3000}
+    cache:
+      ttl-seconds: ${REFERENCEDATA_OFFENCES_CACHE_TTL:3600}
+
 feature:
   connection-string: ${FEATURE_MANAGER_CONNECTION_STRING:}
   label: ${FEATURE_LABEL:}

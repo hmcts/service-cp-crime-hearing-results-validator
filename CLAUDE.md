@@ -33,7 +33,7 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
 2. Each YAML file becomes a `CelValidationRule` bean (sorted by priority)
 3. `DefaultValidationService.validate()` iterates all rules, calling `rule.evaluate(request)`
 4. `CelValidationRule.evaluate()` runs the preprocessing pipeline, then evaluates CEL conditions:
-   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (seven registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`), failing fast if the qualifier has no match
+   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (eight registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`, `SexualOffenceNotificationPreprocessor`), failing fast if the qualifier has no match
    - `preprocessor.preprocess()` transforms hearing result lines into a context record (e.g. `DefendantContext`, counts like `noInfoCount`, `hasBothCount`, etc.)
    - the context's `toCelContext()` converts it to `Map<String, Long>` for CEL evaluation
    - `CelExpressionEvaluator` compiles and caches CEL expressions
@@ -85,5 +85,5 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/006-no-conviction-warning/plan.md](specs/006-no-conviction-warning/plan.md)
+[specs/009-sexual-offence-norr-warning/plan.md](specs/009-sexual-offence-norr-warning/plan.md)
 <!-- SPECKIT END -->
