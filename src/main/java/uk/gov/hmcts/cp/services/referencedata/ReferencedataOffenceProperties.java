@@ -14,8 +14,9 @@ import org.springframework.stereotype.Component;
  *
  * @param enabled whether the reference-data lookup is attempted at all; when {@code false},
  *         {@link ReferencedataOffenceClient} short-circuits to {@code Optional.empty()}
- * @param offenceUrlTemplate the {@code GET} URL template, with a literal {@code {offenceId}}
- *         placeholder substituted per lookup
+ * @param offenceUrlTemplate the {@code GET} URL template, with a literal {@code {offenceCode}}
+ *         placeholder substituted per lookup with the offence's {@code cjsOffenceCode} (
+ *         {@code OffenceDto.getOffenceCode()})
  * @param acceptHeader the vendor media type sent as the {@code Accept} header
  * @param connectTimeoutMs connect timeout in milliseconds
  * @param readTimeoutMs read timeout in milliseconds
@@ -25,9 +26,9 @@ public record ReferencedataOffenceProperties(
         @Value("${referencedata.offences.http.enabled:true}") boolean enabled,
         @Value("${referencedata.offences.http.offence-url-template:"
                 + "http://localhost:8080/referencedataoffences-query-api/query/api/rest/"
-                + "referencedataoffences/offences/{offenceId}}") String offenceUrlTemplate,
+                + "referencedataoffences/offences?cjsoffencecode={offenceCode}}") String offenceUrlTemplate,
         @Value("${referencedata.offences.http.accept-header:"
-                + "application/vnd.referencedataoffences.offence+json}") String acceptHeader,
+                + "application/vnd.referencedataoffences.offences-list+json}") String acceptHeader,
         @Value("${referencedata.offences.http.connect-timeout-ms:2000}") int connectTimeoutMs,
         @Value("${referencedata.offences.http.read-timeout-ms:3000}") int readTimeoutMs) {
 }

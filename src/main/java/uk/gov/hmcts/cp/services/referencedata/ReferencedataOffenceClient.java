@@ -28,6 +28,11 @@ import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
  * library) and its own {@code AzureAppConfigFetcher}. See
  * {@code specs/009-sexual-offence-norr-warning/contracts/referencedata-offences-integration.md}.
  *
+ * <p>Looks up by {@code cjsOffenceCode} (via the {@code GET /offences?cjsoffencecode=...}
+ * search-list endpoint, {@code Accept: application/vnd.referencedataoffences.offences-list+json})
+ * rather than the single-offence {@code GET /offences/{offenceId}} endpoint — the reference-data
+ * catalog's offence UUID is not otherwise available to this service's {@code OffenceDto}.
+ *
  * <p>The downstream service's Drools access-control rules require the caller's {@code CJSCPPUID}
  * on every request. This client forwards the same value {@link TracingFilter} captured from the
  * inbound {@code /validate} request's {@code CJSCPPUID} header into MDC ({@link
@@ -61,9 +66,9 @@ public class ReferencedataOffenceClient {
     }
 
     /**
-     * Looks up the {@code misCode} classification for an offence.
+     * Looks up the {@code misCode} classification for an offence, by its {@code cjsOffenceCode}.
      *
-     * <p>Cached by {@code offenceId} only on success. Spring's caching layer unwraps an {@code
+     * <p>Cached by {@code offenceCode} only on success. Spring's caching layer unwraps an {@code
      * Optional} return value before evaluating {@code unless} — an {@code Optional.empty()}
      * result is presented to the SpEL expression as a plain {@code null}, not an empty {@code
      * Optional}, so the guard is {@code unless = "#result == null"} rather than {@code
@@ -72,29 +77,29 @@ public class ReferencedataOffenceClient {
      * outage does not suppress {@code DR-SEX-008} for the full cache TTL after the dependency
      * recovers; the next validation request for the same offence simply retries the call.
      *
-     * @param offenceId the reference-data catalog offence id ({@code OffenceDto.offenceId})
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
      * @return the offence's {@code misCode}, or {@link Optional#empty()} if unavailable for any
-     *         reason (lookup disabled, blank id, non-2xx, timeout, malformed body, or missing
-     *         {@code misCode})
+     *         reason (lookup disabled, blank code, non-2xx, timeout, malformed body, an empty
+     *         {@code offences} list, or missing {@code misCode})
      */
-    @Cacheable(value = "referencedataOffences", key = "#offenceId", unless = "#result == null")
-    public Optional<String> lookupMisCode(final String offenceId) {
+    @Cacheable(value = "referencedataOffences", key = "#offenceCode", unless = "#result == null")
+    public Optional<String> lookupMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
-        if (properties.enabled() && offenceId != null && !offenceId.isBlank()) {
-            misCode = fetchMisCode(offenceId);
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            misCode = fetchMisCode(offenceCode);
         }
         return misCode;
     }
 
-    private Optional<String> fetchMisCode(final String offenceId) {
+    private Optional<String> fetchMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
         try {
-            // UriComponentsBuilder percent-encodes the expanded {offenceId} path variable,
-            // unlike a raw String.replace, so a value containing reserved URI characters
-            // (/, ?, #, ...) is treated as an opaque path segment rather than altering the
-            // resulting path/query.
+            // UriComponentsBuilder percent-encodes the expanded {offenceCode} template
+            // variable, unlike a raw String.replace, so a value containing reserved URI
+            // characters (/, ?, #, ...) is treated as an opaque query value rather than
+            // altering the resulting path/query.
             final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
-                    .build(Map.of("offenceId", offenceId));
+                    .build(Map.of("offenceCode", offenceCode));
             final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
                     .header(HttpHeaders.ACCEPT, properties.acceptHeader());
             final String userId = MDC.get(TracingFilter.USER_ID);
@@ -102,18 +107,32 @@ public class ReferencedataOffenceClient {
                 requestBuilder.header(CJSCPPUID_HEADER, userId);
             }
             final RequestEntity<Void> request = requestBuilder.build();
-            final ResponseEntity<ReferencedataOffenceResponse> response =
-                    restTemplate.exchange(request, ReferencedataOffenceResponse.class);
-            final ReferencedataOffenceResponse body = response.getBody();
-            if (body != null && body.misCode() != null && !body.misCode().isBlank()) {
-                misCode = Optional.of(body.misCode());
+            final ResponseEntity<ReferencedataOffencesListResponse> response =
+                    restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
+            final ReferencedataOffencesListResponse body = response.getBody();
+            final ReferencedataOffenceResponse offence = firstOffenceOf(body);
+            if (offence != null && offence.misCode() != null && !offence.misCode().isBlank()) {
+                misCode = Optional.of(offence.misCode());
             } else {
-                log.debug("No misCode returned for offenceId={}", Encode.forJava(offenceId));
+                log.debug("No misCode returned for offenceCode={}", Encode.forJava(offenceCode));
             }
         } catch (RestClientException | IllegalArgumentException e) {
-            log.warn("Reference-data offence lookup failed for offenceId={} ({}): {}",
-                    Encode.forJava(offenceId), e.getClass().getSimpleName(), e.getMessage());
+            log.warn("Reference-data offence lookup failed for offenceCode={} ({}): {}",
+                    Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
         }
         return misCode;
+    }
+
+    /**
+     * Returns the first element of the response's {@code offences} list, or {@code null} when
+     * the body, its list, or the list itself is absent/empty. A single {@code cjsOffenceCode}
+     * lookup is expected to match at most one currently-valid offence.
+     */
+    private ReferencedataOffenceResponse firstOffenceOf(final ReferencedataOffencesListResponse body) {
+        ReferencedataOffenceResponse offence = null;
+        if (body != null && body.offences() != null && !body.offences().isEmpty()) {
+            offence = body.offences().get(0);
+        }
+        return offence;
     }
 }

@@ -2,39 +2,51 @@
 
 ## R1 — Where `misCode` comes from, and how it's looked up
 
-**Decision**: Call `cpp-context-referencedata-offences`'s query API directly with
+**Superseded**: the original decision below (call the single-offence `{offenceId}` endpoint,
+assuming `OffenceDto.offenceId` **is** the reference-data catalog UUID) has been replaced. This
+service's `OffenceDto` carries no reference-data catalog UUID after all, so
+`ReferencedataOffenceClient` now calls the *code-based* lookup that was originally considered and
+rejected below: `GET .../referencedataoffences-query-api/query/api/rest/
+referencedataoffences/offences?cjsoffencecode={offenceCode}`, `Accept: application/vnd.
+referencedataoffences.offences-list+json`, passing `OffenceDto.getOffenceCode()`, and reading
+`misCode` off `offences[0]` of the response. The cache key (`referencedataOffences`, R4) moves
+from `offenceId` to `offenceCode` accordingly. See
+`contracts/referencedata-offences-integration.md` for the current contract; the "Original
+decision" and "Alternatives considered" below are kept for history, not as the current behaviour.
+
+**Original decision**: Call `cpp-context-referencedata-offences`'s query API directly with
 `OffenceDto.getOffenceId()` as the path parameter — `GET .../referencedataoffences-query-api/
 query/api/rest/referencedataoffences/offences/{offenceId}`, `Accept: application/vnd.
 referencedataoffences.offence+json` — and read `misCode` off the response. No code-based
 resolution step (`GET /offences?cjsoffencecode=...`) is used.
 
-**Rationale**: Confirmed directly by the product owner: this service's `OffenceDto.offenceId`
-already **is** the reference-data catalog's offence UUID (the hearing's offence records are
-sourced from that catalog), so the single-offence `findOffence`/`{offenceId}` endpoint resolves
-it in one call. This was cross-checked against a real sample response supplied by the product
-owner for `GET /offences/{offenceId}` — it includes `"offenceId":"0000357a-2b27-3eb5-9377-
-d7e9d680eb87"` and `"misCode":"SEX"` among ~35 other fields, of which this feature reads exactly
-two: `offenceId` (for logging/cache-key correlation) and `misCode`.
+**Rationale (original)**: Confirmed directly by the product owner: this service's
+`OffenceDto.offenceId` already **is** the reference-data catalog's offence UUID (the hearing's
+offence records are sourced from that catalog), so the single-offence `findOffence`/`{offenceId}`
+endpoint resolves it in one call. This was cross-checked against a real sample response supplied
+by the product owner for `GET /offences/{offenceId}` — it includes `"offenceId":"0000357a-2b27-
+3eb5-9377-d7e9d680eb87"` and `"misCode":"SEX"` among ~35 other fields, of which this feature reads
+exactly two: `offenceId` (for logging/cache-key correlation) and `misCode`.
 
-**Alternatives considered**:
+**Alternatives considered (original)**:
 - *Code-based lookup first* (`GET /offences?cjsoffencecode={offenceCode}`, then read `offenceId`
   off the first result, mirroring the pattern used by `cpp-context-sjp`'s
   `ReferenceOffencesDataService` in the wider CPP estate) — a real, working endpoint, confirmed to
-  exist via the module's RAML and multiple production call sites in a sibling repo. **Rejected**
-  for this feature only because it is unnecessary given the direct `offenceId` mapping above; kept
-  here as a documented fallback (see "Open risk" below) should that mapping assumption ever prove
-  wrong for some caller.
+  exist via the module's RAML and multiple production call sites in a sibling repo. Rejected at
+  the time for this feature only because it was believed unnecessary given the direct `offenceId`
+  mapping above — **this is the option R1 now uses**, once that mapping assumption proved wrong
+  (see "Superseded" above).
 - *Hardcoded offence-code allow-list in YAML*, the pattern `DR-DISQ-002` uses for
   `relevantOffenceCodes` — this was the original fallback assumption written into `spec.md` before
   the product owner clarified the real data source. Rejected: it would drift from the live
   reference-data catalog and duplicates data this service does not own.
 
-**Open risk (flag for `/speckit-tasks` and code review, not a blocker)**: if any upstream caller
-ever sends an `offenceId` that is a purely local/hearing-scoped identifier rather than the
-reference-data catalog UUID, the lookup will 404 or return an unrelated offence. The fail-open
-contract (R4) means a 404/error simply produces no warning for that offence — a silent miss, not
-a crash — so this risk degrades gracefully but should be watched via the client's log line (see
-R4) if `DR-SEX-008` under-fires in production.
+**Open risk (original; resolved by the supersession above)**: if any upstream caller ever sends an
+`offenceId` that is a purely local/hearing-scoped identifier rather than the reference-data
+catalog UUID, the lookup will 404 or return an unrelated offence. The fail-open contract (R4)
+means a 404/error simply produces no warning for that offence — a silent miss, not a crash — so
+this risk degrades gracefully but should be watched via the client's log line (see R4) if
+`DR-SEX-008` under-fires in production. This is exactly what triggered the supersession above.
 
 ## R2 — Rule id / category: `DR-SEX-008`
 
@@ -73,7 +85,7 @@ even though they are the same policy with an age-based branch.
 dedicated `SimpleClientHttpRequestFactory` (connect timeout 2s, read timeout 3s), wrapped in a
 try/catch that logs at WARN via SLF4J and returns `Optional.empty()` on any exception, non-2xx
 response, or missing `misCode` field. Results are cached via a new named Caffeine cache
-(`referencedataOffences`, keyed by `offenceId`, TTL configurable via
+(`referencedataOffences`, keyed by `offenceCode` — see R1's supersession, TTL configurable via
 `referencedata.offences.cache.ttl-seconds`, default proposed 3600s — offence classification data
 changes far less often than rule-override data, so a much longer TTL than the existing 30s
 `ruleOverrides`/600s `featureFlags` caches is appropriate).

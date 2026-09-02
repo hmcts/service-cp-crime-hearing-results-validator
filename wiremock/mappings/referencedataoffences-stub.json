@@ -1,18 +1,27 @@
 {
   "request": {
     "method": "GET",
-    "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/(live-sex-adult-missing|live-sex-adult-clear|live-sex-youth-missing|live-sex-youth-norrr)"
+    "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+    "queryParameters": {
+      "cjsoffencecode": {
+        "matches": "live-sex-adult-missing|live-sex-adult-clear|live-sex-youth-missing|live-sex-youth-norrr"
+      }
+    }
   },
   "response": {
     "status": 200,
     "headers": {
-      "Content-Type": "application/vnd.referencedataoffences.offence+json"
+      "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
     },
     "jsonBody": {
-      "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb87",
-      "cjsOffenceCode": "SX03007C",
-      "misCode": "SEX",
-      "misDescription": "Sex offences"
+      "offences": [
+        {
+          "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb87",
+          "cjsOffenceCode": "SX03007C",
+          "misCode": "SEX",
+          "misDescription": "Sex offences"
+        }
+      ]
     }
   }
 }

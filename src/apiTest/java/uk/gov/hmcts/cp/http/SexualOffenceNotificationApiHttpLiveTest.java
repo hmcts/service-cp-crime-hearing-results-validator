@@ -23,9 +23,16 @@ import org.springframework.web.client.RestTemplate;
  * <p>The docker-compose stack's shared WireMock container mounts the whole {@code ./wiremock}
  * directory (see {@code docker-compose.yml}), so {@code wiremock/mappings/
  * referencedataoffences-stub.json} is picked up automatically alongside the existing identity
- * stub — no separate compose wiring was needed. That stub always returns {@code misCode: "SEX"},
- * so the positive scenarios below are expected to observe the real warning, not just the
- * fail-open path.
+ * stub — no separate compose wiring was needed. That stub always returns {@code misCode: "SEX"}
+ * for any of this class's {@code offenceCode} values, so the positive scenarios below are
+ * expected to observe the real warning, not just the fail-open path.
+ *
+ * <p>Each scenario below sets {@code offenceCode} equal to its own {@code offenceId} — the
+ * {@code referencedataOffences} Caffeine cache is keyed by {@code offenceCode} and persists across
+ * test methods (the docker-compose app isn't restarted between them, and the cache TTL is much
+ * longer than one test run), so a shared code across scenarios would read a stale cached
+ * {@code misCode} instead of hitting the stub again. See {@code SexualOffenceNotificationRuleIT}
+ * for the same convention against the WireMock-backed integration test.
  */
 class SexualOffenceNotificationApiHttpLiveTest {
 
@@ -116,11 +123,11 @@ class SexualOffenceNotificationApiHttpLiveTest {
                      "dateOfBirth": "2000-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "SX03007C", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": %s}
                   ]
                 }
-                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, convicted);
+                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, offenceId, convicted);
     }
 
     private static String youthRequest(final String offenceId, final String shortCode) {
@@ -138,11 +145,11 @@ class SexualOffenceNotificationApiHttpLiveTest {
                      "dateOfBirth": "2012-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "SX03007C", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": true}
                   ]
                 }
-                """.formatted(shortCode, shortCode + " label", offenceId, offenceId);
+                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, offenceId);
     }
 
     private List<String> ruleIdsOf(final JsonNode issues) {

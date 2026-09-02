@@ -29,9 +29,11 @@ import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
  */
 class ReferencedataOffenceClientTest {
 
+    private static final String OFFENCE_CODE = "SX03007C";
     private static final String OFFENCE_ID = "0000357a-2b27-3eb5-9377-d7e9d680eb87";
-    private static final String PATH_PREFIX =
-            "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/";
+    private static final String PATH =
+            "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences";
+    private static final String QUERY_PARAM = "cjsoffencecode";
 
     private WireMockServer wireMock;
 
@@ -54,42 +56,51 @@ class ReferencedataOffenceClientTest {
 
         @Test
         void lookupMisCode_whenMisCodePresent_shouldReturnIt() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "misCode": "SEX", "cjsOffenceCode": "SX03007C"}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "misCode": "SEX", "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).contains("SEX");
         }
 
         @Test
         void lookupMisCode_whenMisCodeAbsent_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "cjsOffenceCode": "TH68001"}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
 
         @Test
         void lookupMisCode_whenMisCodeBlank_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "misCode": ""}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "misCode": ""}]}
+                    """.formatted(OFFENCE_ID));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void lookupMisCode_whenOffencesListEmpty_shouldReturnEmpty() {
+            stubOffencesList("{\"offences\": []}");
+
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void lookupMisCode_whenOffencesFieldMissing_shouldReturnEmpty() {
+            stubOffencesList("{}");
+
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
@@ -101,44 +112,48 @@ class ReferencedataOffenceClientTest {
 
         @Test
         void lookupMisCode_when404_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .willReturn(aResponse().withStatus(404)));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
 
         @Test
         void lookupMisCode_when500_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .willReturn(aResponse().withStatus(500)));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
 
         @Test
         void lookupMisCode_whenMalformedJson_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
                             .withBody("{not valid json")));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
 
         @Test
         void lookupMisCode_whenReadTimesOut_shouldReturnEmpty() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .willReturn(aResponse().withStatus(200)
                             .withFixedDelay(500) // exceeds the 100ms read timeout used by client()
-                            .withBody("{\"offenceId\": \"" + OFFENCE_ID + "\", \"misCode\": \"SEX\"}")));
+                            .withBody("{\"offences\": [{\"misCode\": \"SEX\"}]}")));
 
-            Optional<String> result = client().lookupMisCode(OFFENCE_ID);
+            Optional<String> result = client().lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
@@ -148,7 +163,7 @@ class ReferencedataOffenceClientTest {
             ReferencedataOffenceClient unreachableClient = client(); // resolve the port first
             wireMock.stop(); // then take the server down so nothing answers
 
-            Optional<String> result = unreachableClient.lookupMisCode(OFFENCE_ID);
+            Optional<String> result = unreachableClient.lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
         }
@@ -166,47 +181,35 @@ class ReferencedataOffenceClientTest {
         @Test
         void lookupMisCode_whenMdcHasUserId_shouldForwardCjscppuidHeader() {
             MDC.put(TracingFilter.USER_ID, "test-user-123");
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "misCode": "SEX"}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("{\"offences\": [{\"misCode\": \"SEX\"}]}");
 
-            client().lookupMisCode(OFFENCE_ID);
+            client().lookupMisCode(OFFENCE_CODE);
 
-            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .withHeader("CJSCPPUID", equalTo("test-user-123")));
         }
 
         @Test
         void lookupMisCode_whenMdcHasNoUserId_shouldNotSendCjscppuidHeader() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "misCode": "SEX"}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("{\"offences\": [{\"misCode\": \"SEX\"}]}");
 
-            client().lookupMisCode(OFFENCE_ID);
+            client().lookupMisCode(OFFENCE_CODE);
 
-            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .withHeader("CJSCPPUID", absent()));
         }
 
         @Test
         void lookupMisCode_whenMdcUserIdBlank_shouldNotSendCjscppuidHeader() {
             MDC.put(TracingFilter.USER_ID, "   ");
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offence+json")
-                            .withBody("""
-                                    {"offenceId": "%s", "misCode": "SEX"}
-                                    """.formatted(OFFENCE_ID))));
+            stubOffencesList("{\"offences\": [{\"misCode\": \"SEX\"}]}");
 
-            client().lookupMisCode(OFFENCE_ID);
+            client().lookupMisCode(OFFENCE_CODE);
 
-            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .withHeader("CJSCPPUID", absent()));
         }
     }
@@ -217,29 +220,35 @@ class ReferencedataOffenceClientTest {
 
         @Test
         void lookupMisCode_whenDisabled_shouldReturnEmptyAndNotCallServer() {
-            wireMock.stubFor(get(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID))
-                    .willReturn(aResponse().withStatus(200)
-                            .withBody("{\"offenceId\": \"" + OFFENCE_ID + "\", \"misCode\": \"SEX\"}")));
+            stubOffencesList("{\"offences\": [{\"misCode\": \"SEX\"}]}");
 
-            Optional<String> result = new ReferencedataOffenceClient(properties(false)).lookupMisCode(OFFENCE_ID);
+            Optional<String> result = new ReferencedataOffenceClient(properties(false)).lookupMisCode(OFFENCE_CODE);
 
             assertThat(result).isEmpty();
-            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH_PREFIX + OFFENCE_ID)));
+            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH)));
         }
 
         @Test
-        void lookupMisCode_whenOffenceIdBlank_shouldReturnEmpty() {
+        void lookupMisCode_whenOffenceCodeBlank_shouldReturnEmpty() {
             Optional<String> result = client().lookupMisCode(" ");
 
             assertThat(result).isEmpty();
         }
 
         @Test
-        void lookupMisCode_whenOffenceIdNull_shouldReturnEmpty() {
+        void lookupMisCode_whenOffenceCodeNull_shouldReturnEmpty() {
             Optional<String> result = client().lookupMisCode(null);
 
             assertThat(result).isEmpty();
         }
+    }
+
+    private void stubOffencesList(final String responseBody) {
+        wireMock.stubFor(get(urlPathEqualTo(PATH))
+                .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                .willReturn(aResponse().withStatus(200)
+                        .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
+                        .withBody(responseBody)));
     }
 
     private ReferencedataOffenceClient client() {
@@ -249,8 +258,8 @@ class ReferencedataOffenceClientTest {
     private ReferencedataOffenceProperties properties(final boolean enabled) {
         return new ReferencedataOffenceProperties(
                 enabled,
-                "http://localhost:" + wireMock.port() + PATH_PREFIX + "{offenceId}",
-                "application/vnd.referencedataoffences.offence+json",
+                "http://localhost:" + wireMock.port() + PATH + "?" + QUERY_PARAM + "={offenceCode}",
+                "application/vnd.referencedataoffences.offences-list+json",
                 100,
                 100);
     }

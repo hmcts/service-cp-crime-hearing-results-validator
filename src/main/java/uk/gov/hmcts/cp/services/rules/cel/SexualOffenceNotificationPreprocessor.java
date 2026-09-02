@@ -19,9 +19,11 @@ import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
  * Per-offence preprocessor for the DR-SEX-008 sexual-offence notification-requirement rule.
  * Produces one {@link SexualOffenceNotificationContext} per offence that is BOTH convicted and
  * classified as a relevant sexual offence ({@code misCode} matching {@code
- * config.qualifyingMisCode()}, resolved via {@link ReferencedataOffenceClient}); every other
- * offence is excluded entirely (no context entry), including any offence whose reference-data
- * lookup fails (fail-open — see {@code contracts/referencedata-offences-integration.md}).
+ * config.qualifyingMisCode()}, resolved via {@link ReferencedataOffenceClient#lookupMisCode(String)}
+ * keyed by the offence's {@code offenceCode} — {@code OffenceDto.getOffenceCode()}, its CJS
+ * offence code); every other offence is excluded entirely (no context entry), including any
+ * offence whose reference-data lookup fails (fail-open — see {@code
+ * contracts/referencedata-offences-integration.md}).
  *
  * <p>The {@link ReferencedataOffenceClient#lookupMisCode(String)} call is a network round trip,
  * so it is made only once every cheaper, local condition is already satisfied: the offence is
@@ -98,7 +100,7 @@ public class SexualOffenceNotificationPreprocessor implements ValidationPreproce
             final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
             final Optional<String> defendantId = resolveSingleDefendant(lines);
             if (defendantId.isPresent()) {
-                final Optional<String> misCode = referencedataOffenceClient.lookupMisCode(offenceId);
+                final Optional<String> misCode = referencedataOffenceClient.lookupMisCode(offence.getOffenceCode());
                 if (misCode.isPresent() && config.qualifyingMisCode().equalsIgnoreCase(misCode.get())) {
                     final boolean isYouth = isYouth(datesOfBirth.get(defendantId.get()), hearingDay);
                     final Set<String> requiredCodes = isYouth ? youthCodes : adultCodes;

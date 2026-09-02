@@ -55,7 +55,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void convictedSexOffenceMissingNorrr_adultDefendant_shouldYieldContextWithNoQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -72,7 +72,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void convictedSexOffenceWithNorrr_anyCasing_shouldYieldContextWithQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "norrr", "d1", "off1")),
@@ -97,7 +97,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void offenceMisCodeNotSex_shouldYieldNoContextEntry() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("MOT"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("MOT"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -110,7 +110,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void referencedataLookupFailsOpen_shouldYieldNoContextEntry() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.empty());
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.empty());
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -123,7 +123,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void dateOfBirthNull_shouldDefaultToAdult() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -154,7 +154,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void defendantUnder18_shouldBeClassifiedAsYouth() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -167,7 +167,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void defendantExactly18OnHearingDay_shouldBeClassifiedAsAdult() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -180,7 +180,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void youthWithNeitherCode_shouldYieldNoQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "IMP", "d1", "off1")),
@@ -193,7 +193,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void youthWithNorrrOnly_shouldYieldQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "NORRR", "d1", "off1")),
@@ -206,7 +206,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void youthWithNorpgpOnly_anyCasing_shouldYieldQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "norpgp", "d1", "off1")),
@@ -219,7 +219,7 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void youthWithBothCodes_shouldYieldQualifyingNotification() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = buildRequest(
                     offence("off1", true),
                     List.of(resultLine("rl1", "NORRR", "d1", "off1"),
@@ -282,15 +282,15 @@ class SexualOffenceNotificationPreprocessorTest {
 
         @Test
         void multipleOffencesDifferentDefendantsAndAges_shouldEvaluateEachIndependently() {
-            when(referencedataOffenceClient.lookupMisCode("off1")).thenReturn(Optional.of("SEX"));
-            when(referencedataOffenceClient.lookupMisCode("off2")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007C")).thenReturn(Optional.of("SEX"));
+            when(referencedataOffenceClient.lookupMisCode("SX03007D")).thenReturn(Optional.of("SEX"));
             DraftValidationRequest request = new DraftValidationRequest(
                     "h1", "case1", HEARING_DAY, DraftValidationRequest.CourtTypeEnum.MAGISTRATES,
                     List.of(resultLine("rl1", "IMP", "d1", "off1"),
                             resultLine("rl2", "IMP", "d2", "off2")),
                     List.of(defendant("d1", HEARING_DAY.minusYears(30)),
                             defendant("d2", HEARING_DAY.minusYears(15))),
-                    List.of(offence("off1", true), offence("off2", true)));
+                    List.of(offence("off1", true, "SX03007C"), offence("off2", true, "SX03007D")));
 
             Map<String, SexualOffenceNotificationContext> result = preprocessor.preprocess(request, config);
 
@@ -301,9 +301,13 @@ class SexualOffenceNotificationPreprocessorTest {
     }
 
     private static OffenceDto offence(final String offenceId, final boolean convicted) {
+        return offence(offenceId, convicted, "SX03007C");
+    }
+
+    private static OffenceDto offence(final String offenceId, final boolean convicted, final String offenceCode) {
         return OffenceDto.builder()
                 .offenceId(offenceId)
-                .offenceCode("SX03007C")
+                .offenceCode(offenceCode)
                 .offenceTitle("Sexual offence")
                 .isConvicted(convicted)
                 .build();
