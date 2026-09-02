@@ -85,8 +85,8 @@ referencedata:
   offences:
     http:
       enabled: ${REFERENCEDATA_OFFENCES_ENABLED:true}
-      offence-url-template: ${CP_BASE_URL:http://localhost:8080}/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/{offenceId}
-      accept-header: "application/vnd.referencedataoffences.offence+json"
+      offence-url-template: ${CP_BASE_URL:http://localhost:8080}/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences?cjsoffencecode={offenceCode}
+      accept-header: "application/vnd.referencedataoffences.offences-list+json"
       connect-timeout-ms: ${REFERENCEDATA_OFFENCES_CONNECT_TIMEOUT_MS:2000}
       read-timeout-ms: ${REFERENCEDATA_OFFENCES_READ_TIMEOUT_MS:3000}
     cache:

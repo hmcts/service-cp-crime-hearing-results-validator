@@ -3,7 +3,7 @@
 ## Prerequisite
 
 No upstream contract change is required — unlike `specs/007-imprisonment-age-restriction`, every
-field this feature reads (`OffenceDto.offenceId`/`.isConvicted`, `DefendantDto.dateOfBirth`,
+field this feature reads (`OffenceDto.offenceCode`/`.isConvicted`, `DefendantDto.dateOfBirth`,
 `ResultLineDto.shortCode`) already exists on the current `libs.api.hearing.results.validator`
 pin. What's required instead is a **new external dependency wired up in this repo** — the
 `cpp-context-referencedata-offences` client, config, and cache described in `data-model.md` and
@@ -16,12 +16,13 @@ dormant, same fail-safe posture as any other missing dependency in this codebase
 1. Start the service with the referencedata-offences stub running (via WireMock in
    `IntegrationTestBase`, or the `gradle api` docker-compose stack once that stub is added — see
    `contracts/referencedata-offences-integration.md`'s open item on live-test wiring).
-2. Stub `GET /referencedataoffences-query-api/query/api/rest/referencedataoffences/offences/{offenceId}`
-   to return `{"offenceId": "<id>", "misCode": "SEX"}` for the offence id you'll use below.
+2. Stub `GET /referencedataoffences-query-api/query/api/rest/referencedataoffences/offences?cjsoffencecode={code}`
+   to return `{"offences": [{"offenceId": "<id>", "misCode": "SEX"}]}` for the offence code you'll
+   use below.
 3. `POST /api/validation/validate` with a `DraftValidationRequest` body containing:
    - `hearingDay`: e.g. `"2026-08-25"`
    - One `defendant` with `dateOfBirth: "2000-01-01"` (Adult — 18+ at hearing date)
-   - One `offence` with `offenceId` matching the stubbed reference-data id, `isConvicted: true`
+   - One `offence` with `offenceCode` matching the stubbed reference-data code, `isConvicted: true`
    - **No** `resultLine` with `shortCode: "NORRR"` for that offence
 4. Expect the response's `warnings` list to contain a `ValidationIssue` with `ruleId:
    "DR-SEX-008"`, `severity: "WARNING"`, `validationLevel: "OFFENCE"`, and an `affectedOffences`

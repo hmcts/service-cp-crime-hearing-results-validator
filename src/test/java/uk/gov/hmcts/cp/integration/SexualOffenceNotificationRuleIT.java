@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -24,9 +25,11 @@ import org.springframework.test.web.servlet.ResultActions;
  * reference-data fail-open contract and caching behaviour, and User Story 3 (this rule's warning
  * coexisting with another rule's defendant-level warning).
  *
- * <p>Every test uses a distinct {@code offenceId} — the {@code referencedataOffences} Caffeine
- * cache is keyed by {@code offenceId} and lives on the shared Spring context across test methods
- * (and across other IT classes reusing the same context), so reusing an id across tests stubbing
+ * <p>Every test uses a distinct {@code offenceCode} (the {@code adultRequest}/{@code
+ * youthRequest} helpers below set {@code offenceCode} equal to the test's {@code offenceId}, so
+ * each scenario's id is unique on both) — the {@code referencedataOffences} Caffeine cache is
+ * keyed by {@code offenceCode} and lives on the shared Spring context across test methods (and
+ * across other IT classes reusing the same context), so reusing a code across tests stubbing
  * different {@code misCode} responses would read a stale cached value instead of the new stub.
  */
 class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
@@ -95,9 +98,9 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "2000-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-multi-breach", "offenceCode": "SX03007C",
+                        {"offenceId": "sex-multi-breach", "offenceCode": "sex-multi-breach",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "sex-multi-clear", "offenceCode": "SX03007D",
+                        {"offenceId": "sex-multi-clear", "offenceCode": "sex-multi-clear",
                          "offenceTitle": "Sexual offence", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
@@ -190,7 +193,8 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
             performValidate(request).andExpect(status().isOk());
 
             REFERENCEDATA_OFFENCE_WIRE_MOCK.verify(1,
-                    getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH_PREFIX + "sex-cached-lookup")));
+                    getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                            .withQueryParam("cjsoffencecode", equalTo("sex-cached-lookup")));
         }
     }
 
@@ -225,7 +229,7 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "1990-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-combined", "offenceCode": "SX03007C",
+                        {"offenceId": "sex-combined", "offenceCode": "sex-combined",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
                         {"offenceId": "custodial-combined-1", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2},
@@ -276,9 +280,9 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "1990-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-multi-warn-1", "offenceCode": "SX03007C",
+                        {"offenceId": "sex-multi-warn-1", "offenceCode": "sex-multi-warn-1",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "sex-multi-warn-2", "offenceCode": "SX03007D",
+                        {"offenceId": "sex-multi-warn-2", "offenceCode": "sex-multi-warn-2",
                          "offenceTitle": "Sexual offence", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
@@ -343,6 +347,11 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
         }
     }
 
+    /**
+     * {@code offenceCode} is set equal to {@code offenceId} so each scenario's cache key (keyed
+     * by {@code offenceCode}) stays as unique as the scenario's own id — see the class-level
+     * caching note above.
+     */
     private static String adultRequest(final String offenceId, final boolean convicted, final String shortCode) {
         return """
                 {
@@ -358,13 +367,14 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                      "dateOfBirth": "2000-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "SX03007C", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": %s}
                   ]
                 }
-                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, convicted);
+                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, offenceId, convicted);
     }
 
+    /** See {@link #adultRequest} on why {@code offenceCode} mirrors {@code offenceId} here too. */
     private static String youthRequest(final String offenceId, final String shortCode) {
         return """
                 {
@@ -380,11 +390,11 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                      "dateOfBirth": "2012-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "SX03007C", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": true}
                   ]
                 }
-                """.formatted(shortCode, shortCode + " label", offenceId, offenceId);
+                """.formatted(shortCode, shortCode + " label", offenceId, offenceId, offenceId);
     }
 
     private ResultActions performValidate(String request) throws Exception {
