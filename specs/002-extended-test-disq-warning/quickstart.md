@@ -102,7 +102,7 @@ Add a second offence and a second F-category result line:
 ```json
 "offences": [
   {"id": "o-1", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving"},
-  {"id": "o-2", "offenceCode": "RT88046", "offenceTitle": "Causing death by dangerous driving"}
+  {"id": "o-2", "offenceCode": "RA88046", "offenceTitle": "Causing death by dangerous driving"}
 ],
 "resultLines": [
   {"id": "r-1", "shortCode": "COEW", "category": "F", "label": "...", "defendantId": "d-1", "offenceId": "o-1"},

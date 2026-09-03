@@ -16,6 +16,10 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for {@link CommunityOrderEndDatePreprocessor}.
+ *
+ * <p>{@code config} is read from the real {@code DR-COEW-005.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as literals, so it always matches what
+ * ships in production.
  */
 class CommunityOrderEndDatePreprocessorTest {
 
@@ -25,13 +29,7 @@ class CommunityOrderEndDatePreprocessorTest {
     @BeforeEach
     void setUp() {
         preprocessor = new CommunityOrderEndDatePreprocessor();
-        config = PreprocessingDefinition.builder()
-                .communityOrderShortCodes(List.of("COEW", "COS", "CONI"))
-                .curfewShortCodes(List.of("CUR"))
-                .curfewTagShortCodes(List.of("CURE"))
-                .furtherCurfewShortCodes(List.of("CURA"))
-                .alcoholAbstinenceShortCodes(List.of("AAR"))
-                .build();
+        config = RuleDefinitionLoader.load("rules/DR-COEW-005.yaml").preprocessing();
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

@@ -295,7 +295,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RA88046",
                          "offenceTitle": "Causing death by dangerous driving",
                          "orderIndex": 2, "isConvicted": true}
                       ]
@@ -401,7 +401,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RA88046",
                          "offenceTitle": "Causing death by dangerous driving",
                          "orderIndex": 2, "isConvicted": true}
                       ]
@@ -526,7 +526,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "RT88046",
+                        {"offenceId": "off1", "offenceCode": "RA88046",
                          "offenceTitle": "Causing death by dangerous driving", "orderIndex": 1,
                          "isConvicted": true},
                         {"offenceId": "off2", "offenceCode": "RT88526",
@@ -633,7 +633,7 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
                       "offences": [
                         {"offenceId": "off1", "offenceCode": "RT88026",
                          "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "RT88046",
+                        {"offenceId": "off2", "offenceCode": "RA88046",
                          "offenceTitle": "Causing death by dangerous driving", "orderIndex": 2,
                          "isConvicted": true},
                         {"offenceId": "off3", "offenceCode": "RT88526",
