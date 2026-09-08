@@ -47,7 +47,7 @@ This document records the design decisions taken during planning, why each one w
 The rule fires when:
 
 ```
-offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
+offence.offenceCode ∈ { RA88046, RT88526, RT88026, RT88530, RT88531 }
   AND offence has ≥1 non-excluded, non-DDOTE/DDOTEL result line
   AND offence has 0 result lines with a short code in the excluded set
   AND offence has 0 result lines with short code DDOTE or DDOTEL
@@ -76,7 +76,7 @@ offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
 The qualifying gate becomes:
 
 ```
-offence.offenceCode ∈ { RT88046, RT88526, RT88026, RT88530, RT88531 }
+offence.offenceCode ∈ { RA88046, RT88526, RT88026, RT88530, RT88531 }
   AND ∃ line ∈ offence.lines  : line.category = 'F'
                                   AND line.shortCode ∉ excludedFinalShortCodes
   AND ∄ line ∈ offence.lines  : line.shortCode ∈ { DDOTE, DDOTEL }

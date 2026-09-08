@@ -12,27 +12,75 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 
 /**
  * Unit tests for the per-offence preprocessor that drives DR-CTL-003.
+ *
+ * <p>{@code remandShortCodes} and {@code ctlShortCodes} are read from the real
+ * {@code DR-CTL-003.yaml} rule file via {@link RuleDefinitionLoader} rather than duplicated here as
+ * literals, so {@link #config} always matches what ships in production, and the parameterized
+ * suppression/trigger tests (backed by {@link #remandShortCodes()} / {@link #ctlShortCodes()})
+ * automatically cover every code the YAML declares. The two
+ * {@code ..._should_match_the_known_baseline_exactly()} tests pin those sets against known
+ * baselines so a code added to or removed from the YAML without the baseline being updated fails
+ * loudly instead of silently changing what the parameterized tests cover.
  */
 class CtlMissingPreprocessorTest {
 
+    private static final RuleDefinition RULE_DEFINITION =
+            RuleDefinitionLoader.load("rules/DR-CTL-003.yaml");
+
     private static final List<String> REMAND_SHORT_CODES =
-            List.of("RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD");
+            List.copyOf(RULE_DEFINITION.preprocessing().remandShortCodes());
     private static final List<String> CTL_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().ctlShortCodes());
+
+    /** Kept in lockstep with the YAML by {@link #remandShortCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_REMAND_SHORT_CODES =
+            List.of("RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD");
+
+    /** Kept in lockstep with the YAML by {@link #ctlShortCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_CTL_SHORT_CODES =
             List.of("CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB");
 
     private final CtlMissingPreprocessor preprocessor = new CtlMissingPreprocessor();
 
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type(CtlMissingPreprocessor.QUALIFIER)
-            .remandShortCodes(REMAND_SHORT_CODES)
-            .ctlShortCodes(CTL_SHORT_CODES)
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
+
+    @Test
+    @DisplayName("DR-CTL-003.yaml's remandShortCodes must exactly match the known baseline")
+    void remandShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(REMAND_SHORT_CODES)
+                .as("DR-CTL-003.yaml's remandShortCodes must exactly match "
+                        + "EXPECTED_REMAND_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by the parameterized remand-trigger test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_REMAND_SHORT_CODES);
+    }
+
+    @Test
+    @DisplayName("DR-CTL-003.yaml's ctlShortCodes must exactly match the known baseline")
+    void ctlShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(CTL_SHORT_CODES)
+                .as("DR-CTL-003.yaml's ctlShortCodes must exactly match "
+                        + "EXPECTED_CTL_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match, which would leave it "
+                        + "untested by the parameterized CTL-suppression test")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_CTL_SHORT_CODES);
+    }
+
+    /** Factory method for {@code each_remand_trigger_code_should_produce_warning}; YAML-backed. */
+    static List<String> remandShortCodes() {
+        return REMAND_SHORT_CODES;
+    }
+
+    /** Factory method for {@code each_ctl_short_code_should_suppress_warning}; YAML-backed. */
+    static List<String> ctlShortCodes() {
+        return CTL_SHORT_CODES;
+    }
 
     private Map<String, CtlOffenceContext> preprocess(DraftValidationRequest request) {
         return preprocessor.preprocess(request, config);
@@ -56,7 +104,7 @@ class CtlMissingPreprocessorTest {
         }
 
         @ParameterizedTest(name = "trigger code {0} should produce warning")
-        @ValueSource(strings = {"RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD"})
+        @MethodSource("uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessorTest#remandShortCodes")
         void each_remand_trigger_code_should_produce_warning(String shortCode) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", shortCode, "d1", "off1")),
@@ -183,7 +231,7 @@ class CtlMissingPreprocessorTest {
         }
 
         @ParameterizedTest(name = "CTL short code {0} should suppress warning")
-        @ValueSource(strings = {"CTL", "CCII", "CCIIB", "CCIILA", "CCIITDH", "CCIIYDA", "CCQB"})
+        @MethodSource("uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessorTest#ctlShortCodes")
         void each_ctl_short_code_should_suppress_warning(String shortCode) {
             DraftValidationRequest request = buildRequest(
                     List.of(

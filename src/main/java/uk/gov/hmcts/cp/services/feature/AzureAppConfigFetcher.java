@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -36,6 +37,14 @@ public class AzureAppConfigFetcher {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final int TIMEOUT_SECONDS = 5;
     private static final int HTTP_OK = 200;
+
+    /**
+     * {@link DateTimeFormatter#RFC_1123_DATE_TIME} does not zero-pad a single-digit day-of-month
+     * (e.g. "Tue, 1 Sep 2026 ..."), which is not what RFC 1123 nor Azure's signature validation
+     * expects on the 1st-9th of a month. This explicit pattern always emits a 2-digit day.
+     */
+    private static final DateTimeFormatter RFC1123_ZERO_PADDED_DAY =
+            DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.ENGLISH);
 
     private final AzureConnectionInfo connectionInfo;
     private final HttpClient httpClient;
@@ -145,7 +154,7 @@ public class AzureAppConfigFetcher {
         // signed request would use the wrong offset, Azure would reject it with 401, and the
         // fetch would fail-open (feature permanently unable to be disabled via this path).
         final String requestTime = ZonedDateTime.now(ZoneOffset.UTC)
-                .format(DateTimeFormatter.RFC_1123_DATE_TIME);
+                .format(RFC1123_ZERO_PADDED_DAY);
         final String contentHash = buildContentHash();
         final String host = connectionInfo.getHost();
 

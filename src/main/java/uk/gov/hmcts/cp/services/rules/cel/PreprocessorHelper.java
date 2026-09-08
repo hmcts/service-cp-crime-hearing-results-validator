@@ -1,7 +1,10 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,6 +12,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.owasp.encoder.Encode;
@@ -19,11 +24,28 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Stateless helpers shared by the {@link ValidationPreprocessor} implementations: short-code
- * normalisation and matching, result-line grouping, defendant-name assembly, and prompt-date
- * parsing. Mirrors the static-utility shape of {@link uk.gov.hmcts.cp.services.rules.SeverityCeiling}.
+ * normalisation and matching, result-line grouping, defendant-name assembly, and prompt-date/
+ * prompt-period parsing. Mirrors the static-utility shape of
+ * {@link uk.gov.hmcts.cp.services.rules.SeverityCeiling}.
  */
 @Slf4j
 public final class PreprocessorHelper {
+
+    /**
+     * Matches period prompt values as sent by the real upstream contract, e.g. {@code "90 Days"},
+     * {@code "1 Day"}, {@code "1 Months"}, or {@code "1 weeks"} — Days, Weeks, and Months are all
+     * confirmed against real payloads; any other unit falls back to the WARN-and-skip behaviour
+     * below rather than guessing a conversion. A bare integer (no unit suffix) is also accepted
+     * and defaults to days.
+     */
+    private static final Pattern PERIOD_PATTERN =
+            Pattern.compile("^(\\d+)\\s*(Days?|Weeks?|Months?)$", Pattern.CASE_INSENSITIVE);
+
+    /** Display format for calculated end dates surfaced in validation messages. */
+    private static final DateTimeFormatter CALCULATED_END_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static final int SINGLE_DAY = 1;
 
     private PreprocessorHelper() {
     }
@@ -234,11 +256,13 @@ public final class PreprocessorHelper {
 
     /**
      * Groups an already-filtered line list by offence id, preserving encounter order of both
-     * offences and lines. Unlike {@link #groupResultsByOffence}, which reads the whole request,
-     * this groups a caller-supplied subset (e.g. one dedupe group's lines).
+     * offences and lines; skips lines with a null offence id. Unlike {@link #groupResultsByOffence},
+     * which reads the whole request, this groups a caller-supplied subset (e.g. one dedupe group's
+     * lines).
      */
     public static Map<String, List<ResultLineDto>> groupByOffence(final List<ResultLineDto> lines) {
         return lines.stream()
+            .filter(rl -> rl.getOffenceId() != null)
             .collect(Collectors.groupingBy(ResultLineDto::getOffenceId, LinkedHashMap::new, Collectors.toList()));
     }
 
@@ -257,5 +281,168 @@ public final class PreprocessorHelper {
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(null);
+    }
+
+    /**
+     * A parsed period prompt value: a count paired with the calendar unit it's expressed in.
+     * Periods are recorded as e.g. {@code "90 Days"} or {@code "1 Months"}, and month arithmetic
+     * must use calendar-aware {@link LocalDate#plus} rather than a fixed day-count conversion,
+     * since month lengths vary.
+     */
+    public record ParsedPeriod(long amount, ChronoUnit unit) {
+    }
+
+    /**
+     * Parses the {@code promptValue} of the first prompt matching {@code promptRef} as a period.
+     * Returns {@code null} (and warns) when the prompt is missing, blank, or unparseable.
+     */
+    @SuppressWarnings("PMD.OnlyOneReturn")
+    public static ParsedPeriod parsePromptPeriod(final ResultLineDto line,
+                                                 final String promptRef,
+                                                 final String offenceId) {
+        if (line.getPrompts() == null) {
+            return null;
+        }
+        ParsedPeriod found = null;
+        for (final Prompt prompt : line.getPrompts()) {
+            if (found == null && promptRef.equals(prompt.getPromptRef())) {
+                found = parsePeriodValue(prompt.getPromptValue(), promptRef,
+                    line.getShortCode(), offenceId);
+            }
+        }
+        return found;
+    }
+
+    private static ParsedPeriod parsePeriodValue(final String value, final String promptRef,
+                                                 final String shortCode, final String offenceId) {
+        ParsedPeriod result = null;
+        if (value == null || value.isBlank()) {
+            log.warn("Blank promptValue for promptRef={} on shortCode={} offenceId={}",
+                promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
+        } else {
+            final String trimmed = value.trim();
+            final Matcher periodMatcher = PERIOD_PATTERN.matcher(trimmed);
+            final String digits = periodMatcher.matches() ? periodMatcher.group(1) : trimmed;
+            final ChronoUnit unit = periodMatcher.matches()
+                ? unitFor(periodMatcher.group(2))
+                : ChronoUnit.DAYS;
+            try {
+                result = new ParsedPeriod(Long.parseLong(digits), unit);
+            } catch (NumberFormatException e) {
+                log.warn("Unparseable integer '{}' for promptRef={} on shortCode={} offenceId={}",
+                    Encode.forJava(value), promptRef, Encode.forJava(shortCode), Encode.forJava(offenceId));
+            }
+        }
+        return result;
+    }
+
+    private static ChronoUnit unitFor(final String unitToken) {
+        final String upper = unitToken.toUpperCase(Locale.ROOT);
+        final ChronoUnit unit;
+        if (upper.startsWith("MONTH")) {
+            unit = ChronoUnit.MONTHS;
+        } else if (upper.startsWith("WEEK")) {
+            unit = ChronoUnit.WEEKS;
+        } else {
+            unit = ChronoUnit.DAYS;
+        }
+        return unit;
+    }
+
+    /**
+     * Checks whether any result line in {@code lines} matching {@code codes} has a recorded end
+     * date (identified by {@code endDatePromptRef}) that does not equal {@code startDate} (from
+     * {@code startDatePromptRef} on the same line) plus {@code period} (from
+     * {@code periodPromptRef} on the same line) minus one day. If so, adds {@code offenceId} to
+     * {@code mismatchIds} and records the correctly calculated end date in
+     * {@code calculatedEndDates}. Silently skips (no violation) when the start date, period, or
+     * end date is missing or unparseable. Shared by {@link CommunityOrderEndDatePreprocessor} and
+     * {@link YouthRehabilitationPreprocessor}.
+     */
+    public static void checkDurationMismatch(final List<ResultLineDto> lines,
+                                              final Set<String> codes,
+                                              final String startDatePromptRef,
+                                              final String periodPromptRef,
+                                              final String endDatePromptRef,
+                                              final String offenceId,
+                                              final List<String> mismatchIds,
+                                              final Map<String, String> calculatedEndDates) {
+        for (final ResultLineDto line : lines) {
+            // An offence contributes at most one mismatch per condition, mirroring
+            // isRequirementViolated's anyMatch semantics — avoids duplicate AffectedOffence
+            // entries if an offence ever has >1 matching requirement line.
+            if (mismatchIds.contains(offenceId)) {
+                break;
+            }
+            if (!hasUpperCode(line, codes)) {
+                continue;
+            }
+            final LocalDate startDate = parsePromptDate(line, startDatePromptRef, offenceId);
+            recordDurationMismatchIfAny(line, startDate, periodPromptRef, endDatePromptRef,
+                offenceId, mismatchIds, calculatedEndDates);
+        }
+    }
+
+    /**
+     * As {@link #checkDurationMismatch}, but the start date is a fixed value (e.g. the hearing
+     * date) rather than a per-line prompt — used by {@link CommunityOrderEndDatePreprocessor} for
+     * the alcohol-abstinence (AAR) requirement, whose period runs from the hearing date.
+     */
+    public static void checkDurationMismatchFromFixedStart(final List<ResultLineDto> lines,
+                                                            final Set<String> codes,
+                                                            final LocalDate startDate,
+                                                            final String periodPromptRef,
+                                                            final String endDatePromptRef,
+                                                            final String offenceId,
+                                                            final List<String> mismatchIds,
+                                                            final Map<String, String> calculatedEndDates) {
+        for (final ResultLineDto line : lines) {
+            if (mismatchIds.contains(offenceId)) {
+                break;
+            }
+            if (!hasUpperCode(line, codes)) {
+                continue;
+            }
+            recordDurationMismatchIfAny(line, startDate, periodPromptRef, endDatePromptRef,
+                offenceId, mismatchIds, calculatedEndDates);
+        }
+    }
+
+    @SuppressWarnings("PMD.OnlyOneReturn")
+    private static void recordDurationMismatchIfAny(final ResultLineDto line,
+                                                     final LocalDate startDate,
+                                                     final String periodPromptRef,
+                                                     final String endDatePromptRef,
+                                                     final String offenceId,
+                                                     final List<String> mismatchIds,
+                                                     final Map<String, String> calculatedEndDates) {
+        if (startDate == null) {
+            return;
+        }
+        final ParsedPeriod period = parsePromptPeriod(line, periodPromptRef, offenceId);
+        if (period == null) {
+            return;
+        }
+        final LocalDate endDate = parsePromptDate(line, endDatePromptRef, offenceId);
+        if (endDate == null) {
+            return;
+        }
+        final LocalDate expectedEndDate;
+        try {
+            expectedEndDate = startDate.plus(period.amount(), period.unit()).minusDays(SINGLE_DAY);
+        } catch (DateTimeException | ArithmeticException e) {
+            // DateTimeException: calculated date outside LocalDate's supported year range.
+            // ArithmeticException: LocalDate.plusDays/plusWeeks overflow (Math.addExact) for an
+            // amount near Long.MAX_VALUE — plusMonths happens to surface as DateTimeException
+            // instead, but both failure modes mean "period out of range" and must warn-and-skip
+            // rather than propagate out of preprocess().
+            log.warn("Period out of range for promptRef={} on shortCode={} offenceId={}",
+                periodPromptRef, Encode.forJava(line.getShortCode()), Encode.forJava(offenceId));
+            return;
+        }
+        if (!endDate.isEqual(expectedEndDate)) {
+            mismatchIds.add(offenceId);
+            calculatedEndDates.put(offenceId, expectedEndDate.format(CALCULATED_END_DATE_FORMAT));
+        }
     }
 }

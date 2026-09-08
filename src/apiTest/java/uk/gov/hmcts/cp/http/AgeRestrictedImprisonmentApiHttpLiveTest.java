@@ -191,8 +191,10 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("severity").asText()).isEqualTo("ERROR");
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("validationLevel").asText())
                 .isEqualTo("OFFENCE");
+        // Single-defendant hearing: the "This affects <name>" clause is redundant and omitted
+        // (see MessageTemplateResolver#resolveDefendantNames).
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
+                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE);
     }
 
     /**
@@ -224,8 +226,10 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
+        // Single-defendant hearing: the "This affects <name>" clause is redundant and omitted
+        // (see MessageTemplateResolver#resolveDefendantNames).
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
+                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE);
     }
 
     /**
@@ -265,8 +269,10 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get(RULE_ID_FIELD).asText()).isEqualTo(RULE_ID);
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences")).hasSize(2);
+        // Single-defendant hearing: the "This affects <name>" clause is redundant and omitted
+        // (see MessageTemplateResolver#resolveDefendantNames).
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE);
+                .isEqualToIgnoringWhitespace(EXPECTED_BASE_MESSAGE);
     }
 
     /**

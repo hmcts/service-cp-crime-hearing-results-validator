@@ -52,16 +52,12 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
             "The end date of the order must match or be longer than the end date of "
                     + "Alcohol abstinence and monitoring";
 
-    // ── AC2a–AC2d error-summary base messages (errorMessageTemplate — "This affects …") ──
+    // ── AC2a/AC2d error-summary base messages (errorMessageTemplate — "This affects …") ──
+    // Used only where the hearing has 2+ defendants (AC5); single-defendant scenarios assert
+    // the plain MSG_CUR/MSG_CURE/MSG_CURA/MSG_AAR text with the clause omitted (AC1-AC4).
     private static final String ERR_MSG_BASE_CUR =
             "The end date of the order must match or be longer than the end date of "
                     + "Curfew (community requirement). This affects ";
-    private static final String ERR_MSG_BASE_CURE =
-            "The end date of the order must match or be longer than the end date of "
-                    + "Curfew with electronic monitoring. This affects ";
-    private static final String ERR_MSG_BASE_CURA =
-            "The end date of the order must match or be longer than the end date of "
-                    + "Further curfew requirement made. This affects ";
     private static final String ERR_MSG_BASE_AAR =
             "The end date of the order must match or be longer than the end date of "
                     + "Alcohol abstinence and monitoring. This affects ";
@@ -73,6 +69,12 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
     private static final String MSG_DUR_AAR_SUMMARY_BASE =
             "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
                     + "the period of the requirement. This affects ";
+    private static final String MSG_DUR_CURFEW_SUMMARY =
+            "The end date for the Curfew Requirement does not match the period of the "
+                    + "requirement.";
+    private static final String MSG_DUR_AAR_SUMMARY =
+            "The end date for the Alcohol Abstinence Monitoring Requirement does not match "
+                    + "the period of the requirement.";
 
     // ═════════════════════════════════════════════════════════════════════════
     // AC2 Scenarios 6–13
@@ -117,7 +119,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences", hasSize(1)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CUR + "John Smith.")));
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(MSG_CUR + ".")));
         }
     }
 
@@ -157,7 +159,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CURE)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CURE + "Jane Doe.")));
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(MSG_CURE + ".")));
         }
     }
 
@@ -197,7 +199,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CURA)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CURA + "Bob Brown.")));
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(MSG_CURA + ".")));
         }
     }
 
@@ -237,7 +239,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_AAR)))
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_AAR + "Sarah Green.")));
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(MSG_AAR + ".")));
         }
     }
 
@@ -461,7 +463,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].message", is(MSG_CUR)))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
-                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(ERR_MSG_BASE_CUR + "John Smith.")));
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(MSG_CUR + ".")));
         }
 
         @Test
@@ -692,7 +694,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[0].offenceId", is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            is(MSG_DUR_CURFEW_SUMMARY_BASE + "John Smith.")));
+                            is(MSG_DUR_CURFEW_SUMMARY)));
         }
 
         @Test
@@ -773,7 +775,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             is(durCurfewInlineMessage("30/10/2026"))))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            is(MSG_DUR_CURFEW_SUMMARY_BASE + "Jane Doe.")));
+                            is(MSG_DUR_CURFEW_SUMMARY)));
         }
     }
 
@@ -818,7 +820,7 @@ class CommunityOrderEndDateRuleIntegrationTest extends IntegrationTestBase {
                             is(durAarInlineMessage("31/03/2026"))))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            is(MSG_DUR_AAR_SUMMARY_BASE + "Sarah Green.")));
+                            is(MSG_DUR_AAR_SUMMARY)));
         }
     }
 
