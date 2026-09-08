@@ -7,7 +7,9 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
  * {@code errorMessageTemplate} in the rule YAML. The error message is surfaced in
  * {@code DraftValidationResponse.errorMessages}; the issue itself goes into {@code errors}.
  * When {@code affectedDefendantName} is non-null, {@link uk.gov.hmcts.cp.services.impl.DefaultValidationService}
- * groups results by rule and appends "This affects &lt;names&gt;." to the base message.
+ * groups results by rule and appends "This affects &lt;names&gt;." to the base message -- unless
+ * the hearing has only one defendant, in which case that clause is omitted as redundant (see
+ * {@link uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver#resolveDefendantNames}).
  *
  * @param issue                the validation issue
  * @param errorMessage         optional base error message (null for WARNING issues)

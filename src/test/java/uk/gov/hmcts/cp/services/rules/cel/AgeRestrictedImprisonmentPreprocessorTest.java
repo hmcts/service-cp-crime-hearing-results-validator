@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -16,17 +17,41 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for {@link AgeRestrictedImprisonmentPreprocessor}.
+ *
+ * <p>{@code filterShortCodes} is read from the real {@code DR-AGE-007.yaml} rule file via
+ * {@link RuleDefinitionLoader} rather than duplicated here as a literal, so {@link #config} always
+ * matches what ships in production.
+ * {@link #filterShortCodes_should_match_the_known_baseline_exactly()} pins that set against a known
+ * baseline so a code added to or removed from the YAML without the baseline being updated fails
+ * loudly instead of silently drifting from the case-insensitivity coverage below.
  */
 class AgeRestrictedImprisonmentPreprocessorTest {
 
     private static final LocalDate HEARING_DAY = LocalDate.of(2026, 7, 20);
 
+    private static final RuleDefinition RULE_DEFINITION =
+            RuleDefinitionLoader.load("rules/DR-AGE-007.yaml");
+
+    private static final List<String> FILTER_SHORT_CODES =
+            List.copyOf(RULE_DEFINITION.preprocessing().filterShortCodes());
+
+    /** Kept in lockstep with the YAML by {@link #filterShortCodes_should_match_the_known_baseline_exactly()}. */
+    private static final List<String> EXPECTED_FILTER_SHORT_CODES =
+            List.of("IMP", "EXTIVS", "SPECC", "SUSPS", "SUSPSNR");
+
     private final AgeRestrictedImprisonmentPreprocessor preprocessor =
             new AgeRestrictedImprisonmentPreprocessor();
-    private final PreprocessingDefinition config = PreprocessingDefinition.builder()
-            .type("age-restricted-imprisonment")
-            .filterShortCodes(List.of("IMP", "EXTIVS", "SPECC", "SUSPS", "SUSPSNR"))
-            .build();
+    private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
+
+    @Test
+    @DisplayName("DR-AGE-007.yaml's filterShortCodes must exactly match the known baseline")
+    void filterShortCodes_should_match_the_known_baseline_exactly() {
+        assertThat(FILTER_SHORT_CODES)
+                .as("DR-AGE-007.yaml's filterShortCodes must exactly match "
+                        + "EXPECTED_FILTER_SHORT_CODES -- a code was added or removed in the YAML "
+                        + "without this test's baseline being updated to match")
+                .containsExactlyInAnyOrderElementsOf(EXPECTED_FILTER_SHORT_CODES);
+    }
 
     @Test
     void type_should_return_the_registry_qualifier() {

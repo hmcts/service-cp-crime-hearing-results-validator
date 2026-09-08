@@ -183,7 +183,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                     .andExpect(jsonPath("$.errors.validationIssues[0].validationLevel", is("OFFENCE")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
+                            EXPECTED_BASE_MESSAGE)));
         }
 
         @Test
@@ -223,7 +223,7 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[0].affectedOffences[*].offenceId",
                             containsInAnyOrder("off1", "off2")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            EXPECTED_JAMIE_SMITH_AFFECTS_MESSAGE)));
+                            EXPECTED_BASE_MESSAGE)));
         }
 
         @Test
