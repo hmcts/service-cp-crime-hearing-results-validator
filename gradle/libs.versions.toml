@@ -19,8 +19,17 @@ testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.2.4"
 gatling = "3.15.1.2"
+# Security override, not a preference: see the tomcat-embed-core entry below.
+tomcat-embed = "11.0.25"
 
 [libraries]
+# Pins the tomcat-embed-core that spring-boot-starter-web brings in transitively. The BOM
+# for Spring Boot 4.1.1 selects 11.0.24, which carries three CRITICAL advisories fixed in
+# 11.0.25: CVE-2026-65182, CVE-2026-65905 and CVE-2026-68525. Declaring it here also makes
+# it a dependency Dependabot can see -- a version chosen only by a BOM is invisible to it,
+# which is why this sat on 11.0.24 while the sibling court-register repo, which declares it
+# explicitly, was bumped to 11.0.25 by a routine Dependabot pull request.
+tomcat-embed-core = { module = "org.apache.tomcat.embed:tomcat-embed-core", version.ref = "tomcat-embed" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }

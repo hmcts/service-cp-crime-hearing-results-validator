@@ -70,6 +70,10 @@ springBoot {
 dependencies {
   apiSpec libs.api.hearing.results.validator
 
+  // Security: pins the transitive tomcat-embed-core to a patched version. Spring Boot
+  // 4.1.1's BOM selects 11.0.24, which carries three CRITICAL advisories fixed in 11.0.25.
+  implementation libs.tomcat.embed.core
+
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator
   implementation libs.micrometer.registry.prometheus
