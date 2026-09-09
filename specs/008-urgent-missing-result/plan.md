@@ -7,12 +7,12 @@
 
 Add validation rule **DR-URG-008** that warns Crown Court users when all of a defendant's conditional-bail offences have been resulted with bail-ending outcomes (final result Category F, sentence deferred DS, remand-in-custody family, or warrant without bail WOFN) but no URGENT result has been recorded. The warning fires at **defendant level** with the fixed message: _"The defendant's conditional bail has ended. You may need to add the URGENT result and select "Bail conditions cancelled" on one of the offences before sharing."_
 
-Following Constitution Principle I (YAML/CEL Rule-First), the rule is expressed entirely in `DR-URG-008.yaml`. A new `ConditionalBailPreprocessor` + `ConditionalBailContext` pair handles the defendant-grouped, offence-remand-status-aware preprocessing. The feature is blocked on CHD-2485, which delivers `OffenceDto.getRemandStatus()` from the upstream `api-cp-crime-hearing-results-validator` library.
+Following Constitution Principle I (YAML/CEL Rule-First), the rule is expressed entirely in `DR-URG-008.yaml`. A new `ConditionalBailPreprocessor` + `ConditionalBailContext` pair handles the defendant-grouped, offence-bail-status-aware preprocessing. CHD-2485 has shipped — `OffenceDto.BailStatusEnum bailStatus` is available from `api-cp-crime-hearing-results-validator:0.2.8-cra-22`; conditional bail is `BailStatusEnum.B`.
 
 ## Technical Context
 
 **Language/Version**: Java 25
-**Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Caffeine, `api-cp-crime-hearing-results-validator` library (bumped to CHD-2485 version)
+**Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Caffeine, `api-cp-crime-hearing-results-validator:0.2.8-cra-22` (CHD-2485 delivered)
 **Storage**: PostgreSQL 15.3 — one new `validation_rule` row via Flyway migration V1.009
 **Testing**: JUnit 5 + Mockito + AssertJ (unit), TestContainers + WireMock (integration), RestTemplate (API live)
 **Target Platform**: Azure-hosted Spring Boot microservice, port 4550
@@ -61,7 +61,7 @@ src/main/resources/rules/
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── ConditionalBailPreprocessor.java                             [NEW]
 ├── ConditionalBailContext.java                                  [NEW]
-└── PreprocessingDefinition.java                                 [MODIFY: +bailEndingShortCodes, +conditionalBailRemandStatus]
+└── PreprocessingDefinition.java                                 [MODIFY: +bailEndingShortCodes]
 
 src/main/resources/db/migration/
 └── V1.009__insert_dr_urg_008.sql                                [NEW]
@@ -83,7 +83,7 @@ src/apiTest/java/uk/gov/hmcts/cp/
 
 ### Preprocessing: defendant-grouped with per-offence remand status lookup
 
-One `ConditionalBailContext` is produced per deduplicated defendant (using `PreprocessorHelper.groupLinesByDedupedDefendant()`). For each defendant, conditional-bail offences are identified via `OffenceDto.getRemandStatus()`. Result lines are grouped by offence to check for bail-ending results and URGENT.
+One `ConditionalBailContext` is produced per deduplicated defendant (using `PreprocessorHelper.groupLinesByDedupedDefendant()`). For each defendant, conditional-bail offences are identified via `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())`. Result lines are grouped by offence to check for bail-ending results and URGENT.
 
 **CEL context variables:**
 
@@ -108,18 +108,18 @@ A result line is bail-ending if `category == F` OR `shortCode ∈ {DS, RI, RIYDA
 
 `"URGENT"` is hardcoded as a private constant in `ConditionalBailPreprocessor`. It is not YAML-configurable — it is a stable business constant that does not vary.
 
-### CHD-2485 null-safety: graceful no-op before delivery
+### CHD-2485 null-safety: graceful no-op for missing bailStatus
 
-When `offence.getRemandStatus()` is null (library version < CHD-2485), the preprocessor skips that offence. `conditionalBailOffenceCount` remains 0, the CEL expression is false, and the rule never fires. Zero false positives.
+When `offence.getBailStatus()` is null, the preprocessor skips that offence. `conditionalBailOffenceCount` remains 0, the CEL expression is false, and the rule never fires. Zero false positives.
 
 ## External Dependency
 
 | Item | Detail |
 |------|--------|
 | Library | `api-cp-crime-hearing-results-validator` |
-| Current version | 26.25 (does NOT have `OffenceDto.getRemandStatus()`) |
-| Required version | TBD — delivered by CHD-2485 |
-| Blocker | Implementation is complete-able and testable, but rule is a no-op in production until CHD-2485 ships and the library version is bumped in `build.gradle` |
+| Version | `0.2.8-cra-22` (CHD-2485 delivered) |
+| Field | `BailStatusEnum bailStatus` on `OffenceDto`; conditional bail = `BailStatusEnum.B` |
+| Status | No blocker — update `build.gradle` to reference `0.2.8-cra-22` (or the promoted release version) |
 
 ## Complexity Tracking
 

@@ -6,13 +6,13 @@
 
 ---
 
-## Decision: CHD-2485 dependency (CRITICAL BLOCKER)
+## Decision: CHD-2485 dependency (RESOLVED)
 
-**Decision**: Implementation is designed against `OffenceDto.getRemandStatus()` which does not exist in the current library version (26.25). The field will be delivered by CHD-2485 from the `api-cp-crime-hearing-results-validator` upstream repository.
+**Decision**: CHD-2485 has been delivered in `api-cp-crime-hearing-results-validator` version `0.2.8-cra-22`. `OffenceDto` now has `BailStatusEnum bailStatus` (accessed via `offence.getBailStatus()`). Conditional bail is identified by `OffenceDto.BailStatusEnum.B` (code `"B"`, description `"Conditional bail"`).
 
-**Rationale**: The spec is fully specifiable and the preprocessor can be written and tested with mock data now. Production execution requires updating the library version once CHD-2485 ships. The `conditionalBailRemandStatus` value (e.g. `"CONDITIONAL_BAIL"`) is configurable in YAML so no code change is required when the exact string is confirmed.
+**Rationale**: The enum constant `B` is confirmed from the generated source and the CRA-22 commit in the upstream repo (`1c70b3c`). `build.gradle` must reference version `0.2.8-cra-22` (or the release version once it is promoted from the branch build).
 
-**How to apply**: When CHD-2485 delivers `OffenceDto.getRemandStatus()`, update `build.gradle` to the new library version. The preprocessor and tests require no logic change — only the library version bump.
+**How to apply**: Use `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())` in `ConditionalBailPreprocessor`. Null `bailStatus` is treated as "not conditional bail" (safe no-op).
 
 ---
 
@@ -46,13 +46,13 @@
 
 ---
 
-## Decision: Two new fields added to `PreprocessingDefinition`
+## Decision: One new field added to `PreprocessingDefinition`
 
-**Decision**: Add `List<String> bailEndingShortCodes` and `String conditionalBailRemandStatus` to `PreprocessingDefinition`.
+**Decision**: Add only `List<String> bailEndingShortCodes` to `PreprocessingDefinition`. The `conditionalBailRemandStatus` String field originally planned is **not needed** — conditional bail is detected by comparing `offence.getBailStatus() == OffenceDto.BailStatusEnum.B` directly in the preprocessor (a hardcoded enum constant, not a YAML-configurable string).
 
-**Rationale**: Existing fields (`remandShortCodes`, `ctlShortCodes`, `filterShortCodes`) are semantically tied to other rule types. Adding purpose-named fields avoids ambiguity and is consistent with the existing per-rule field naming pattern (e.g. `yroOrderShortCodes`, `communityOrderShortCodes`).
+**Rationale**: Now that CHD-2485 has delivered a typed enum (`BailStatusEnum`), hardcoding `BailStatusEnum.B` in the preprocessor is safer and clearer than a YAML string that could be mistyped. The enum value is a stable CPP platform constant with no runtime variation. This also keeps `PreprocessingDefinition` smaller.
 
-**Alternatives considered**: Reusing `remandShortCodes` for bail-ending codes — rejected because DS and WOFN are not "remand" codes and the name would mislead future maintainers. Reusing `filterShortCodes` — rejected because it already carries a different semantic for `CustodialPreprocessor`.
+**Alternatives considered**: YAML-configurable `conditionalBailRemandStatus` string — rejected because the enum value `B` is fixed by the upstream data model; making it configurable would give a false sense of flexibility while adding a misconfiguration failure mode.
 
 ---
 
@@ -87,14 +87,14 @@ conditionalBailOffenceCount > 0 && bailEndedCount == conditionalBailOffenceCount
 
 ---
 
-## Decision: `conditionalBailRemandStatus` placeholder value
+## Decision: Conditional bail detection — hardcoded `BailStatusEnum.B`
 
-**Decision**: Use `"CONDITIONAL_BAIL"` as the placeholder in YAML. This value is confirmed against the CHD-2485 delivery.
+**Decision**: `ConditionalBailPreprocessor` detects conditional bail via `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())`. This is hardcoded as a private constant (`private static final BailStatusEnum CONDITIONAL_BAIL = BailStatusEnum.B`), not YAML-configurable.
 
-**Rationale**: YAML-configurable, so the actual value can be updated in the rule file without code change once CHD-2485 confirms the exact string.
+**Rationale**: `BailStatusEnum.B` is a typed, compiler-checked constant from the upstream API contract. It cannot be mistyped in YAML, cannot drift silently, and mirrors the treatment of `"URGENT"` (also hardcoded). The DR-URG-008.yaml preprocessing block therefore does **not** include a `conditionalBailRemandStatus` key.
 
 ---
 
-## Known gap: no existing tests for defendant-offence remand status lookup
+## Known gap resolved: BailStatusEnum.B confirmed
 
-No existing integration test exercises the `remandStatus` field on `OffenceDto` because CHD-2485 has not shipped. The integration test for this rule will use TestContainers + WireMock stubs (via `IntegrationTestBase`) and mock `OffenceDto` objects with `remandStatus` set in test data builders.
+CHD-2485 delivered. Integration tests can now use `OffenceDto.builder().bailStatus(OffenceDto.BailStatusEnum.B).build()` directly. No stubs or workarounds needed.

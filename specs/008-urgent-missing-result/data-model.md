@@ -38,14 +38,13 @@ ConditionalBailContext
 
 **File**: `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java`
 
-Two new fields added (null-safe; unused by all existing preprocessors):
+One new field added (null-safe; unused by all existing preprocessors):
 
-| New field                     | Type           | Used by                     | Purpose                                                          |
-|-------------------------------|----------------|-----------------------------|------------------------------------------------------------------|
-| `bailEndingShortCodes`        | `List<String>` | `ConditionalBailPreprocessor` | Non-Category-F codes that end conditional bail: DS, RI family, WOFN |
-| `conditionalBailRemandStatus` | `String`       | `ConditionalBailPreprocessor` | Remand status string value indicating conditional bail on `OffenceDto` |
+| New field              | Type           | Used by                       | Purpose                                                              |
+|------------------------|----------------|-------------------------------|----------------------------------------------------------------------|
+| `bailEndingShortCodes` | `List<String>` | `ConditionalBailPreprocessor` | Non-Category-F codes that end conditional bail: DS, RI family, WOFN |
 
-Existing fields are unaffected. The `@Builder` annotation on the record means the new fields default to `null` in all existing preprocessors.
+Conditional bail detection uses `OffenceDto.BailStatusEnum.B` directly in the preprocessor — no YAML-configurable string field is needed. Existing fields are unaffected; the `@Builder` annotation means the new field defaults to `null` in all other preprocessors.
 
 ---
 
@@ -65,8 +64,8 @@ Existing fields are unaffected. The `@Builder` annotation on the record means th
 5. For each deduplicated defendant group (defendantId → defendantName):
    a. Collect offenceIds belonging to this defendant group
    b. Filter to conditional-bail offences:
-      offence.getRemandStatus() [case-insensitive] == config.conditionalBailRemandStatus()
-      (null remandStatus → skip offence; treats missing CHD-2485 data as "no conditional bail")
+      OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())
+      (null bailStatus → skip offence; safe no-op)
    c. conditionalBailOffenceCount = count of conditional-bail offences
    d. For each conditional-bail offence:
       - isBailEnding = any result line has (category == F) OR (shortCode ∈ bailEndingUpper)
@@ -81,7 +80,7 @@ Existing fields are unaffected. The `@Builder` annotation on the record means th
 **Null-safety rules**:
 - `request.getOffences()` null → empty offenceMap
 - `request.getResultLines()` null → handled by `PreprocessorHelper` (returns empty maps)
-- `offence.getRemandStatus()` null → treated as "not conditional bail" (safe no-op until CHD-2485)
+- `offence.getBailStatus()` null → treated as "not conditional bail" (safe no-op)
 - `resultLine.getCategory()` null → not treated as Category F
 
 **Constant**: `private static final String URGENT_CODE = "URGENT"` — hardcoded, not YAML-configurable.
@@ -115,7 +114,6 @@ rule:
       - RILAB
       - REMYD
       - WOFN
-    conditionalBailRemandStatus: "CONDITIONAL_BAIL"
 
   conditions:
     - id: "AC1"
@@ -151,10 +149,10 @@ No state is mutated. The rule evaluates a snapshot of hearing result lines and o
 
 ---
 
-## External dependency: `OffenceDto.getRemandStatus()`
+## External dependency: `OffenceDto.getBailStatus()`
 
-| Library                              | Current version | Required when   | Field added by |
-|--------------------------------------|-----------------|-----------------|----------------|
-| `api-cp-crime-hearing-results-validator` | 26.25       | CHD-2485 ships  | CHD-2485       |
+| Library                              | Version delivering field | Field          | Enum constant for conditional bail |
+|--------------------------------------|--------------------------|----------------|------------------------------------|
+| `api-cp-crime-hearing-results-validator` | `0.2.8-cra-22`       | `BailStatusEnum bailStatus` | `BailStatusEnum.B` (code "B", description "Conditional bail") |
 
-Until CHD-2485 ships, `offence.getRemandStatus()` does not exist. The preprocessor handles this gracefully — null remand status means the offence is not treated as conditional bail, so `conditionalBailOffenceCount` is always 0 and the rule never fires. No false positives.
+CHD-2485 has shipped. `offence.getBailStatus()` is available from library version `0.2.8-cra-22`. The preprocessor uses `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())`; null `bailStatus` is treated as "not conditional bail" (safe no-op).

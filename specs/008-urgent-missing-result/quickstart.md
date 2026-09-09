@@ -1,14 +1,14 @@
 # Quickstart: DR-URG-008 Implementation (CRA-22)
 
 **Branch**: `CRA-22-urgent-missing-result`
-**Blocked by**: CHD-2485 (adds `remandStatus` field to `OffenceDto`)
+**Date**: 2026-09-09 (updated — CHD-2485 resolved)
 
 ---
 
 ## Prerequisites
 
 1. Branch is already created: `CRA-22-urgent-missing-result`
-2. CHD-2485 must have shipped and the library version in `build.gradle` updated
+2. `build.gradle` references `api-cp-crime-hearing-results-validator:0.2.8-cra-22` (CHD-2485 delivered — `BailStatusEnum bailStatus` is available on `OffenceDto`)
 3. `gradle test` passes on `main` before starting
 
 ---
@@ -17,12 +17,11 @@
 
 ### Step 1: Update `PreprocessingDefinition`
 
-Add two fields to the `@Builder` record in
+Add one field to the `@Builder` record in
 `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java`:
 
 ```java
-List<String> bailEndingShortCodes,
-String conditionalBailRemandStatus
+List<String> bailEndingShortCodes
 ```
 
 No existing tests break — both fields default to `null` via `@Builder`.
@@ -97,9 +96,9 @@ Scenarios to cover (map to spec ACs):
 - AC5: Mixed bail-ending types (F + DS + RI), no URGENT → fires
 - Suppression: URGENT present on one conditional-bail offence → does NOT fire
 - Suppression: Not all conditional-bail offences have bail-ending results → does NOT fire
-- Suppression: No conditional-bail offences (null remandStatus) → does NOT fire
+- Suppression: No conditional-bail offences (null or non-B bailStatus) → does NOT fire
 - Multi-defendant: only qualifying defendant has warning; other defendant does not
-- Null safety: null offences, null resultLines, null remandStatus
+- Null safety: null offences, null resultLines, null bailStatus
 
 Run: `gradle test --tests "*ConditionalBailPreprocessorTest"` — must fail.
 
@@ -133,7 +132,7 @@ Run: `gradle checkstyleMain pmdMain` — must pass.
 
 File: `src/main/resources/rules/DR-URG-008.yaml`
 
-Use the template from `data-model.md`. Confirm `conditionalBailRemandStatus` value against CHD-2485 delivery notes.
+Use the schema from `data-model.md`. The preprocessing block contains only `bailEndingShortCodes` — conditional bail detection uses `BailStatusEnum.B` hardcoded in the preprocessor, not a YAML-configurable string.
 
 ### Step 7: Create Flyway migration
 
@@ -191,10 +190,10 @@ The `spec-validator` agent checks this at the end of the build loop.
 ## Test data builder hints
 
 ```java
-// Offence with conditional bail (after CHD-2485 ships)
+// Offence with conditional bail
 OffenceDto.builder()
     .offenceId("off-1")
-    .remandStatus("CONDITIONAL_BAIL")   // <-- new CHD-2485 field
+    .bailStatus(OffenceDto.BailStatusEnum.B)
     .build();
 
 // Bail-ending result line (Category F)

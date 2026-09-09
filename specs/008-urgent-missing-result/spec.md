@@ -2,7 +2,8 @@
 
 **Feature Branch**: `CRA-22-urgent-missing-result`
 **Created**: 2026-09-02
-**Status**: Draft
+**Updated**: 2026-09-09
+**Status**: Ready
 **Jira**: CRA-22
 **Input**: User description: "CRA-22 Functional Delivery - 8. Results validation - Inform the user if URGENT result missing - Crown Court"
 
@@ -93,14 +94,14 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 - **FR-006**: The system MUST suppress the warning when at least one conditional-bail offence has not received a bail-ending result in the current hearing.
 - **FR-007**: The warning MUST be advisory only (severity WARNING); the user MUST be able to proceed and share results without resolving it.
 - **FR-008**: The system MUST evaluate this rule independently for each defendant in the hearing.
-- **FR-009**: The system MUST derive conditional bail status from the remand status field on each offence (provided by the hearing data sourced from CHD-2485).
+- **FR-009**: The system MUST derive conditional bail status from the `bailStatus` field on each offence; an offence is "conditional bail" when its `bailStatus` equals the conditional bail value (code `B`, description "Conditional bail") as supplied by the `api-cp-crime-hearing-results-validator` library (CHD-2485 delivered in version `0.2.8-cra-22`).
 
 ### Key Entities
 
 - **Defendant**: Person charged. The warning is issued at this level. A hearing may have multiple defendants each evaluated independently.
-- **Offence**: A charge linked to a defendant. Carries a remand status field that indicates whether the defendant was on conditional bail for that charge.
+- **Offence**: A charge linked to a defendant. Carries a `bailStatus` field (enum) indicating the remand status; value `B` ("Conditional bail") means the defendant was released on conditions for that charge.
 - **Result line**: An outcome recorded against an offence in this hearing. Carries a short code (e.g., COEW, IMP, DS, RI, WOFN, URGENT).
-- **Conditional bail remand status**: A value on the offence remand status field indicating the defendant was released subject to bail conditions. Delivered via CHD-2485.
+- **Conditional bail**: The `bailStatus == B` state on an offence, indicating the defendant was released subject to bail conditions. Field delivered by CHD-2485 (now available).
 - **Bail-ending result**: A result that terminates conditional bail on an offence — any Category F final result, DS, any of the RI/RIYDA/RIH/RIB/RILA/RILAB/REMYD short codes, or WOFN.
 
 ## Success Criteria *(mandatory)*
@@ -114,7 +115,7 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 
 ## Assumptions
 
-- The conditional bail remand status field on each offence is delivered in the hearing result payload. This is gated on CHD-2485 (blocked as of 2026-07-16; Simon Bartlett confirmed dependency).
+- CHD-2485 has been delivered. The `bailStatus` field (`BailStatusEnum`) is available on `OffenceDto` in `api-cp-crime-hearing-results-validator` version `0.2.8-cra-22`. Conditional bail is identified by enum value `B` (description "Conditional bail"). A null or absent `bailStatus` is treated as "no conditional bail" (rule does not fire).
 - The exact URGENT short code is `URGENT` (all uppercase, no variation).
 - The bail-ending result short codes and Category F definition are stable and documented in the product's result code reference; any addition or removal requires a spec update.
 - This feature covers back-end validation only. The UI rendering of the warning (bold black text, exclamation icon in a black circle, left-aligned below defendant/URN — AC7 of CRA-22) is the responsibility of the front-end team and is out of scope for this service.
