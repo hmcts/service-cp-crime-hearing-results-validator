@@ -35,7 +35,7 @@ can receive its `bailEndingShortCodes` list from YAML. All existing preprocessor
 
 **⚠️ CRITICAL**: Must be complete before implementing `ConditionalBailPreprocessor` or the YAML rule.
 
-- [ ] T001 Add `List<String> bailEndingShortCodes` field to the `@Builder` record in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java` (append after `alcoholAbstinenceShortCodes`; no existing tests break)
+- [X] T001 Add `List<String> bailEndingShortCodes` field to the `@Builder` record in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java` (append after `alcoholAbstinenceShortCodes`; no existing tests break)
 
 **Checkpoint**: `gradle test` still green (no regressions from the new field).
 
@@ -62,32 +62,32 @@ US2: same request with URGENT added → no warning returned.
 > assertion level. "Class not found" is a build error, not a red-green cycle. Create the stub first,
 > then write the test, then implement.
 
-- [ ] T002 [US1] Create a skeleton `ConditionalBailContext.java` record stub — just the record signature and method stubs (methods throw `UnsupportedOperationException` or return `null`/`0`) — then write `ConditionalBailContextTest` covering: `toCelContext()` returns correct `conditionalBailOffenceCount`/`bailEndedCount`/`hasUrgentCount` longs; `getDefendantIdSet("defendantId")` returns a single-element list; `getDefendantIdSet("unknown")` throws `IllegalArgumentException`; `allOffenceIds()` returns configured list; `defendantName()` returns name. Test must compile and fail at assertion level. Files: stub at `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContext.java`; test at `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContextTest.java`
+- [X] T002 [US1] Create a skeleton `ConditionalBailContext.java` record stub — just the record signature and method stubs (methods throw `UnsupportedOperationException` or return `null`/`0`) — then write `ConditionalBailContextTest` covering: `toCelContext()` returns correct `conditionalBailOffenceCount`/`bailEndedCount`/`hasUrgentCount` longs; `getDefendantIdSet("defendantId")` returns a single-element list; `getDefendantIdSet("unknown")` throws `IllegalArgumentException`; `allOffenceIds()` returns configured list; `defendantName()` returns name. Test must compile and fail at assertion level. Files: stub at `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContext.java`; test at `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContextTest.java`
 
-- [ ] T003 [US1] Fill in the full `ConditionalBailContext` implementation: fields `defendantId`, `defendantName`, `conditionalBailOffenceCount`, `bailEndedCount`, `hasUrgentCount`, `allOffenceIds`; `toCelContext()` returns `Map.of` of the three longs; `getDefendantIdSet("defendantId")` returns `List.of(defendantId)`, unknown key throws; `getOffenceIdSet("allOffenceIds")` returns `allOffenceIds`, unknown key throws in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContext.java` → run `ConditionalBailContextTest` green
+- [X] T003 [US1] Fill in the full `ConditionalBailContext` implementation: fields `defendantId`, `defendantName`, `conditionalBailOffenceCount`, `bailEndedCount`, `hasUrgentCount`, `allOffenceIds`; `toCelContext()` returns `Map.of` of the three longs; `getDefendantIdSet("defendantId")` returns `List.of(defendantId)`, unknown key throws; `getOffenceIdSet("allOffenceIds")` returns `allOffenceIds`, unknown key throws in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailContext.java` → run `ConditionalBailContextTest` green
 
 ### TDD — ConditionalBailPreprocessor ⚠️ Skeleton stub first, then ALL scenarios (assertion failure, not compile failure)
 
 > Create an empty `ConditionalBailPreprocessor` stub (returns empty map) before writing any tests, so
 > all test scenarios compile and fail at assertion level. Write all scenarios before implementing.
 
-- [ ] T004 [US1] Create a skeleton `ConditionalBailPreprocessor.java` stub (`@Component`, `type()` returns `"conditional-bail-urgent-check"`, `preprocess()` returns empty map), then write failing `ConditionalBailPreprocessorTest` — fire scenarios: AC1 (all conditional-bail offences → Category F result, no URGENT → fires), AC2 (all → DS, no URGENT → fires), AC3 (all → RI family, no URGENT → fires), AC4 (all → WOFN, no URGENT → fires), AC5 (mixed bail-ending types F+DS+RI, no URGENT → fires). Tests must compile and fail at assertion level. Files: stub at `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessor.java`; test at `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessorTest.java`
+- [X] T004 [US1] Create a skeleton `ConditionalBailPreprocessor.java` stub (`@Component`, `type()` returns `"conditional-bail-urgent-check"`, `preprocess()` returns empty map), then write failing `ConditionalBailPreprocessorTest` — fire scenarios: AC1 (all conditional-bail offences → Category F result, no URGENT → fires), AC2 (all → DS, no URGENT → fires), AC3 (all → RI family, no URGENT → fires), AC4 (all → WOFN, no URGENT → fires), AC5 (mixed bail-ending types F+DS+RI, no URGENT → fires). Tests must compile and fail at assertion level. Files: stub at `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessor.java`; test at `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessorTest.java`
 
-- [ ] T005 [P] [US2] Add suppression, edge-case, and null-safety scenarios to `ConditionalBailPreprocessorTest`: URGENT present on one conditional-bail offence → does NOT fire; not all conditional-bail offences have bail-ending results → does NOT fire; no conditional-bail offences (null or non-B bailStatus) → does NOT fire; multi-defendant → only qualifying defendant produces context where CEL fires; null offences list, null resultLines, null bailStatus (each safe no-op); **EC3**: defendant has CB offence (bail-ended, no URGENT) + non-CB offence with URGENT result → `hasUrgentCount` is 0 → warning fires (URGENT on non-CB offence must NOT suppress); **EC1**: defendant has CB offence (NOT bail-ended) + non-CB offence with bail-ending result → only CB offences counted → `bailEndedCount < conditionalBailOffenceCount` → warning does NOT fire; CB offence with zero result lines → treated as not bail-ended → warning does NOT fire in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessorTest.java`
+- [X] T005 [P] [US2] Add suppression, edge-case, and null-safety scenarios to `ConditionalBailPreprocessorTest`: URGENT present on one conditional-bail offence → does NOT fire; not all conditional-bail offences have bail-ending results → does NOT fire; no conditional-bail offences (null or non-B bailStatus) → does NOT fire; multi-defendant → only qualifying defendant produces context where CEL fires; null offences list, null resultLines, null bailStatus (each safe no-op); **EC3**: defendant has CB offence (bail-ended, no URGENT) + non-CB offence with URGENT result → `hasUrgentCount` is 0 → warning fires (URGENT on non-CB offence must NOT suppress); **EC1**: defendant has CB offence (NOT bail-ended) + non-CB offence with bail-ending result → only CB offences counted → `bailEndedCount < conditionalBailOffenceCount` → warning does NOT fire; CB offence with zero result lines → treated as not bail-ended → warning does NOT fire in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessorTest.java`
 
-- [ ] T006 [US1] Create `ConditionalBailPreprocessor` `@Component` with qualifier `"conditional-bail-urgent-check"`: build offenceMap from `request.getOffences()`; build resultsByOffence via `PreprocessorHelper.groupResultsByOffence`; build defendant groups via `PreprocessorHelper.groupLinesByDedupedDefendant`; build `bailEndingUpper` via `PreprocessorHelper.upperSet(config.bailEndingShortCodes())`; for each defendant group filter to `BailStatusEnum.B` offences; count `bailEndedCount` (category==F OR shortCode∈bailEndingUpper); set `hasUrgentCount` (1 if any conditional-bail offence line has URGENT, else 0); emit one `ConditionalBailContext` per defendant group in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessor.java` → run `ConditionalBailPreprocessorTest` green
+- [X] T006 [US1] Create `ConditionalBailPreprocessor` `@Component` with qualifier `"conditional-bail-urgent-check"`: build offenceMap from `request.getOffences()`; build resultsByOffence via `PreprocessorHelper.groupResultsByOffence`; build defendant groups via `PreprocessorHelper.groupLinesByDedupedDefendant`; build `bailEndingUpper` via `PreprocessorHelper.upperSet(config.bailEndingShortCodes())`; for each defendant group filter to `BailStatusEnum.B` offences; count `bailEndedCount` (category==F OR shortCode∈bailEndingUpper); set `hasUrgentCount` (1 if any conditional-bail offence line has URGENT, else 0); emit one `ConditionalBailContext` per defendant group in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ConditionalBailPreprocessor.java` → run `ConditionalBailPreprocessorTest` green
 
 ### YAML Rule and Flyway Migration
 
-- [ ] T007 [P] [US1] Create `DR-URG-008.yaml` with `id: DR-URG-008`, `priority: 8000`, `preprocessing.type: conditional-bail-urgent-check`, `bailEndingShortCodes: [DS, RI, RIYDA, RIH, RIB, RILA, RILAB, REMYD, WOFN]`, condition AC1 CEL expression `conditionalBailOffenceCount > 0 && bailEndedCount == conditionalBailOffenceCount && hasUrgentCount == 0`, `severity: WARNING`, `validationLevel: DEFENDANT`, `messageTemplate` (exact prescribed text), `affectedDefendantSet: "defendantId"` in `src/main/resources/rules/DR-URG-008.yaml`
+- [X] T007 [P] [US1] Create `DR-URG-008.yaml` with `id: DR-URG-008`, `priority: 8000`, `preprocessing.type: conditional-bail-urgent-check`, `bailEndingShortCodes: [DS, RI, RIYDA, RIH, RIB, RILA, RILAB, REMYD, WOFN]`, condition AC1 CEL expression `conditionalBailOffenceCount > 0 && bailEndedCount == conditionalBailOffenceCount && hasUrgentCount == 0`, `severity: WARNING`, `validationLevel: DEFENDANT`, `messageTemplate` (exact prescribed text), `affectedDefendantSet: "defendantId"` in `src/main/resources/rules/DR-URG-008.yaml`
 
-- [ ] T008 [P] [US1] Create Flyway migration inserting `('DR-URG-008', true, 'WARNING', now(), 'system')` into `validation_rule` in `src/main/resources/db/migration/V1.009__insert_dr_urg_008.sql`
+- [X] T008 [P] [US1] Create Flyway migration inserting `('DR-URG-008', true, 'WARNING', now(), 'system')` into `validation_rule` in `src/main/resources/db/migration/V1.009__insert_dr_urg_008.sql`
 
 ### Integration Test (US1 + US2 scenarios)
 
-- [ ] T009 [US1] Write `UrgentMissingWarningIntegrationTest` extending `IntegrationTestBase`: POST `/validate` with a request containing a defendant whose conditional-bail offences are all resulted with bail-ending results and no URGENT → assert response `errors` list is empty (rule is advisory; FR-007/SC-004), `warnings` contains exactly one issue at `DEFENDANT` level with `severity=WARNING` and the exact prescribed message in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+- [X] T009 [US1] Write `UrgentMissingWarningIntegrationTest` extending `IntegrationTestBase`: POST `/validate` with a request containing a defendant whose conditional-bail offences are all resulted with bail-ending results and no URGENT → assert response `errors` list is empty (rule is advisory; FR-007/SC-004), `warnings` contains exactly one issue at `DEFENDANT` level with `severity=WARNING` and the exact prescribed message in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
-- [ ] T010 [US2] Add URGENT-suppression scenario to `UrgentMissingWarningIntegrationTest`: same request as T009 but with URGENT added to one conditional-bail offence → assert zero issues returned for this rule in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+- [X] T010 [US2] Add URGENT-suppression scenario to `UrgentMissingWarningIntegrationTest`: same request as T009 but with URGENT added to one conditional-bail offence → assert zero issues returned for this rule in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
 **Checkpoint**: All three test classes green — US1 and US2 independently verified.
 
@@ -107,13 +107,13 @@ US4: two defendants, only qualifying one receives the warning.
 
 ### US3 — Bail Not Fully Ended / No Conditional Bail
 
-- [ ] T011 [P] [US3] Add bail-not-fully-ended integration scenario to `UrgentMissingWarningIntegrationTest`: POST where one conditional-bail offence has a non-bail-ending result (e.g., adjourned) → assert no warning returned in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+- [X] T011 [P] [US3] Add bail-not-fully-ended integration scenario to `UrgentMissingWarningIntegrationTest`: POST where one conditional-bail offence has a non-bail-ending result (e.g., adjourned) → assert no warning returned in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
-- [ ] T012 [P] [US3] Add no-conditional-bail integration scenario to `UrgentMissingWarningIntegrationTest`: POST where defendant has offences but none has `bailStatus=B` → assert no warning returned in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+- [X] T012 [P] [US3] Add no-conditional-bail integration scenario to `UrgentMissingWarningIntegrationTest`: POST where defendant has offences but none has `bailStatus=B` → assert no warning returned in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
 ### US4 — Multi-Defendant
 
-- [ ] T013 [US4] Add two-defendant integration scenario to `UrgentMissingWarningIntegrationTest`: Defendant A has all conditional-bail offences bail-ended with no URGENT (qualifies); Defendant B has no conditional-bail offences (does not qualify) → assert exactly one `DEFENDANT`-level WARNING scoped to Defendant A's id, none for Defendant B in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+- [X] T013 [US4] Add two-defendant integration scenario to `UrgentMissingWarningIntegrationTest`: Defendant A has all conditional-bail offences bail-ended with no URGENT (qualifies); Defendant B has no conditional-bail offences (does not qualify) → assert exactly one `DEFENDANT`-level WARNING scoped to Defendant A's id, none for Defendant B in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
 **Checkpoint**: Full integration test class green — US3 and US4 independently verified.
 
@@ -124,21 +124,21 @@ US4: two defendants, only qualifying one receives the warning.
 **Purpose**: Satisfy the mandatory build loop (workflow.md): Code Review → QA → Spec Validate →
 fix → repeat until all agents return PASS/COMPLIANT.
 
-- [ ] T014 Run `gradle checkstyleMain pmdMain pmdTest` and fix any violations in `ConditionalBailPreprocessor.java`, `ConditionalBailContext.java`, and `PreprocessingDefinition.java` (Google style, `maxWarnings=0`, PMD `ignoreFailures=false`; `pmdTest` covers test sources per constitution pre-merge checklist)
+- [X] T014 Run `gradle checkstyleMain pmdMain pmdTest` and fix any violations in `ConditionalBailPreprocessor.java`, `ConditionalBailContext.java`, and `PreprocessingDefinition.java` (Google style, `maxWarnings=0`, PMD `ignoreFailures=false`; `pmdTest` covers test sources per constitution pre-merge checklist)
 
-- [ ] T015 Run `gradle build` (full: compile + checkstyle + PMD + unit + integration tests) — must exit 0
+- [X] T015 Run `gradle build` (full: compile + checkstyle + PMD + unit + integration tests) — must exit 0 (245/246 pass; 1 pre-existing `AzureAppConfigFetcherTest` failure unrelated to this feature — date-format regex fails on single-digit day-of-month)
 
-- [ ] T016 Spawn `code-reviewer` agent on `ConditionalBailPreprocessor.java`, `ConditionalBailContext.java`, `PreprocessingDefinition.java`, and `DR-URG-008.yaml` — fix all NEEDS CHANGES findings, then re-run until agent returns PASS (Principle IV)
+- [X] T016 Spawn `code-reviewer` agent on `ConditionalBailPreprocessor.java`, `ConditionalBailContext.java`, `PreprocessingDefinition.java`, and `DR-URG-008.yaml` — fix all NEEDS CHANGES findings, then re-run until agent returns PASS (Principle IV) — returned PASS WITH NOTES (MEDIUM: `urgentCount` naming clarified to `urgentSeen` boolean; MEDIUM: pre-existing null-offenceId in `groupByOffence` not introduced by this PR)
 
-- [ ] T017 Spawn `qa` agent to verify TDD discipline (failing tests committed before production code) and test completeness across `ConditionalBailContextTest.java`, `ConditionalBailPreprocessorTest.java`, and `UrgentMissingWarningIntegrationTest.java` — fix any FAIL findings, then re-run until agent returns PASS (Principle IV)
+- [X] T017 Spawn `qa` agent to verify TDD discipline (failing tests committed before production code) and test completeness across `ConditionalBailContextTest.java`, `ConditionalBailPreprocessorTest.java`, and `UrgentMissingWarningIntegrationTest.java` — fix any FAIL findings, then re-run until agent returns PASS (Principle IV) — returned PASS
 
-- [ ] T018 Spawn `spec-validator` agent on `src/main/resources/rules/DR-URG-008.yaml` — verify CEL expression compiles, schema compliance, `preprocessing.type: conditional-bail-urgent-check` resolves to registered bean — fix any DRIFT DETECTED findings, then re-run until agent returns COMPLIANT (Principle IV)
+- [X] T018 Spawn `spec-validator` agent on `src/main/resources/rules/DR-URG-008.yaml` — verify CEL expression compiles, schema compliance, `preprocessing.type: conditional-bail-urgent-check` resolves to registered bean — fix any DRIFT DETECTED findings, then re-run until agent returns COMPLIANT (Principle IV) — returned COMPLIANT
 
-- [ ] T019 Run `gradle test --tests "*CrossRuleRegressionIntegrationTest"` to confirm DR-URG-008 does not interfere with existing rules
+- [X] T019 Run `gradle test --tests "*CrossRuleRegressionIntegrationTest"` to confirm DR-URG-008 does not interfere with existing rules
 
-- [ ] T020 [P] Write `UrgentMissingWarningApiHttpLiveTest` with live HTTP scenarios: POST fires warning (all bail ended, no URGENT); POST with URGENT present returns no warning in `src/apiTest/java/uk/gov/hmcts/cp/http/UrgentMissingWarningApiHttpLiveTest.java`
+- [X] T020 [P] Write `UrgentMissingWarningApiHttpLiveTest` with live HTTP scenarios: POST fires warning (all bail ended, no URGENT); POST with URGENT present returns no warning in `src/apiTest/java/uk/gov/hmcts/cp/http/UrgentMissingWarningApiHttpLiveTest.java`
 
-- [ ] T021 Run `gradle api` — full live API test suite green
+- [X] T021 Run `gradle api` — full live API test suite green
 
 ---
 

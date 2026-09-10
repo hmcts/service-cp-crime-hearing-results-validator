@@ -27,5 +27,8 @@ public record PreprocessingDefinition(
         // Community-order-specific short-code lists (used by CommunityOrderEndDatePreprocessor;
         // the curfew* lists above are shared with YRO)
         List<String> communityOrderShortCodes,
-        List<String> alcoholAbstinenceShortCodes) {
+        List<String> alcoholAbstinenceShortCodes,
+
+        // ConditionalBailPreprocessor: non-Category-F short codes that end conditional bail
+        List<String> bailEndingShortCodes) {
 }
