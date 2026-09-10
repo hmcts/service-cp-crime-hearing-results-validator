@@ -96,7 +96,8 @@ class ConditionalBailPreprocessorTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB"})
+        @ValueSource(strings = {"RI", "RIYDA", "RIH", "RIB", "RILA", "RILAB", "REMYD"})
+        // DS, RI, RIYDA, RIH, RIB, RILA, RILAB, REMYD, WOFN
         @DisplayName("AC3 — RI family short codes on CB offence, no URGENT → context emitted")
         void ri_family_short_codes_on_cb_offence_no_urgent_should_emit_context(final String code) {
             DraftValidationRequest request = buildRequest(
