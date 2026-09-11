@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
@@ -21,6 +22,7 @@ import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocess
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
+import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
 /**
@@ -39,7 +41,8 @@ class ValidationRuleAutoConfigurationTest {
             new YouthRehabilitationPreprocessor(),
             new CommunityOrderEndDatePreprocessor(),
             new NoConvictionPreprocessor(),
-            new AgeRestrictedImprisonmentPreprocessor()));
+            new AgeRestrictedImprisonmentPreprocessor(),
+            new SexualOffenceNotificationPreprocessor(mock(ReferencedataOffenceClient.class))));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -74,11 +77,11 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(7);
+        assertThat(rules).hasSize(8);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                        "DR-COEW-005", "DR-CONV-006", "DR-AGE-007");
+                        "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008");
     }
 
     /**
