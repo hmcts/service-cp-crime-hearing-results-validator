@@ -142,6 +142,24 @@ fix → repeat until all agents return PASS/COMPLIANT.
 
 ---
 
+## Phase 6: AC5A — Partial Conditional Bail Result (FR-010)
+
+**Scope**: AC5A adds explicit test coverage for FR-010: when one or more CB offences have no
+result in the current hearing, the warning must NOT fire even if other CB offences are bail-ended.
+The `ConditionalBailPreprocessor` already implements this via the `unresultedCbIds` path — no
+production code changes are required. The deliverables are one integration test scenario and one
+HTTP request.
+
+- [X] T022 [US3] Add AC5A integration test scenario to `UrgentMissingWarningIntegrationTest`: defendant has two CB offences (off-1 with DS bail-ending result, off-2 with no result lines) → assert zero DR-URG-008 warnings returned and `$.warnings` is empty in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
+
+- [X] T023 [P] [US3] Add AC5A HTTP request to `CRA-22.http` under the US3 section: POST with two CB offences where one has DS and one has no result → expected: no warning in `specs/008-urgent-missing-result/CRA-22.http`
+
+- [X] T024 Run `gradle test --tests "*UrgentMissingWarningIntegrationTest"` — all scenarios including AC5A must pass, then run `gradle build` to confirm full suite green
+
+**Checkpoint**: `gradle build` exits 0 with AC5A scenario passing.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -230,6 +230,43 @@ class UrgentMissingWarningIntegrationTest extends IntegrationTestBase {
     class BailNotFullyEnded {
 
         @Test
+        @DisplayName("AC5A — one CB offence bail-ended, one CB offence unresulted → no warning")
+        void one_cb_offence_bail_ended_one_cb_offence_unresulted_should_produce_no_warning()
+                throws Exception {
+            // off-2 is CB but has no result lines → unresulted CB offence → bailEndedCount (1)
+            // < conditionalBailOffenceCount (2) → CEL expression false → no warning.
+            // Note: implementation predates AC5A (FR-010); this test is verification-only.
+            final String request = """
+                    {
+                      "hearingId": "h-ac5a",
+                      "hearingDay": "2026-05-06",
+                      "courtType": "CROWN",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "DS", "label": "Defer Sentence",
+                         "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "offences": [
+                        {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                         "orderIndex": 1, "bailStatus": "B"},
+                        {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                         "orderIndex": 2, "bailStatus": "B"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_URG_WARNINGS, hasSize(0)))
+                    .andExpect(jsonPath("$.warnings", hasSize(0)));
+        }
+
+        @Test
         @DisplayName("CB offence with non-bail-ending result → no warning")
         void non_bail_ending_result_on_cb_offence_should_produce_no_warning() throws Exception {
             final String request = """

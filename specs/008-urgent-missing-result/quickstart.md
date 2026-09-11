@@ -156,6 +156,40 @@ Extends `IntegrationTestBase`. Covers:
 Run: `gradle test --tests "*UrgentMissingWarningIntegrationTest"` — must fail, then go green.
 Run: `gradle test` — full suite must pass.
 
+### Step 8b: Add AC5A scenario to `UrgentMissingWarningIntegrationTest` (FR-010)
+
+**Scenario**: two CB offences — one with a bail-ending result (DS), one with no result lines at all.
+Expected: no DR-URG-008 warning (unresulted CB offence prevents "all bail ended" condition).
+
+```java
+@Test
+@DisplayName("AC5A — one CB offence bail-ended, one CB offence unresulted → no warning")
+void one_cb_offence_bail_ended_one_cb_offence_unresulted_should_produce_no_warning()
+        throws Exception {
+    final String request = """
+            {
+              "hearingId": "h-ac5a",
+              "hearingDay": "2026-05-06",
+              "courtType": "CROWN",
+              "resultLines": [
+                {"resultLineId": "rl1", "shortCode": "DS", "label": "Defer Sentence",
+                 "defendantId": "d1", "offenceId": "off-1"}
+              ],
+              "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
+              "offences": [
+                {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                 "orderIndex": 1, "bailStatus": "B"},
+                {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                 "orderIndex": 2, "bailStatus": "B"}
+              ]
+            }
+            """;
+    // off-2 is CB but has no result lines → unresulted CB offence → bailEndedCount (1) < conditionalBailOffenceCount (2) → no warning
+}
+```
+
+Also add to `CRA-22.http` under the US3 section.
+
 ### Step 9: Run the full build loop
 
 ```bash

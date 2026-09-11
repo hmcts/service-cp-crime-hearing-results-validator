@@ -2,7 +2,7 @@
 
 **Feature Branch**: `CRA-22-urgent-missing-result`
 **Created**: 2026-09-02
-**Updated**: 2026-09-09
+**Updated**: 2026-09-11 (v4 — AC5A added: partial CB result suppression, FR-010, SC-002 updated)
 **Status**: Ready
 **Jira**: CRA-22
 **Input**: User description: "CRA-22 Functional Delivery - 8. Results validation - Inform the user if URGENT result missing - Crown Court"
@@ -51,13 +51,15 @@ A Crown Court user results a hearing where not all conditional-bail offences hav
 
 **Why this priority**: Prevents premature warnings when conditional bail is still active for some offences.
 
-**Independent Test**: Submit a validation request where a conditional-bail offence receives a non-bail-ending result (e.g., adjourned, bail continued). Verify no WARNING is returned.
+**Independent Test**: Submit a validation request where a conditional-bail offence receives a non-bail-ending result (e.g., adjourned, bail continued) or has no result recorded. Verify no WARNING is returned.
 
 **Acceptance Scenarios**:
 
 1. **Given** a defendant has conditional-bail offences where at least one is not resulted with a bail-ending result (bail still active for that offence), **When** validating, **Then** no WARNING is returned.
 
 2. **Given** a defendant has no offences with conditional bail remand status, **When** validating, **Then** no WARNING is returned.
+
+3. **(AC5A) Given** a defendant has two or more conditional-bail offences, **And** some of those offences are resulted with bail-ending results (Category F, DS, RI family, or WOFN), **And** one or more of those conditional-bail offences have no result recorded in this hearing, **When** the user selects "Save and continue", **Then** no WARNING is returned (bail has not fully ended — the unresulted CB offence means the "all bail ended" condition is not met).
 
 ---
 
@@ -79,6 +81,7 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 
 - A defendant whose conditional-bail offences are a subset of all their offences: only the conditional-bail offences are evaluated; other offences are ignored for this rule.
 - A conditional-bail offence with no result line recorded yet: the offence has not received a bail-ending result, so the warning does not fire.
+- **(AC5A)** A defendant has some conditional-bail offences resulted with bail-ending results and one or more CB offences with no result at all: the unresulted CB offence counts against the "all bail ended" condition — the warning does NOT fire.
 - URGENT present on a non-conditional-bail offence but absent from all conditional-bail offences: the warning still fires (URGENT on non-conditional-bail offences does not suppress the warning).
 - The same defendant appears in multiple hearings: this rule evaluates only the current hearing's result lines.
 
@@ -95,6 +98,7 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 - **FR-007**: The warning MUST be advisory only (severity WARNING); the user MUST be able to proceed and share results without resolving it.
 - **FR-008**: The system MUST evaluate this rule independently for each defendant in the hearing.
 - **FR-009**: The system MUST derive conditional bail status from the `bailStatus` field on each offence; an offence is "conditional bail" when its `bailStatus` equals the conditional bail value (code `B`, description "Conditional bail") as supplied by the `api-cp-crime-hearing-results-validator` library (CHD-2485 delivered in version `0.2.8-cra-22`).
+- **FR-010 (AC5A)**: The system MUST suppress the warning when one or more of a defendant's conditional-bail offences has no result line recorded in the current hearing, even if the remaining conditional-bail offences have bail-ending results. A conditional-bail offence with no result is treated as "not bail-ended" and contributes to the total CB offence count, preventing the "all bail ended" condition from being satisfied.
 
 ### Key Entities
 
@@ -109,7 +113,7 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 ### Measurable Outcomes
 
 - **SC-001**: The WARNING is returned for every defendant meeting the criteria across all five acceptance criteria (AC1–AC5 from CRA-22): sentenced/final, deferred, remanded in custody, warrant without bail, and mixed bail-ending types.
-- **SC-002**: Zero false-positive warnings are generated when URGENT is present on any conditional-bail offence, or when no conditional bail is active, or when bail has not fully ended for all conditional-bail offences.
+- **SC-002**: Zero false-positive warnings are generated when URGENT is present on any conditional-bail offence, or when no conditional bail is active, or when bail has not fully ended for all conditional-bail offences — including when one or more CB offences have no result recorded in the current hearing (AC5A).
 - **SC-003**: The rule evaluates independently per defendant — multi-defendant hearings produce warnings only for qualifying defendants.
 - **SC-004**: The validation response continues to allow the user to share results without resolving this WARNING (severity is advisory, not blocking).
 

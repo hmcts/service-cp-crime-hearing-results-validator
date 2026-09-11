@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-02
-**Updated**: 2026-09-09 (v3 — CHD-2485 delivered, BailStatusEnum.B confirmed)
+**Updated**: 2026-09-11 (v4 — AC5A added: US3 scenario 3, FR-010, SC-002 updated)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -36,3 +36,4 @@ All items pass. The specification is ready for `/speckit-plan`.
 
 CHD-2485 delivered: `BailStatusEnum bailStatus` on `OffenceDto`, conditional bail = enum value `B`. Blocker resolved.
 AC6 and AC7 from CRA-22 are out of scope for this service — covered by existing framework (AC6) and the front-end team (AC7).
+AC5A added 2026-09-11: partial CB result suppression — some CB offences resulted (bail-ending), one or more with no result → no warning. Covered by FR-010 and US3 scenario 3. Behaviour is already implemented; explicit test coverage is the deliverable.

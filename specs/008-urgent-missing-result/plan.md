@@ -1,6 +1,6 @@
 # Implementation Plan: URGENT Result Missing Warning (CRA-22 / DR-URG-008)
 
-**Branch**: `CRA-22-urgent-missing-result` | **Date**: 2026-09-02 | **Spec**: [spec.md](spec.md)
+**Branch**: `CRA-22-urgent-missing-result` | **Date**: 2026-09-02 | **Updated**: 2026-09-11 (AC5A) | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `specs/008-urgent-missing-result/spec.md`
 
 ## Summary
@@ -8,6 +8,8 @@
 Add validation rule **DR-URG-008** that warns Crown Court users when all of a defendant's conditional-bail offences have been resulted with bail-ending outcomes (final result Category F, sentence deferred DS, remand-in-custody family, or warrant without bail WOFN) but no URGENT result has been recorded. The warning fires at **defendant level** with the fixed message: _"The defendant's conditional bail has ended. You may need to add the URGENT result and select "Bail conditions cancelled" on one of the offences before sharing."_
 
 Following Constitution Principle I (YAML/CEL Rule-First), the rule is expressed entirely in `DR-URG-008.yaml`. A new `ConditionalBailPreprocessor` + `ConditionalBailContext` pair handles the defendant-grouped, offence-bail-status-aware preprocessing. CHD-2485 has shipped — `OffenceDto.BailStatusEnum bailStatus` is available from `api-cp-crime-hearing-results-validator:0.2.8-cra-22`; conditional bail is `BailStatusEnum.B`.
+
+**AC5A (2026-09-11)**: FR-010 added — the warning must NOT fire when one or more CB offences have no result recorded in the current hearing, even if others have bail-ending results. The `ConditionalBailPreprocessor` already handles this via the `unresultedCbIds` path: unresulted CB offences are included in `conditionalBailOffenceCount` but not `bailEndedCount`, so the CEL expression evaluates to false. No production code changes required. The deliverable is explicit integration test coverage for this scenario and a corresponding HTTP request in `CRA-22.http`.
 
 ## Technical Context
 
