@@ -177,7 +177,7 @@ void one_cb_offence_bail_ended_one_cb_offence_unresulted_should_produce_no_warni
               ],
               "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
               "offences": [
-                {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
                  "orderIndex": 1, "bailStatus": "B"},
                 {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
                  "orderIndex": 2, "bailStatus": "B"}
@@ -226,6 +226,7 @@ The `spec-validator` agent checks this at the end of the build loop.
 ```java
 // Offence with conditional bail
 OffenceDto.builder()
+    .defendantId("def-1")
     .offenceId("off-1")
     .bailStatus(OffenceDto.BailStatusEnum.B)
     .build();
@@ -262,3 +263,18 @@ After the integration test passes, run:
 gradle test --tests "*CrossRuleRegressionIntegrationTest"
 ```
 This confirms DR-URG-008 does not interfere with other rules.
+
+
+## API dependency for required offence ownership
+
+From the sibling API repository, install the local draft with:
+
+```sh
+./gradlew -DAPI_SPEC_VERSION=0.2.10-cra-22 test publishToMavenLocal
+```
+
+Every offence must include `defendantId`, including offences with no result lines. The normal API publishing process must publish this draft (or its replacement version) before service CI can resolve it; then align `gradle/libs.versions.toml` with that published version. This task installs the draft locally only.
+
+## Crown Court restriction
+
+DR-URG-008 runs only for `courtType: CROWN`. Otherwise-qualifying `MAGISTRATES` and `YOUTH` requests return no DR-URG-008 warning. The integration test `only_crown_hearings_should_emit_urgent_warnings` covers all three court types, one and two defendants, and Category F plus every bail-ending short code (60 scenarios).

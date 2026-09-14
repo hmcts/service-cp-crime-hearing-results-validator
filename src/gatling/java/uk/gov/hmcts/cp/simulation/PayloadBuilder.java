@@ -48,8 +48,8 @@ public final class PayloadBuilder {
         return request(
             defendants(defendant(defId, randomFirst(), randomLast())),
             offences(
-                offence(off1, "TH68001", "Theft", 1, randomUrn()),
-                offence(off2, "AS001", "Assault", 2, randomUrn())
+                offence(off1, defId, "TH68001", "Theft", 1, randomUrn()),
+                offence(off2, defId, "AS001", "Assault", 2, randomUrn())
             ),
             resultLines(
                 resultLine(uid(), code, "Imprisonment", defId, off1, null, null),
@@ -73,9 +73,9 @@ public final class PayloadBuilder {
         return request(
             defendants(defendant(defId, randomFirst(), randomLast())),
             offences(
-                offence(off1, "TH68001", "Theft", 1, randomUrn()),
-                offence(off2, "AS001", "Assault", 2, randomUrn()),
-                offence(off3, "CD001", "Criminal Damage", 3, randomUrn())
+                offence(off1, defId, "TH68001", "Theft", 1, randomUrn()),
+                offence(off2, defId, "AS001", "Assault", 2, randomUrn()),
+                offence(off3, defId, "CD001", "Criminal Damage", 3, randomUrn())
             ),
             resultLines(
                 resultLine(uid(), code, "Imprisonment", defId, off1, null, null),
@@ -99,8 +99,8 @@ public final class PayloadBuilder {
         return request(
             defendants(defendant(defId, randomFirst(), randomLast())),
             offences(
-                offence(off1, "TH68001", "Theft", 1, randomUrn()),
-                offence(off2, "AS001", "Assault", 2, randomUrn())
+                offence(off1, defId, "TH68001", "Theft", 1, randomUrn()),
+                offence(off2, defId, "AS001", "Assault", 2, randomUrn())
             ),
             resultLines(
                 resultLine(uid(), code, "Imprisonment", defId, off1, null, null),
@@ -123,8 +123,8 @@ public final class PayloadBuilder {
         return request(
             defendants(defendant(defId, randomFirst(), randomLast())),
             offences(
-                offence(off1, "TH68001", "Theft", 1, randomUrn()),
-                offence(off2, "AS001", "Assault", 2, randomUrn())
+                offence(off1, defId, "TH68001", "Theft", 1, randomUrn()),
+                offence(off2, defId, "AS001", "Assault", 2, randomUrn())
             ),
             resultLines(
                 resultLine(uid(), code, "Imprisonment", defId, off1, true, null),
@@ -175,10 +175,10 @@ public final class PayloadBuilder {
             {"defendantId": "%s", "firstName": "%s", "lastName": "%s"}""".formatted(id, firstName, lastName);
     }
 
-    private static String offence(String id, String code, String title, int orderIndex, String caseUrn) {
+    private static String offence(String id, String defendantId, String code, String title, int orderIndex, String caseUrn) {
         return """
-            {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, "caseUrn": "%s"}"""
-            .formatted(id, code, title, orderIndex, caseUrn);
+            {"offenceId": "%s", "defendantId": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, "caseUrn": "%s"}"""
+            .formatted(id, defendantId, code, title, orderIndex, caseUrn);
     }
 
     private static String resultLine(String id, String shortCode, String label,

@@ -63,8 +63,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                     {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -97,7 +97,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2005-07-20"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
                   ]
                 }
                 """;
@@ -130,8 +130,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "1985-06-15"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
                   ]
                 }
                 """;
@@ -164,8 +164,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "1985-06-15"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 1}
                   ]
                 }
                 """;
@@ -214,7 +214,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
                   ]
                 }
                 """;
@@ -253,8 +253,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -293,8 +293,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "1990-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -332,8 +332,8 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2007-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -371,7 +371,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2005-07-20"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
                   ]
                 }
                 """;
@@ -396,7 +396,7 @@ class AgeRestrictedImprisonmentApiHttpLiveTest {
                      "dateOfBirth": "2006-08-01"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}
                   ]
                 }
                 """;

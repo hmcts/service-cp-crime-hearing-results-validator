@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantDedupeKeys;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupByOffence;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupLinesByDedupedDefendant;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupResultsByOffence;
@@ -17,13 +18,13 @@ import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Produces one {@link ConditionalBailContext} per deduplicated defendant for DR-URG-008.
+ * Produces one {@link ConditionalBailContext} per deduplicated defendant for DR-URG-008 in Crown Court.
  *
  * <p>A defendant group qualifies for a context if it has at least one result line for a
  * conditional-bail offence (bailStatus == B). Conditional-bail offences that have no result lines
- * anywhere in the request are treated as "not bail-ended" and are included in the count for any
- * defendant group that already has CB result lines, preventing false positives when only some
- * CB offences have been resulted.
+ * anywhere in the request are treated as "not bail-ended" and are scoped to the owning defendant
+ * using the mandatory {@link OffenceDto#getDefendantId()} (resolved through dedupe keys).
+ * Unresulted offences affect only their owner's group (AC5A).
  */
 @Component
 public class ConditionalBailPreprocessor implements ValidationPreprocessor {
@@ -41,6 +42,10 @@ public class ConditionalBailPreprocessor implements ValidationPreprocessor {
     @SuppressWarnings({"PMD.AvoidInstantiatingObjectsInLoops", "PMD.OnlyOneReturn"})
     public Map<String, ConditionalBailContext> preprocess(final DraftValidationRequest request,
                                                            final PreprocessingDefinition config) {
+        if (request.getCourtType() != DraftValidationRequest.CourtTypeEnum.CROWN) {
+            return Map.of();
+        }
+
         final Map<String, OffenceDto> offenceMap = buildOffenceMap(request);
         if (offenceMap.isEmpty()) {
             return Map.of();
@@ -58,12 +63,15 @@ public class ConditionalBailPreprocessor implements ValidationPreprocessor {
 
         final Set<String> bailEndingUpper = upperSet(config.bailEndingShortCodes());
 
-        // CB offences with no result lines anywhere — treated as not bail-ended for any defendant
+        // Attribute each unresulted CB offence to its mandatory owner.
         final Map<String, List<ResultLineDto>> allResultsByOffence = groupResultsByOffence(request);
-        final Set<String> unresultedCbIds = new LinkedHashSet<>();
+        final Map<String, String> dedupeKeys = buildDefendantDedupeKeys(request);
+        final Map<String, Set<String>> unresultedCbByGroup = new LinkedHashMap<>();
         for (final String cbId : cbOffenceIds) {
             if (!allResultsByOffence.containsKey(cbId)) {
-                unresultedCbIds.add(cbId);
+                final String ownerId = offenceMap.get(cbId).getDefendantId();
+                final String ownerGroup = dedupeKeys.getOrDefault(ownerId, ownerId);
+                unresultedCbByGroup.computeIfAbsent(ownerGroup, k -> new LinkedHashSet<>()).add(cbId);
             }
         }
 
@@ -89,9 +97,10 @@ public class ConditionalBailPreprocessor implements ValidationPreprocessor {
                 continue; // no CB result lines for this defendant group
             }
 
-            // Also count unresulted CB offences for groups that have CB result lines
+            // Include only this defendant group's unresulted CB offences.
             final Set<String> allCbIds = new LinkedHashSet<>(cbLinesByOffence.keySet());
-            allCbIds.addAll(unresultedCbIds);
+            final Set<String> ownedUnresulted = unresultedCbByGroup.getOrDefault(groupKey, Set.of());
+            allCbIds.addAll(ownedUnresulted);
 
             long bailEndedCount = 0;
             boolean urgentSeen = false;

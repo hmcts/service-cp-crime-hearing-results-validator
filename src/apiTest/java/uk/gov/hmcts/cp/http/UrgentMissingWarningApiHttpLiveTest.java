@@ -63,7 +63,7 @@ class UrgentMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
                      "orderIndex": 1, "bailStatus": "B"}
                   ]
                 }
@@ -103,7 +103,7 @@ class UrgentMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
                      "orderIndex": 1, "bailStatus": "B"}
                   ]
                 }

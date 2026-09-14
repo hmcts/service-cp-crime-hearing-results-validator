@@ -2,7 +2,7 @@
 
 **Feature Branch**: `CRA-22-urgent-missing-result`
 **Created**: 2026-09-02
-**Updated**: 2026-09-11 (v4 — AC5A added: partial CB result suppression, FR-010, SC-002 updated)
+**Updated**: 2026-09-12 (v5 — Crown Court restriction made explicit in FR-011)
 **Status**: Ready
 **Jira**: CRA-22
 **Input**: User description: "CRA-22 Functional Delivery - 8. Results validation - Inform the user if URGENT result missing - Crown Court"
@@ -99,6 +99,7 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 - **FR-008**: The system MUST evaluate this rule independently for each defendant in the hearing.
 - **FR-009**: The system MUST derive conditional bail status from the `bailStatus` field on each offence; an offence is "conditional bail" when its `bailStatus` equals the conditional bail value (code `B`, description "Conditional bail") as supplied by the `api-cp-crime-hearing-results-validator` library (CHD-2485 delivered in version `0.2.8-cra-22`).
 - **FR-010 (AC5A)**: The system MUST suppress the warning when one or more of a defendant's conditional-bail offences has no result line recorded in the current hearing, even if the remaining conditional-bail offences have bail-ending results. A conditional-bail offence with no result is treated as "not bail-ended" and contributes to the total CB offence count, preventing the "all bail ended" condition from being satisfied.
+- **FR-011 (Crown Court only)**: The system MUST evaluate DR-URG-008 only when `courtType` is `CROWN`. `MAGISTRATES` and `YOUTH` hearings MUST NOT produce this warning, for either single-defendant or multi-defendant hearings, even when all conditional-bail offences have bail-ending results without URGENT.
 
 ### Key Entities
 
@@ -125,3 +126,10 @@ When a hearing contains multiple defendants, the warning is evaluated independen
 - This feature covers back-end validation only. The UI rendering of the warning (bold black text, exclamation icon in a black circle, left-aligned below defendant/URN — AC7 of CRA-22) is the responsibility of the front-end team and is out of scope for this service.
 - Simultaneous display of defendant-level and offence-level warnings from multiple rules (AC6 of CRA-22) is already supported by the existing validation framework; no additional back-end changes are required.
 - The warning fires at the "Save and continue" validation point, consistent with all other validation rules in this service.
+
+
+## Required offence ownership (2026-09-12)
+
+Every `OffenceDto` MUST carry a nonblank `defendantId` matching the owning defendant. This includes offences without result lines. Missing, null, empty or whitespace-only IDs fail request validation with HTTP 400 before rules are evaluated. Ownership is never inferred from a single-defendant fallback.
+
+For AC5A, unresulted conditional-bail offences count only against their explicit owner, using the existing master-defendant deduplication. Unrelated defendants remain independent. The service uses the companion API draft `0.2.10-cra-22`, which makes the field required.

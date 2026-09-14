@@ -52,15 +52,15 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault",
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault",
                      "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary",
+                    {"offenceId": "off3", "defendantId": "d1", "offenceCode": "BG001", "offenceTitle": "Burglary",
                      "orderIndex": 3},
-                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery",
+                    {"offenceId": "off4", "defendantId": "d1", "offenceCode": "RB001", "offenceTitle": "Robbery",
                      "orderIndex": 4},
-                    {"offenceId": "off5", "offenceCode": "RT88026",
+                    {"offenceId": "off5", "defendantId": "d1", "offenceCode": "RT88026",
                      "offenceTitle": "Dangerous driving", "orderIndex": 5, "isConvicted": true}
                   ]
                 }
@@ -116,9 +116,9 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                     {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3, "isConvicted": true}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 3, "isConvicted": true}
                   ]
                 }
                 """;
@@ -177,11 +177,11 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                     {"defendantId": "d2", "firstName": "Bob", "lastName": "Jones"}
                   ],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
-                    {"offenceId": "off5", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5, "isConvicted": true}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d2", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4},
+                    {"offenceId": "off5", "defendantId": "d2", "offenceCode": "RT88026", "offenceTitle": "Dangerous driving", "orderIndex": 5, "isConvicted": true}
                   ]
                 }
                 """;

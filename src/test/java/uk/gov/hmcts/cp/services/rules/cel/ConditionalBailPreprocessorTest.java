@@ -1,7 +1,6 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
@@ -11,12 +10,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper;
 
 /**
  * Unit tests for {@link ConditionalBailPreprocessor} (DR-URG-008).
@@ -56,7 +58,7 @@ class ConditionalBailPreprocessorTest {
     }
 
     private static OffenceDto cbOffence(final String id, final int n, final String title) {
-        return offence(id, n, title).bailStatus(OffenceDto.BailStatusEnum.B);
+        return offence(id, n, title).defendantId("d1").bailStatus(OffenceDto.BailStatusEnum.B);
     }
 
     @Nested
@@ -315,6 +317,76 @@ class ConditionalBailPreprocessorTest {
             assertThat(result.get("d1").bailEndedCount()).isEqualTo(1L);
             assertThat(result.get("d1").hasUrgentCount()).isEqualTo(0L);
         }
+
+        @Test
+        @DisplayName("defendant A all CB bail-ended, defendant B has unresulted CB — A's context unaffected")
+        void defendant_a_warned_when_defendant_b_has_unresulted_cb_offence() {
+            // Defendant A: off-1 (CB, bail-ended via DS)
+            // Defendant B: off-2 (CB, bail-ended via DS) + off-3 (CB, no result)
+            // B's unresulted off-3 must NOT leak into A's context.
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h-multi")
+                    .hearingDay(java.time.LocalDate.of(2026, 9, 12))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
+                    .defendants(List.of(
+                            ValidationRuleTestHelper.defendant("d1", "Alex", "Jones"),
+                            ValidationRuleTestHelper.defendant("d2", "Robin", "Taylor")))
+                    .offences(List.of(
+                            cbOffence("off-1", 1, "Robbery"),
+                            offence("off-2", 2, "Assault").defendantId("d2")
+                                    .bailStatus(OffenceDto.BailStatusEnum.B),
+                            offence("off-3", 3, "Theft").defendantId("d2")
+                                    .bailStatus(OffenceDto.BailStatusEnum.B)))
+                    .resultLines(List.of(
+                            resultLine("rl1", "DS", "d1", "off-1"),
+                            resultLine("rl2", "DS", "d2", "off-2")))
+                    .build();
+
+            Map<String, ConditionalBailContext> result = preprocess(request);
+
+            // A: 1 CB offence, 1 bail-ended → warning fires (bailEndedCount == conditionalBailOffenceCount)
+            assertThat(result).containsKey("d1");
+            assertThat(result.get("d1").conditionalBailOffenceCount()).isEqualTo(1L);
+            assertThat(result.get("d1").bailEndedCount()).isEqualTo(1L);
+
+            // B: 2 CB offences, 1 bail-ended → warning does NOT fire (bailEndedCount < conditionalBailOffenceCount)
+            assertThat(result).containsKey("d2");
+            assertThat(result.get("d2").conditionalBailOffenceCount()).isEqualTo(2L);
+            assertThat(result.get("d2").bailEndedCount()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("defendant B has no result lines at all — unresulted CB offence must not leak into defendant A")
+        void defendant_b_no_result_lines_unresulted_cb_must_not_affect_defendant_a() {
+            // Defendant A: off-1 (CB, bail-ended via DS)
+            // Defendant B: off-2 (CB, no result lines at all) — B has zero result lines,
+            // so B won't appear in linesByGroup. off-2's defendantId="d2" scopes it to B only.
+            // With 2 deduplicated defendants the single-group fallback must NOT fire.
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h-multi-no-lines")
+                    .hearingDay(java.time.LocalDate.of(2026, 9, 12))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
+                    .defendants(List.of(
+                            ValidationRuleTestHelper.defendant("d1", "Alex", "Jones"),
+                            ValidationRuleTestHelper.defendant("d2", "Robin", "Taylor")))
+                    .offences(List.of(
+                            cbOffence("off-1", 1, "Robbery"),
+                            offence("off-2", 2, "Assault").defendantId("d2")
+                                    .bailStatus(OffenceDto.BailStatusEnum.B)))
+                    .resultLines(List.of(
+                            resultLine("rl1", "DS", "d1", "off-1")))
+                    .build();
+
+            Map<String, ConditionalBailContext> result = preprocess(request);
+
+            // A: 1 CB offence, 1 bail-ended — warning fires
+            assertThat(result).containsKey("d1");
+            assertThat(result.get("d1").conditionalBailOffenceCount()).isEqualTo(1L);
+            assertThat(result.get("d1").bailEndedCount()).isEqualTo(1L);
+
+            // B has no result lines → no context emitted (the preprocessor skips groups with no CB result lines)
+            assertThat(result).doesNotContainKey("d2");
+        }
     }
 
     @Nested
@@ -409,6 +481,22 @@ class ConditionalBailPreprocessorTest {
                     .as("URGENT on a non-CB offence must not set hasUrgentCount")
                     .isEqualTo(0L);
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DraftValidationRequest.CourtTypeEnum.class, names = {"MAGISTRATES", "YOUTH"})
+    @NullSource
+    void non_crown_hearing_should_not_produce_context(final DraftValidationRequest.CourtTypeEnum courtType) {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "DS", "d1", "off-1")),
+                List.of(cbOffence("off-1", 1, "Robbery"))).courtType(courtType);
+
+        assertThat(preprocess(request)).isEmpty();
+    }
+
+    private static DraftValidationRequest buildRequest(final List<ResultLineDto> lines,
+                                                       final List<OffenceDto> offences) {
+        return ValidationRuleTestHelper.buildRequest(lines, offences, DraftValidationRequest.CourtTypeEnum.CROWN);
     }
 
     private Map<String, ConditionalBailContext> preprocess(final DraftValidationRequest request) {

@@ -2,7 +2,7 @@ rule:
   id: "DR-URG-008"
   title: "Urgent Result Missing – Conditional Bail Ended"
   description: >-
-    Warns when all of a defendant's offences that carried a conditional bail remand
+    In Crown Court hearings only, warns when all of a defendant's offences that carried a conditional bail remand
     status have been resulted with bail-ending outcomes (final result, sentence deferred,
     remand in custody, or warrant without bail) and no URGENT result has been recorded.
   priority: 8000

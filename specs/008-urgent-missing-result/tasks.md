@@ -243,3 +243,20 @@ After Session B completes T003, start preprocessor TDD:
 - URGENT code (`"URGENT"`) is hardcoded in `ConditionalBailPreprocessor` as a private constant — not YAML-configurable
 - Conditional bail detection uses `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())` — hardcoded enum, not a YAML string
 - `getOffenceIdSet` on `ConditionalBailContext` is used if `affectedOffenceSet` is set on a YAML condition — DR-URG-008 uses `affectedDefendantSet` instead, but the method must still be implemented per the `RuleEvaluationContext` contract
+
+## Mandatory offence owner (2026-09-12)
+
+- [X] Require nonblank `OffenceDto.defendantId` in the companion API and add model validation tests.
+- [X] Use API draft `0.2.10-cra-22`; remove unowned-offence and single-group fallback logic.
+- [X] Update service integration/live request fixtures and Gatling payloads with offence ownership.
+- [X] Verify missing/null/blank owners return HTTP 400 and linked owners remain isolated under AC5A.
+- [X] Add the exact four-offence AC5 fixture and explicit DEFENDANT / isValid assertions.
+- [X] Validate 826 service tests, 72 API model tests and 63 live API tests; static checks and coverage gate pass.
+- [ ] Publish the companion API draft through the normal API pipeline before resolving this dependency in service CI. The draft is currently installed in Maven Local only.
+
+## Crown Court restriction (2026-09-12)
+
+- [X] Gate DR-URG-008 preprocessing on `courtType == CROWN` and document FR-011.
+- [X] Add 60 integration scenarios across CROWN/MAGISTRATES/YOUTH, one/two defendants, and Category F plus all bail-ending short codes.
+- [X] Make existing URGENT preprocessor unit fixtures explicitly Crown Court; test non-Crown and null court types return no contexts.
+- [X] Verify all 889 service tests, Checkstyle, PMD, and the coverage gate pass.

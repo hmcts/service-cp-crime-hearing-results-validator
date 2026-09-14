@@ -62,7 +62,8 @@ Conditional bail detection uses `OffenceDto.BailStatusEnum.B` directly in the pr
 3. Build resultsByOffence: Map<offenceId, List<ResultLineDto>> from PreprocessorHelper.groupResultsByOffence
 4. Build bailEndingUpper: Set<String> = PreprocessorHelper.upperSet(config.bailEndingShortCodes())
 5. For each deduplicated defendant group (defendantId → defendantName):
-   a. Collect offenceIds belonging to this defendant group
+   a. Collect resulted offenceIds for this defendant group and its unresulted CB offences
+      using mandatory OffenceDto.defendantId, resolved through the same dedupe keys
    b. Filter to conditional-bail offences:
       OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())
       (null bailStatus → skip offence; safe no-op)
@@ -156,3 +157,12 @@ No state is mutated. The rule evaluates a snapshot of hearing result lines and o
 | `api-cp-crime-hearing-results-validator` | `0.2.8-cra-22`       | `BailStatusEnum bailStatus` | `BailStatusEnum.B` (code "B", description "Conditional bail") |
 
 CHD-2485 has shipped. `offence.getBailStatus()` is available from library version `0.2.8-cra-22`. The preprocessor uses `OffenceDto.BailStatusEnum.B.equals(offence.getBailStatus())`; null `bailStatus` is treated as "not conditional bail" (safe no-op).
+
+
+## Required `OffenceDto.defendantId`
+
+The API requires a nonempty, whitespace-free owning defendant ID for every offence. Generated Bean Validation constraints reject invalid owners at the HTTP boundary. The preprocessor directly groups unresulted conditional-bail offences under this ID (or its master-defendant key); there is no unowned pool or single-group inference.
+
+## Crown Court scope
+
+`ConditionalBailPreprocessor` returns no contexts unless `DraftValidationRequest.courtType` is `CROWN`. This hearing-level gate applies before any offence or defendant grouping.
