@@ -438,6 +438,52 @@ class UrgentMissingWarningIntegrationTest extends IntegrationTestBase {
     class MultiDefendant {
 
         @Test
+        @DisplayName("d1 — two CB offences both bail-ended, no URGENT → WARNING; d2 — one CB offence unresulted → no warning")
+        void d1_all_cb_bail_ended_d2_cb_unresulted_should_warn_only_d1() throws Exception {
+            // d1: off-1 and off-2 both CB (defendantId=d1), both resulted with Category F (WDRN) → all bail ended → WARNING
+            // d2: off-3 CB (defendantId=d2), no result lines → unresulted CB attributed to d2;
+            //     d2 has no CB result lines → skipped by preprocessor → no warning
+            final String request = """
+                    {
+                      "hearingId": "h-multi-ac5a",
+                      "hearingDay": "2026-05-06",
+                      "courtType": "CROWN",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "WDRN", "category": "F", "label": "Withdrawn",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "WDRN", "category": "F", "label": "Withdrawn",
+                         "defendantId": "d1", "offenceId": "off-2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"},
+                        {"defendantId": "d2", "firstName": "Sam", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d1"},
+                        {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                         "orderIndex": 2, "bailStatus": "B", "defendantId": "d1"},
+                        {"offenceId": "off-3", "offenceCode": "TH68003", "offenceTitle": "Theft",
+                         "orderIndex": 3, "bailStatus": "B", "defendantId": "d2"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_URG_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-URG-008")))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].defendantId", is("d1")));
+        }
+
+        @Test
         @DisplayName("Defendant A (all CB bail-ended) gets warning; Defendant B (unresulted CB offence) does not")
         void defendant_a_all_cb_bail_ended_defendant_b_unresulted_cb_should_warn_only_a()
                 throws Exception {
@@ -725,6 +771,146 @@ class UrgentMissingWarningIntegrationTest extends IntegrationTestBase {
                     .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-URG-008")))
                     .andExpect(jsonPath("$.warnings[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].defendantId", is("d1")));
+        }
+
+        @Test
+        @DisplayName("US3 — three defendants with explicit defendantId on offences → WARNING for d1 only")
+        void three_defendants_explicit_defendantId_warning_fires_only_for_fully_resolved_defendant()
+                throws Exception {
+            // d1: off-1 (CB, defendantId=d1) bail-ended, no URGENT → WARNING
+            // d2: off-2 (CB, defendantId=d2) bail-ended + off-3 (CB, defendantId=d2) unresulted
+            //   After T007: off-3 attributed to d2 via defendantId → count=2, bailEnded=1 → NO WARNING
+            //   Before T007 (no defendantId usage): off-3 ignored, d2 count=1, bailEnded=1 → WARNING fires
+            //   → this test fails before T007
+            // d3: off-4 (no bailStatus, defendantId=d3) → no CB offences → NO WARNING
+            // Use WDRN (Withdrawn) with category F — bail-ending but does not trigger DR-CONV-006.
+            final String request = """
+                    {
+                      "hearingId": "h-us3",
+                      "hearingDay": "2026-09-14",
+                      "courtType": "CROWN",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "WDRN", "label": "Withdrawn",
+                         "category": "F", "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "WDRN", "label": "Withdrawn",
+                         "category": "F", "defendantId": "d2", "offenceId": "off-2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"},
+                        {"defendantId": "d2", "firstName": "Sam",  "lastName": "Smith"},
+                        {"defendantId": "d3", "firstName": "Pat",  "lastName": "Brown"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d1"},
+                        {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d2"},
+                        {"offenceId": "off-3", "offenceCode": "TH68003", "offenceTitle": "Theft",
+                         "orderIndex": 2, "bailStatus": "B", "defendantId": "d2"},
+                        {"offenceId": "off-4", "offenceCode": "AS001",   "offenceTitle": "Assault",
+                         "orderIndex": 1, "defendantId": "d3"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_URG_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-URG-008")))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].defendantId", is("d1")));
+        }
+
+        @Test
+        @DisplayName("US1 — two defendants with explicit defendantId — d2 one CB bail-ended + one CB unresulted → WARNING for d1 only")
+        void two_defendants_explicit_defendantId_d2_mixed_cb_should_warn_d1_only() throws Exception {
+            // Both defendants have result lines (so both groups are emitted).
+            // d2 also has off-3 (CB, unresulted, defendantId=d2): explicit attribution adds it to
+            // d2's allCbIds → d2 count=2, bailEnded=1 → no warning.
+            // d1: off-1 (CB, bail-ended) → count=1, bailEnded=1 → WARNING.
+            final String request = """
+                    {
+                      "hearingId": "h-us1-explicit",
+                      "hearingDay": "2026-09-14",
+                      "courtType": "CROWN",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "WDRN", "label": "Withdrawn",
+                         "category": "F", "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "WDRN", "label": "Withdrawn",
+                         "category": "F", "defendantId": "d2", "offenceId": "off-2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"},
+                        {"defendantId": "d2", "firstName": "Sam",  "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d1"},
+                        {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d2"},
+                        {"offenceId": "off-3", "offenceCode": "TH68003", "offenceTitle": "Theft",
+                         "orderIndex": 2, "bailStatus": "B", "defendantId": "d2"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_URG_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-URG-008")))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].defendantId", is("d1")));
+        }
+
+        @Test
+        @DisplayName("SC-004 — d1 single CB bail-ended gets WARNING; d2 CB unresulted (no result lines) does not")
+        void sc004_old_format_without_offence_defendant_id_processes_correctly() throws Exception {
+            // d1: off-1 (CB, defendantId=d1, WDRN cat F bail-ended) → count=1, bailEnded=1 → WARNING.
+            // d2: off-2 (CB, defendantId=d2, unresulted) → no result lines for d2 → d2 group skipped → no warning.
+            final String request = """
+                    {
+                      "hearingId": "h-sc004",
+                      "hearingDay": "2026-09-14",
+                      "courtType": "CROWN",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "WDRN", "label": "Withdrawn",
+                         "category": "F", "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"},
+                        {"defendantId": "d2", "firstName": "Sam",  "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "offenceCode": "TH68001", "offenceTitle": "Robbery",
+                         "orderIndex": 1, "bailStatus": "B", "defendantId": "d1"},
+                        {"offenceId": "off-2", "offenceCode": "TH68002", "offenceTitle": "Burglary",
+                         "orderIndex": 2, "bailStatus": "B", "defendantId": "d2"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_URG_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[0].affectedDefendants[0].defendantId", is("d1")));
         }
     }

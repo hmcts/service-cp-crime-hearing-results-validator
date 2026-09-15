@@ -1,9 +1,11 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.defendant;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -300,6 +302,68 @@ class ConditionalBailPreprocessorTest {
     class MultiDefendant {
 
         @Test
+        @DisplayName("two defendants — d1 all CB bail-ended, d2 CB offence unresulted → d1 count 2/2, d2 absent")
+        void two_defendants_d1_all_cb_bail_ended_d2_cb_unresulted_should_produce_d1_context_only() {
+            // d1 has result lines for off-1 and off-2 (both CB, bail-ended, defendantId=d1).
+            // d2 owns off-3 (CB, unresulted, defendantId=d2); d2 has no result lines.
+            // off-3 is attributed to d2 via defendantId and must NOT inflate d1's count.
+            final DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 3, 11))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
+                    .resultLines(List.of(
+                            resultLine("rl1", "DS", "d1", "off-1"),
+                            resultLine("rl2", "DS", "d1", "off-2")))
+                    .defendants(List.of(
+                            defendant("d1", "Alex", "Jones"),
+                            defendant("d2", "Sam", "Smith")))
+                    .offences(List.of(
+                            cbOffence("off-1", 1, "Robbery"),
+                            cbOffence("off-2", 2, "Burglary"),
+                            cbOffence("off-3", 3, "Theft").defendantId("d2")))
+                    .build();
+
+            final Map<String, ConditionalBailContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("d1");
+            assertThat(result.get("d1").conditionalBailOffenceCount()).isEqualTo(2L);
+            assertThat(result.get("d1").bailEndedCount()).isEqualTo(2L);
+            assertThat(result.get("d1").hasUrgentCount()).isEqualTo(0L);
+        }
+
+        @Test
+        @DisplayName("explicit defendantId — d2 has one CB bail-ended + one CB unresulted → d2 count 2/1, d1 count 1/1")
+        void two_defendants_explicit_defendantId_d2_mixed_cb_should_inflate_d2_count() {
+            // d1: off-1 (CB, bail-ended) via result line → count=1, bailEnded=1 → warning should fire
+            // d2: off-2 (CB, bail-ended) via result line + off-3 (CB, unresulted, defendantId=d2)
+            //   After T007: off-3 attributed via defendantId → d2 count=2, bailEnded=1 → warning suppressed
+            //   Before T007 (no defendantId usage): d2 count=1, bailEnded=1 → this assertion fails
+            final DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h-explicit-id")
+                    .hearingDay(LocalDate.of(2026, 9, 14))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
+                    .resultLines(List.of(
+                            resultLine("rl1", "DS", "d1", "off-1"),
+                            resultLine("rl2", "DS", "d2", "off-2")))
+                    .defendants(List.of(
+                            defendant("d1", "Alex", "Jones"),
+                            defendant("d2", "Sam", "Smith")))
+                    .offences(List.of(
+                            cbOffence("off-1", 1, "Robbery").defendantId("d1"),
+                            cbOffence("off-2", 2, "Burglary").defendantId("d2"),
+                            cbOffence("off-3", 3, "Theft").defendantId("d2")))
+                    .build();
+
+            final Map<String, ConditionalBailContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("d1", "d2");
+            assertThat(result.get("d1").conditionalBailOffenceCount()).isEqualTo(1L);
+            assertThat(result.get("d1").bailEndedCount()).isEqualTo(1L);
+            assertThat(result.get("d2").conditionalBailOffenceCount()).isEqualTo(2L);
+            assertThat(result.get("d2").bailEndedCount()).isEqualTo(1L);
+        }
+
+        @Test
         @DisplayName("two defendants — only the one with bail-ended CB offences emits context with hasUrgentCount 0")
         void only_defendant_with_bail_ended_cb_offences_emits_context() {
             DraftValidationRequest request = buildRequest(
@@ -326,11 +390,11 @@ class ConditionalBailPreprocessorTest {
             // B's unresulted off-3 must NOT leak into A's context.
             DraftValidationRequest request = DraftValidationRequest.builder()
                     .hearingId("h-multi")
-                    .hearingDay(java.time.LocalDate.of(2026, 9, 12))
+                    .hearingDay(LocalDate.of(2026, 9, 12))
                     .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
                     .defendants(List.of(
-                            ValidationRuleTestHelper.defendant("d1", "Alex", "Jones"),
-                            ValidationRuleTestHelper.defendant("d2", "Robin", "Taylor")))
+                            defendant("d1", "Alex", "Jones"),
+                            defendant("d2", "Robin", "Taylor")))
                     .offences(List.of(
                             cbOffence("off-1", 1, "Robbery"),
                             offence("off-2", 2, "Assault").defendantId("d2")
@@ -364,11 +428,11 @@ class ConditionalBailPreprocessorTest {
             // With 2 deduplicated defendants the single-group fallback must NOT fire.
             DraftValidationRequest request = DraftValidationRequest.builder()
                     .hearingId("h-multi-no-lines")
-                    .hearingDay(java.time.LocalDate.of(2026, 9, 12))
+                    .hearingDay(LocalDate.of(2026, 9, 12))
                     .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
                     .defendants(List.of(
-                            ValidationRuleTestHelper.defendant("d1", "Alex", "Jones"),
-                            ValidationRuleTestHelper.defendant("d2", "Robin", "Taylor")))
+                            defendant("d1", "Alex", "Jones"),
+                            defendant("d2", "Robin", "Taylor")))
                     .offences(List.of(
                             cbOffence("off-1", 1, "Robbery"),
                             offence("off-2", 2, "Assault").defendantId("d2")
@@ -480,6 +544,30 @@ class ConditionalBailPreprocessorTest {
             assertThat(ctx.hasUrgentCount())
                     .as("URGENT on a non-CB offence must not set hasUrgentCount")
                     .isEqualTo(0L);
+        }
+
+        @Test
+        @DisplayName("EC4 — single defendant with explicit defendantId on offences — unresulted CB suppresses warning")
+        void ec4_single_defendant_explicit_defendantId_on_unresulted_cb_should_suppress_warning() {
+            // Regression guard: when offences carry explicit defendantId the new algorithm must
+            // still attribute an unresulted CB offence to its defendant and count it,
+            // keeping conditionalBailOffenceCount > bailEndedCount to suppress the warning.
+            final DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h-ec4")
+                    .hearingDay(LocalDate.of(2026, 9, 14))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.CROWN)
+                    .resultLines(List.of(resultLine("rl1", "DS", "d1", "off-1")))
+                    .defendants(List.of(defendant("d1", "Alex", "Jones")))
+                    .offences(List.of(
+                            cbOffence("off-1", 1, "Robbery").defendantId("d1"),
+                            cbOffence("off-2", 2, "Burglary").defendantId("d1")))
+                    .build();
+
+            final Map<String, ConditionalBailContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("d1");
+            assertThat(result.get("d1").conditionalBailOffenceCount()).isEqualTo(2L);
+            assertThat(result.get("d1").bailEndedCount()).isEqualTo(1L);
         }
     }
 
