@@ -72,7 +72,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                   ]
                 }
@@ -110,7 +110,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": true, "isConvicted": false}
                   ]
                 }
@@ -142,7 +142,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                   ]
                 }
@@ -176,7 +176,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                   ]
                 }
@@ -206,7 +206,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": true}
                   ]
                 }
@@ -236,7 +236,7 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false}
                   ]
                 }
@@ -268,9 +268,9 @@ class CtlMissingWarningApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft A",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft A",
                      "orderIndex": 1, "hasExistingCtlRecord": false, "isConvicted": false},
-                    {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft B",
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft B",
                      "orderIndex": 2, "hasExistingCtlRecord": true, "isConvicted": false}
                   ]
                 }

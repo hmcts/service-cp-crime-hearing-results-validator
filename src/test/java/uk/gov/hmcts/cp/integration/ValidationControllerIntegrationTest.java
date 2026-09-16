@@ -91,7 +91,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
               ],
               "offences": [
                 {
-                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53",
+                  "offenceId": "71a13191-4c5d-46a1-aad7-31b06db39b53", "defendantId": "503cae2e-9a0a-47b9-943a-50ed65b9700a",
                   "offenceCode": "TH68010",
                   "offenceTitle": "Theft from a shop",
                   "orderIndex": 1,
@@ -123,7 +123,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings", empty()))
                 .andExpect(jsonPath("$.rulesEvaluated",
                         contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007")));
+                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-URG-008")));
     }
 
     /**
@@ -143,8 +143,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -179,10 +179,10 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d1", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d1", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
                   ]
                 }
                 """;
@@ -221,8 +221,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -262,8 +262,8 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;

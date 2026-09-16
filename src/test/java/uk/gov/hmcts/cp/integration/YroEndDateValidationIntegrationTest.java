@@ -73,7 +73,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-30"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "David", "lastName": "Evans"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -127,9 +127,9 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                         {"defendantId": "d2", "firstName": "Chloe", "lastName": "Black"}
                       ],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
                          "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
+                        {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
                          "isConvicted": true}
                       ]
                     }
@@ -179,9 +179,9 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Frances", "lastName": "Morgan"}],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1,
                          "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
+                        {"offenceId": "off2", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2,
                          "isConvicted": true}
                       ]
                     }
@@ -231,7 +231,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-04-10"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -281,7 +281,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-06-15"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -314,7 +314,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-07-01"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -344,7 +344,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-09-01"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Nadia", "lastName": "Khan"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -386,7 +386,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          "prompts": [{"promptRef": "endDate", "promptValue": "2026-11-01"}]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Oliver", "lastName": "Bennett"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
