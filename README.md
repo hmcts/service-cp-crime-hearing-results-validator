@@ -11,7 +11,7 @@ Rules are defined in YAML files using [CEL (Common Expression Language)](https:/
 ```yaml
 rule:
   id: "DR-SENT-001"
-  title: "Custodial sentence concurrent/consecutive check"
+  title: "Custodial and suspended sentence concurrent/consecutive check"
   conditions:
     - id: "AC2"
       name: "Multiple offences missing info"
@@ -28,7 +28,7 @@ Rule files are located in `src/main/resources/rules/`.
 
 | Rule ID | Description |
 |---------|-------------|
-| DR-SENT-001 | Custodial sentence concurrent/consecutive check |
+| DR-SENT-001 | Custodial and suspended sentence concurrent/consecutive check |
 | DR-DISQ-002 | Extended test disqualification check |
 | DR-CTL-003 | CTL missing check |
 | DR-YRO-004 | Youth Rehabilitation Order end date and curfew requirement duration validation |
