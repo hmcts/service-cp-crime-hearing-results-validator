@@ -15,6 +15,7 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.entity.ValidationRuleEntity;
@@ -535,4 +536,140 @@ class CelValidationRuleTest {
         assertThat(issues.getFirst().issue().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
     }
 
+    /**
+     * Covers the generalised calculated-value placeholder mechanism (research.md R5, feature
+     * 010-application-result-offence-error). Uses a minimal, test-only preprocessor/context
+     * ({@link FixedValueContext}) rather than any production preprocessor, so these tests are
+     * isolated to {@link CelValidationRule}'s own placeholder-resolution logic.
+     */
+    @Test
+    void calculatedValueSet_withNoPlaceholderName_shouldDefaultToCalculatedEndDateToken() {
+        CelValidationRule fixtureRule = calculatedValuePlaceholderRule();
+        DraftValidationRequest request = buildRequest(List.of(), List.of());
+
+        List<ValidationIssueResult> results = fixtureRule.evaluate(request);
+
+        ValidationIssueResult ac1 = findByConditionMessage(results, "Inline value is 31/12/2026.");
+        assertThat(ac1.issue().getAffectedOffences()).hasSize(1);
+        assertThat(ac1.issue().getAffectedOffences().getFirst().getMessage())
+                .isEqualTo("Inline value is 31/12/2026.");
+    }
+
+    @Test
+    void calculatedValueSet_withPlaceholderName_shouldExpandCustomTokenInMessageTemplate() {
+        CelValidationRule fixtureRule = calculatedValuePlaceholderRule();
+        DraftValidationRequest request = buildRequest(List.of(), List.of());
+
+        List<ValidationIssueResult> results = fixtureRule.evaluate(request);
+
+        ValidationIssueResult ac2 = findByConditionMessage(results, "Inline value is 31/12/2026.", true);
+        assertThat(ac2.issue().getAffectedOffences().getFirst().getMessage())
+                .isEqualTo("Inline value is 31/12/2026.");
+    }
+
+    @Test
+    void calculatedValueSet_withPlaceholderNameAndErrorMessageTemplate_shouldExpandCustomTokenInPageLevelMessage() {
+        CelValidationRule fixtureRule = calculatedValuePlaceholderRule();
+        DraftValidationRequest request = buildRequest(List.of(), List.of());
+
+        List<ValidationIssueResult> results = fixtureRule.evaluate(request);
+
+        ValidationIssueResult ac3 = results.stream()
+                .filter(r -> r.errorMessage() != null && r.errorMessage().startsWith("Page-level value is"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(ac3.errorMessage())
+                .isEqualTo("Page-level value is 31/12/2026. This affects ${defendantNames}.");
+    }
+
+    @Test
+    void errorMessageTemplate_withNoCalculatedValueSet_shouldBeUnaffected() {
+        CelValidationRule fixtureRule = calculatedValuePlaceholderRule();
+        DraftValidationRequest request = buildRequest(List.of(), List.of());
+
+        List<ValidationIssueResult> results = fixtureRule.evaluate(request);
+
+        ValidationIssueResult ac4 = results.stream()
+                .filter(r -> r.errorMessage() != null && r.errorMessage().startsWith("Page-level message with no"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(ac4.errorMessage())
+                .isEqualTo("Page-level message with no calculated value. This affects ${defendantNames}.");
+    }
+
+    private CelValidationRule calculatedValuePlaceholderRule() {
+        return new CelValidationRule(
+                "rules/TEST-calculated-value-placeholder.yaml",
+                new PreprocessorRegistry(List.of(new FixedValuePreprocessor())),
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(RuleOverrideService.class),
+                mock(ValidationIssueRecorder.class));
+    }
+
+    private static ValidationIssueResult findByConditionMessage(final List<ValidationIssueResult> results,
+                                                                  final String inlineMessage) {
+        return findByConditionMessage(results, inlineMessage, false);
+    }
+
+    /**
+     * Both AC1 and AC2 resolve to the identical inline message text (different placeholder
+     * token names, same underlying value) -- {@code preferSecondMatch} disambiguates between
+     * them by position, since matching on message content alone can't tell them apart.
+     */
+    private static ValidationIssueResult findByConditionMessage(final List<ValidationIssueResult> results,
+                                                                  final String inlineMessage,
+                                                                  final boolean preferSecondMatch) {
+        List<ValidationIssueResult> matches = results.stream()
+                .filter(r -> !r.issue().getAffectedOffences().isEmpty()
+                        && inlineMessage.equals(r.issue().getAffectedOffences().getFirst().getMessage()))
+                .toList();
+        return preferSecondMatch ? matches.get(1) : matches.get(0);
+    }
+
+    /**
+     * Minimal, test-only {@link RuleEvaluationContext} exposing a single fixed calculated value
+     * against a single offence, used only by the calculated-value-placeholder tests above.
+     */
+    private static final class FixedValueContext implements RuleEvaluationContext {
+        @Override
+        public Map<String, Long> toCelContext() {
+            return Map.of("triggered", 1L);
+        }
+
+        @Override
+        public List<String> getOffenceIdSet(final String setName) {
+            return "offenceIds".equals(setName) ? List.of("off1") : List.of();
+        }
+
+        @Override
+        public String defendantName() {
+            return "Test Defendant";
+        }
+
+        @Override
+        public List<String> allOffenceIds() {
+            return List.of("off1");
+        }
+
+        @Override
+        public String getCalculatedValue(final String setName, final String offenceId) {
+            return "calcValue".equals(setName) && "off1".equals(offenceId) ? "31/12/2026" : null;
+        }
+    }
+
+    /** Minimal, test-only {@link ValidationPreprocessor} pairing with {@link FixedValueContext}. */
+    private static final class FixedValuePreprocessor implements ValidationPreprocessor {
+        @Override
+        public String type() {
+            return "test-fixed-value";
+        }
+
+        @Override
+        public Map<String, ? extends RuleEvaluationContext> preprocess(
+                final DraftValidationRequest request, final PreprocessingDefinition config) {
+            return Map.of("ctx1", new FixedValueContext());
+        }
+    }
 }
