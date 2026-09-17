@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.integration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
@@ -35,12 +36,21 @@ public abstract class IntegrationTestBase {
     protected static final String IDENTITY_PATH =
             "/usersgroups-query-api/query/api/rest/usersgroups/users/logged-in-user/permissions";
 
+    protected static final String REFERENCEDATA_OFFENCE_PATH =
+            "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences";
+
+    private static final String CJS_OFFENCE_CODE_PARAM = "cjsoffencecode";
+
     protected static final WireMockServer IDENTITY_WIRE_MOCK =
+            new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
+
+    protected static final WireMockServer REFERENCEDATA_OFFENCE_WIRE_MOCK =
             new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort());
 
     static {
         IDENTITY_WIRE_MOCK.start();
         stubDefaultIdentityResponse();
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.start();
     }
 
     @Resource
@@ -50,6 +60,13 @@ public abstract class IntegrationTestBase {
     static void overrideIdentityUrl(DynamicPropertyRegistry registry) {
         registry.add("authz.http.identity-url-template",
                 () -> "http://localhost:" + IDENTITY_WIRE_MOCK.port() + IDENTITY_PATH);
+    }
+
+    @DynamicPropertySource
+    static void overrideReferencedataOffenceUrl(DynamicPropertyRegistry registry) {
+        registry.add("referencedata.offences.http.offence-url-template",
+                () -> "http://localhost:" + REFERENCEDATA_OFFENCE_WIRE_MOCK.port()
+                        + REFERENCEDATA_OFFENCE_PATH + "?" + CJS_OFFENCE_CODE_PARAM + "={offenceCode}");
     }
 
     /**
@@ -86,6 +103,48 @@ public abstract class IntegrationTestBase {
                         .withStatus(200)
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                         .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode}, returning
+     * the given {@code misCode} (or no {@code misCode} field at all when {@code misCode} is
+     * {@code null}, exercising the "not a relevant sexual offence" path).
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     * @param misCode the {@code misCode} to return, or {@code null} to omit the field
+     */
+    protected static void stubReferencedataOffenceResponse(final String offenceCode, final String misCode) {
+        final String misCodeJson = misCode == null ? "" : "\"misCode\": \"%s\",".formatted(misCode);
+        final String responseBody = """
+                {
+                  "offences": [
+                    {
+                      "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb87",
+                      %s
+                      "cjsOffenceCode": "%s"
+                    }
+                  ]
+                }
+                """.formatted(misCodeJson, offenceCode);
+
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} to fail
+     * (404), exercising the fail-open path.
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     */
+    protected static void stubReferencedataOffenceNotFound(final String offenceCode) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse().withStatus(404)));
     }
 
     /**

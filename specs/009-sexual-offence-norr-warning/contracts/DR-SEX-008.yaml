@@ -1,0 +1,38 @@
+rule:
+  id: "DR-SEX-008"
+  title: "Sexual offence notification requirement missing"
+  description: >-
+    Warns when a convicted relevant sexual offence (misCode "SEX" in offence
+    reference data) has no sexual-offences notification-requirement result
+    recorded: NORRR for an Adult defendant (18+ at hearing date), or neither
+    NORRR nor NORPGP for a Youth defendant (under 18 at hearing date).
+  priority: 8000
+  enabled: true
+
+  preprocessing:
+    type: "sexual-offence-notification-requirement"
+    qualifyingMisCode: "SEX"
+    adultNotificationShortCodes:
+      - NORRR
+    youthNotificationShortCodes:
+      - NORRR
+      - NORPGP
+
+  conditions:
+    - id: "AC1"
+      name: "Adult - missing NORRR on convicted relevant sexual offence"
+      expression: "isYouth == 0 && hasQualifyingNotification == 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence does not have a sexual offences notification requirement (NORRR). Check if this is required before sharing
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC1A"
+      name: "Youth - missing NORRR and NORPGP on convicted relevant sexual offence"
+      expression: "isYouth == 1 && hasQualifyingNotification == 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence does not have a sexual offences notification requirement (NORRR - defendant or NORPGP - parent and defendant). Check if this is required before sharing
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
