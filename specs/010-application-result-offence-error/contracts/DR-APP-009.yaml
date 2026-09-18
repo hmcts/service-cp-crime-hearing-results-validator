@@ -50,4 +50,5 @@ rule:
       affectedDefendantSet: "defendantId"
       calculatedValueSet: "resultLabelByOffenceId"
       calculatedValuePlaceholderName: "resultLabel"
+      consolidatePageLevelError: true
       validationLevel: OFFENCE

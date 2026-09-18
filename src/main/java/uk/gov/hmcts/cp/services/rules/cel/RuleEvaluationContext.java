@@ -82,4 +82,21 @@ public interface RuleEvaluationContext {
     default String getCalculatedValue(final String setName, final String offenceId) {
         throw new IllegalArgumentException("Unknown calculated-value set: " + setName);
     }
+
+    /**
+     * Returns a hearing-wide aggregate value named by a YAML condition's {@code calculatedValueSet}
+     * field, used only when that condition sets {@code consolidatePageLevelError: true} (e.g. the
+     * comma-joined, de-duplicated list of every breaching result label across the whole rule
+     * evaluation, not just this context's own offence). Every triggered context of the same rule
+     * evaluation is expected to return the identical string for a given {@code setName}, so their
+     * page-level messages resolve to identical text and merge into a single entry via
+     * {@code DefaultValidationService}'s existing {@code ruleId::errorMessage} bucketing.
+     *
+     * @param setName configured calculated-value set name
+     * @return the hearing-wide aggregate value for that set
+     * @throws IllegalArgumentException if the set name is unknown to this context
+     */
+    default String getGlobalCalculatedValue(final String setName) {
+        throw new IllegalArgumentException("Unknown calculated-value set: " + setName);
+    }
 }

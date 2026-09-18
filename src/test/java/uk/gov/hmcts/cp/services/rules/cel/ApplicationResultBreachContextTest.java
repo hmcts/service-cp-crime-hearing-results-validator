@@ -3,18 +3,20 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link ApplicationResultBreachContext} (feature
  * 010-application-result-offence-error). Covers {@code toCelContext()}, the two named id sets,
- * and the {@code resultLabelByOffenceId} calculated-value lookup.
+ * and the {@code resultLabelByOffenceId} per-offence and hearing-wide calculated-value lookups
+ * (AC2A/AC2B).
  */
 class ApplicationResultBreachContextTest {
 
     private final ApplicationResultBreachContext context = new ApplicationResultBreachContext(
-            "d1", "Jamie Smith", "off1", "Legal Aid Withdrawn");
+            "off1", List.of("Legal Aid Withdrawn"), "Legal Aid Withdrawn", "d1", "Jamie Smith");
 
     @Test
     void toCelContext_shouldReturnHasBreachOne() {
@@ -66,14 +68,40 @@ class ApplicationResultBreachContextTest {
     }
 
     @Test
+    void getCalculatedValue_multipleResultLabelsOnSameOffence_shouldReturnCommaJoinedList() {
+        ApplicationResultBreachContext multi = new ApplicationResultBreachContext(
+                "off1", List.of("Legal Aid Withdrawn", "Application refused"),
+                "Legal Aid Withdrawn, Application refused", "d1", "Jamie Smith");
+
+        assertThat(multi.getCalculatedValue("resultLabelByOffenceId", "off1"))
+                .isEqualTo("Legal Aid Withdrawn, Application refused");
+    }
+
+    @Test
+    void getGlobalCalculatedValue_resultLabelByOffenceId_shouldReturnHearingWideLabelList() {
+        ApplicationResultBreachContext multiOffence = new ApplicationResultBreachContext(
+                "off1", List.of("Legal Aid Withdrawn"),
+                "Legal Aid Withdrawn, Application refused", "d1", "Jamie Smith");
+
+        assertThat(multiOffence.getGlobalCalculatedValue("resultLabelByOffenceId"))
+                .isEqualTo("Legal Aid Withdrawn, Application refused");
+    }
+
+    @Test
+    void getGlobalCalculatedValue_unknownSetName_shouldThrow() {
+        assertThatThrownBy(() -> context.getGlobalCalculatedValue("somethingElse"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void defendantName_and_defendantId_shouldBeAccessibleFromRecordComponents() {
         assertThat(context.defendantName()).isEqualTo("Jamie Smith");
         assertThat(context.defendantId()).isEqualTo("d1");
     }
 
     @Test
-    void record_shouldExposeResultLabelAndOffenceId() {
-        assertThat(context.resultLabel()).isEqualTo("Legal Aid Withdrawn");
+    void record_shouldExposeResultLabelsAndOffenceId() {
+        assertThat(context.resultLabels()).containsExactly("Legal Aid Withdrawn");
         assertThat(context.offenceId()).isEqualTo("off1");
     }
 
@@ -82,7 +110,7 @@ class ApplicationResultBreachContextTest {
         // "" -- not null, not "Unknown" -- is the deliberate fallback for an unresolvable
         // defendant (research.md R8 / data-model.md); the context itself does not filter it.
         ApplicationResultBreachContext unresolved = new ApplicationResultBreachContext(
-                "d2", "", "off2", "Application refused");
+                "off2", List.of("Application refused"), "Application refused", "d2", "");
 
         assertThat(unresolved.defendantName()).isEmpty();
     }

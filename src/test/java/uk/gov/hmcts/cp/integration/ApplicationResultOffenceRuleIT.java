@@ -231,30 +231,33 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
     class MultipleBreaches {
 
         @Test
-        void multipleApplicationOnlyResultsOnSameOffence_shouldRaiseSeparateInlineErrorPerResult()
+        void multipleApplicationOnlyResultsOnSameOffence_shouldRaiseOneConsolidatedInlineAndPageError()
                 throws Exception {
+            // spec.md AC2A: two breaches on the SAME offence -- ONE error for that offence, not a
+            // separate error per result, naming both breaching results comma-separated.
             String request = twoBreachesOnSameOffenceRequest();
 
             performValidate(request)
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(1)))
                     .andExpect(jsonPath(
                             "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].message",
                             containsInAnyOrder(
-                                    "Remove Legal Aid Withdrawn from this offence. It is an application "
-                                            + "result, so it can only be added to an application.",
-                                    "Remove Application refused from this offence. It is an application "
-                                            + "result, so it can only be added to an application.")))
+                                    "Remove Legal Aid Withdrawn, Application refused from this offence. "
+                                            + "It is an application result, so it can only be added to an "
+                                            + "application.")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn is an application result. It cannot be added to an offence. "
-                                    + "Remove it from the offence and add an application to the hearing.",
-                            "Application refused is an application result. It cannot be added to an offence. "
-                                    + "Remove it from the offence and add an application to the hearing.")));
+                            "Legal Aid Withdrawn, Application refused is an application result. It cannot "
+                                    + "be added to an offence. Remove it from the offence and add an "
+                                    + "application to the hearing.")));
         }
 
         @Test
-        void applicationOnlyResultsAcrossMultipleOffencesSameDefendant_shouldRaiseErrorPerOffence()
+        void applicationOnlyResultsAcrossMultipleOffencesSameDefendant_shouldRaiseOnePageLevelErrorPerOffenceInline()
                 throws Exception {
+            // spec.md AC2B: breaches on different offences still raise ONE page-level error
+            // naming every breaching result across all offences, while each offence keeps its
+            // own inline error (AC2A).
             String request = """
                     {
                       "hearingId": "h1",
@@ -282,11 +285,96 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath(
                             "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].offenceId",
                             containsInAnyOrder("off1", "off2")))
+                    .andExpect(jsonPath(
+                            "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].message",
+                            containsInAnyOrder(
+                                    "Remove Legal Aid Withdrawn from this offence. It is an application "
+                                            + "result, so it can only be added to an application.",
+                                    "Remove Application refused from this offence. It is an application "
+                                            + "result, so it can only be added to an application.")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn is an application result. It cannot be added to an offence. "
-                                    + "Remove it from the offence and add an application to the hearing.",
-                            "Application refused is an application result. It cannot be added to an offence. "
-                                    + "Remove it from the offence and add an application to the hearing.")));
+                            "Legal Aid Withdrawn, Application refused is an application result. It cannot "
+                                    + "be added to an offence. Remove it from the offence and add an "
+                                    + "application to the hearing.")));
+        }
+
+        @Test
+        void applicationOnlyResultsAcrossThreeOffences_shouldRaiseOnePageLevelErrorNamingAllThree()
+                throws Exception {
+            // spec.md AC2B's own example shape: LAWD against offence 1, RFSD against offence 2,
+            // G against offence 3 -- one page-level error naming all three, comma-separated.
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "RFSD", "label": "Application refused",
+                         "defendantId": "d1", "offenceId": "off2"},
+                        {"resultLineId": "rl3", "shortCode": "G", "label": "Granted",
+                         "defendantId": "d1", "offenceId": "off3"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                        {"offenceId": "off3", "offenceCode": "BU001", "offenceTitle": "Burglary", "orderIndex": 3}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(3)))
+                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
+                            "Legal Aid Withdrawn, Application refused, Granted is an application result. "
+                                    + "It cannot be added to an offence. Remove it from the offence and add "
+                                    + "an application to the hearing.")));
+        }
+
+        @Test
+        void applicationOnlyResultsAcrossThreeOffencesThreeDefendants_shouldListAllInThisAffects()
+                throws Exception {
+            // spec.md AC2B: "This affects:" lists every affected defendant when the hearing has
+            // more than one defendant.
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "RFSD", "label": "Application refused",
+                         "defendantId": "d2", "offenceId": "off2"},
+                        {"resultLineId": "rl3", "shortCode": "G", "label": "Granted",
+                         "defendantId": "d3", "offenceId": "off3"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"},
+                        {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones"},
+                        {"defendantId": "d3", "masterDefendantId": "d3", "firstName": "Sam", "lastName": "Lee"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                        {"offenceId": "off3", "offenceCode": "BU001", "offenceTitle": "Burglary", "orderIndex": 3}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(3)))
+                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
+                            "Legal Aid Withdrawn, Application refused, Granted is an application result. "
+                                    + "It cannot be added to an offence. Remove it from the offence and add "
+                                    + "an application to the hearing. This affects: Jamie Smith, Alex Jones "
+                                    + "and Sam Lee.")));
         }
 
         @Test
@@ -329,9 +417,11 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
 
         @Test
         void partiallyResolvedBreaches_shouldStillBlockOnRemainingBreach() throws Exception {
+            // spec.md AC2A: removing only SOME of the named results leaves the error displayed,
+            // naming only the results that remain.
             performValidate(twoBreachesOnSameOffenceRequest())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(2)));
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(1)));
 
             String partiallyResolved = """
                     {
@@ -364,7 +454,7 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
         void allBreachesResolved_shouldClearAllApplicationResultOffenceErrors() throws Exception {
             performValidate(twoBreachesOnSameOffenceRequest())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(2)));
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(1)));
 
             String allResolved = """
                     {

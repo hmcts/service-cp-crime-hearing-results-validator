@@ -5,6 +5,8 @@ import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperOrNull;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -13,17 +15,28 @@ import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
- * Per-breach-occurrence preprocessor for the DR-APP-009 rule. Produces one
- * {@link ApplicationResultBreachContext} per {@code ResultLineDto} whose short code is one of a
- * fixed, application-only set (results that may only be recorded against an application, never
- * against an offence) and whose {@code offenceId} is non-blank.
+ * Per-offence preprocessor for the DR-APP-009 rule. Produces one
+ * {@link ApplicationResultBreachContext} per offence carrying at least one {@code ResultLineDto}
+ * whose short code is one of a fixed, application-only set (results that may only be recorded
+ * against an application, never against an offence).
  *
- * <p>Deliberately emits one context <em>per breaching result line</em>, not per offence or per
- * defendant, so that two breaches on the same offence -- or the same breaching code recorded
- * against two different offences for the same defendant -- each surface their own inline error
- * (spec.md AC2). Collapsing a repeated defendant name in the aggregated page-level message is
- * the aggregation layer's responsibility (see {@code DefaultValidationService.
- * appendDefendantName}, research.md R8), not this preprocessor's.
+ * <p>Groups every breaching result line by {@code offenceId} rather than emitting one context per
+ * line, so two or more breaches on the same offence consolidate into a single context -- and
+ * therefore a single inline error naming all of that offence's breaching results, comma-separated
+ * (spec.md AC2A). It also precomputes one hearing-wide, comma-joined, de-duplicated label list
+ * (in first-encounter order across the whole request) and shares it, identical, across every
+ * context it builds, so the page-level message resolves to the same text for every breaching
+ * offence and merges into a single entry (AC2B) -- see {@link ApplicationResultBreachContext} and
+ * {@code CelValidationRule.errorMessageCalculatedValuePlaceholder}.
+ *
+ * <p>An offence is ordinarily recorded against a single defendant's case, so a context's
+ * representative {@code defendantId}/{@code defendantName} is taken from the first breaching
+ * result line encountered for that offence -- a deliberate simplification, not a schema
+ * guarantee ({@code OffenceDto} carries no defendant reference of its own). If a second breaching
+ * result line for the same offence names a different {@code defendantId} (a joint offence, or
+ * inconsistent data -- mirroring the scenario {@link SexualOffenceNotificationPreprocessor}
+ * defends against), that defendant is not represented in this rule's page-level "This affects"
+ * list; a warning is logged so the gap is visible rather than silent.
  *
  * <p>No upstream contract change is required for this preprocessor: {@code ResultLineDto}
  * already carries {@code offenceId}, {@code shortCode}, {@code label}, and {@code defendantId}.
@@ -45,26 +58,27 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
     }
 
     @Override
-    @SuppressWarnings({"PMD.OnlyOneReturn", "PMD.AvoidCatchingGenericException"})
+    @SuppressWarnings({"PMD.OnlyOneReturn", "PMD.AvoidCatchingGenericException",
+        "PMD.AvoidInstantiatingObjectsInLoops"})
     // early-return on "no result lines" reads clearer here; the catch is deliberate -- see
-    // in-line comment below.
+    // in-line comment below; the per-offence LinkedHashSet is intentional -- one label
+    // accumulator per distinct offence, not a stray allocation.
     public Map<String, ApplicationResultBreachContext> preprocess(final DraftValidationRequest request,
                                                                    final PreprocessingDefinition config) {
         final Set<String> applicationOnlyCodes = upperSet(config.applicationOnlyShortCodes());
         final Map<String, String> defendantNames = buildDefendantNames(request);
 
-        final Map<String, ApplicationResultBreachContext> contexts = new LinkedHashMap<>();
         if (request.getResultLines() == null) {
-            return contexts;
+            return Map.of();
         }
+
+        final Map<String, Set<String>> labelsByOffence = new LinkedHashMap<>();
+        final Map<String, String> defendantIdByOffence = new LinkedHashMap<>();
+        final Set<String> globalLabels = new LinkedHashSet<>();
 
         for (final ResultLineDto line : request.getResultLines()) {
             try {
-                final ApplicationResultBreachContext context =
-                        buildContextIfBreach(line, applicationOnlyCodes, defendantNames);
-                if (context != null) {
-                    contexts.put(line.getResultLineId(), context);
-                }
+                collectBreachIfAny(line, applicationOnlyCodes, labelsByOffence, defendantIdByOffence, globalLabels);
             } catch (RuntimeException e) {
                 // A single malformed result line must never suppress every other breach in the
                 // same request -- DefaultValidationService.evaluateRulesWithMdc()'s per-rule
@@ -73,31 +87,62 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
                         + "result breaches: {}", e.getMessage());
             }
         }
+
+        final String globalResultLabels = String.join(", ", globalLabels);
+
+        final Map<String, ApplicationResultBreachContext> contexts = new LinkedHashMap<>();
+        for (final Map.Entry<String, Set<String>> entry : labelsByOffence.entrySet()) {
+            final String offenceId = entry.getKey();
+            final String defendantId = defendantIdByOffence.get(offenceId);
+            final String defendantName = defendantNames.getOrDefault(defendantId, "");
+            contexts.put(offenceId, new ApplicationResultBreachContext(
+                    offenceId,
+                    List.copyOf(entry.getValue()),
+                    globalResultLabels,
+                    defendantId,
+                    defendantName == null ? "" : defendantName));
+        }
         return contexts;
     }
 
     @SuppressWarnings("PMD.OnlyOneReturn") // early-return on each non-breach guard reads clearer here
-    private ApplicationResultBreachContext buildContextIfBreach(final ResultLineDto line,
-                                                                  final Set<String> applicationOnlyCodes,
-                                                                  final Map<String, String> defendantNames) {
+    private void collectBreachIfAny(final ResultLineDto line,
+                                     final Set<String> applicationOnlyCodes,
+                                     final Map<String, Set<String>> labelsByOffence,
+                                     final Map<String, String> defendantIdByOffence,
+                                     final Set<String> globalLabels) {
         final String offenceId = line.getOffenceId();
         if (offenceId == null || offenceId.isBlank()) {
-            return null;
+            return;
         }
         final String upperShortCode = upperOrNull(line.getShortCode());
         if (upperShortCode == null || !applicationOnlyCodes.contains(upperShortCode)) {
-            return null;
+            return;
         }
 
         final String resultLabel = line.getLabel() != null && !line.getLabel().isBlank()
                 ? line.getLabel()
                 : line.getShortCode();
-        final String defendantName = defendantNames.getOrDefault(line.getDefendantId(), "");
 
-        return new ApplicationResultBreachContext(
-                line.getDefendantId(),
-                defendantName == null ? "" : defendantName,
-                offenceId,
-                resultLabel);
+        labelsByOffence.computeIfAbsent(offenceId, k -> new LinkedHashSet<>()).add(resultLabel);
+        recordRepresentativeDefendant(offenceId, line.getDefendantId(), defendantIdByOffence);
+        globalLabels.add(resultLabel);
+    }
+
+    /**
+     * Records {@code defendantId} as offence's representative defendant the first time this
+     * offence is seen; on any later, different {@code defendantId} for the same offence, leaves
+     * the original representative in place but warns, so a joint-offence/inconsistent-data case
+     * (see class javadoc) is observable rather than silently dropped from this rule's page-level
+     * "This affects" list.
+     */
+    private void recordRepresentativeDefendant(final String offenceId, final String defendantId,
+                                                final Map<String, String> defendantIdByOffence) {
+        final String existing = defendantIdByOffence.putIfAbsent(offenceId, defendantId);
+        if (existing != null && !existing.equals(defendantId)) {
+            log.warn("Offence {} has breaching application results for more than one defendant "
+                    + "({} and {}); DR-APP-009's page-level \"This affects\" list will only name {}",
+                    offenceId, existing, defendantId, existing);
+        }
     }
 }

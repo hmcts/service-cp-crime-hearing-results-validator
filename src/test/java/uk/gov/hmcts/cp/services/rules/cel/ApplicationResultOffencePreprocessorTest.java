@@ -14,7 +14,8 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
  * Unit tests for {@link ApplicationResultOffencePreprocessor} (feature
- * 010-application-result-offence-error).
+ * 010-application-result-offence-error). Covers the per-offence grouping (AC2A) and hearing-wide
+ * label aggregation (AC2B) this preprocessor performs.
  */
 class ApplicationResultOffencePreprocessorTest {
 
@@ -36,9 +37,9 @@ class ApplicationResultOffencePreprocessorTest {
         assertThat(preprocessor.type()).isEqualTo("application-result-offence");
     }
 
-    /** (a) A breaching result line yields exactly one context keyed by its own resultLineId. */
+    /** (a) A breaching result line yields exactly one context keyed by its offenceId. */
     @Test
-    void breachingResultLine_shouldYieldOneContextKeyedByResultLineId() {
+    void breachingResultLine_shouldYieldOneContextKeyedByOffenceId() {
         DraftValidationRequest request = buildRequest(
                 List.of(resultLine("rl1", "LAWD", "d1", "off1")),
                 List.of(offence("off1", 1, "Theft")));
@@ -46,10 +47,11 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(contexts).hasSize(1).containsKey("rl1");
-        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("rl1");
+        assertThat(contexts).hasSize(1).containsKey("off1");
+        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("off1");
         assertThat(context.offenceId()).isEqualTo("off1");
-        assertThat(context.resultLabel()).isEqualTo("LAWD label");
+        assertThat(context.resultLabels()).containsExactly("LAWD label");
+        assertThat(context.globalResultLabels()).isEqualTo("LAWD label");
         assertThat(context.defendantId()).isEqualTo("d1");
         assertThat(context.defendantName()).isEqualTo("John Smith");
     }
@@ -97,9 +99,12 @@ class ApplicationResultOffencePreprocessorTest {
         assertThat(contexts).isEmpty();
     }
 
-    /** (d) Two different application-only codes on the same offence each get their own context. */
+    /**
+     * (d) Two different application-only codes on the SAME offence consolidate into ONE context
+     * whose {@code resultLabels} lists both, in encounter order (spec.md AC2A).
+     */
     @Test
-    void twoDifferentApplicationOnlyCodesOnSameOffence_shouldYieldTwoContexts() {
+    void twoDifferentApplicationOnlyCodesOnSameOffence_shouldYieldOneConsolidatedContext() {
         DraftValidationRequest request = buildRequest(
                 List.of(
                         resultLine("rl1", "LAWD", "d1", "off1"),
@@ -109,11 +114,53 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(contexts).hasSize(2).containsKeys("rl1", "rl2");
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl1")).resultLabel())
-                .isEqualTo("LAWD label");
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl2")).resultLabel())
-                .isEqualTo("RFSD label");
+        assertThat(contexts).hasSize(1).containsKey("off1");
+        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("off1");
+        assertThat(context.resultLabels()).containsExactly("LAWD label", "RFSD label");
+        assertThat(context.getCalculatedValue("resultLabelByOffenceId", "off1"))
+                .isEqualTo("LAWD label, RFSD label");
+        assertThat(context.globalResultLabels()).isEqualTo("LAWD label, RFSD label");
+    }
+
+    /**
+     * (d) When two breaching result lines on the SAME offence name different defendantIds (a
+     * joint offence, or inconsistent data), the context still forms (one per offence, per AC2A)
+     * and keeps the FIRST-encountered defendant as its representative rather than throwing --
+     * this is the documented simplification in {@link ApplicationResultOffencePreprocessor}'s
+     * class javadoc, not a crash.
+     */
+    @Test
+    void twoDifferentDefendantsOnSameOffence_shouldKeepFirstEncounteredAsRepresentative() {
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "LAWD", "d1", "off1"),
+                        resultLine("rl2", "RFSD", "d2", "off1")),
+                List.of(offence("off1", 1, "Theft")));
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).hasSize(1);
+        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("off1");
+        assertThat(context.defendantId()).isEqualTo("d1");
+        assertThat(context.resultLabels()).containsExactly("LAWD label", "RFSD label");
+    }
+
+    /** (d) The same code repeated on the same offence is de-duplicated within that offence. */
+    @Test
+    void sameApplicationOnlyCodeTwiceOnSameOffence_shouldDeduplicateWithinOffence() {
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "LAWD", "d1", "off1"),
+                        resultLine("rl2", "LAWD", "d1", "off1")),
+                List.of(offence("off1", 1, "Theft")));
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).hasSize(1);
+        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("off1");
+        assertThat(context.resultLabels()).containsExactly("LAWD label");
     }
 
     /** (e) Short-code matching is case-insensitive. */
@@ -140,8 +187,8 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl1")).resultLabel())
-                .isEqualTo("LAWD");
+        assertThat(((ApplicationResultBreachContext) contexts.get("off1")).resultLabels())
+                .containsExactly("LAWD");
     }
 
     /** (f) ... and a null label likewise falls back to the short code. */
@@ -155,8 +202,8 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl1")).resultLabel())
-                .isEqualTo("LAWD");
+        assertThat(((ApplicationResultBreachContext) contexts.get("off1")).resultLabels())
+                .containsExactly("LAWD");
     }
 
     /** (g) A defendantId with no matching DefendantDto resolves to "" rather than throwing. */
@@ -172,17 +219,14 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl1")).defendantName()).isEmpty();
+        assertThat(((ApplicationResultBreachContext) contexts.get("off1")).defendantName()).isEmpty();
     }
 
     /**
-     * (h) A result line with a null {@code resultLineId} is tolerated (used as-is as the
-     * context map's key -- {@code LinkedHashMap} permits a null key) rather than throwing, and
-     * does not suppress an otherwise-valid breach elsewhere in the same request. The
-     * {@code preprocess()} loop's {@code catch (RuntimeException e)} guard exists for whatever
-     * future malformed-data shape genuinely does throw; this test documents that a null
-     * {@code resultLineId} specifically is not such a case, since nothing in
-     * {@code buildContextIfBreach} reads it.
+     * (h) A result line with a null {@code resultLineId} is tolerated rather than throwing --
+     * this preprocessor keys contexts by {@code offenceId}, not {@code resultLineId}, so it never
+     * even reads that field -- and does not suppress an otherwise-valid breach elsewhere in the
+     * same request.
      */
     @Test
     void nullResultLineId_shouldNotSuppressOtherBreachesInSameRequest() {
@@ -198,7 +242,7 @@ class ApplicationResultOffencePreprocessorTest {
 
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
-        assertThat(contexts).containsKey("rl2");
+        assertThat(contexts).containsKey("off2");
     }
 
     /** (i) No application-only short codes anywhere in the request yields an empty map. */
@@ -216,13 +260,12 @@ class ApplicationResultOffencePreprocessorTest {
 
     /**
      * (j) The same application-only code against two different offences for the same defendant
-     * yields two separate contexts -- the preprocessor performs no dedup of its own; collapsing
-     * the defendant's name in the aggregated page-level message is the aggregation layer's job
-     * (see DefaultValidationServiceTest / research.md R8), exercised end-to-end by the
-     * integration test, not asserted here.
+     * yields two separate per-offence contexts, but both share the SAME hearing-wide
+     * {@code globalResultLabels} (a single, de-duplicated label), so the page-level message they
+     * drive is identical text and merges into one entry (spec.md AC2B).
      */
     @Test
-    void sameApplicationOnlyCodeAcrossTwoOffencesSameDefendant_shouldYieldTwoContexts() {
+    void sameApplicationOnlyCodeAcrossTwoOffencesSameDefendant_shouldYieldTwoContextsSharingGlobalLabel() {
         DraftValidationRequest request = buildRequest(
                 List.of(
                         resultLine("rl1", "LAWD", "d1", "off1"),
@@ -232,8 +275,39 @@ class ApplicationResultOffencePreprocessorTest {
         Map<String, ? extends RuleEvaluationContext> contexts =
                 preprocessor.preprocess(request, config());
 
-        assertThat(contexts).hasSize(2).containsKeys("rl1", "rl2");
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl1")).offenceId()).isEqualTo("off1");
-        assertThat(((ApplicationResultBreachContext) contexts.get("rl2")).offenceId()).isEqualTo("off2");
+        assertThat(contexts).hasSize(2).containsKeys("off1", "off2");
+        ApplicationResultBreachContext ctx1 = (ApplicationResultBreachContext) contexts.get("off1");
+        ApplicationResultBreachContext ctx2 = (ApplicationResultBreachContext) contexts.get("off2");
+        assertThat(ctx1.offenceId()).isEqualTo("off1");
+        assertThat(ctx2.offenceId()).isEqualTo("off2");
+        assertThat(ctx1.globalResultLabels()).isEqualTo("LAWD label");
+        assertThat(ctx2.globalResultLabels()).isEqualTo("LAWD label");
+    }
+
+    /**
+     * Three different breaching offences (spec.md AC2B's own example shape -- LAWD/off1,
+     * RFSD/off2, G/off3) each get their own context, and every context's
+     * {@code globalResultLabels} lists all three labels, comma-separated, in overall
+     * result-line encounter order.
+     */
+    @Test
+    void breachesAcrossThreeOffences_shouldShareGlobalLabelListInEncounterOrder() {
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "LAWD", "d1", "off1"),
+                        resultLine("rl2", "RFSD", "d1", "off2"),
+                        resultLine("rl3", "G", "d1", "off3")),
+                List.of(offence("off1", 1, "Theft"), offence("off2", 2, "Assault"),
+                        offence("off3", 3, "Burglary")));
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).hasSize(3);
+        for (final ApplicationResultBreachContext context
+                : contexts.values().stream().map(ApplicationResultBreachContext.class::cast).toList()) {
+            assertThat(context.globalResultLabels())
+                    .isEqualTo("LAWD label, RFSD label, G label");
+        }
     }
 }

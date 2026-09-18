@@ -239,6 +239,14 @@ public class CelValidationRule implements ValidationRule {
      * every rule shipped before DR-APP-009, so their {@code errorMessage} text is built exactly
      * as before. When a context spans more than one affected offence id, only the first is used,
      * matching every current caller of {@code calculatedValueSet} (see data-model.md).
+     *
+     * <p>When the condition sets {@code consolidatePageLevelError: true}, the placeholder value
+     * instead comes from {@link RuleEvaluationContext#getGlobalCalculatedValue} -- a hearing-wide
+     * aggregate rather than this context's own offence -- so every triggered context of the same
+     * rule evaluation resolves to identical page-level text and merges into one entry (see
+     * {@code DefaultValidationService}'s {@code ruleId::errorMessage} bucketing). Every rule
+     * shipped before this flag existed omits it (defaults to {@code false}), so their per-offence
+     * behaviour is unchanged.
      */
     @SuppressWarnings("PMD.OnlyOneReturn") // early-return on the common no-op case reads clearer here
     private static Map<String, String> errorMessageCalculatedValuePlaceholder(
@@ -249,8 +257,9 @@ public class CelValidationRule implements ValidationRule {
         if (calculatedValueSet == null || offenceIdsForTemplate.isEmpty()) {
             return Map.of();
         }
-        final String calculatedValue =
-                context.getCalculatedValue(calculatedValueSet, offenceIdsForTemplate.getFirst());
+        final String calculatedValue = condition.consolidatePageLevelError()
+                ? context.getGlobalCalculatedValue(calculatedValueSet)
+                : context.getCalculatedValue(calculatedValueSet, offenceIdsForTemplate.getFirst());
         return calculatedValuePlaceholder(condition.calculatedValuePlaceholderName(), calculatedValue);
     }
 
