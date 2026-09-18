@@ -1,0 +1,54 @@
+# Draft of the new rule file for this feature.
+# On implementation, this content moves to:
+#   src/main/resources/rules/DR-APP-009.yaml
+# It is kept here under contracts/ during planning as the reviewable "interface"
+# for this feature, per Constitution Principle I (YAML/CEL Rule-First).
+#
+# Depends on the engine generalisation described in data-model.md / research.md R5:
+# ConditionDefinition.calculatedValuePlaceholderName and errorMessageTemplate resolution
+# picking up calculatedValueSet, both additive and backward compatible with every existing
+# rule file.
+
+rule:
+  id: "DR-APP-009"
+  title: "Application result recorded against an offence"
+  description: >-
+    Blocks sharing when a result that is only valid against an application (e.g. Legal Aid
+    Withdrawn, Application Refused) is recorded against an offence instead.
+  priority: 9000
+  enabled: true
+
+  preprocessing:
+    type: "application-result-offence"
+    applicationOnlyShortCodes:
+      - ARBSFG   # Application to record and broadcast sentencing remarks – formally granted
+      - ARBSPG   # Application to record and broadcast sentencing remarks – provisionally granted
+      - ARBSR    # Application to record and broadcast sentencing remarks – refused
+      - VT       # Application to vacate granted
+      - G        # Granted
+      - LAREP    # Legal Aid Representation Varied
+      - LAREPCC  # Legal Aid Representation Varied (Crown Court)
+      - ORDC     # Order (made upon application)
+      - LATG     # Legal Aid Transfer Granted
+      - LATR     # Legal Aid Transfer Refused
+      - LAWD     # Legal Aid Withdrawn
+      - RFSD     # Application refused
+      - SMAR     # Special Measures Refused
+
+  conditions:
+    - id: "AC1"
+      name: "Application-only result recorded against an offence"
+      expression: "hasBreach == 1"
+      severity: ERROR
+      messageTemplate: >-
+        Remove ${resultLabel} from this offence. It is an application result, so it can only be
+        added to an application.
+      errorMessageTemplate: >-
+        ${resultLabel} is an application result. It cannot be added to an offence. Remove it
+        from the offence and add an application to the hearing. This affects: ${defendantNames}.
+      affectedOffenceSet: "breachOffenceId"
+      affectedDefendantSet: "defendantId"
+      calculatedValueSet: "resultLabelByOffenceId"
+      calculatedValuePlaceholderName: "resultLabel"
+      consolidatePageLevelError: true
+      validationLevel: OFFENCE

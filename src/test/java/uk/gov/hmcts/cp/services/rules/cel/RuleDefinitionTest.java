@@ -175,6 +175,23 @@ class RuleDefinitionTest {
     }
 
     /**
+     * Verifies DR-APP-009's AC1 parses {@code consolidatePageLevelError: true} (feature
+     * 010-application-result-offence-error, AC2A/AC2B), and that a pre-existing rule condition
+     * which omits the field defaults to {@code false} -- the pre-existing per-context behaviour,
+     * unchanged.
+     */
+    @Test
+    void loadFromYaml_should_parse_consolidatePageLevelError() {
+        RuleDefinition appRule = RuleDefinitionLoader.load("rules/DR-APP-009.yaml");
+        assertThat(appRule.conditions()).hasSize(1);
+        assertThat(appRule.conditions().getFirst().consolidatePageLevelError()).isTrue();
+
+        RuleDefinition sentRule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
+        assertThat(sentRule.conditions())
+                .allSatisfy(condition -> assertThat(condition.consolidatePageLevelError()).isFalse());
+    }
+
+    /**
      * Guards the sentence-removal behaviour that {@link MessageTemplateResolver#resolveDefendantNames}
      * relies on for single-defendant-hearing suppression (AC1-AC4): running every rule's real
      * templates containing {@code ${defendantNames}} through the single-defendant branch must fully
