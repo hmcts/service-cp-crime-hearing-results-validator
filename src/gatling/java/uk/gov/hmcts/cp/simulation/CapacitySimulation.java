@@ -107,9 +107,11 @@ public class CapacitySimulation extends Simulation {
                     + "NFT results would be meaningless. Check FEATURE_MANAGER_CONNECTION_STRING "
                     + "and feature toggle configuration.");
             }
-            if (!body.contains("\"errors\":[{")) {
+            // Since DD-42512 "errors" is an object ({errorMessages, validationIssues}), not an array,
+            // so assert on the blocking outcome rather than the container shape.
+            if (!body.contains("\"isValid\":false") || !body.contains("\"severity\":\"ERROR\"")) {
                 throw new RuntimeException(
-                    "ABORTING: AC2 payload did not produce errors. "
+                    "ABORTING: AC2 payload did not produce a blocking ERROR. "
                     + "Rules may not be evaluating correctly. Response: " + body);
             }
             LOG.info("Sanity check passed: validation rules are active, AC2 produces errors.");
