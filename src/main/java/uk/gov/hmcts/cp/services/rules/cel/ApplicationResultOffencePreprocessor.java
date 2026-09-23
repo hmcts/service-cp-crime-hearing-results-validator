@@ -94,6 +94,7 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
                     offenceId,
                     List.copyOf(entry.getValue()),
                     globalResultLabels,
+                    globalLabels.size(),
                     defendantId,
                     defendantName == null ? "" : defendantName));
         }

@@ -16,11 +16,39 @@ import org.junit.jupiter.api.Test;
 class ApplicationResultBreachContextTest {
 
     private final ApplicationResultBreachContext context = new ApplicationResultBreachContext(
-            "off1", List.of("Legal Aid Withdrawn"), "Legal Aid Withdrawn", "d1", "Jamie Smith");
+            "off1", List.of("Legal Aid Withdrawn"), "Legal Aid Withdrawn", 1, "d1", "Jamie Smith");
 
     @Test
-    void toCelContext_shouldReturnHasBreachOne() {
-        assertThat(context.toCelContext()).isEqualTo(Map.of("hasBreach", 1L));
+    void toCelContext_singleHearingWideLabel_shouldExposeHasBreachAndLabelCountOfOne() {
+        assertThat(context.toCelContext())
+                .isEqualTo(Map.of("hasBreach", 1L, "offenceResultLabelCount", 1L,
+                        "globalResultLabelCount", 1L));
+    }
+
+    @Test
+    void toCelContext_multipleHearingWideLabels_shouldExposeHearingWideLabelCount() {
+        // Drives DR-APP-009's singular/plural page-level wording split ("is an application
+        // result" vs "are application results") -- hearing-wide, not this offence's own count.
+        ApplicationResultBreachContext multiOffence = new ApplicationResultBreachContext(
+                "off1", List.of("Legal Aid Withdrawn"),
+                "Legal Aid Withdrawn, Application refused, Granted", 3, "d1", "Jamie Smith");
+
+        assertThat(multiOffence.toCelContext())
+                .isEqualTo(Map.of("hasBreach", 1L, "offenceResultLabelCount", 1L,
+                        "globalResultLabelCount", 3L));
+    }
+
+    @Test
+    void toCelContext_multipleLabelsOnThisOffence_shouldExposeOffenceLabelCount() {
+        // Drives DR-APP-009's singular/plural inline wording ("It is an application result" vs
+        // "They are application results") -- this offence's own count, not the hearing-wide one.
+        ApplicationResultBreachContext multi = new ApplicationResultBreachContext(
+                "off1", List.of("Legal Aid Withdrawn", "Application refused"),
+                "Legal Aid Withdrawn, Application refused", 2, "d1", "Jamie Smith");
+
+        assertThat(multi.toCelContext())
+                .isEqualTo(Map.of("hasBreach", 1L, "offenceResultLabelCount", 2L,
+                        "globalResultLabelCount", 2L));
     }
 
     @Test
@@ -71,7 +99,7 @@ class ApplicationResultBreachContextTest {
     void getCalculatedValue_multipleResultLabelsOnSameOffence_shouldReturnCommaJoinedList() {
         ApplicationResultBreachContext multi = new ApplicationResultBreachContext(
                 "off1", List.of("Legal Aid Withdrawn", "Application refused"),
-                "Legal Aid Withdrawn, Application refused", "d1", "Jamie Smith");
+                "Legal Aid Withdrawn, Application refused", 2, "d1", "Jamie Smith");
 
         assertThat(multi.getCalculatedValue("resultLabelByOffenceId", "off1"))
                 .isEqualTo("Legal Aid Withdrawn, Application refused");
@@ -81,7 +109,7 @@ class ApplicationResultBreachContextTest {
     void getGlobalCalculatedValue_resultLabelByOffenceId_shouldReturnHearingWideLabelList() {
         ApplicationResultBreachContext multiOffence = new ApplicationResultBreachContext(
                 "off1", List.of("Legal Aid Withdrawn"),
-                "Legal Aid Withdrawn, Application refused", "d1", "Jamie Smith");
+                "Legal Aid Withdrawn, Application refused", 2, "d1", "Jamie Smith");
 
         assertThat(multiOffence.getGlobalCalculatedValue("resultLabelByOffenceId"))
                 .isEqualTo("Legal Aid Withdrawn, Application refused");
@@ -110,7 +138,7 @@ class ApplicationResultBreachContextTest {
         // "" -- not null, not "Unknown" -- is the deliberate fallback for an unresolvable
         // defendant (research.md R8 / data-model.md); the context itself does not filter it.
         ApplicationResultBreachContext unresolved = new ApplicationResultBreachContext(
-                "off2", List.of("Application refused"), "Application refused", "d2", "");
+                "off2", List.of("Application refused"), "Application refused", 1, "d2", "");
 
         assertThat(unresolved.defendantName()).isEmpty();
     }

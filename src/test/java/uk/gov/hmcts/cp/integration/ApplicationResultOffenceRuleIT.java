@@ -244,11 +244,11 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                             "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].message",
                             containsInAnyOrder(
                                     "Remove Legal Aid Withdrawn, Application refused from this offence. "
-                                            + "It is an application result, so it can only be added to an "
+                                            + "They are application results, so they can only be added to an "
                                             + "application.")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn, Application refused is an application result. It cannot "
-                                    + "be added to an offence. Remove it from the offence and add an "
+                            "Legal Aid Withdrawn, Application refused are application results. They cannot "
+                                    + "be added to an offence. Remove them from the offence and add an "
                                     + "application to the hearing.")));
         }
 
@@ -293,9 +293,54 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                                     "Remove Application refused from this offence. It is an application "
                                             + "result, so it can only be added to an application.")))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn, Application refused is an application result. It cannot "
-                                    + "be added to an offence. Remove it from the offence and add an "
+                            "Legal Aid Withdrawn, Application refused are application results. They cannot "
+                                    + "be added to an offence. Remove them from the offence and add an "
                                     + "application to the hearing.")));
+        }
+
+        @Test
+        void twoResultsOnOneOffenceAndOneOnAnother_shouldPluraliseInlinePerOffenceAndMergePageError()
+                throws Exception {
+            // off1 carries two breaches (AC2A: plural inline), off2 one (AC2B: singular inline).
+            // Both conditions share the plural page-level text, so it still merges into ONE entry.
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "RFSD", "label": "Application refused",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl3", "shortCode": "G", "label": "Granted",
+                         "defendantId": "d1", "offenceId": "off2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(2)))
+                    .andExpect(jsonPath(
+                            "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].message",
+                            containsInAnyOrder(
+                                    "Remove Legal Aid Withdrawn, Application refused from this offence. "
+                                            + "They are application results, so they can only be added to an "
+                                            + "application.",
+                                    "Remove Granted from this offence. It is an application result, so it "
+                                            + "can only be added to an application.")))
+                    .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
+                            "Legal Aid Withdrawn, Application refused, Granted are application results. "
+                                    + "They cannot be added to an offence. Remove them from the offence and add "
+                                    + "an application to the hearing.")));
         }
 
         @Test
@@ -331,8 +376,8 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(3)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn, Application refused, Granted is an application result. "
-                                    + "It cannot be added to an offence. Remove it from the offence and add "
+                            "Legal Aid Withdrawn, Application refused, Granted are application results. "
+                                    + "They cannot be added to an offence. Remove them from the offence and add "
                                     + "an application to the hearing.")));
         }
 
@@ -371,8 +416,8 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(3)))
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
-                            "Legal Aid Withdrawn, Application refused, Granted is an application result. "
-                                    + "It cannot be added to an offence. Remove it from the offence and add "
+                            "Legal Aid Withdrawn, Application refused, Granted are application results. "
+                                    + "They cannot be added to an offence. Remove them from the offence and add "
                                     + "an application to the hearing. This affects: Jamie Smith, Alex Jones "
                                     + "and Sam Lee.")));
         }

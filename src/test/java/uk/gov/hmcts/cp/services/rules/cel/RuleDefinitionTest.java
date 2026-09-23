@@ -175,7 +175,7 @@ class RuleDefinitionTest {
     }
 
     /**
-     * Verifies DR-APP-009's AC1 parses {@code consolidatePageLevelError: true} (feature
+     * Verifies all three of DR-APP-009's conditions (singular/plural inline and page-level wording) parse {@code consolidatePageLevelError: true} (feature
      * 010-application-result-offence-error, AC2A/AC2B), and that a pre-existing rule condition
      * which omits the field defaults to {@code false} -- the pre-existing per-context behaviour,
      * unchanged.
@@ -183,8 +183,8 @@ class RuleDefinitionTest {
     @Test
     void loadFromYaml_should_parse_consolidatePageLevelError() {
         RuleDefinition appRule = RuleDefinitionLoader.load("rules/DR-APP-009.yaml");
-        assertThat(appRule.conditions()).hasSize(1);
-        assertThat(appRule.conditions().getFirst().consolidatePageLevelError()).isTrue();
+        assertThat(appRule.conditions()).hasSize(3)
+                .allSatisfy(condition -> assertThat(condition.consolidatePageLevelError()).isTrue());
 
         RuleDefinition sentRule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
         assertThat(sentRule.conditions())

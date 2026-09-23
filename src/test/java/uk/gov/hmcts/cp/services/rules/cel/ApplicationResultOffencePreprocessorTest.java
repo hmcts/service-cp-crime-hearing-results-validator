@@ -120,6 +120,7 @@ class ApplicationResultOffencePreprocessorTest {
         assertThat(context.getCalculatedValue("resultLabelByOffenceId", "off1"))
                 .isEqualTo("LAWD label, RFSD label");
         assertThat(context.globalResultLabels()).isEqualTo("LAWD label, RFSD label");
+        assertThat(context.globalResultLabelCount()).isEqualTo(2);
     }
 
     /** (d) The same code repeated on the same offence is de-duplicated within that offence. */
@@ -258,6 +259,9 @@ class ApplicationResultOffencePreprocessorTest {
         assertThat(ctx2.offenceId()).isEqualTo("off2");
         assertThat(ctx1.globalResultLabels()).isEqualTo("LAWD label");
         assertThat(ctx2.globalResultLabels()).isEqualTo("LAWD label");
+        // One distinct label hearing-wide -> singular page-level wording, despite two offences.
+        assertThat(ctx1.globalResultLabelCount()).isEqualTo(1);
+        assertThat(ctx2.globalResultLabelCount()).isEqualTo(1);
     }
 
     /**

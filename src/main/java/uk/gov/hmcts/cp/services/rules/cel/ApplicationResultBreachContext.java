@@ -19,6 +19,10 @@ import java.util.Map;
  *                            -- identical across every context {@link ApplicationResultOffencePreprocessor}
  *                            produces for one request, so the page-level message resolves to the
  *                            same text for every offence and merges into a single entry (AC2B)
+ * @param globalResultLabelCount the number of distinct labels in {@code globalResultLabels} --
+ *                                exposed to CEL so DR-APP-009 can pick singular ("is an
+ *                                application result") or plural ("are application results")
+ *                                page-level wording
  * @param defendantId the representative defendant id for this offence -- the first breaching
  *                     result line's own {@code defendantId} (an offence is recorded against a
  *                     single defendant's case in this domain, so its breaching lines share one)
@@ -31,6 +35,7 @@ public record ApplicationResultBreachContext(
         String offenceId,
         List<String> resultLabels,
         String globalResultLabels,
+        int globalResultLabelCount,
         String defendantId,
         String defendantName
 ) implements RuleEvaluationContext {
@@ -41,15 +46,22 @@ public record ApplicationResultBreachContext(
     private static final String LABEL_SEPARATOR = ", ";
 
     /**
-     * Returns the single CEL variable this rule's condition evaluates -- always {@code 1}, since
-     * a context is only ever constructed for an offence with at least one actual breach; the
-     * preprocessor does the branching (short-code membership, null-offence guard), not CEL.
+     * Returns the CEL variables this rule's conditions evaluate: {@code hasBreach} is always
+     * {@code 1}, since a context is only ever constructed for an offence with at least one actual
+     * breach -- the preprocessor does the branching (short-code membership, null-offence guard),
+     * not CEL; {@code offenceResultLabelCount} (this offence's distinct labels) and
+     * {@code globalResultLabelCount} (the hearing's) select the singular or plural inline and
+     * page-level wording respectively.
      *
-     * @return {@code {"hasBreach": 1L}}
+     * @return {@code {"hasBreach": 1L, "offenceResultLabelCount": <count>,
+     *         "globalResultLabelCount": <count>}}
      */
     @Override
     public Map<String, Long> toCelContext() {
-        return Map.of("hasBreach", 1L);
+        return Map.of(
+                "hasBreach", 1L,
+                "offenceResultLabelCount", (long) resultLabels.size(),
+                "globalResultLabelCount", (long) globalResultLabelCount);
     }
 
     /**

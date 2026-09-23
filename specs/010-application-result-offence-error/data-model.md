@@ -126,7 +126,8 @@ public record ApplicationResultBreachContext(
 ```java
 @Override
 public Map<String, Long> toCelContext() {
-    return Map.of("hasBreach", 1L);
+    return Map.of("hasBreach", 1L, "offenceResultLabelCount", (long) resultLabels.size(),
+            "globalResultLabelCount", (long) globalResultLabelCount);
 }
 
 @Override
@@ -160,8 +161,10 @@ the `RuleEvaluationContext` interface's default-method pattern.)
 
 **CEL context is deliberately trivial**: `hasBreach` is always `1` because a context is only ever
 constructed for an actual breach — the preprocessor does the branching (short-code membership,
-null-offence guard), matching the "no branching in CEL" convention. The condition expression is
-simply `hasBreach == 1`.
+null-offence guard), matching the "no branching in CEL" convention. `offenceResultLabelCount` and
+`globalResultLabelCount` are the number of distinct breaching labels on this offence and across the
+hearing; the only CEL branching is the simple count comparisons that pick singular or plural
+inline and page-level wording (see the rule conditions below).
 
 ## Preprocessor: `ApplicationResultOffencePreprocessor`
 
@@ -202,25 +205,39 @@ simply `hasBreach == 1`.
   across several defendants) always produce N map entries and therefore N separately-evaluated
   contexts.
 
-## Rule condition (`DR-APP-009`, condition `AC1`)
+## Rule conditions (`DR-APP-009`, conditions `AC1`, `AC2B` and `AC2A`)
+
+The conditions differ only in `id`, `expression` and singular/plural wording. Exactly one fires per
+offence: `globalResultLabelCount` is hearing-wide and identical on every context, and
+`offenceResultLabelCount` can only exceed 1 when the global count does. `AC2B` and `AC2A` share
+identical page-level text, so they merge into one page-level error.
+
+| Condition | `expression` | Inline (`messageTemplate`) | Page-level (`errorMessageTemplate`) |
+|---|---|---|---|
+| `AC1` | `hasBreach == 1 && globalResultLabelCount <= 1` | singular | singular |
+| `AC2B` | `hasBreach == 1 && globalResultLabelCount > 1 && offenceResultLabelCount <= 1` | singular | plural |
+| `AC2A` | `hasBreach == 1 && globalResultLabelCount > 1 && offenceResultLabelCount > 1` | plural | plural |
+
+- Inline singular: `"Remove ${resultLabel} from this offence. It is an application result, so it can only be added to an application."`
+- Inline plural: `"Remove ${resultLabel} from this offence. They are application results, so they can only be added to an application."`
+- Page-level singular: `"${resultLabel} is an application result. It cannot be added to an offence. Remove it from the offence and add an application to the hearing. This affects: ${defendantNames}."`
+- Page-level plural: `"${resultLabel} are application results. They cannot be added to an offence. Remove them from the offence and add an application to the hearing. This affects: ${defendantNames}."`
+
+Shared properties:
 
 | Property | Value |
 |---|---|
-| `expression` | `hasBreach == 1` |
 | `severity` | `ERROR` |
 | `validationLevel` | `OFFENCE` (mandatory for `ERROR` per `ValidationIssue`'s javadoc) |
 | `affectedOffenceSet` | `breachOffenceId` |
 | `affectedDefendantSet` | `defendantId` |
 | `calculatedValueSet` | `resultLabelByOffenceId` |
 | `calculatedValuePlaceholderName` | `resultLabel` |
-| `messageTemplate` | `"Remove ${resultLabel} from this offence. It is an application result, so it can only be added to an application."` |
-| `errorMessageTemplate` | `"${resultLabel} is an application result. It cannot be added to an offence. Remove it from the offence and add an application to the hearing. This affects: ${defendantNames}."` |
+| `consolidatePageLevelError` | `true` |
 
-One condition covers both AC1 and AC2: AC1 is the single-breach case of this condition firing
-once; AC2 is the same condition firing once per breach, with the service-level `ruleId::errorMessage`
-grouping (research.md R6) and per-offence inline-error positioning (existing
-`buildAffectedOffences`) doing the "all errors displayed" work with no further YAML or Java
-branching.
+The service-level `ruleId::errorMessage` grouping (research.md R6) and per-offence inline-error
+positioning (existing `buildAffectedOffences`) do the "all errors displayed" work with no further
+YAML or Java branching.
 
 No state transitions apply — this is a stateless, per-request evaluation like every other rule
 in this service.
