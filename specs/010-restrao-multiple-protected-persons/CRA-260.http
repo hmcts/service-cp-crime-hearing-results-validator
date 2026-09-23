@@ -1,0 +1,786 @@
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+@userId = test-user
+
+# DR-RESTRAO-010 — Restraining Order: Multiple Protected Persons Warning (CRA-260)
+# Warns when a RESTRAO result's protectedPersonsName prompt contains multiple names,
+# detected by: & | , | / separators, or whole-word "and" (case-insensitive).
+#
+# Rule fires per offence — each offence with a RESTRAO result is evaluated independently.
+# Severity: WARNING (advisory — sharing is not blocked).
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US1 — Separator character detection (AC1)
+# Expected: 1 WARNING with ruleId=DR-RESTRAO-010, severity=WARNING, isValid=true
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US1-A — Ampersand (&) in protectedPersonsName → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us1-ampersand",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US1-B — Comma (,) in protectedPersonsName → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us1-comma",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith, Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US1-C — Forward slash (/) in protectedPersonsName → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us1-slash",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith / Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US2 — "and" between two word groups detection (AC2)
+# "and" triggers only when flanked by a word group on both sides (case-insensitive).
+# Leading/trailing "and" (e.g. "and Smith", "John and") does NOT trigger.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US2-A — Lowercase "and" as whole word → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us2-and-lower",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith and Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US2-B — Uppercase "AND" as whole word → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us2-and-upper",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith AND Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US2-C — "and" embedded in a name (Alexandra Sanderson) → NO warning
+# "and" appears as a substring inside words — word-boundary match must suppress it.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us2-and-substring-alexandra",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Alexandra Sanderson" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US2-D — "and" embedded in a name (Amanda Anderson) → NO warning
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us2-and-substring-amanda",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Amanda Anderson" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US3 — Multiple RESTRAO offences evaluated independently
+# Each offence is evaluated in isolation — warnings are scoped per offence.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US3-A — Two RESTRAO offences, one breaching (off-1), one clean (off-2) → WARNING on off-1 only
+# Expected: 1 WARNING scoped to off-1.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us3-two-offences",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith" }
+      ]
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-2",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (count 1)",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off-2",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (count 2)",
+      "orderIndex": 2,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US3-B — Two RESTRAO offences, both breaching → WARNING on each offence independently
+# off-1: "John Smith & Jane Smith" (ampersand trigger)
+# off-2: "Sarah Jones and Tom Brown" (whole-word "and" trigger)
+# Expected: 2 WARNINGs — one per offence, each scoped to its own offenceId.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us3b-both-breaching",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith" }
+      ]
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-2",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Sarah Jones and Tom Brown" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (count 1)",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off-2",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (count 2)",
+      "orderIndex": 2,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US4 — Warning is advisory; severity is WARNING not ERROR; sharing not blocked
+# Expected: 1 WARNING, isValid=true (no errors block sharing).
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US4 — Comma trigger → WARNING severity, isValid=true
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us4-advisory",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith, Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US5 — Resolving the warning by splitting into separate RESTRAO results
+# Two RESTRAO result lines on the same offence, each with one clean name.
+# Expected: 0 warnings, isValid=true.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US5 — Two clean RESTRAO results on same offence → NO warning
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us5-split-resolved",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith" }
+      ]
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US6 — Amend and reshare: stateless rule fires identically on re-submission
+# Submit the same breaching payload twice — both responses must return the same WARNING.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US6 — First share: breaching payload → WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us6-reshare",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US6 — Second share (reshare): identical payload → identical WARNING
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us6-reshare",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Edge Cases
+# ─────────────────────────────────────────────────────────────────────────────
+
+### EC1 — No RESTRAO result lines at all → NO warning
+# Preprocessor produces no context entries for non-RESTRAO results.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-ec1-no-restrao",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "FO",
+      "category": "F",
+      "label": "Finding of Guilt",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### EC2 — RESTRAO with no prompts recorded → NO warning
+# findPromptValue returns null → isMultiplePersons returns false.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-ec2-no-prompts",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### EC3 — RESTRAO with single clean name → NO warning
+# Exactly one person, no separators, no "and" — baseline clean case.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-ec3-clean-name",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### EC4 — RESTRAO with blank protectedPersonsName → NO warning
+# Blank value treated as absent — isMultiplePersons returns false.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-ec4-blank-name",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "AAA and CCC" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### EC5 — Two defendants, only d1 has breaching RESTRAO → WARNING for d1 only
+# d2 has a clean RESTRAO result — both offences evaluated independently.
+# Expected: 1 WARNING scoped to off-1 (d1) only.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-ec5-two-defendants",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith and Jane Smith" }
+      ]
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d2",
+      "offenceId": "off-2",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "Sarah Brown" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" },
+    { "defendantId": "d2", "firstName": "Sam", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (d1)",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off-2",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment (d2)",
+      "orderIndex": 2,
+      "defendantId": "d2"
+    }
+  ]
+}
+
+###
