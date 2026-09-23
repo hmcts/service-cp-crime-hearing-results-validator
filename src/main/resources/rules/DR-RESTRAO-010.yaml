@@ -1,0 +1,28 @@
+rule:
+  id: "DR-RESTRAO-010"
+  title: "Restraining Order – Multiple Protected Persons Warning"
+  description: >-
+    Warns when the "Protected person's name" field on a RESTRAO result
+    appears to contain more than one person's details, detected by
+    separator characters (&, comma, /) or the word "and" appearing between
+    two word groups (case-insensitive; leading or trailing "and" does not
+    trigger).
+  priority: 10000
+  enabled: true
+
+  preprocessing:
+    type: "restrao-multiple-protected-persons"
+    filterShortCodes:
+      - RESTRAO
+
+  conditions:
+    - id: "AC1"
+      name: "Multiple protected persons in restraining order"
+      expression: "multiplePersonsCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        A restraining order result can only include one protected person's
+        details. Add a separate restraining order result for each protected
+        person.
+      affectedOffenceSet: "breachingOffenceIds"
+      validationLevel: OFFENCE
