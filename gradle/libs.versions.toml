@@ -62,7 +62,7 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "c
 gatling = { id = "io.gatling.gradle", version.ref = "gatling" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
-ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedx-bom" }
 gradle-git-properties = { id = "com.gorylenko.gradle-git-properties", version.ref = "gradle-git-properties" }
 avast-docker-compose = { id = "com.avast.gradle.docker-compose", version.ref = "avast-docker-compose" }
