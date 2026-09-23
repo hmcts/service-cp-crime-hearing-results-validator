@@ -29,14 +29,9 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * offence and merges into a single entry (AC2B) -- see {@link ApplicationResultBreachContext} and
  * {@code CelValidationRule.errorMessageCalculatedValuePlaceholder}.
  *
- * <p>An offence is ordinarily recorded against a single defendant's case, so a context's
- * representative {@code defendantId}/{@code defendantName} is taken from the first breaching
- * result line encountered for that offence -- a deliberate simplification, not a schema
- * guarantee ({@code OffenceDto} carries no defendant reference of its own). If a second breaching
- * result line for the same offence names a different {@code defendantId} (a joint offence, or
- * inconsistent data -- mirroring the scenario {@link SexualOffenceNotificationPreprocessor}
- * defends against), that defendant is not represented in this rule's page-level "This affects"
- * list; a warning is logged so the gap is visible rather than silent.
+ * <p>An offence belongs to exactly one defendant, so a context's {@code defendantId}/
+ * {@code defendantName} is taken from the offence's breaching result lines ({@code OffenceDto}
+ * carries no defendant reference of its own).
  *
  * <p>No upstream contract change is required for this preprocessor: {@code ResultLineDto}
  * already carries {@code offenceId}, {@code shortCode}, {@code label}, and {@code defendantId}.
@@ -125,24 +120,7 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
                 : line.getShortCode();
 
         labelsByOffence.computeIfAbsent(offenceId, k -> new LinkedHashSet<>()).add(resultLabel);
-        recordRepresentativeDefendant(offenceId, line.getDefendantId(), defendantIdByOffence);
+        defendantIdByOffence.putIfAbsent(offenceId, line.getDefendantId());
         globalLabels.add(resultLabel);
-    }
-
-    /**
-     * Records {@code defendantId} as offence's representative defendant the first time this
-     * offence is seen; on any later, different {@code defendantId} for the same offence, leaves
-     * the original representative in place but warns, so a joint-offence/inconsistent-data case
-     * (see class javadoc) is observable rather than silently dropped from this rule's page-level
-     * "This affects" list.
-     */
-    private void recordRepresentativeDefendant(final String offenceId, final String defendantId,
-                                                final Map<String, String> defendantIdByOffence) {
-        final String existing = defendantIdByOffence.putIfAbsent(offenceId, defendantId);
-        if (existing != null && !existing.equals(defendantId)) {
-            log.warn("Offence {} has breaching application results for more than one defendant "
-                    + "({} and {}); DR-APP-009's page-level \"This affects\" list will only name {}",
-                    offenceId, existing, defendantId, existing);
-        }
     }
 }

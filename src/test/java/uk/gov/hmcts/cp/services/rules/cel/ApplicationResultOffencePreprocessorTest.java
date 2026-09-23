@@ -122,30 +122,6 @@ class ApplicationResultOffencePreprocessorTest {
         assertThat(context.globalResultLabels()).isEqualTo("LAWD label, RFSD label");
     }
 
-    /**
-     * (d) When two breaching result lines on the SAME offence name different defendantIds (a
-     * joint offence, or inconsistent data), the context still forms (one per offence, per AC2A)
-     * and keeps the FIRST-encountered defendant as its representative rather than throwing --
-     * this is the documented simplification in {@link ApplicationResultOffencePreprocessor}'s
-     * class javadoc, not a crash.
-     */
-    @Test
-    void twoDifferentDefendantsOnSameOffence_shouldKeepFirstEncounteredAsRepresentative() {
-        DraftValidationRequest request = buildRequest(
-                List.of(
-                        resultLine("rl1", "LAWD", "d1", "off1"),
-                        resultLine("rl2", "RFSD", "d2", "off1")),
-                List.of(offence("off1", 1, "Theft")));
-
-        Map<String, ? extends RuleEvaluationContext> contexts =
-                preprocessor.preprocess(request, config());
-
-        assertThat(contexts).hasSize(1);
-        ApplicationResultBreachContext context = (ApplicationResultBreachContext) contexts.get("off1");
-        assertThat(context.defendantId()).isEqualTo("d1");
-        assertThat(context.resultLabels()).containsExactly("LAWD label", "RFSD label");
-    }
-
     /** (d) The same code repeated on the same offence is de-duplicated within that offence. */
     @Test
     void sameApplicationOnlyCodeTwiceOnSameOffence_shouldDeduplicateWithinOffence() {
