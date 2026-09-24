@@ -199,8 +199,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors.validationIssues[0].severity", is("ERROR")))
                 .andExpect(jsonPath("$.errors.errorMessages[0]", is(
                         "Some offences do not include details of whether they are concurrent or"
-                                + " consecutive. There should be only one primary sentence for each"
-                                + " defendant, therefore one result without concurrent or consecutive"
+                                + " consecutive. Only the primary offence should not have this"
                                 + " information.")));
     }
 
