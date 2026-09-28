@@ -187,7 +187,9 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
         @Test
         void successfulLookup_shouldBeCachedAcrossRequests() throws Exception {
             stubReferencedataOffenceResponse("sex-cached-lookup", "SEX");
-            String request = adultRequest("sex-cached-lookup", true, "IMP");
+            // Use a non-custodial short code so DR-SENT-011 does not call getCustodialIndicator
+            // (which returns empty and is never cached) — this test only verifies lookupMisCode caching.
+            String request = adultRequest("sex-cached-lookup", true, "COEW");
 
             performValidate(request).andExpect(status().isOk());
             performValidate(request).andExpect(status().isOk());

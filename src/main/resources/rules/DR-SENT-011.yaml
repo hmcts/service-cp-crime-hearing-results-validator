@@ -1,0 +1,41 @@
+rule:
+  id: "DR-SENT-011"
+  title: "Custodial sentence recorded against non-imprisonable offence"
+  description: >-
+    Warns when a custodial result code is recorded against an offence whose
+    effective custodial indicator (column, falling back to details_json) is N.
+    Advisory only — does not block sharing.
+  priority: 11000
+  enabled: true
+
+  preprocessing:
+    type: "non-imprisonable-offence"
+    filterShortCodes:
+      - IMP
+      - YOI
+      - DTO
+      - EXTDVS
+      - EXTDVSU
+      - EXTIVS
+      - STSDY
+      - SPECC
+      - SPECCC
+      - SPECCD
+      - SUSPS
+      - SUSPSS
+      - SUSPSNI
+      - SUSPSNR
+      - SUSPSD
+      - SUSPSDS
+      - SUSPSDNI
+      - SUSPSDNR
+
+  conditions:
+    - id: "AC1"
+      name: "Custodial result against non-imprisonable offence"
+      expression: "nonImprisonableCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        A custodial sentence may not be available for this offence. Check the sentence is correct before continuing.
+      affectedOffenceSet: "nonImprisonableOffenceIds"
+      validationLevel: OFFENCE
