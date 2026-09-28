@@ -130,16 +130,24 @@ class ApplicationResultOffenceApiHttpLiveTest {
     }
 
     /**
-     * Covers User Story 2: two different application-only results on the same offence each
-     * raise their own inline error and their own page-level message.
+     * Covers User Story 2 (spec.md AC2A): two different application-only results on the same
+     * offence consolidate into one inline error and one page-level message naming both results.
      */
     @Test
-    void multipleApplicationOnlyResultsOnSameOffence_shouldRaiseSeparateInlineErrorPerResult() throws Exception {
+    void multipleApplicationOnlyResultsOnSameOffence_shouldRaiseOneConsolidatedInlineAndPageError()
+            throws Exception {
         final JsonNode json = postValidate(twoBreachesOnSameOffenceRequest());
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
-        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(2);
-        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(2);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES).get(0).get("affectedOffences").get(0).get("message")
+                .asText()).isEqualToIgnoringWhitespace(
+                "Remove Legal Aid Withdrawn, Application refused from this offence. "
+                        + "They are application results, so they can only be added to an application.");
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).hasSize(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText()).isEqualToIgnoringWhitespace(
+                "Legal Aid Withdrawn, Application refused are application results. They cannot be added "
+                        + "to an offence. Remove them from the offence and add an application to the hearing.");
     }
 
     /**
