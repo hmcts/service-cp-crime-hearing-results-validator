@@ -47,7 +47,8 @@ class DisqualificationExtendedTestPreprocessorTest {
     /** Kept in lockstep with the YAML by {@link #excludedFinalShortCodes_should_match_the_known_baseline_exactly()}. */
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
-            "err", "errf", "dhd");
+            "err", "errf", "dhd", "oni", "dcs", "DCCFSA", "DCCFSTA", "cquash", "iquash",
+            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO");
 
     /** Kept in lockstep with the YAML by {@link #extendedTestShortCodes_should_match_the_known_baseline_exactly()}. */
     private static final List<String> EXPECTED_EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
@@ -622,6 +623,69 @@ class DisqualificationExtendedTestPreprocessorTest {
 
             assertThat(ctx.qualifyingCount()).isEqualTo(0L);
             assertThat(ctx.disqExtTestCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("ExcludedCombination — AC3 / AC4")
+    class ExcludedCombination {
+
+        @ParameterizedTest
+        @ValueSource(strings = {"DCCFSA", "DCCFSTA"})
+        void disch_combined_with_central_funds_costs_should_not_qualify(final String costsCode) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "DISCH", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", costsCode, "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount())
+                    .as("DISCH + %s should suppress", costsCode)
+                    .isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(2L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(2L);
+            assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void excluded_combination_plus_non_excluded_final_should_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "DISCH", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DCCFSTA", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl3", "IMP", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offenceWithCode("off1", 1, "Dangerous driving", "RT88026")));
+
+            DisqualificationContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(2L);
+        }
+
+        @Test
+        void mixed_relevant_offences_should_qualify_only_the_non_excluded_offence() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "dcs", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "COEW", "d1", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(
+                            offenceWithCode("off1", 1, "Dangerous driving", "RT88026"),
+                            offenceWithCode("off2", 2, "Causing death by dangerous driving", "RA88046")));
+
+            Map<String, DisqualificationContext> result = preprocess(request);
+
+            assertThat(result.get("off1").qualifyingCount()).isEqualTo(0L);
+            assertThat(result.get("off2").qualifyingCount()).isEqualTo(1L);
+            assertThat(result.get("off2").qualifyingOffenceIds()).containsExactly("off2");
         }
     }
 
