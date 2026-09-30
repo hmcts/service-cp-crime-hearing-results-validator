@@ -82,7 +82,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
@@ -136,7 +136,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
@@ -176,7 +176,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
@@ -231,7 +231,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Marcus", "lastName": "Reid"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }
@@ -271,7 +271,7 @@ class YroCurfewDurationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001",
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                      "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}
                   ]
                 }

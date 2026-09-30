@@ -77,8 +77,8 @@ class ValidationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -109,10 +109,10 @@ class ValidationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
-                    {"offenceId": "off3", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
-                    {"offenceId": "off4", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d1", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d1", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
                   ]
                 }
                 """;
@@ -149,8 +149,8 @@ class ValidationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
@@ -185,8 +185,8 @@ class ValidationApiHttpLiveTest {
                   ],
                   "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
                   "offences": [
-                    {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
-                    {"offenceId": "off2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
                   ]
                 }
                 """;
