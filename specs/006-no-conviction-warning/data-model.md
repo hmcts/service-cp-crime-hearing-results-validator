@@ -133,6 +133,18 @@ rule:
       - err
       - errf
       - dhd
+      - oni
+      - dcs
+      - DCCFSA
+      - DCCFSTA
+      - cquash
+      - iquash
+      - RESTRAO
+      - stayp
+      - RBBH
+      - SOCOR
+      - PDW
+      - RBBO
 
   conditions:
     - id: "AC1"
