@@ -178,10 +178,10 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
             assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
-        // "and" at the start — no WARNING (no word before "and")
+        // "and" at the start — WARNING (whole-word "and" triggers regardless of position)
 
         @Test
-        void andAtStart_should_produceMultiplePersonsCount0() {
+        void andAtStart_should_produceMultiplePersonsCount1() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
                             PROMPT_REF, "and Smith")),
@@ -189,14 +189,14 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.multiplePersonsCount()).isEqualTo(0L);
-            assertThat(ctx.breachingOffenceIds()).isEmpty();
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
-        // "and" at the end — no WARNING (no word after "and")
+        // "and" at the end — WARNING (whole-word "and" triggers regardless of position)
 
         @Test
-        void andAtEnd_should_produceMultiplePersonsCount0() {
+        void andAtEnd_should_produceMultiplePersonsCount1() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
                             PROMPT_REF, "John and")),
@@ -204,12 +204,12 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.multiplePersonsCount()).isEqualTo(0L);
-            assertThat(ctx.breachingOffenceIds()).isEmpty();
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
         @Test
-        void andAsTrailingWord_should_produceMultiplePersonsCount0() {
+        void andAsTrailingWord_should_produceMultiplePersonsCount1() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
                             PROMPT_REF, "Alexandra Sanderson And")),
@@ -217,8 +217,8 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.multiplePersonsCount()).isEqualTo(0L);
-            assertThat(ctx.breachingOffenceIds()).isEmpty();
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
         // "and" as substring inside a word — no WARNING
@@ -255,7 +255,7 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
     class EdgeCases {
 
         @Test
-        void andAtStartOfField_should_produceMultiplePersonsCount0() {
+        void andAtStartOfField_should_produceMultiplePersonsCount1() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
                             PROMPT_REF, "and Smith")),
@@ -263,12 +263,12 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.multiplePersonsCount()).isEqualTo(0L);
-            assertThat(ctx.breachingOffenceIds()).isEmpty();
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
         @Test
-        void andAtEndOfField_should_produceMultiplePersonsCount0() {
+        void andAtEndOfField_should_produceMultiplePersonsCount1() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
                             PROMPT_REF, "John and")),
@@ -276,8 +276,8 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.multiplePersonsCount()).isEqualTo(0L);
-            assertThat(ctx.breachingOffenceIds()).isEmpty();
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
         @Test
@@ -304,6 +304,76 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
             RestrainingOrderContext ctx = preprocess(request).get("off1");
 
             assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+        }
+    }
+
+    @Nested
+    @DisplayName("UnicodeAndTriggers")
+    class UnicodeAndTriggers {
+
+        @Test
+        void accentedNames_joseAndMaria_should_produceMultiplePersonsCount1() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, "José and María")),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        void accentedNames_zoeAndJane_should_produceMultiplePersonsCount1() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, "Zoë and Jane")),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        void andInParenthetical_should_produceMultiplePersonsCount1() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, "Jane Smith (and child)")),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        void nonBreakingSpaceAroundAnd_should_produceMultiplePersonsCount1() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, "John Smith and Jane")),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
+        }
+
+        @Test
+        void fieldContainingOnlyAnd_should_produceMultiplePersonsCount1() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, "And")),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
     }
 }

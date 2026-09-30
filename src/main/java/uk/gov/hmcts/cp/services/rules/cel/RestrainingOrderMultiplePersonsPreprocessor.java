@@ -27,7 +27,7 @@ public class RestrainingOrderMultiplePersonsPreprocessor implements ValidationPr
 
     private static final String PROMPT_PROTECTED_PERSON_NAME = "protectedPersonsName";
 
-    private static final Pattern PATTERN_AND = Pattern.compile("(?i)\\w+\\s+and\\s+\\w+");
+    private static final Pattern PATTERN_AND = Pattern.compile("(?iU)\\band\\b");
 
     @Override
     public String type() {
