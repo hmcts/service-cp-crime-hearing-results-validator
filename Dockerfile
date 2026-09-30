@@ -9,9 +9,10 @@ ARG BASE_IMAGE
 # digest this replaced was Ubuntu 26.04, which carries a pebble binary we never deploy.
 FROM ${BASE_IMAGE:-eclipse-temurin:25-jre-noble@sha256:b4c93a50fc67612798db73d68ca3b0ee4ebdd51736e59cca370e689b9797037e}
 
-# install curl for debugging
+# install curl for debugging; upgrade openssl ahead of the base image for CVE-2026-84782
 RUN apt-get update \
     && apt-get install -y curl \
+    && apt-get install -y --only-upgrade openssl libssl3t64 \
     && rm -rf /var/lib/apt/lists/*
 
 # run as non-root ... group and user "app"
