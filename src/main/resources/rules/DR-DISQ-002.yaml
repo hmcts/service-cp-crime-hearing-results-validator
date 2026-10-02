@@ -32,6 +32,18 @@ rule:
       - err       # Entered in Error
       - errf      # Entered in Error
       - dhd       # Defendant has died
+      - oni       # Offence not on indictment
+      - dcs       # Defendant committed suicide
+      - DCCFSA    # Defendant's costs payable from central funds - sum assessed
+      - DCCFSTA   # Defendant's costs payable from central funds - sum to be assessed
+      - cquash    # Count quashed
+      - iquash    # Indictment quashed
+      - RESTRAO   # Restraining Order
+      - stayp     # Proceedings stayed
+      - RBBH      # Result on breach of bail conditions
+      - SOCOR     # Sentence of the court for the offence recorded under offence number
+      - PDW       # Previously dealt with
+      - RBBO      # The court's opinion regarding breach of bail conditions
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test

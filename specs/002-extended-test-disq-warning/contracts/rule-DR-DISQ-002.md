@@ -6,7 +6,11 @@ The original "unchanged by this feature" assertion is **superseded** — see the
 
 ## Revision — 2026-08-24
 
-Three additional short codes are added to `excludedFinalShortCodes`: `err` and `errf` (Entered in Error) and `dhd` (Defendant has died). Like the original nine codes, these mark a `'F'` line as a "did not proceed to a substantive outcome" result, so the extended-test-disqualification warning does not fire against it. The YAML rule definition below reflects the full, current twelve-code list. No CEL, preprocessor, or schema change is required — the field is already a plain `List<String>` read case-insensitively.
+Three additional short codes are added to `excludedFinalShortCodes`: `err` and `errf` (Entered in Error) and `dhd` (Defendant has died). Like the original nine codes, these mark a `'F'` line as a "did not proceed to a substantive outcome" result, so the extended-test-disqualification warning does not fire against it. No CEL, preprocessor, or schema change is required — the field is already a plain `List<String>` read case-insensitively.
+
+## Revision — 2026-09-29
+
+Twelve further short codes are added to `excludedFinalShortCodes`: `oni` (Offence not on indictment), `dcs` (Defendant committed suicide), `DCCFSA` / `DCCFSTA` (Defendant's costs payable from central funds — sum assessed / sum to be assessed), `cquash` (Count quashed), `iquash` (Indictment quashed), `RESTRAO` (Restraining Order), `stayp` (Proceedings stayed), `RBBH` (Result on breach of bail conditions), `SOCOR` (Sentence of the court for the offence recorded under offence number), `PDW` (Previously dealt with) and `RBBO` (The court's opinion regarding breach of bail conditions). The same codes are added to DR-CONV-006. An offence whose final results are drawn solely from the excluded list (e.g. `disch` + `DCCFSA`) does not trigger the warning; this is the existing "at least one non-excluded `'F'` line" gate, so no CEL, preprocessor, or schema change is required. The YAML rule definition below reflects the full, current twenty-four-code list.
 
 ---
 
@@ -85,6 +89,18 @@ rule:
       - err       # Entered in Error
       - errf      # Entered in Error
       - dhd       # Defendant has died
+      - oni       # Offence not on indictment
+      - dcs       # Defendant committed suicide
+      - DCCFSA    # Defendant's costs payable from central funds - sum assessed
+      - DCCFSTA   # Defendant's costs payable from central funds - sum to be assessed
+      - cquash    # Count quashed
+      - iquash    # Indictment quashed
+      - RESTRAO   # Restraining Order
+      - stayp     # Proceedings stayed
+      - RBBH      # Result on breach of bail conditions
+      - SOCOR     # Sentence of the court for the offence recorded under offence number
+      - PDW       # Previously dealt with
+      - RBBO      # The court's opinion regarding breach of bail conditions
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test

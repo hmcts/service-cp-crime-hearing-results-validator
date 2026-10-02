@@ -46,7 +46,8 @@ class NoConvictionPreprocessorTest {
      */
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
-            "err", "errf", "dhd");
+            "err", "errf", "dhd", "oni", "dcs", "DCCFSA", "DCCFSTA", "cquash", "iquash",
+            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO");
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 
@@ -188,6 +189,93 @@ class NoConvictionPreprocessorTest {
 
             assertThat(ctx.unconvictedSentenceCount()).isEqualTo(1L);
             assertThat(ctx.excludedFinalCount()).isEqualTo(0L);
+        }
+    }
+
+    @Nested
+    @DisplayName("ExcludedCombination — AC3 / AC4")
+    class ExcludedCombination {
+
+        @ParameterizedTest
+        @ValueSource(strings = {"DCCFSA", "DCCFSTA"})
+        void disch_combined_with_central_funds_costs_should_suppress(final String costsCode) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "DISCH", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", costsCode, "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offence("off1", 1, "Theft").isConvicted(false)));
+
+            NoConvictionContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.unconvictedSentenceCount())
+                    .as("DISCH + %s should suppress", costsCode)
+                    .isEqualTo(0L);
+            assertThat(ctx.finalCategoryCount()).isEqualTo(2L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(2L);
+            assertThat(ctx.warningOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void any_combination_of_only_excluded_codes_should_suppress() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "oni", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "stayp", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl3", "RESTRAO", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offence("off1", 1, "Theft").isConvicted(false)));
+
+            NoConvictionContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.unconvictedSentenceCount()).isEqualTo(0L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(3L);
+        }
+
+        @Test
+        void excluded_combination_plus_non_excluded_final_should_warn() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "DISCH", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DCCFSA", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl3", "COEW", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(offence("off1", 1, "Theft").isConvicted(false)));
+
+            NoConvictionContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.unconvictedSentenceCount()).isEqualTo(1L);
+            assertThat(ctx.excludedFinalCount()).isEqualTo(2L);
+        }
+
+        @Test
+        void mixed_offences_should_warn_only_on_the_non_excluded_offence() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(
+                            resultLine("rl1", "DISCH", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl2", "DCCFSA", "d1", "off1")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl3", "COEW", "d1", "off2")
+                                    .category(ResultLineDto.CategoryEnum.F),
+                            resultLine("rl4", "oni", "d1", "off3")
+                                    .category(ResultLineDto.CategoryEnum.F)),
+                    List.of(
+                            offence("off1", 1, "Theft").isConvicted(false),
+                            offence("off2", 2, "Burglary").isConvicted(false),
+                            offence("off3", 3, "Assault").isConvicted(false)));
+
+            Map<String, NoConvictionContext> result = preprocess(request);
+
+            assertThat(result.get("off1").unconvictedSentenceCount()).isEqualTo(0L);
+            assertThat(result.get("off2").unconvictedSentenceCount()).isEqualTo(1L);
+            assertThat(result.get("off2").warningOffenceIds()).containsExactly("off2");
+            assertThat(result.get("off3").unconvictedSentenceCount()).isEqualTo(0L);
         }
     }
 

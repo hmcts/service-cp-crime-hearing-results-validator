@@ -32,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `DR-SENT-002` → `DR-SENT-001` (1000), `DR-DISQ-001` → `DR-DISQ-002` (2000),
   `DR-CTL-001` → `DR-CTL-003` (3000), `DR-YRO-001` → `DR-YRO-004` (4000), and the new
   `DR-COEW-005` (5000). Previously each rule category numbered independently from 001.
+- `DR-CONV-006` and `DR-DISQ-002` `excludedFinalShortCodes` extended with `oni`, `dcs`, `DCCFSA`, `DCCFSTA`, `cquash`, `iquash`, `RESTRAO`, `stayp`, `RBBH`, `SOCOR`, `PDW`, `RBBO`. An offence
+  whose final results are drawn solely from the excluded list no longer warns.
 - `DR-CTL-003`'s `ctlShortCodes` narrowed to just `CTL`, dropping `CCII`, `CCIIB`, `CCIILA`,
   `CCIITDH`, `CCIIYDA`, `CCQB`.
 - `DR-SENT-001`, `DR-DISQ-002`, `DR-CTL-003`, `DR-YRO-004`, and `DR-COEW-005` now seed
