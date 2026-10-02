@@ -295,3 +295,4 @@ Update the plan reference in `CLAUDE.md` to point to this plan.
 ## Post-Phase-1 Constitution Re-check
 
 All eight principles remain ✅ PASS. No new violations introduced. No Complexity Tracking entries required.
+
