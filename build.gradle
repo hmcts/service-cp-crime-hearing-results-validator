@@ -58,11 +58,6 @@ configurations {
   }
 }
 
-// Security: overrides the Jackson versions Spring Boot 4.1.1's BOM selects (3.1.5 / 2.21.5),
-// which Trivy flags with HIGH advisories. See the jackson entries in libs.versions.toml.
-ext['jackson-bom.version'] = libs.versions.jackson3.get()
-ext['jackson-2-bom.version'] = libs.versions.jackson2.get()
-
 springBoot {
   buildInfo {
     properties {
