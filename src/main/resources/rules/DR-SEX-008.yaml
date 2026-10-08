@@ -6,7 +6,7 @@ rule:
     reference data) has no sexual-offences notification-requirement result
     recorded: NORRR for an Adult defendant (18+ at hearing date), or neither
     NORRR nor NORPGP for a Youth defendant (under 18 at hearing date).
-  priority: 8000
+  priority: 9000
   enabled: true
 
   preprocessing:
