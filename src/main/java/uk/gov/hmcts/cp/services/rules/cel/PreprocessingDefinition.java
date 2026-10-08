@@ -29,6 +29,9 @@ public record PreprocessingDefinition(
         List<String> communityOrderShortCodes,
         List<String> alcoholAbstinenceShortCodes,
 
+        // ConditionalBailPreprocessor: non-Category-F short codes that end conditional bail
+        List<String> bailEndingShortCodes,
+
         // Sexual-offence-notification-specific fields (used by
         // SexualOffenceNotificationPreprocessor)
         String qualifyingMisCode,
