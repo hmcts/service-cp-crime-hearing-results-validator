@@ -1,0 +1,78 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-endorsable-flag1"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "ef-ref-id-1",
+              "endorsableFlag": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-endorsable-flag0"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "ef-ref-id-0",
+              "endorsableFlag": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-endorsable-absent"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "ef-ref-id-absent"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,655 @@
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+@userId = test-user
+
+# DR-ENDORSEMENT-012 — Endorsement/Disqualification Missing on Endorsable Offences (CRA-336)
+# Warns when a Category F – Final result is recorded against an endorsable offence
+# (endorsable_flag = 1 from reference data) and no satisfying endorsement, disqualification,
+# or special reasons result is present.
+#
+# Satisfying codes that suppress the warning:
+#   Endorsement (3):                LEP  LEN  LEA
+#   Obligatory disqualification (5): DDO  DDOL  DDOR  DDOTE  DDOTEL
+#   Discretionary disqualification (5): DDD  DDDL  DDDT  DDDTL  DDDTO
+#   Points/totting disqualification (5): DDP  DDPL  DDPR  DDPTE  DDPTEL
+#   Course reduction (1):           DDRCOT
+#   Special reasons (2):            NESR  NDSR
+#
+# Excluded final codes (warning suppressed even if flag=1, 24 codes):
+#   WDRN WDRNOFF DISM DINE DINI DISCH DISC CTROF IREMFILE ERR ERRF DHD ONI
+#   DCS DCCFSA DCCFSTA CQUASH IQUASH RESTRAO STAYP RBBH SOCOR PDW RBBO
+#
+# Severity: WARNING (advisory — sharing is not blocked).
+#
+# PREREQUISITE: start the stack first:
+#   gradle bootJar && docker compose up --build --force-recreate -d
+#
+# WireMock stubs for the offence codes below live in:
+#   wiremock/mappings/referencedataoffences-endorsable-stub.json
+#
+#   live-endorsable-flag1  → endorsableFlag: 1  (endorsable offence)
+#   live-endorsable-flag0  → endorsableFlag: 0  (non-endorsable offence)
+#   live-endorsable-absent → endorsableFlag absent in response (fail-open: treated as non-endorsable)
+#
+# Note: IMP is a custodial short code (DR-SENT-011 territory) but the stubs above return no
+# custodialIndicator, so DR-SENT-011 stays silent (fail-open → treated as imprisonable).
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US1 — Advisory warning: endorsable offence with non-excluded final result,
+#        no satisfying result → WARNING
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US1-AC1 — endorsable_flag=1, Category-F result (IMP), no satisfying code → WARNING
+# Expected: 1 WARNING with ruleId=DR-ENDORSEMENT-012, severity=WARNING, isValid=true,
+#           affectedOffences contains off-1,
+#           message = "This offence is endorsable. Add an endorsement, disqualification or special reasons result."
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us1-ac1",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US2 — Warning suppressed when a satisfying result is present
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US2-AC2a — satisfying result: LEP (endorsement family) → NO warning
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us2-ac2-lep",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "LEP",
+      "category": "I",
+      "label": "Licence Endorsement — Points",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US2-AC2b — satisfying result: DDOTE (obligatory disqualification — extended test) → NO warning
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us2-ac2-ddote",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "DDOTE",
+      "category": "I",
+      "label": "Disqualification — Obligatory until extended test passed",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Dangerous Driving",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US2-AC2c — satisfying result: NESR (special reasons) → NO warning
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us2-ac2-nesr",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "NESR",
+      "category": "I",
+      "label": "No Endorsement — Special Reasons",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US2-AC3 — only excluded final result (WDRN) → NO warning
+# WDRN (Withdrawn) is in the excluded list; the offence was not proceeded with.
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us2-ac3-wdrn",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "WDRN",
+      "category": "F",
+      "label": "Withdrawn",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US3 — Non-endorsable offence is never warned
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US3-AC4a — endorsable_flag=0 (non-endorsable) + Category-F result → NO warning
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us3-ac4-flag0",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag0",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US3-AC4b — endorsable_flag absent from ref-data response → NO warning (fail-open)
+# When reference data returns an offence but omits the endorsableFlag field,
+# the offence is treated as non-endorsable — no false-positive warning.
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us3-ac4-absent",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-absent",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US4 — Multiple offences assessed independently
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US4-AC6 — two offences: off-1 endorsable (flag=1, no satisfying), off-2 not endorsable (flag=0)
+# Warning returned only for off-1; off-2 is clean.
+# Expected: 1 DR-ENDORSEMENT-012 warning, affectedOffences = [off-1], isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us4-ac6",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding (endorsable)",
+      "orderIndex": 1
+    },
+    {
+      "offenceId": "off-2",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag0",
+      "offenceTitle": "Theft (non-endorsable)",
+      "orderIndex": 2
+    }
+  ]
+}
+
+###
+
+### US4-AC6b — both offences endorsable, one has a satisfying result → WARNING only on off-1
+# off-1: flag=1, IMP/F, no satisfying → WARNING
+# off-2: flag=1, IMP/F, LEP present → suppressed
+# Expected: 1 DR-ENDORSEMENT-012 warning for off-1 only, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us4-ac6b",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-2"
+    },
+    {
+      "resultLineId": "rl3",
+      "shortCode": "LEP",
+      "category": "I",
+      "label": "Licence Endorsement — Points",
+      "defendantId": "d1",
+      "offenceId": "off-2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding (no endorsement)",
+      "orderIndex": 1
+    },
+    {
+      "offenceId": "off-2",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding (endorsement present)",
+      "orderIndex": 2
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US5 — Coexistence: DR-ENDORSEMENT-012 alongside another validation warning
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US5-AC7 — DR-ENDORSEMENT-012 + DR-SENT-001 coexistence
+# off-1: d1, endorsable (flag=1), IMP/F, no satisfying → DR-ENDORSEMENT-012 WARNING
+# off-2+off-3: d2, both marked concurrent (no primary sentence) → DR-SENT-001 WARNING
+# Expected: 2 warnings, one per rule, neither suppresses the other, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-us5-ac7-coexist",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d2",
+      "offenceId": "off-2",
+      "isConcurrent": true
+    },
+    {
+      "resultLineId": "rl3",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d2",
+      "offenceId": "off-3",
+      "isConcurrent": true
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" },
+    { "defendantId": "d2", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    },
+    {
+      "offenceId": "off-2",
+      "defendantId": "d2",
+      "offenceCode": "live-endorsable-flag0",
+      "offenceTitle": "Theft A",
+      "orderIndex": 2
+    },
+    {
+      "offenceId": "off-3",
+      "defendantId": "d2",
+      "offenceCode": "live-endorsable-flag0",
+      "offenceTitle": "Theft B",
+      "orderIndex": 3
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Edge cases
+# ─────────────────────────────────────────────────────────────────────────────
+
+### Edge — Satisfying code on a non-final line still suppresses the warning
+# Satisfying codes are checked across ALL result lines (not just Category F).
+# rl1: IMP/F (qualifying final), rl2: LEP/A (non-final) → warning suppressed.
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-edge-satisfying-nonfinal",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "LEP",
+      "category": "A",
+      "label": "Licence Endorsement — Points",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### Edge — Excluded final result alongside a non-excluded final result → WARNING still fires
+# If at least one non-excluded Category-F line is present, the excluded one doesn't matter.
+# rl1: WDRN/F (excluded), rl2: IMP/F (non-excluded) → warning fires.
+# Expected: 1 DR-ENDORSEMENT-012 WARNING for off-1, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-edge-excluded-plus-nonexcluded",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "WDRN",
+      "category": "F",
+      "label": "Withdrawn",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "IMP",
+      "category": "F",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### Edge — No Category-F result (only interim) → NO warning, no ref-data call made
+# The preprocessor short-circuits when no qualifying final line exists;
+# the endorsable_flag lookup is skipped entirely.
+# Expected: 0 DR-ENDORSEMENT-012 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-end012-edge-no-final",
+  "hearingDay": "2026-10-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "ADJ",
+      "category": "A",
+      "label": "Adjourned",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Jane", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-endorsable-flag1",
+      "offenceTitle": "Speeding",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###

@@ -49,6 +49,7 @@ public class ReferencedataOffenceClient {
 
     private static final String CUSTODIAL_INDICATOR_Y = "Y";
     private static final String CUSTODIAL_INDICATOR_N = "N";
+    private static final int ENDORSABLE_FLAG_VALUE = 1;
 
     private final ReferencedataOffenceProperties properties;
     private final RestTemplate restTemplate;
@@ -92,6 +93,53 @@ public class ReferencedataOffenceClient {
             misCode = fetchMisCode(offenceCode);
         }
         return misCode;
+    }
+
+    /**
+     * Looks up the {@code endorsableFlag} for an offence, by its {@code cjsOffenceCode}.
+     * Returns {@link Optional#of(Integer) Optional.of(1)} when endorsable, {@code Optional.of(0)}
+     * when explicitly non-endorsable, or {@link Optional#empty()} on any failure (fail-open:
+     * treat as non-endorsable, no warning). Cached with key prefix {@code "ef:"} to avoid
+     * cross-contamination with custodial-indicator ({@code "ci:"}) and misCode (bare key) entries.
+     *
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
+     * @return the offence's endorsable flag value, or {@link Optional#empty()} when unavailable
+     */
+    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode", unless = "#result == null")
+    public Optional<Integer> getEndorsableFlag(final String offenceCode) {
+        Optional<Integer> flag = Optional.empty();
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            flag = fetchEndorsableFlag(offenceCode);
+        }
+        return flag;
+    }
+
+    private Optional<Integer> fetchEndorsableFlag(final String offenceCode) {
+        Optional<Integer> flag = Optional.empty();
+        try {
+            final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
+                    .build(Map.of("offenceCode", offenceCode));
+            final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
+                    .header(HttpHeaders.ACCEPT, properties.acceptHeader());
+            final String userId = MDC.get(TracingFilter.USER_ID);
+            if (userId != null && !userId.isBlank()) {
+                requestBuilder.header(CJSCPPUID_HEADER, userId);
+            }
+            final RequestEntity<Void> request = requestBuilder.build();
+            final ResponseEntity<ReferencedataOffencesListResponse> response =
+                    restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
+            final ReferencedataOffenceResponse offence = firstOffenceOf(response.getBody());
+            if (offence != null && offence.endorsableFlag() != null) {
+                flag = Optional.of(offence.endorsableFlag());
+            } else {
+                log.debug("No endorsableFlag returned for offenceCode={} (endorsable flag lookup)",
+                        Encode.forJava(offenceCode));
+            }
+        } catch (RestClientException | IllegalArgumentException e) {
+            log.warn("Reference-data endorsable flag lookup failed for offenceCode={} ({}): {}",
+                    Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
+        }
+        return flag;
     }
 
     /**

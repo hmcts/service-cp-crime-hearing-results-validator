@@ -87,7 +87,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.rulesEvaluated",
                         containsInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
                                 "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008",
-                                "DR-SENT-011")));
+                                "DR-SENT-011", "DR-ENDORSEMENT-012")));
     }
 
     /**
