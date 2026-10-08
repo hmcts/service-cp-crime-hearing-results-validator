@@ -1,0 +1,75 @@
+rule:
+  id: "DR-ENDORSEMENT-012"
+  title: "Endorsement/disqualification missing on endorsable offence"
+  description: >-
+    Warns when a final result (Category F) is recorded against an endorsable
+    offence (endorsable_flag = 1) and no endorsement, driving disqualification,
+    or special reasons result is present. Advisory only — does not block sharing.
+  priority: 12000
+  enabled: true
+
+  preprocessing:
+    type: "endorsable-offence"
+    excludedFinalShortCodes:
+      - WDRN
+      - WDRNOFF
+      - DISM
+      - DINE
+      - DINI
+      - DISCH
+      - DISC
+      - CTROF
+      - IREMFILE
+      - ERR
+      - ERRF
+      - DHD
+      - ONI
+      - DCS
+      - DCCFSA
+      - DCCFSTA
+      - CQUASH
+      - IQUASH
+      - RESTRAO
+      - STAYP
+      - RBBH
+      - SOCOR
+      - PDW
+      - RBBO
+    satisfyingShortCodes:
+      # Endorsement
+      - LEP
+      - LEN
+      - LEA
+      # Obligatory disqualification
+      - DDO
+      - DDOL
+      - DDOR
+      - DDOTE
+      - DDOTEL
+      # Discretionary disqualification
+      - DDD
+      - DDDL
+      - DDDT
+      - DDDTL
+      - DDDTO
+      # Points (totting) disqualification
+      - DDP
+      - DDPL
+      - DDPR
+      - DDPTE
+      - DDPTEL
+      # Obligatory disqualification until extended test — reduction for course
+      - DDRCOT
+      # Special reasons
+      - NESR
+      - NDSR
+
+  conditions:
+    - id: "AC1"
+      name: "Endorsable offence missing endorsement, disqualification or special reasons"
+      expression: "qualifyingCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence is endorsable. Add an endorsement, disqualification or special reasons result.
+      affectedOffenceSet: "endorsableOffenceIds"
+      validationLevel: OFFENCE

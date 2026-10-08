@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReferencedataOffenceResponse(String offenceId, String misCode,
-        String custodialIndicator, OffenceDetails details) {
+        String custodialIndicator, OffenceDetails details, Integer endorsableFlag) {
 
     /** Root of the {@code details_json} offence document. */
     @JsonIgnoreProperties(ignoreUnknown = true)
