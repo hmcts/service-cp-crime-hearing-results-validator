@@ -441,7 +441,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Priya", "lastName": "Nair"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -487,7 +487,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Liam", "lastName": "Osei"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -537,7 +537,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -583,7 +583,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Marcus", "lastName": "Reid"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -645,8 +645,8 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                         {"defendantId": "d2", "firstName": "Jane", "lastName": "Doe"}
                       ],
                       "offences": [
-                        {"offenceId": "off1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "off2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true},
+                        {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
                     """;
@@ -694,7 +694,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "Taylor"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
@@ -743,7 +743,7 @@ class YroEndDateValidationIntegrationTest extends IntegrationTestBase {
                          ]}
                       ],
                       "defendants": [{"defendantId": "d1", "firstName": "Oliver", "lastName": "Bennett"}],
-                      "offences": [{"offenceId": "off1", "offenceCode": "TH68001",
+                      "offences": [{"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
                                     "offenceTitle": "Theft", "orderIndex": 1, "isConvicted": true}]
                     }
                     """;
