@@ -111,9 +111,8 @@ class CelValidationRuleTest {
         assertThat(error.getRuleId()).isEqualTo("DR-SENT-001");
         assertThat(result.errorMessage()).isEqualTo(
                 "Some offences do not include details of whether they are concurrent or"
-                        + " consecutive. There should be only one primary sentence for each"
-                        + " defendant, therefore one result without concurrent or consecutive"
-                        + " information. This affects ${defendantNames}.");
+                        + " consecutive. Only the primary offence should not have this"
+                        + " information. This affects: ${defendantNames}.");
         assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
         assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);

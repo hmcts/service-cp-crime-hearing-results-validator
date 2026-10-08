@@ -1,9 +1,10 @@
 rule:
   id: "DR-SENT-001"
-  title: "Custodial sentence concurrent/consecutive check"
+  title: "Custodial and suspended sentence concurrent/consecutive check"
   description: >-
-    Validates that custodial sentences have correct concurrent/consecutive
-    information per defendant across all cases in a hearing.
+    Validates that custodial sentences and suspended sentence orders (SSO)
+    have correct concurrent/consecutive information per defendant across all
+    cases in a hearing.
   priority: 1000
   enabled: true
 
@@ -20,6 +21,14 @@ rule:
       - specc
       - speccc
       - speccd
+      - SUSPSNR
+      - SUSPSDNR
+      - SUSPS
+      - SUSPSS
+      - SUSPSNI
+      - SUSPSD
+      - SUSPSDS
+      - SUSPSDNI
     groupBy: "defendant-then-offence"
     skipWhenGroupCount: 1
 
@@ -41,9 +50,8 @@ rule:
         Check if this is the primary offence. If it is not, you must add concurrent or consecutive information.
       errorMessageTemplate: >-
         Some offences do not include details of whether they are concurrent or
-        consecutive. There should be only one primary sentence for each
-        defendant, therefore one result without concurrent or consecutive
-        information. This affects ${defendantNames}.
+        consecutive. Only the primary offence should not have this
+        information. This affects: ${defendantNames}.
       affectedOffenceSet: "allNoInfoOffenceIds"
       affectedDefendantSet: "defendantId"
       validationLevel: OFFENCE
