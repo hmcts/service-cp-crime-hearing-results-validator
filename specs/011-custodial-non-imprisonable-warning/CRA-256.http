@@ -1,0 +1,498 @@
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+@userId = test-user
+
+# DR-SENT-011 — Custodial Sentence Against Non-Imprisonable Offence Warning (CRA-256)
+# Warns when a custodial result line is recorded against an offence whose custodial indicator
+# resolves to "N" (non-imprisonable). The indicator is resolved from the reference-data API
+# (GET /referencedataoffences/offences?cjsoffencecode=...) in priority order:
+#   1. custodialIndicator column ("Y"/"N") — takes precedence if present
+#   2. details.document.libra.custodialindicator.code from details_json
+# When neither source provides a usable value, the offence is treated as imprisonable (fail-safe).
+# Custodial short codes: IMP YOI DTO EXTDVS EXTDVSU EXTIVS STSDY SPECC SPECCC SPECCD
+#                        SUSPS SUSPSS SUSPSNI SUSPSNR SUSPSD SUSPSDS SUSPSDNI SUSPSDNR
+# Severity: WARNING (advisory — sharing is not blocked).
+#
+# PREREQUISITE: start the stack first:
+#   gradle bootJar && docker compose up --build --force-recreate -d
+#
+# WireMock stubs for all offence codes below live in:
+#   wiremock/mappings/referencedataoffences-nonimprisonable-stub.json
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US1 — Custodial indicator column: column-N triggers warning, column-Y suppresses it
+# WireMock: live-nonimprisonable-n → {"custodialIndicator": "N"}
+#           live-nonimprisonable-y → {"custodialIndicator": "Y"}
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US1-AC2 — custodialIndicator="N" (from ref-data) + IMP result → WARNING
+# Expected: 1 WARNING with ruleId=DR-SENT-011, severity=WARNING, isValid=true,
+#           affectedOffences contains off-1.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us1-column-n",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US1-AC1 — custodialIndicator="Y" (from ref-data) + IMP result → NO warning
+# Expected: 0 DR-SENT-011 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us1-column-y",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-y",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US2 — details_json fallback: when column is absent, details.document.libra.custodialindicator.code
+#        is consulted. Column always wins when present.
+# WireMock: live-nonimprisonable-json-n → {custodialIndicator: null, details: {…code: "N"}}
+#           live-nonimprisonable-json-y → {custodialIndicator: null, details: {…code: "Y"}}
+#           live-nonimprisonable-no-ind → no custodialIndicator, no details
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US2-AC3 — column absent, details_json code="N" → WARNING
+# Expected: 1 WARNING with ruleId=DR-SENT-011, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us2-json-n",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-json-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US2-AC4 — column absent, details_json code="Y" → NO warning
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us2-json-y",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-json-y",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US2-AC6 — no indicator in either source → NO warning (fail-safe/fail-open)
+# Ref-data returns an offence with no custodialIndicator and no details_json node.
+# Offence treated as imprisonable — no false-positive warning.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us2-no-ind",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-no-ind",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US3 — Column takes precedence over details_json
+# WireMock: live-nonimprisonable-col-y-json-n → {custodialIndicator: "Y", details: {…code: "N"}}
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US3-AC5 — column="Y" beats details_json code="N" → NO warning
+# Column "Y" is consulted first and is usable — JSON fallback is never reached.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us3-column-wins",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-col-y-json-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US4 — Non-custodial result lines do not trigger the rule; ref-data not called
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US4-AC7-A — COEW result + offence classified N in ref-data → NO warning
+# COEW is not a custodial short code — preprocessor produces no context entry,
+# reference-data lookup is never made.
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us4-coew",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "COEW",
+      "label": "Convicted — England and Wales",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US4-AC7-B — FO (Fine Order) result + offence classified N in ref-data → NO warning
+# Expected: 0 warnings, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us4-fo",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "FO",
+      "label": "Fine Order",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US4-AC7-C — SUSPS (non-IMP custodial code) + offence classified N → WARNING
+# SUSPS is one of the 18 custodial short codes; the rule is not limited to IMP.
+# Expected: 1 WARNING with ruleId=DR-SENT-011, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us4-susps",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "SUSPS",
+      "label": "Suspended Sentence",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### Edge case — Two custodial result lines on the same non-imprisonable offence → exactly 1 WARNING
+# The preprocessor evaluates per-offence, not per-result-line, so a second custodial result on
+# the same offence must not duplicate the warning.
+# Expected: exactly 1 WARNING (not 2), ruleId=DR-SENT-011, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-edge-two-results-one-offence",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "SUSPS",
+      "label": "Suspended Sentence",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US5 — Warning is advisory; coexists with other warnings; sharing not blocked
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US5-A — Single non-imprisonable offence → WARNING, isValid=true (sharing not blocked)
+# Expected: 1 WARNING, isValid=true, no errors.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us5-advisory",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft",
+      "orderIndex": 1
+    }
+  ]
+}
+
+###
+
+### US5-B — Mixed offences: imprisonable (off-1, ref-data Y) + non-imprisonable (off-2, ref-data N)
+# Warning scoped to off-2 only; off-1 is clean.
+# Expected: 1 WARNING for off-2, isValid=true.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-sent011-us5-mixed",
+  "hearingDay": "2026-03-11",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "IMP",
+      "label": "Imprisonment",
+      "defendantId": "d1",
+      "offenceId": "off-2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "John", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-y",
+      "offenceTitle": "Theft (imprisonable)",
+      "orderIndex": 1
+    },
+    {
+      "offenceId": "off-2",
+      "defendantId": "d1",
+      "offenceCode": "live-nonimprisonable-n",
+      "offenceTitle": "Theft (non-imprisonable)",
+      "orderIndex": 2
+    }
+  ]
+}
+
+###
