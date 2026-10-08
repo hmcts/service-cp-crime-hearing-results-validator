@@ -331,5 +331,31 @@ And I have to resolve the error before I can share the result (i.e sharing is no
         assertThat(issues).hasSize(0);
     }
 
+    /**
+     * Verifies a custodial offence (IMP) and a suspended sentence order offence (SUSPS) for the
+     * same defendant are evaluated as one set -- SSO short codes were added to DR-SENT-001's
+     * {@code filterShortCodes} alongside the existing custodial codes, so a custodial primary
+     * offence plus a no-info SSO offence still triggers AC2.
+     */
+    @Test
+    @DisplayName("AC2-S12: 1 custodial primary + 1 SSO no-info -> Error")
+    void ac2_s12_custodial_primary_plus_sso_no_info() {
+        List<ResultLineDto> lines = List.of(
+                resultLine("rl1", "IMP", "d1", "off1"),
+                resultLine("rl2", "SUSPS", "d1", "off2"),
+                resultLine("rl3", "SUSPSNR", "d1", "off3"));
+        DraftValidationRequest request = buildRequest(lines, List.of(
+                offence("off1", 1, "Theft"),
+                offence("off2", 2, "Assault"),
+                offence("off3", 3, "Burglary")));
+
+        List<ValidationIssue> issues = rule.evaluate(request).stream().map(ValidationIssueResult::issue).toList();
+
+        assertThat(issues).hasSize(1);
+        assertThat(issues.getFirst().getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.ERROR);
+        assertThat(issues.getFirst().getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
+        assertThat(issues.getFirst().getAffectedOffences()).hasSize(3);
+        assertThat(issues.getFirst().getAffectedDefendants()).isNullOrEmpty();
+    }
 
 }

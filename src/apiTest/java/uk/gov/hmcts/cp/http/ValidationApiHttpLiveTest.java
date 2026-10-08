@@ -127,8 +127,7 @@ class ValidationApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualToIgnoringWhitespace(
                         "Some offences do not include details of whether they are concurrent or"
-                                + " consecutive. There should be only one primary sentence for each"
-                                + " defendant, therefore one result without concurrent or consecutive"
+                                + " consecutive. Only the primary offence should not have this"
                                 + " information.");
     }
 

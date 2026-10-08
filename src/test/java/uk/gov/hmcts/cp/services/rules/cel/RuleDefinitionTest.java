@@ -24,7 +24,7 @@ class RuleDefinitionTest {
         RuleDefinition rule = RuleDefinitionLoader.load("rules/DR-SENT-001.yaml");
 
         assertThat(rule.id()).isEqualTo("DR-SENT-001");
-        assertThat(rule.title()).isEqualTo("Custodial sentence concurrent/consecutive check");
+        assertThat(rule.title()).isEqualTo("Custodial and suspended sentence concurrent/consecutive check");
         assertThat(rule.description()).contains("concurrent/consecutive");
         assertThat(rule.priority()).isEqualTo(1000);
         assertThat(rule.enabled()).isTrue();
@@ -43,7 +43,8 @@ class RuleDefinitionTest {
         assertThat(preprocessing.type()).isEqualTo("custodial-concurrent-consecutive");
         assertThat(preprocessing.filterShortCodes()).containsExactlyInAnyOrder(
                 "IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs",
-                "STSDY", "specc", "speccc", "speccd");
+                "STSDY", "specc", "speccc", "speccd",
+                "SUSPSNR", "SUSPSDNR", "SUSPS", "SUSPSS", "SUSPSNI", "SUSPSD", "SUSPSDS", "SUSPSDNI");
         assertThat(preprocessing.groupBy()).isEqualTo("defendant-then-offence");
         assertThat(preprocessing.skipWhenGroupCount()).isEqualTo(1);
     }
