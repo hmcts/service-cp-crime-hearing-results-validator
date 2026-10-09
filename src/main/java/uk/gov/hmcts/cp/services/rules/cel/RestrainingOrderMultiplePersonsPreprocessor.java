@@ -68,6 +68,7 @@ public class RestrainingOrderMultiplePersonsPreprocessor implements ValidationPr
         final String name = findPromptValue(line, PROMPT_PROTECTED_PERSON_NAME);
         return name != null && (name.contains("&")
                 || name.contains(",")
+                || name.contains("+")
                 || name.contains("/")
                 || PATTERN_AND.matcher(name).find());
     }

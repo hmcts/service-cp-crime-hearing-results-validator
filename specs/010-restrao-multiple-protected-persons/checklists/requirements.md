@@ -32,6 +32,6 @@
 ## Notes
 
 - All items pass. Spec is ready for `/speckit-plan`.
-- FR-001 through FR-009 map directly to the 10 ACs in Jira CRA-260.
+- FR-001 through FR-009 map directly to the 11 ACs in Jira CRA-260 (AC1–AC10, including AC2A).
 - SC-002 explicitly covers the false-positive risk on names containing "and" (AC6 coverage).
-- Edge cases section covers: empty field, "and" at boundaries, multiple triggers, tab navigation bypass.
+- Edge cases section covers: empty field, "and" at boundaries, multiple triggers, tab navigation bypass, comma defence-in-depth.

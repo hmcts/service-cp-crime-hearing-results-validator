@@ -4,7 +4,8 @@
 
 # DR-RESTRAO-010 — Restraining Order: Multiple Protected Persons Warning (CRA-260)
 # Warns when a RESTRAO result's protectedPersonsName prompt contains multiple names,
-# detected by: & | , | / separators, or whole-word "and" (case-insensitive).
+# detected by: & | , | + | / separators, or whole-word "and" (case-insensitive).
+# AC2A (CRA-260): "+" added as a trigger character.
 #
 # Rule fires per offence — each offence with a RESTRAO result is evaluated independently.
 # Severity: WARNING (advisory — sharing is not blocked).
@@ -106,6 +107,43 @@ CJSCPPUID: {{userId}}
       "offenceId": "off-1",
       "prompts": [
         { "promptRef": "protectedPersonsName", "promptValue": "John Smith / Jane Smith" }
+      ]
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Jones" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off-1",
+      "offenceCode": "TH68001",
+      "offenceTitle": "Harassment",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### US1-D — Plus (+) in protectedPersonsName → WARNING (AC2A)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-restrao-us1-plus",
+  "hearingDay": "2026-05-06",
+  "courtType": "CROWN",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "RESTRAO",
+      "label": "Restraining Order",
+      "defendantId": "d1",
+      "offenceId": "off-1",
+      "prompts": [
+        { "promptRef": "protectedPersonsName", "promptValue": "John Smith+Jane Smith" }
       ]
     }
   ],

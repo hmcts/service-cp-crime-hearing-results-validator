@@ -38,11 +38,12 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
     @DisplayName("SeparatorCharTriggers")
     class SeparatorCharTriggers {
 
-        @Test
-        void ampersandInName_should_produceMultiplePersonsCount1() {
+        @ParameterizedTest(name = "ampersand ''{0}'' should trigger warning")
+        @ValueSource(strings = {"John Smith&Jane Smith", "John Smith & Jane Smith", "John Smith  &   Jane Smith"})
+        void ampersandInName_should_produceMultiplePersonsCount1(String nameValue) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
-                            PROMPT_REF, "John Smith & Jane Smith")),
+                            PROMPT_REF, nameValue)),
                     List.of(offence("off1", 1, "Restraining Order")));
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
@@ -52,11 +53,12 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
             assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
-        @Test
-        void commaInName_should_produceMultiplePersonsCount1() {
+        @ParameterizedTest(name = "comma ''{0}'' should trigger warning")
+        @ValueSource(strings = {"John Smith,Jane Smith", "John Smith, Jane Smith", "John Smith  ,   Jane Smith"})
+        void commaInName_should_produceMultiplePersonsCount1(String nameValue) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
-                            PROMPT_REF, "John Smith, Jane Smith")),
+                            PROMPT_REF, nameValue)),
                     List.of(offence("off1", 1, "Restraining Order")));
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
@@ -65,11 +67,26 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
             assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
         }
 
-        @Test
-        void slashInName_should_produceMultiplePersonsCount1() {
+        @ParameterizedTest(name = "plus ''{0}'' should trigger warning")
+        @ValueSource(strings = {"John Smith+Jane Smith", "John Smith + Jane Smith", "John Smith    +     Jane Smith"})
+        void plusInName_should_produceMultiplePersonsCount1(String nameValue) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
-                            PROMPT_REF, "John Smith/Jane Smith")),
+                            PROMPT_REF, nameValue)),
+                    List.of(offence("off1", 1, "Restraining Order")));
+
+            RestrainingOrderContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.multiplePersonsCount()).isEqualTo(1L);
+            assertThat(ctx.breachingOffenceIds()).containsExactly("off1");
+        }
+
+        @ParameterizedTest(name = "slash ''{0}'' should trigger warning")
+        @ValueSource(strings = {"John Smith/Jane Smith", "John Smith / Jane Smith", "John Smith  /   Jane Smith"})
+        void slashInName_should_produceMultiplePersonsCount1(String nameValue) {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",
+                            PROMPT_REF, nameValue)),
                     List.of(offence("off1", 1, "Restraining Order")));
 
             RestrainingOrderContext ctx = preprocess(request).get("off1");
@@ -79,7 +96,7 @@ class RestrainingOrderMultiplePersonsPreprocessorTest {
         }
 
         @ParameterizedTest(name = "separator ''{0}'' should trigger warning")
-        @ValueSource(strings = {"&", ",", "/"})
+        @ValueSource(strings = {"&", ",", "+", "/"})
         void eachSeparatorChar_should_produceMultiplePersonsCount1(String separator) {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLineWithPrompt("rl1", "RESTRAO", "d1", "off1",

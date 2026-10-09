@@ -9,7 +9,7 @@
 
 ### User Story 1 – Single RESTRAO Triggers Warning (Priority: P1)
 
-A court clerk records a restraining order result and inadvertently enters more than one protected person in the "Protected person's name" field using a separator character (`&`, `,`, or `/`). When they save and continue to Manage Hearings, the system displays an advisory warning telling them to add a separate restraining order result for each protected person. The warning is offence-level and does not block sharing.
+A court clerk records a restraining order result and inadvertently enters more than one protected person in the "Protected person's name" field using a separator character (`&`, `,`, `+`, or `/`). When they save and continue to Manage Hearings, the system displays an advisory warning telling them to add a separate restraining order result for each protected person. The warning is offence-level and does not block sharing.
 
 **Why this priority**: This is the core deliverable — catching the most common data-entry mistake (concatenating two names with a separator character).
 
@@ -18,8 +18,9 @@ A court clerk records a restraining order result and inadvertently enters more t
 **Acceptance Scenarios**:
 
 1. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith & Jane Smith"`, **When** the user selects "Save and continue" and is navigated to Manage Hearings, **Then** the advisory warning is displayed below the offence and above the RESTRAO result, and the Share button remains available.
-2. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith, Jane Smith"`, **When** the user selects "Save and continue", **Then** the same advisory warning is displayed.
-3. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith/Jane Smith"`, **When** the user selects "Save and continue", **Then** the same advisory warning is displayed.
+2. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith, Jane Smith"`, **When** the user selects "Save and continue", **Then** the same advisory warning is displayed. *(Note: comma is also caught by upstream "Save result details" inline validation — this AC covers the Manage Hearings layer as a defence-in-depth check.)*
+3. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith + Jane Smith"`, **When** the user selects "Save and continue", **Then** the same advisory warning is displayed.
+4. **Given** a RESTRAO result whose "Protected person's name" contains `"John Smith/Jane Smith"`, **When** the user selects "Save and continue", **Then** the same advisory warning is displayed.
 
 ---
 
@@ -99,8 +100,9 @@ After results have been shared, a clerk makes an amendment that introduces trigg
 
 - What happens when the "Protected person's name" field is empty or absent on a RESTRAO result? (No warning expected — the trigger condition cannot be satisfied.)
 - What happens when "and" appears at the very start or end of the field, e.g. `"and Smith"` or `"John and"`? (No warning — "and" must be flanked by a word group on both sides to be treated as a separator.)
-- What happens when `&` or `,` or `/` appears more than once? (Any single occurrence is sufficient to trigger the warning.)
+- What happens when `&`, `,`, `+`, or `/` appears more than once? (Any single occurrence is sufficient to trigger the warning.)
 - What happens when the name field contains both a separator character and a whole-word "and"? (Warning fires once — a single WARNING issue per breaching RESTRAO line.)
+- What happens when the name field contains `,` (comma) and the upstream "Save result details" inline error is bypassed or not yet applied? (This service still triggers the warning — comma is retained as a defence-in-depth trigger.)
 - What happens when the user navigates to Manage Hearings via the tab rather than "Save and continue"? (No validation check is performed; no warning is shown.)
 
 ## Requirements *(mandatory)*
@@ -108,7 +110,7 @@ After results have been shared, a clerk makes an amendment that introduces trigg
 ### Functional Requirements
 
 - **FR-001**: The system MUST inspect the "Protected person's name" field on every RESTRAO result line in the hearing when the user selects "Save and continue" and is navigated to Manage Hearings.
-- **FR-002**: The system MUST trigger an advisory WARNING when that field contains any of the following: the character `&`, the character `,` (comma), the character `/`, or the word `and` matched as a whole word (case-insensitive).
+- **FR-002**: The system MUST trigger an advisory WARNING when that field contains any of the following: the character `&`, the character `,` (comma), the character `+`, the character `/`, or the word `and` matched as a whole word (case-insensitive). Note: comma is also caught by upstream "Save result details" inline validation, but this service retains the check as a defence-in-depth measure.
 - **FR-003**: The system MUST NOT trigger the warning when `and` appears only as a substring within a longer word (e.g. "Alexandra", "Sanderson", "Amanda", "Anderson").
 - **FR-004**: Each RESTRAO result line MUST be evaluated independently; a warning MUST be associated with the specific breaching result only, not with other RESTRAO results in the same hearing.
 - **FR-005**: The warning MUST be displayed as an offence-level warning, positioned below the relevant offence and above the RESTRAO result on the Manage Hearings screen.
@@ -120,14 +122,14 @@ After results have been shared, a clerk makes an amendment that introduces trigg
 ### Key Entities
 
 - **RESTRAO result line**: A result line on an offence with `shortCode = "RESTRAO"` (Restraining Order). Contains a `protectedPersonName` field holding the free-text name entered by the clerk.
-- **Trigger pattern**: Any of the characters `&`, `,`, `/` present anywhere in the field, or the word `and` appearing as a whole word (not as a substring of another word), case-insensitively.
+- **Trigger pattern**: Any of the characters `&`, `,`, `+`, `/` present anywhere in the field, or the word `and` appearing as a whole word (not as a substring of another word), case-insensitively. Note: comma is also caught upstream at "Save result details" with an inline error; this service retains it as a defence-in-depth check.
 - **Offence-level warning**: A validation issue of severity WARNING associated with a specific offence (and the specific RESTRAO result line on that offence), displayed in the standard warning location per the GDS design.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: When a RESTRAO "Protected person's name" field contains any trigger character or whole-word "and", 100% of such cases produce the advisory warning on Manage Hearings.
+- **SC-001**: When a RESTRAO "Protected person's name" field contains any trigger character (`&`, `,`, `+`, `/`) or the whole-word "and", 100% of such cases produce the advisory warning on Manage Hearings.
 - **SC-002**: When a RESTRAO "Protected person's name" field contains "and" only within a longer word (e.g. "Alexandra", "Sanderson"), 0% of such cases produce a false-positive warning.
 - **SC-003**: In hearings with multiple RESTRAO results, warnings are scoped to breaching results only — clean results produce no false warnings in 100% of cases.
 - **SC-004**: The warning does not prevent sharing in any case — 100% of users can share results unchanged after the warning is displayed.
@@ -136,8 +138,8 @@ After results have been shared, a clerk makes an amendment that introduces trigg
 ## Assumptions
 
 - The `protectedPersonName` field is already present on RESTRAO result lines in the `DraftValidationRequest` payload; no upstream API change is needed to surface it to this service.
-- The trigger-character check (for `&`, `,`, `/`) and the whole-word "and" match are performed server-side during result pre-processing before the rule expression is evaluated; the pre-processing step exposes a boolean or count to the rule engine so the rule expression remains simple.
-- A single WARNING issue is raised per breaching RESTRAO result line, even if the field contains multiple trigger signals simultaneously (e.g. `&` and `,` both present).
+- The trigger-character check (for `&`, `,`, `+`, `/`) and the whole-word "and" match are performed server-side during result pre-processing before the rule expression is evaluated; the pre-processing step exposes a boolean or count to the rule engine so the rule expression remains simple.
+- A single WARNING issue is raised per breaching RESTRAO result line, even if the field contains multiple trigger signals simultaneously (e.g. `&` and `+` both present).
 - The warning is rendered by the consuming UI using the GDS warning text component with a visually hidden "Warning" prefix for screen-reader accessibility; this service only returns the warning issue with the message text.
 - The rule applies to all court types (Magistrates' Court and Crown Court) where RESTRAO results can be recorded — no court-type scoping is needed.
 - The `protectedPersonName` field is treated as a raw string; no normalisation (trimming, Unicode normalisation) beyond what the client sends is required.

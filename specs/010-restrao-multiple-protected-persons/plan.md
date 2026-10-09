@@ -8,9 +8,12 @@
 Add validation rule **DR-RESTRAO-010** that inspects every RESTRAO (Restraining Order) result line in the
 `DraftValidationRequest`. For each RESTRAO line, the rule reads the "Protected person's name" value from the
 result's `prompts` list (via a designated `promptRef` key) and checks whether it contains a trigger signal —
-the characters `&`, `,`, or `/`, or the word `and` as a whole word (case-insensitive). If any RESTRAO on an
+the characters `&`, `,`, `+`, or `/`, or the word `and` as a whole word (case-insensitive). If any RESTRAO on an
 offence breaches this rule, an offence-level WARNING is raised against that offence. The warning is advisory
 and does not block sharing.
+
+Note: `,` (comma) is also caught upstream by the "Save result details" inline validation, but is retained here
+as a defence-in-depth check (AC3 — regression). `+` was added in AC2A.
 
 The implementation follows the established YAML+CEL rule engine pattern: a new YAML file defines the rule
 contract; a new `ValidationPreprocessor` component (`RestrainingOrderMultiplePersonsPreprocessor`) reads the
@@ -116,7 +119,8 @@ static final String PROMPT_PROTECTED_PERSON_NAME = "protectedPersonsName";
 | Signal | Check | Implementation |
 |--------|-------|----------------|
 | `&` | `value.contains("&")` | String `contains` — O(N) |
-| `,` (comma) | `value.contains(",")` | String `contains` — O(N) |
+| `,` (comma) | `value.contains(",")` | String `contains` — O(N); also caught upstream (defence-in-depth) |
+| `+` | `value.contains("+")` | String `contains` — O(N); added AC2A |
 | `/` | `value.contains("/")` | String `contains` — O(N) |
 | `and` between two words | `PATTERN_AND.matcher(value).find()` | `static final Pattern PATTERN_AND = Pattern.compile("(?i)\\w+\\s+and\\s+\\w+")` |
 
@@ -174,8 +178,9 @@ rule:
   description: >-
     Warns when the "Protected person's name" field on a RESTRAO result line
     appears to contain more than one person's details, detected by separator
-    characters (&, comma, /) or the word "and" as a whole word
-    (case-insensitive).
+    characters (&, comma, +, /) or the word "and" as a whole word
+    (case-insensitive). Comma is also caught upstream at "Save result details"
+    (defence-in-depth).
   priority: 10000
   enabled: true
   preprocessing:
@@ -228,6 +233,7 @@ Algorithm:
 hasMultiplePersonsSignal(String name):
   return name.contains("&")
       || name.contains(",")
+      || name.contains("+")
       || name.contains("/")
       || PATTERN_AND.matcher(name).find()
 
