@@ -8,7 +8,7 @@
 
 **TDD Order (Constitution §VIII)**: Tests MUST be written before production code. Each test must run and FAIL at the assertion level — not a compilation error — before the production code that satisfies it is written.
 
-**Already shipped** (no task needed): `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.011__insert_dr_sent_011.sql`, `IntegrationTestBase.REFERENCEDATA_OFFENCE_WIRE_MOCK`.
+**Already shipped** (no task needed): `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.012__insert_dr_sent_011.sql`, `IntegrationTestBase.REFERENCEDATA_OFFENCE_WIRE_MOCK`.
 
 ---
 
@@ -153,7 +153,7 @@ Continue through Phase 3 (T011, T012), Phase 4, Phase 5.
 ## Notes
 
 - [P] tasks = different files, no incomplete dependencies
-- `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.011__insert_dr_sent_011.sql` are already shipped — no tasks for these
+- `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.012__insert_dr_sent_011.sql` are already shipped — no tasks for these
 - `REFERENCEDATA_OFFENCE_WIRE_MOCK` is already in `IntegrationTestBase` — no infrastructure task needed
 - The `referencedataOffences` Caffeine cache is shared between `lookupMisCode` (key = `offenceCode`) and `getCustodialIndicator` (key = `'ci:' + offenceCode`) — disjoint key spaces prevent cross-contamination; no config changes needed
 - Do NOT add per-rule override / severity-ceiling ITs to `NonImprisonableOffenceRuleIT` — that coverage lives once in `ValidationRuleOverrideIntegrationTest`

@@ -270,7 +270,7 @@ Integration tests (`NonImprisonableOffenceRuleIT`) use `REFERENCEDATA_OFFENCE_WI
 |------|-------|-----------|
 | `OffenceDto` upstream DTO change | None — no longer needed | **NOT BLOCKING** |
 | `libs.versions.toml` revert to 26.25 | This repo | YES — first task |
-| `validation_rule` DB row for DR-SENT-011 | Ops / Liquibase migration (already in `V1.011__insert_dr_sent_011.sql`) | Optional at dev time; required for production |
+| `validation_rule` DB row for DR-SENT-011 | Ops / Liquibase migration (already in `V1.012__insert_dr_sent_011.sql`) | Optional at dev time; required for production |
 
 ## Complexity Tracking
 
