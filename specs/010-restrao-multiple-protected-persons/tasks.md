@@ -207,6 +207,23 @@ After Phase 4 is complete, with two developers available:
 
 ---
 
+## Phase 10: AC2A – "+" Plus Character Trigger (Requirement Change 2026-10-08)
+
+**Context**: CRA-260 v2 adds `+` as a new trigger character (AC2A). The base feature (Phases 1–9) is already shipped. This phase is the minimal delta.
+
+**Goal**: Detect `+` anywhere in the RESTRAO `"protectedPersonsName"` prompt value and raise the same offence-level WARNING as the existing separator characters.
+
+**Independent Test**: POST a `DraftValidationRequest` with one RESTRAO result line where `promptValue = "John Smith + Jane Smith"` and assert exactly one WARNING from `DR-RESTRAO-010`.
+
+> **TDD: T016 (failing test) MUST be written and confirmed to fail BEFORE T017 (production code).**
+
+- [x] T016 [US1] Add two failing test cases to `src/test/java/uk/gov/hmcts/cp/services/rules/cel/RestrainingOrderMultiplePersonsPreprocessorTest.java` in the `SeparatorCharTriggers` nested class: (a) `@Test void plusInName_should_produceMultiplePersonsCount1()` — build a request with `promptValue = "John Smith + Jane Smith"`, call `preprocess()`, assert `multiplePersonsCount() == 1` and `breachingOffenceIds()` contains `"off1"`; (b) add `"+"` to the existing `@ValueSource(strings = {"&", ",", "/"})` on `eachSeparatorChar_should_produceMultiplePersonsCount1` to make it `{"&", ",", "+", "/"}` — run `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessorTest"` and confirm the new cases FAIL at assertion level before proceeding- [x] T017 [US1] Add `|| name.contains("+")` to the `isMultiplePersons()` method in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/RestrainingOrderMultiplePersonsPreprocessor.java`, inserted between the `","` and `"/"` checks to preserve alphabetical ordering — run `gradle test --tests "uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessorTest"` and confirm all tests pass
+- [x] T018 [P] [US1] Update the `description` field in `src/main/resources/rules/DR-RESTRAO-010.yaml` to include `+` in the separator character list: change `"separator characters (&, comma, /)"` to `"separator characters (&, comma, +, /)"` — no logic change; documentation only
+- [x] T019 [US1] Add `@Test` method `plusInName_shouldProduceWarningNotError` to `src/test/java/uk/gov/hmcts/cp/integration/RestrainingOrderMultiplePersonsIntegrationTest.java` — POST a `DraftValidationRequest` with one RESTRAO result line where `promptRef = "protectedPersonsName"` and `promptValue = "John Smith + Jane Smith"`, assert exactly one `ValidationIssue` with `severity = WARNING` and `ruleId = "DR-RESTRAO-010"` — run `gradle test --tests "uk.gov.hmcts.cp.integration.RestrainingOrderMultiplePersonsIntegrationTest"` and confirm pass
+- [x] T020 Run `gradle build` and confirm all unit tests, integration tests, Checkstyle and PMD pass with zero failures
+
+---
+
 ## Notes
 
 - `promptRef` resolved: `PROMPT_PROTECTED_PERSON_NAME = "protectedPersonsName"` — confirmed from `cpp-apitests/api-integration-test/src/test/resources/draftresults/hearing/hearing.save-draft-for-RESTRAO.json`; no open dependency

@@ -4,9 +4,10 @@ rule:
   description: >-
     Warns when the "Protected person's name" field on a RESTRAO result
     appears to contain more than one person's details, detected by
-    separator characters (&, comma, /) or the word "and" appearing between
+    separator characters (&, comma, +, /) or the word "and" appearing between
     two word groups (case-insensitive; leading or trailing "and" does not
-    trigger).
+    trigger). Comma is also caught upstream at "Save result details"
+    (defence-in-depth).
   priority: 10000
   enabled: true
 

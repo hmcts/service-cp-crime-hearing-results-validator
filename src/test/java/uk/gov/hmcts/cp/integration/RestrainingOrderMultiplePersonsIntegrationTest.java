@@ -78,6 +78,45 @@ class RestrainingOrderMultiplePersonsIntegrationTest extends IntegrationTestBase
     }
 
     @Nested
+    @DisplayName("AC2A — Plus character triggers warning")
+    class PlusCharacterTrigger {
+
+        @Test
+        void plusInName_shouldProduceWarningNotError() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-05-06",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RESTRAO", "label": "Restraining order",
+                         "defendantId": "d1", "offenceId": "off1",
+                         "prompts": [{"promptRef": "protectedPersonsName", "promptValue": "John Smith + Jane Smith"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Jones"}],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001",
+                         "offenceTitle": "Restraining order offence", "orderIndex": 1, "caseUrn": "32AH9105826"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_RESTRAO_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-RESTRAO-010")))
+                    .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off1")))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(EXPECTED_MESSAGE)));
+        }
+    }
+
+    @Nested
     @DisplayName("US4 — Warning is advisory; severity is WARNING not ERROR")
     class AdvisoryWarning {
 
