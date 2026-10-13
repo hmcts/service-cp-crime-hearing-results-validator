@@ -29,6 +29,9 @@ public record PreprocessingDefinition(
         List<String> communityOrderShortCodes,
         List<String> alcoholAbstinenceShortCodes,
 
+        // Endorsable-offence-specific short-code lists (used by EndorsableOffencePreprocessor)
+        List<String> satisfyingShortCodes,
+
         // Sexual-offence-notification-specific fields (used by
         // SexualOffenceNotificationPreprocessor)
         String qualifyingMisCode,
