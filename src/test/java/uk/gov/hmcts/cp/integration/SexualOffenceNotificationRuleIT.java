@@ -98,9 +98,9 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "2000-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-multi-breach", "offenceCode": "sex-multi-breach",
+                        {"offenceId": "sex-multi-breach", "defendantId": "d1", "offenceCode": "sex-multi-breach",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "sex-multi-clear", "offenceCode": "sex-multi-clear",
+                        {"offenceId": "sex-multi-clear", "defendantId": "d1", "offenceCode": "sex-multi-clear",
                          "offenceTitle": "Sexual offence", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
@@ -229,11 +229,11 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "1990-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-combined", "offenceCode": "sex-combined",
+                        {"offenceId": "sex-combined", "defendantId": "d1", "offenceCode": "sex-combined",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "custodial-combined-1", "offenceCode": "TH68001",
+                        {"offenceId": "custodial-combined-1", "defendantId": "d2", "offenceCode": "TH68001",
                          "offenceTitle": "Theft", "orderIndex": 2},
-                        {"offenceId": "custodial-combined-2", "offenceCode": "TH68002",
+                        {"offenceId": "custodial-combined-2", "defendantId": "d2", "offenceCode": "TH68002",
                          "offenceTitle": "Theft", "orderIndex": 3}
                       ]
                     }
@@ -280,9 +280,9 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "1990-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "sex-multi-warn-1", "offenceCode": "sex-multi-warn-1",
+                        {"offenceId": "sex-multi-warn-1", "defendantId": "d1", "offenceCode": "sex-multi-warn-1",
                          "offenceTitle": "Sexual offence", "orderIndex": 1, "isConvicted": true},
-                        {"offenceId": "sex-multi-warn-2", "offenceCode": "sex-multi-warn-2",
+                        {"offenceId": "sex-multi-warn-2", "defendantId": "d2", "offenceCode": "sex-multi-warn-2",
                          "offenceTitle": "Sexual offence", "orderIndex": 2, "isConvicted": true}
                       ]
                     }
@@ -328,14 +328,14 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                          "dateOfBirth": "1990-01-01"}
                       ],
                       "offences": [
-                        {"offenceId": "custodial-multi-1a", "offenceCode": "TH68001", "offenceTitle": "Theft",
-                         "orderIndex": 1},
-                        {"offenceId": "custodial-multi-1b", "offenceCode": "TH68002", "offenceTitle": "Theft",
-                         "orderIndex": 2},
-                        {"offenceId": "custodial-multi-2a", "offenceCode": "TH68003", "offenceTitle": "Theft",
-                         "orderIndex": 3},
-                        {"offenceId": "custodial-multi-2b", "offenceCode": "TH68004", "offenceTitle": "Theft",
-                         "orderIndex": 4}
+                        {"offenceId": "custodial-multi-1a", "defendantId": "d1", "offenceCode": "TH68001",
+                         "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "custodial-multi-1b", "defendantId": "d1", "offenceCode": "TH68002",
+                         "offenceTitle": "Theft", "orderIndex": 2},
+                        {"offenceId": "custodial-multi-2a", "defendantId": "d2", "offenceCode": "TH68003",
+                         "offenceTitle": "Theft", "orderIndex": 3},
+                        {"offenceId": "custodial-multi-2b", "defendantId": "d2", "offenceCode": "TH68004",
+                         "offenceTitle": "Theft", "orderIndex": 4}
                       ]
                     }
                     """;
@@ -367,7 +367,7 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                      "dateOfBirth": "2000-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "defendantId": "d1", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": %s}
                   ]
                 }
@@ -390,7 +390,7 @@ class SexualOffenceNotificationRuleIT extends IntegrationTestBase {
                      "dateOfBirth": "2012-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "defendantId": "d1", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": true}
                   ]
                 }
