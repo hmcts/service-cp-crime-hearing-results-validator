@@ -123,7 +123,7 @@ class SexualOffenceNotificationApiHttpLiveTest {
                      "dateOfBirth": "2000-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "defendantId": "d1", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": %s}
                   ]
                 }
@@ -145,7 +145,7 @@ class SexualOffenceNotificationApiHttpLiveTest {
                      "dateOfBirth": "2012-01-01"}
                   ],
                   "offences": [
-                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Sexual offence",
+                    {"offenceId": "%s", "defendantId": "d1", "offenceCode": "%s", "offenceTitle": "Sexual offence",
                      "orderIndex": 1, "isConvicted": true}
                   ]
                 }
