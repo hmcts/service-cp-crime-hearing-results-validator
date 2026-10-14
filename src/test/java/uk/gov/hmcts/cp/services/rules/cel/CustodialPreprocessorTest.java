@@ -39,7 +39,8 @@ class CustodialPreprocessorTest {
      * {@link #filterShortCodes_should_match_the_known_baseline_exactly()}.
      */
     private static final List<String> EXPECTED_FILTER_SHORT_CODES = List.of(
-            "IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd");
+            "IMP", "DTO", "YOI", "extdvs", "extdvsu", "extivs", "STSDY", "specc", "speccc", "speccd",
+            "SUSPSNR", "SUSPSDNR", "SUSPS", "SUSPSS", "SUSPSNI", "SUSPSD", "SUSPSDS", "SUSPSDNI");
 
     private final CustodialPreprocessor preprocessor = new CustodialPreprocessor();
     private final PreprocessingDefinition config = RULE_DEFINITION.preprocessing();
@@ -157,6 +158,29 @@ class CustodialPreprocessorTest {
         assertThat(result.get("d1").hasPrimaryCount()).isEqualTo(1);
         assertThat(result.get("d2").noInfoCount()).isEqualTo(0);
         assertThat(result.get("d2").hasPrimaryCount()).isEqualTo(1);
+    }
+
+    /**
+     * Verifies a custodial short code (IMP) and a suspended sentence order short code (SUSPS) for
+     * the same defendant are grouped and evaluated together -- SSO offences were added to
+     * {@code filterShortCodes} alongside the existing custodial codes rather than as a separate
+     * rule, so R1-R4 must apply across a defendant's custodial and SSO offences as one set.
+     */
+    @Test
+    void should_group_custodial_and_sso_short_codes_together_for_same_defendant() {
+        DraftValidationRequest request = buildRequest(
+                List.of(resultLine("rl1", "IMP", "d1", "off1"),
+                        resultLine("rl2", "SUSPS", "d1", "off2")),
+                List.of());
+
+        Map<String, DefendantContext> result = preprocessor.preprocess(request, config);
+
+        assertThat(result).containsKey("d1");
+        DefendantContext ctx = result.get("d1");
+        assertThat(ctx.totalOffences()).isEqualTo(2);
+        assertThat(ctx.hasPrimaryCount()).isEqualTo(1);
+        assertThat(ctx.noInfoCount()).isEqualTo(1);
+        assertThat(ctx.noInfoOffenceIds()).containsExactly("off2");
     }
 
     /**
