@@ -24,6 +24,7 @@ import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocess
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
+import uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
@@ -46,7 +47,8 @@ class ValidationRuleAutoConfigurationTest {
             new AgeRestrictedImprisonmentPreprocessor(),
             new ConditionalBailPreprocessor(),
             new SexualOffenceNotificationPreprocessor(mock(ReferencedataOffenceClient.class)),
-            new ApplicationResultOffencePreprocessor()));
+            new ApplicationResultOffencePreprocessor(),
+            new RestrainingOrderMultiplePersonsPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -81,12 +83,12 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(10);
+        assertThat(rules).hasSize(11);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
                         "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-APP-009",
-                        "DR-URG-008");
+                        "DR-URG-008", "DR-RESTRAO-010");
     }
 
     /**
