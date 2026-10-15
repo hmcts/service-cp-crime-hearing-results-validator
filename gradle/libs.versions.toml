@@ -1,5 +1,5 @@
 [versions]
-api-hearing-results-validator = "26.25"
+api-hearing-results-validator = "26.32"
 spring-boot = "4.1.1"
 spring-dependency-management = "1.1.7"
 ben-manes-versions = "0.65.0"
@@ -18,7 +18,7 @@ cel-tools = "0.8.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
 caffeine = "3.3.0"
-gatling = "3.15.1.3"
+gatling = "3.16.0"
 # Security override, not a preference: see the tomcat-embed-core entry below.
 tomcat-embed = "11.0.26"
 

@@ -35,6 +35,8 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-COEW-005 | Community order end date validation |
 | DR-CONV-006 | No conviction on sentenced offence check |
 | DR-AGE-007 | Imprisonment result age restriction |
+| DR-SEX-008 | Sexual offence notification requirement missing |
+| DR-URG-008 | Urgent Result Missing – Conditional Bail Ended |
 
 ### Adding a New Rule
 
@@ -47,8 +49,8 @@ Rule files are located in `src/main/resources/rules/`.
 > **Preprocessor dispatch is data-driven.** `ValidationPreprocessor` beans register themselves
 > under a `type()` qualifier; `PreprocessorRegistry` builds a qualifier → bean map at startup
 > (failing fast on a duplicate qualifier) and `CelValidationRule` resolves each rule's preprocessor
-> via `PreprocessorRegistry.require(preprocessing.type)`. Seven preprocessors are registered today
-> (one per rule above); adding an eighth is a case of implementing `ValidationPreprocessor` with a
+> via `PreprocessorRegistry.require(preprocessing.type)`. Nine preprocessors are registered today
+> (one per rule above); adding a new one is a case of implementing `ValidationPreprocessor` with a
 > new qualifier and pointing a rule's YAML `preprocessing.type` at it — no dispatch code to touch.
 
 ### Runtime Rule Overrides
