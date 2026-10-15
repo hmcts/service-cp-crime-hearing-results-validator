@@ -4,7 +4,7 @@ rule:
   description: >-
     Blocks sharing when a result that is only valid against an application (e.g. Legal Aid
     Withdrawn, Application Refused) is recorded against an offence instead.
-  priority: 9000
+  priority: 10000
   enabled: true
 
   preprocessing:

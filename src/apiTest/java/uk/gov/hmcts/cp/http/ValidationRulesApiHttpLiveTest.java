@@ -70,7 +70,7 @@ class ValidationRulesApiHttpLiveTest {
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
         assertThat(ruleIds).containsExactlyInAnyOrder(
                 "DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004", "DR-COEW-005", "DR-CONV-006",
-                "DR-AGE-007", "DR-SEX-008", "DR-APP-009", "DR-URG-008", "DR-RESTRAO-010");
+                "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010");
     }
 
     /**

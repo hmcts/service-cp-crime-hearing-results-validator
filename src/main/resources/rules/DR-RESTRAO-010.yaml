@@ -8,7 +8,7 @@ rule:
     two word groups (case-insensitive; leading or trailing "and" does not
     trigger). Comma is also caught upstream at "Save result details"
     (defence-in-depth).
-  priority: 10000
+  priority: 11000
   enabled: true
 
   preprocessing:
