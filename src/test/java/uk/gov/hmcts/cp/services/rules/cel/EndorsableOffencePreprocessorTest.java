@@ -1,6 +1,8 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offenceWithCode;
@@ -163,11 +165,16 @@ class EndorsableOffencePreprocessorTest {
     @DisplayName("AC2 — satisfying result present → no warning")
     class Ac2SatisfyingResultPresent {
 
+        // No getEndorsableFlag stub in this nested class: a satisfying result must short-circuit
+        // before the reference-data lookup. An unstubbed Optional-returning mock defaults to
+        // Optional.empty() rather than throwing, so omitting the stub alone would NOT fail against
+        // the old always-looks-up order (empty -> not TRUE -> qualifyingCount 0, same result) —
+        // each test therefore also asserts verify(..., never()) on the lookup itself.
+
         @ParameterizedTest(name = "{0}")
         @ValueSource(strings = {"LEP", "DDO", "DDD", "DDP", "DDRCOT", "NESR"})
         void preprocess_endorsableOffenceWithSatisfyingCode_should_returnQualifyingCount0(
                 final String satisfyingCode) {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -181,13 +188,13 @@ class EndorsableOffencePreprocessorTest {
             assertThat(ctx.qualifyingCount())
                     .as("satisfying code %s should suppress warning", satisfyingCode)
                     .isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88010");
         }
 
         @ParameterizedTest
         @MethodSource(
                 "uk.gov.hmcts.cp.services.rules.cel.EndorsableOffencePreprocessorTest#satisfyingShortCodes")
         void each_satisfying_code_should_suppress(final String satisfyingCode) {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -201,12 +208,12 @@ class EndorsableOffencePreprocessorTest {
             assertThat(ctx.qualifyingCount())
                     .as("satisfying code %s should suppress", satisfyingCode)
                     .isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88010");
         }
 
         @ParameterizedTest(name = "{0}")
         @ValueSource(strings = {"lep", "LeP", "ddo", "DdO", "nesr", "NeSr"})
         void mixed_case_satisfying_codes_should_suppress(final String mixedCase) {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -220,11 +227,11 @@ class EndorsableOffencePreprocessorTest {
             assertThat(ctx.qualifyingCount())
                     .as("mixed-case satisfying code %s should suppress", mixedCase)
                     .isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88010");
         }
 
         @Test
         void satisfying_code_on_non_final_line_should_suppress() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -236,6 +243,7 @@ class EndorsableOffencePreprocessorTest {
             final EndorsableOffenceContext ctx = preprocess(request).get("off1");
 
             assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88010");
         }
     }
 
@@ -341,7 +349,7 @@ class EndorsableOffencePreprocessorTest {
 
         @Test
         void preprocess_endorsableOffenceWithSatisfyingResultAdded_should_returnQualifyingCount0() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
+            // No stub for RT88010: the satisfying result must short-circuit before the lookup.
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -353,6 +361,7 @@ class EndorsableOffencePreprocessorTest {
             final EndorsableOffenceContext ctx = preprocess(request).get("off1");
 
             assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88010");
         }
     }
 
@@ -404,7 +413,8 @@ class EndorsableOffencePreprocessorTest {
         @Test
         void satisfying_code_on_one_offence_should_not_suppress_other_offence() {
             when(referencedataOffenceClient.getEndorsableFlag("RT88010")).thenReturn(Optional.of(true));
-            when(referencedataOffenceClient.getEndorsableFlag("RT88015")).thenReturn(Optional.of(true));
+            // No stub for RT88015 (off2): the satisfying code on that offence must short-circuit
+            // before the reference-data lookup runs — an unused stub here would mean it didn't.
             final DraftValidationRequest request = buildRequest(
                     List.of(
                             resultLine("rl1", "IMP", "d1", "off1")
@@ -421,6 +431,7 @@ class EndorsableOffencePreprocessorTest {
 
             assertThat(result.get("off1").qualifyingCount()).isEqualTo(1L);
             assertThat(result.get("off2").qualifyingCount()).isEqualTo(0L);
+            verify(referencedataOffenceClient, never()).getEndorsableFlag("RT88015");
         }
     }
 

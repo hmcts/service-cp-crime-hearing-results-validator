@@ -19,11 +19,15 @@ import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
  *
  * <p>An offence qualifies (qualifyingCount=1) when:
  * <ol>
- *   <li>The reference-data service returns {@code endorsableFlag = TRUE} for its offence code, AND</li>
  *   <li>At least one Category-F result line is present whose short code is NOT in
  *       {@code excludedFinalShortCodes}, AND</li>
- *   <li>No result line (any category) has a short code in {@code satisfyingShortCodes}.</li>
+ *   <li>No result line (any category) has a short code in {@code satisfyingShortCodes}, AND</li>
+ *   <li>The reference-data service returns {@code endorsableFlag = TRUE} for its offence code.</li>
  * </ol>
+ *
+ * <p>Both local checks run before the reference-data lookup — fired in that order so a request
+ * that can already be ruled out from its own payload (no qualifying final result, or a
+ * satisfying result already present) never pays for the network call.
  *
  * <p>A context entry is emitted for EVERY offence (even non-qualifying ones) so the CEL engine
  * always has a context to evaluate. Fail-open: a missing or non-TRUE endorsable flag → qualifyingCount=0
@@ -76,13 +80,13 @@ public class EndorsableOffencePreprocessor implements ValidationPreprocessor {
                 .toList();
         final boolean hasNonExcludedFinal = finalLines.stream()
                 .anyMatch(rl -> !PreprocessorHelper.hasUpperCode(rl, excludedFinalCodes));
+        final boolean hasSatisfyingResult = PreprocessorHelper.anyShortCodeIn(lines, satisfyingCodes);
 
         long qualifyingCount = 0L;
-        if (hasNonExcludedFinal) {
+        if (hasNonExcludedFinal && !hasSatisfyingResult) {
             final Optional<Boolean> endorsableFlag =
                     referencedataOffenceClient.getEndorsableFlag(offence.getOffenceCode());
-            if (Boolean.TRUE.equals(endorsableFlag.orElse(null))
-                    && !PreprocessorHelper.anyShortCodeIn(lines, satisfyingCodes)) {
+            if (Boolean.TRUE.equals(endorsableFlag.orElse(null))) {
                 qualifyingCount = 1L;
             }
         }
