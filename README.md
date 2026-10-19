@@ -37,6 +37,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-AGE-007 | Imprisonment result age restriction |
 | DR-SEX-008 | Sexual offence notification requirement missing |
 | DR-URG-008 | Urgent Result Missing – Conditional Bail Ended |
+| DR-DISQ-013 | Drug driving offence with course-reduction disqualification (DDRCO / DDRCOT) block |
 
 ### Adding a New Rule
 

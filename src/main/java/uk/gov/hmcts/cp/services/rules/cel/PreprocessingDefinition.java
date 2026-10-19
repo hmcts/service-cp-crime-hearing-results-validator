@@ -36,5 +36,9 @@ public record PreprocessingDefinition(
         // SexualOffenceNotificationPreprocessor)
         String qualifyingMisCode,
         List<String> adultNotificationShortCodes,
-        List<String> youthNotificationShortCodes) {
+        List<String> youthNotificationShortCodes,
+
+        // Drug-driving-course-reduction-specific short codes (used by
+        // DrugDrivingCourseReductionPreprocessor)
+        List<String> courseReductionShortCodes) {
 }
