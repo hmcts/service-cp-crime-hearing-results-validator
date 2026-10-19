@@ -1,0 +1,195 @@
+{
+  "mappings": [
+    {
+      "name": "AC1/AC5/US1: custodialIndicator column = Y → imprisonable, no warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-y"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000002",
+              "cjsOffenceCode": "live-nonimprisonable-y",
+              "custodialIndicator": "Y"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AC2/US1: custodialIndicator column = N → non-imprisonable, warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-n"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000001",
+              "cjsOffenceCode": "live-nonimprisonable-n",
+              "custodialIndicator": "N"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AC3/US2: column absent, details_json code = N → non-imprisonable, warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-json-n"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000003",
+              "cjsOffenceCode": "live-nonimprisonable-json-n",
+              "custodialIndicator": null,
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "N",
+                      "description": "NO"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AC4/US2: column absent, details_json code = Y → imprisonable, no warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-json-y"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000004",
+              "cjsOffenceCode": "live-nonimprisonable-json-y",
+              "custodialIndicator": null,
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "Y",
+                      "description": "YES"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AC5/US3: column Y beats details_json N → imprisonable, no warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-col-y-json-n"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000005",
+              "cjsOffenceCode": "live-nonimprisonable-col-y-json-n",
+              "custodialIndicator": "Y",
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "N",
+                      "description": "NO"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AC6/US2: no indicator in either source → fail-open, no warning",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "equalTo": "live-nonimprisonable-no-ind"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "aaa00001-0000-0000-0000-000000000006",
+              "cjsOffenceCode": "live-nonimprisonable-no-ind"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
