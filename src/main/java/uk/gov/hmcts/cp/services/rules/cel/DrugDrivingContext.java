@@ -11,16 +11,11 @@ import java.util.Map;
 public record DrugDrivingContext(
         String offenceId,
         long qualifyingCount,
-        List<String> qualifyingOffenceIds
+        List<String> qualifyingOffenceIds,
+        String defendantName
 ) implements RuleEvaluationContext {
 
     private static final String QUALIFYING_OFFENCE_IDS = "qualifyingOffenceIds";
-
-    @Override
-    public String defendantName() {
-        // Per-offence context — not anchored to a single defendant; null per RuleEvaluationContext contract.
-        return null;
-    }
 
     @Override
     public List<String> allOffenceIds() {
@@ -29,6 +24,7 @@ public record DrugDrivingContext(
 
     @Override
     public Map<String, Long> toCelContext() {
+        // defendantName and qualifyingOffenceIds are consumed by MessageTemplateResolver, not CEL
         return Map.of("qualifyingCount", qualifyingCount);
     }
 

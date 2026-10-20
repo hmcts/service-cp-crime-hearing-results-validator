@@ -1,6 +1,7 @@
 package uk.gov.hmcts.cp.services.rules.cel;
 
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.anyShortCodeIn;
+import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.buildDefendantNames;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.groupResultsByOffence;
 import static uk.gov.hmcts.cp.services.rules.cel.PreprocessorHelper.upperSet;
 
@@ -39,6 +40,7 @@ public class DrugDrivingCourseReductionPreprocessor implements ValidationPreproc
                                                        final PreprocessingDefinition config) {
         final Set<String> relevantCodes = upperSet(config.relevantOffenceCodes());
         final Set<String> courseReductionCodes = upperSet(config.courseReductionShortCodes());
+        final Map<String, String> defendantNames = buildDefendantNames(request);
 
         final Map<String, List<ResultLineDto>> resultsByOffence = groupResultsByOffence(request);
         final Map<String, DrugDrivingContext> result = new LinkedHashMap<>();
@@ -46,7 +48,8 @@ public class DrugDrivingCourseReductionPreprocessor implements ValidationPreproc
         if (request.getOffences() != null) {
             for (final OffenceDto offence : request.getOffences()) {
                 result.put(offence.getOffenceId(),
-                        buildContext(offence, resultsByOffence, relevantCodes, courseReductionCodes));
+                        buildContext(offence, resultsByOffence, relevantCodes, courseReductionCodes,
+                                defendantNames));
             }
         }
 
@@ -56,17 +59,22 @@ public class DrugDrivingCourseReductionPreprocessor implements ValidationPreproc
     private DrugDrivingContext buildContext(final OffenceDto offence,
                                              final Map<String, List<ResultLineDto>> resultsByOffence,
                                              final Set<String> relevantCodes,
-                                             final Set<String> courseReductionCodes) {
+                                             final Set<String> courseReductionCodes,
+                                             final Map<String, String> defendantNames) {
         final String offenceId = offence.getOffenceId();
         final boolean relevant = offence.getOffenceCode() != null
                 && relevantCodes.contains(offence.getOffenceCode().toUpperCase(Locale.ROOT));
         final List<ResultLineDto> lines = resultsByOffence.getOrDefault(offenceId, List.of());
         final boolean hasCourseReduction = anyShortCodeIn(lines, courseReductionCodes);
         final boolean qualifying = relevant && hasCourseReduction;
+        final String defendantName = offence.getDefendantId() != null
+                ? defendantNames.getOrDefault(offence.getDefendantId(), "Unknown")
+                : null;
 
         return new DrugDrivingContext(
                 offenceId,
                 qualifying ? 1L : 0L,
-                qualifying ? List.of(offenceId) : List.of());
+                qualifying ? List.of(offenceId) : List.of(),
+                defendantName);
     }
 }

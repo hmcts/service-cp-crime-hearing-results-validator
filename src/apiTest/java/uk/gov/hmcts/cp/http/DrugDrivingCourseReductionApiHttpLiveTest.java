@@ -37,10 +37,17 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
     private static final String OFFENCE_ID_FIELD = "offenceId";
     private static final String SINGLE_OFFENCE_ID = "off1";
 
+    private static final String ERROR_MESSAGES = "errorMessages";
+
     private static final String EXPECTED_MESSAGE =
             "You cannot add a disqualification with a reduction for attending a course "
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification.";
+
+    private static final String EXPECTED_MESSAGE_WITH_DEFENDANT =
+            "You cannot add a disqualification with a reduction for attending a course "
+                    + "to a drug driving offence. Remove this result and add the correct "
+                    + "disqualification. This affects: Alex Driver.";
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
@@ -84,7 +91,7 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         final List<JsonNode> issues = findIssuesByRuleId(json, RULE_ID);
         assertThat(issues).hasSize(1);
         assertThat(issues.get(0).get(AFFECTED_OFFENCES).get(0).get("message").asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
+                .isEqualTo(EXPECTED_MESSAGE);
     }
 
     /**
@@ -96,6 +103,8 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
 
         assertThat(json.get(IS_VALID).asBoolean()).isFalse();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isNotEmpty();
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText()).isEqualTo(EXPECTED_MESSAGE);
     }
 
     /**
@@ -169,7 +178,7 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         assertThat(issues.get(0).get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
                 .isEqualTo(SINGLE_OFFENCE_ID);
         assertThat(issues.get(0).get(AFFECTED_OFFENCES).get(0).get("message").asText())
-                .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
+                .isEqualTo(EXPECTED_MESSAGE);
     }
 
     /**
@@ -209,6 +218,75 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         assertThat(issues).hasSize(1);
         assertThat(issues.get(0).get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText())
                 .isEqualTo(SINGLE_OFFENCE_ID);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualTo(EXPECTED_MESSAGE_WITH_DEFENDANT);
+    }
+
+    /**
+     * AC4/Resolving: Triggering offence (RT88584) with no result lines must not produce a
+     * DR-DISQ-013 error.
+     */
+    @Test
+    void ac4_triggering_offence_with_no_results_should_not_produce_error() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h-api-ac4-norl",
+                  "hearingDay": "2026-10-16",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [],
+                  "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88584",
+                     "offenceTitle": "Drug driving s.5A", "orderIndex": 1, "isConvicted": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+        assertThat(findIssuesByRuleId(json, RULE_ID)).isEmpty();
+    }
+
+    /**
+     * AC6: Non-triggering offence with DDRCO and triggering offence with DDO in the same
+     * hearing must not produce a DR-DISQ-013 error.
+     */
+    @Test
+    void ac6_mixed_hearing_non_triggering_with_ddrco_and_triggering_with_ddo_should_not_produce_error()
+            throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h-api-ac6-mixed",
+                  "hearingDay": "2026-10-16",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "DDRCO", "category": "F",
+                     "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "DDO", "category": "F",
+                     "label": "Driving Disqualification", "defendantId": "d1", "offenceId": "off2"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88026",
+                     "offenceTitle": "Dangerous driving", "orderIndex": 1, "isConvicted": true},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "RT88584",
+                     "offenceTitle": "Drug driving s.5A", "orderIndex": 2, "isConvicted": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+        assertThat(findIssuesByRuleId(json, RULE_ID)).isEmpty();
+    }
+
+    /**
+     * US3-AC3: A hearing where no offence is a drug driving offence must not produce any
+     * DR-DISQ-013 errors.
+     */
+    @Test
+    void ac6_hearing_with_no_drug_driving_offences_should_not_produce_error() throws Exception {
+        final JsonNode json = postValidate(buildBody("h-api-ac6-nodrug", "RT88026", "DDO"));
+        assertThat(findIssuesByRuleId(json, RULE_ID)).isEmpty();
     }
 
     /**

@@ -29,5 +29,13 @@ rule:
         You cannot add a disqualification with a reduction for attending a course
         to a drug driving offence. Remove this result and add the correct
         disqualification.
+      # ${defendantNames} is the aggregate token resolved by MessageTemplateResolver.resolveDefendantNames()
+      # after all per-context results are collected — distinct from the per-context ${defendantName}
+      # (singular) token. Both are recognised by MessageTemplateResolver; only the plural form
+      # is correct here because the error summary spans all affected offences in the hearing.
+      errorMessageTemplate: >-
+        You cannot add a disqualification with a reduction for attending a course
+        to a drug driving offence. Remove this result and add the correct
+        disqualification. This affects: ${defendantNames}.
       affectedOffenceSet: "qualifyingOffenceIds"
       validationLevel: OFFENCE

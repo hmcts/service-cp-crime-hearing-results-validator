@@ -3,15 +3,18 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildRequest;
+import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.defendant;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offenceWithCode;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
@@ -243,12 +246,98 @@ class DrugDrivingCourseReductionPreprocessorTest {
     }
 
     @Nested
+    @DisplayName("Ac2DefendantName — defendant name is populated from request")
+    class Ac2DefendantName {
+
+        @Test
+        void qualifying_context_carries_defendant_name_from_request() {
+            DraftValidationRequest request = requestWithLinkedOffence("DDRCO");
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.defendantName()).isEqualTo("Alex Driver");
+        }
+
+        @Test
+        void non_qualifying_context_still_carries_defendant_name_from_request() {
+            DraftValidationRequest request = requestWithLinkedOffence("DDO");
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.defendantName()).isEqualTo("Alex Driver");
+        }
+
+        @Test
+        void offence_with_null_defendant_id_should_produce_null_defendant_name() {
+            final OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1")
+                    .offenceCode("RT88584")
+                    .offenceTitle("Drug driving s.5A")
+                    .orderIndex(1)
+                    .build();
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 10, 16))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(resultLine("rl1", "DDRCO", "d1", "off1")))
+                    .defendants(List.of(defendant("d1", "Alex", "Driver")))
+                    .offences(List.of(offence))
+                    .build();
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.defendantName()).isNull();
+        }
+
+        @Test
+        void offence_with_unmatched_defendant_id_should_produce_unknown_defendant_name() {
+            final OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1")
+                    .defendantId("d99")
+                    .offenceCode("RT88584")
+                    .offenceTitle("Drug driving s.5A")
+                    .orderIndex(1)
+                    .build();
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 10, 16))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(resultLine("rl1", "DDRCO", "d1", "off1")))
+                    .defendants(List.of(defendant("d1", "Alex", "Driver")))
+                    .offences(List.of(offence))
+                    .build();
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.defendantName()).isEqualTo("Unknown");
+        }
+
+        private DraftValidationRequest requestWithLinkedOffence(final String shortCode) {
+            final OffenceDto offence = OffenceDto.builder()
+                    .offenceId("off1")
+                    .defendantId("d1")
+                    .offenceCode("RT88584")
+                    .offenceTitle("Drug driving s.5A")
+                    .orderIndex(1)
+                    .build();
+            return DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 10, 16))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(resultLine("rl1", shortCode, "d1", "off1")))
+                    .defendants(List.of(defendant("d1", "Alex", "Driver")))
+                    .offences(List.of(offence))
+                    .build();
+        }
+    }
+
+    @Nested
     @DisplayName("DrugDrivingContextContract — getOffenceIdSet guard")
     class DrugDrivingContextContract {
 
         @Test
         void getOffenceIdSet_with_unknown_name_should_throw() {
-            final DrugDrivingContext ctx = new DrugDrivingContext("off1", 1L, List.of("off1"));
+            final DrugDrivingContext ctx = new DrugDrivingContext("off1", 1L, List.of("off1"), null);
 
             assertThatThrownBy(() -> ctx.getOffenceIdSet("unknownSet"))
                     .isInstanceOf(IllegalArgumentException.class)
