@@ -332,6 +332,124 @@ class DefaultValidationServiceTest {
     }
 
     /**
+     * Verifies a defendant named by several results of the same template (e.g. one per offence)
+     * is listed once when the results carry the same defendant key.
+     */
+    @Test
+    void formatDefendantNames_same_defendant_key_from_multiple_results_should_appear_once() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice", "d1"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice", "d1"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Bob", "d2")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Bob.");
+        assertThat(response.getErrors().getValidationIssues()).hasSize(3);
+    }
+
+    /**
+     * Verifies two distinct defendants who share a display name are both listed: dedupe is by
+     * defendant key, never by name.
+     */
+    @Test
+    void formatDefendantNames_distinct_defendant_keys_with_same_name_should_both_appear() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "John Smith", "d1"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "John Smith", "d2")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Affects John Smith and John Smith.");
+    }
+
+    /**
+     * Regression guard for rules whose context carries no defendant key (DR-COEW-005,
+     * DR-YRO-004): results without a key bypass deduplication, so their summary is built exactly
+     * as before defendant-key deduplication was introduced.
+     */
+    @Test
+    void formatDefendantNames_results_without_defendant_key_should_not_be_deduplicated() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Alice.");
+    }
+
+    /**
+     * A keyless result never consumes a key slot: a keyed result for the same name in the same
+     * summary is still listed.
+     */
+    @Test
+    void formatDefendantNames_keyed_and_keyless_results_should_both_be_listed() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Bob", "d2")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice and Bob.");
+    }
+
+    /** Defendant deduplication must be scoped to each rule's summary, not the whole response. */
+    @Test
+    void same_defendant_key_in_different_rules_should_keep_both_error_summaries() {
+        ValidationRule firstRule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Affects ${defendantNames}.", "Alice", "d1")));
+        ValidationRule secondRule = stubRule("RULE-002",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-002")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Affects ${defendantNames}.", "Alice", "d1")));
+
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(firstRule, secondRule), ALWAYS_ENABLED, RESOLVER)
+                .validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getValidationIssues()).hasSize(2);
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Affects Alice.", "Affects Alice.");
+    }
+
+    /**
      * Verifies three+ defendant names are comma-separated with a trailing " and ".
      */
     @Test

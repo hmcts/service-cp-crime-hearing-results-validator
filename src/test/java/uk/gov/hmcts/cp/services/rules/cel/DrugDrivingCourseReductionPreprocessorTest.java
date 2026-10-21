@@ -171,6 +171,51 @@ class DrugDrivingCourseReductionPreprocessorTest {
             assertThat(result.get("off1").qualifyingOffenceIds()).containsExactly("off1");
             assertThat(result.get("off2").qualifyingOffenceIds()).containsExactly("off2");
         }
+
+        @Test
+        void offences_of_same_defendant_should_share_defendant_key() {
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 10, 16))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(
+                            resultLine("rl1", "DDRCO", "d1", "off1"),
+                            resultLine("rl2", "DDRCO", "d1", "off2")))
+                    .defendants(List.of(defendant("d1", "Alex", "Driver")))
+                    .offences(List.of(
+                            linkedOffence("off1", "d1", "RT88584"),
+                            linkedOffence("off2", "d1", "RT88586")))
+                    .build();
+
+            Map<String, DrugDrivingContext> result = preprocess(request);
+
+            assertThat(result.get("off1").defendantId()).isEqualTo("d1");
+            assertThat(result.get("off2").defendantId()).isEqualTo("d1");
+        }
+
+        @Test
+        void linked_case_records_sharing_master_defendant_id_should_share_defendant_key() {
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .hearingDay(LocalDate.of(2026, 10, 16))
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(
+                            resultLine("rl1", "DDRCO", "d1", "off1"),
+                            resultLine("rl2", "DDRCOT", "d2", "off2")))
+                    .defendants(List.of(
+                            defendant("d1", "Alex", "Driver").masterDefendantId("m1"),
+                            defendant("d2", "Alex", "Driver").masterDefendantId("m1")))
+                    .offences(List.of(
+                            linkedOffence("off1", "d1", "RT88584"),
+                            linkedOffence("off2", "d2", "RT88340")))
+                    .build();
+
+            Map<String, DrugDrivingContext> result = preprocess(request);
+
+            assertThat(result).containsOnlyKeys("off1", "off2");
+            assertThat(result.get("off1").defendantId()).isEqualTo("m1");
+            assertThat(result.get("off2").defendantId()).isEqualTo("m1");
+        }
     }
 
     @Nested
@@ -199,6 +244,28 @@ class DrugDrivingCourseReductionPreprocessorTest {
 
             assertThat(ctx.qualifyingCount()).isEqualTo(0L);
             assertThat(ctx.qualifyingOffenceIds()).isEmpty();
+        }
+
+        @Test
+        void triggering_offence_with_ddote_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "DDOTE", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Drug driving s.5A", "RT88584")));
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
+        }
+
+        @Test
+        void triggering_offence_with_ddrcd_should_not_qualify() {
+            DraftValidationRequest request = buildRequest(
+                    List.of(resultLine("rl1", "DDRCD", "d1", "off1")),
+                    List.of(offenceWithCode("off1", 1, "Drug driving s.5A", "RT88584")));
+
+            DrugDrivingContext ctx = preprocess(request).get("off1");
+
+            assertThat(ctx.qualifyingCount()).isEqualTo(0L);
         }
 
         @Test
@@ -268,7 +335,7 @@ class DrugDrivingCourseReductionPreprocessorTest {
         }
 
         @Test
-        void offence_with_null_defendant_id_should_produce_null_defendant_name() {
+        void offence_with_null_defendant_id_should_produce_unknown_name_and_no_defendant_key() {
             final OffenceDto offence = OffenceDto.builder()
                     .offenceId("off1")
                     .offenceCode("RT88584")
@@ -286,7 +353,8 @@ class DrugDrivingCourseReductionPreprocessorTest {
 
             DrugDrivingContext ctx = preprocess(request).get("off1");
 
-            assertThat(ctx.defendantName()).isNull();
+            assertThat(ctx.defendantName()).isEqualTo("Unknown");
+            assertThat(ctx.defendantId()).isNull();
         }
 
         @Test
@@ -337,12 +405,23 @@ class DrugDrivingCourseReductionPreprocessorTest {
 
         @Test
         void getOffenceIdSet_with_unknown_name_should_throw() {
-            final DrugDrivingContext ctx = new DrugDrivingContext("off1", 1L, List.of("off1"), null);
+            final DrugDrivingContext ctx = new DrugDrivingContext("off1", "d1", 1L, List.of("off1"), "Alex Driver");
 
             assertThatThrownBy(() -> ctx.getOffenceIdSet("unknownSet"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("unknownSet");
         }
+    }
+
+    private static OffenceDto linkedOffence(final String offenceId, final String defendantId,
+                                            final String offenceCode) {
+        return OffenceDto.builder()
+                .offenceId(offenceId)
+                .defendantId(defendantId)
+                .offenceCode(offenceCode)
+                .offenceTitle("Drug driving offence")
+                .orderIndex(1)
+                .build();
     }
 
     private Map<String, DrugDrivingContext> preprocess(final DraftValidationRequest request) {

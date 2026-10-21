@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 
 /**
  * End-to-end tests for the draft validation endpoint and its main acceptance scenarios.
@@ -19,6 +20,10 @@ import org.springframework.http.MediaType;
 class ValidationControllerIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
+
+    private static final String SENT_001_SUMMARY =
+            "Some offences do not include details of whether they are concurrent or"
+                    + " consecutive. Only the primary offence should not have this information.";
 
     private static final String EMPTY_ARRAYS_REQUEST = """
             {
@@ -205,6 +210,121 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
     }
 
     /**
+     * Characterisation: DR-SENT-001 already emits one context per defendant group, so two
+     * defendants each missing info get one issue each and are both named in a single summary.
+     * Guards that the service-level defendant-key summary dedupe leaves this unchanged.
+     */
+    @Test
+    void ac2_two_defendants_missing_info_should_name_both_in_one_summary() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off4"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "John", "lastName": "Doe"},
+                    {"defendantId": "d2", "firstName": "Jane", "lastName": "Roe"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d2", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                  ]
+                }
+                """;
+
+        performValidate(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(false)))
+                .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-SENT-001')]", hasSize(2)))
+                .andExpect(jsonPath("$.errors.errorMessages", contains(
+                        SENT_001_SUMMARY + " This affects: John Doe and Jane Roe.")));
+    }
+
+    /**
+     * Characterisation: the custodial preprocessor already folds two defendant records for the
+     * same person (shared masterDefendantId) into one group, so that person raises one issue and
+     * is named once. Guards that the service-level summary dedupe leaves this unchanged.
+     */
+    @Test
+    void ac2_linked_case_records_should_name_person_once() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1b", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off4"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "masterDefendantId": "m1", "firstName": "John", "lastName": "Doe"},
+                    {"defendantId": "d1b", "masterDefendantId": "m1", "firstName": "John", "lastName": "Doe"},
+                    {"defendantId": "d2", "firstName": "Jane", "lastName": "Roe"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1b", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d2", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                  ]
+                }
+                """;
+
+        performValidate(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-SENT-001')]", hasSize(2)))
+                .andExpect(jsonPath("$.errors.errorMessages", contains(
+                        SENT_001_SUMMARY + " This affects: John Doe and Jane Roe.")));
+    }
+
+    /**
+     * Regression guard: deduplication is by defendant key, never by name, so two distinct
+     * defendants who share a name are both listed.
+     */
+    @Test
+    void ac2_distinct_defendants_sharing_a_name_should_both_be_named() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d2", "offenceId": "off4"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "John", "lastName": "Smith"},
+                    {"defendantId": "d2", "firstName": "John", "lastName": "Smith"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d2", "offenceCode": "RB001", "offenceTitle": "Robbery", "orderIndex": 4}
+                  ]
+                }
+                """;
+
+        performValidate(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-SENT-001')]", hasSize(2)))
+                .andExpect(jsonPath("$.errors.errorMessages", contains(
+                        SENT_001_SUMMARY + " This affects: John Smith and John Smith.")));
+    }
+
+    /**
      * Covers AC3 where one offence is marked both concurrent and consecutive, which should produce
      * a warning without invalidating the request.
      */
@@ -353,5 +473,13 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.message", is("resultLines[0].resultLineId: must not be null")))
                 .andExpect(jsonPath("$.traceId", notNullValue()))
                 .andExpect(jsonPath("$.timestamp", notNullValue()));
+    }
+
+    private ResultActions performValidate(final String request) throws Exception {
+        return mockMvc.perform(post(VALIDATE_URL)
+                .header("CJSCPPUID", "test-user")
+                .header("CPP-ACTION", "validation-service.validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(request));
     }
 }

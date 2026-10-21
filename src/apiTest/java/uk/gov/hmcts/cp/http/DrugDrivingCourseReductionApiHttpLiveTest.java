@@ -141,6 +141,7 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         issues.forEach(n -> offenceIds.add(
                 n.get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText()));
         assertThat(offenceIds).containsExactlyInAnyOrder("off1", "off2");
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
     }
 
     /**

@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +89,7 @@ public class DefaultValidationService implements ValidationService {
         final List<String> rulesEvaluated = new ArrayList<>();
         final Map<String, String> errorBaseByTemplate = new LinkedHashMap<>();
         final Map<String, List<String>> errorNamesByTemplate = new LinkedHashMap<>();
+        final Map<String, Set<String>> errorDefendantKeysByTemplate = new LinkedHashMap<>();
         final List<String> standaloneMessages = new ArrayList<>();
         final List<ValidationIssue> errorItemsList = new ArrayList<>();
         final List<ValidationIssue> warnings = new ArrayList<>();
@@ -105,7 +107,8 @@ public class DefaultValidationService implements ValidationService {
                             if (result.affectedDefendantName() != null) {
                                 final String templateKey = ruleId + "::" + result.errorMessage();
                                 errorBaseByTemplate.putIfAbsent(templateKey, result.errorMessage());
-                                appendDefendantName(errorNamesByTemplate, templateKey, result.affectedDefendantName());
+                                appendDefendantName(errorNamesByTemplate, errorDefendantKeysByTemplate,
+                                        templateKey, result);
                             } else {
                                 standaloneMessages.add(result.errorMessage());
                             }
@@ -188,9 +191,22 @@ public class DefaultValidationService implements ValidationService {
                 .build();
     }
 
-    private static void appendDefendantName(final Map<String, List<String>> errorNamesByRule,
-                                             final String ruleId,
-                                             final String name) {
-        errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>()).add(name);
+    /**
+     * Adds the result's defendant name to those listed for {@code templateKey}. When the result
+     * carries a defendant key, a defendant already listed for that template is skipped, so a rule
+     * raising one issue per offence still names each defendant once; distinct defendants who share
+     * a name are both kept, since the comparison is on the key, not the name.
+     */
+    private static void appendDefendantName(final Map<String, List<String>> errorNamesByTemplate,
+                                             final Map<String, Set<String>> errorDefendantKeysByTemplate,
+                                             final String templateKey,
+                                             final ValidationIssueResult result) {
+        final String defendantKey = result.affectedDefendantKey();
+        final boolean firstForDefendant = defendantKey == null
+                || errorDefendantKeysByTemplate.computeIfAbsent(templateKey, k -> new HashSet<>()).add(defendantKey);
+        if (firstForDefendant) {
+            errorNamesByTemplate.computeIfAbsent(templateKey, k -> new ArrayList<>())
+                    .add(result.affectedDefendantName());
+        }
     }
 }

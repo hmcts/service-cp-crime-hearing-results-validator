@@ -268,7 +268,9 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.validationIssues[*].ruleId",
                             containsInAnyOrder("DR-DISQ-013", "DR-DISQ-013")))
                     .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].offenceId",
-                            containsInAnyOrder("off1", "off2")));
+                            containsInAnyOrder("off1", "off2")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(EXPECTED_MESSAGE)));
         }
     }
 
@@ -283,6 +285,28 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
                             .header("CPP-ACTION", "validation-service.validate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(buildBody("h-ac6-non-trig", "RT88026", "DDRCO")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_DISQ_013_ERRORS, empty()));
+        }
+
+        @Test
+        void ac6_ddrcd_on_triggering_offence_should_not_produce_error() throws Exception {
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(buildBody("h-ac6-ddrcd", "RT88584", "DDRCD")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_DISQ_013_ERRORS, empty()));
+        }
+
+        @Test
+        void ac6_ddote_on_triggering_offence_should_not_produce_error() throws Exception {
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(buildBody("h-ac6-ddote", "RT88584", "DDOTE")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_DISQ_013_ERRORS, empty()));
         }
@@ -386,6 +410,88 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
                             is("off1")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]", is(EXPECTED_MESSAGE_WITH_DEFENDANT)));
+        }
+
+        @Test
+        void defendant_with_two_triggering_offences_should_get_two_errors_and_be_named_once()
+                throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ec-md-two",
+                      "hearingDay": "2026-10-16",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "DDRCO", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "DDRCOT", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off2"},
+                        {"resultLineId": "rl3", "shortCode": "DDO", "category": "F",
+                         "label": "Driving Disqualification", "defendantId": "d2", "offenceId": "off3"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                        {"defendantId": "d2", "firstName": "Sam", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88584",
+                         "offenceTitle": "Drug driving s.5A", "orderIndex": 1, "isConvicted": true},
+                        {"offenceId": "off2", "defendantId": "d1", "offenceCode": "RT88586",
+                         "offenceTitle": "Drug driving attempt", "orderIndex": 2, "isConvicted": true},
+                        {"offenceId": "off3", "defendantId": "d2", "offenceCode": "RT88340",
+                         "offenceTitle": "Drive unfit through drugs", "orderIndex": 3, "isConvicted": true}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_DISQ_013_ERRORS, hasSize(2)))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].offenceId",
+                            containsInAnyOrder("off1", "off2")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(EXPECTED_MESSAGE_WITH_DEFENDANT)));
+        }
+
+        @Test
+        void distinct_defendants_sharing_a_name_should_both_be_named() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ec-md-same-name",
+                      "hearingDay": "2026-10-16",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "DDRCO", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "DDRCO", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d2", "offenceId": "off2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                        {"defendantId": "d2", "firstName": "Alex", "lastName": "Driver"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88584",
+                         "offenceTitle": "Drug driving s.5A", "orderIndex": 1, "isConvicted": true},
+                        {"offenceId": "off2", "defendantId": "d2", "offenceCode": "RT88584",
+                         "offenceTitle": "Drug driving s.5A", "orderIndex": 2, "isConvicted": true}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_DISQ_013_ERRORS, hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            is(EXPECTED_MESSAGE + " This affects: Alex Driver and Alex Driver.")));
         }
     }
 
