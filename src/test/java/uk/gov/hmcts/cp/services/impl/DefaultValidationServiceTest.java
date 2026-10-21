@@ -588,10 +588,11 @@ class DefaultValidationServiceTest {
 
     /**
      * Verifies that two ValidationIssueResults sharing an identical errorMessage AND identical
-     * affectedDefendantName under the same rule collapse to a single occurrence of that name in
-     * the aggregated "This affects" text, rather than duplicating it -- the scenario a
-     * per-breach-occurrence preprocessor (e.g. DR-APP-009's ApplicationResultOffencePreprocessor)
-     * produces when the same defendant breaches with the same label on two different offences.
+     * defendant key under the same rule collapse to a single occurrence of that name in the
+     * aggregated "This affects" text -- the scenario a per-breach-occurrence preprocessor
+     * (e.g. DR-APP-009's ApplicationResultOffencePreprocessor) produces when the same defendant
+     * breaches with the same label on two different offences. In production, CelValidationRule
+     * always supplies context.defendantId() as the key; deduplication is by key, not by name.
      * Identified during a second /speckit.analyze pass on feature
      * 010-application-result-offence-error (research.md R8).
      */
@@ -602,11 +603,11 @@ class DefaultValidationServiceTest {
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Alice"),
+                                "Affects ${defendantNames}.", "Alice", "d1"),
                         ValidationIssueResult.forError(
                                 ValidationIssue.builder().ruleId("RULE-001")
                                         .severity(ValidationIssue.SeverityEnum.ERROR).build(),
-                                "Affects ${defendantNames}.", "Alice")));
+                                "Affects ${defendantNames}.", "Alice", "d1")));
         DraftValidationResponse response = new DefaultValidationService(
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
 
