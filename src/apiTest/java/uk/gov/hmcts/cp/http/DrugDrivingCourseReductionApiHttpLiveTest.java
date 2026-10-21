@@ -49,6 +49,11 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification. This affects: Alex Driver.";
 
+    private static final String EXPECTED_MESSAGE_WITH_TWO_DEFENDANTS =
+            "You cannot add a disqualification with a reduction for attending a course "
+                    + "to a drug driving offence. Remove this result and add the correct "
+                    + "disqualification. This affects: Alex Driver and Sam Smith.";
+
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -141,7 +146,9 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         issues.forEach(n -> offenceIds.add(
                 n.get(AFFECTED_OFFENCES).get(0).get(OFFENCE_ID_FIELD).asText()));
         assertThat(offenceIds).containsExactlyInAnyOrder("off1", "off2");
+        // Single defendant in the hearing — "This affects" clause is stripped from the summary.
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText()).isEqualTo(EXPECTED_MESSAGE);
     }
 
     /**
@@ -222,6 +229,47 @@ class DrugDrivingCourseReductionApiHttpLiveTest {
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
         assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
                 .isEqualTo(EXPECTED_MESSAGE_WITH_DEFENDANT);
+    }
+
+    /**
+     * MD2: Both defendants trigger (d1 DDRCO on RT88584, d2 DDRCOT on RT88340) — two separate
+     * errors, one summary listing both names.
+     */
+    @Test
+    void ec_both_defendants_trigger_should_produce_two_errors_and_name_both_in_summary()
+            throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h-api-ec-md2",
+                  "hearingDay": "2026-10-16",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "DDRCO", "category": "F",
+                     "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "DDRCOT", "category": "F",
+                     "label": "Disq course reduction", "defendantId": "d2", "offenceId": "off2"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                    {"defendantId": "d2", "firstName": "Sam", "lastName": "Smith"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88584",
+                     "offenceTitle": "Drug driving s.5A", "orderIndex": 1, "isConvicted": true},
+                    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "RT88340",
+                     "offenceTitle": "Drive unfit through drugs", "orderIndex": 2, "isConvicted": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+        final List<JsonNode> issues = findIssuesByRuleId(json, RULE_ID);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isFalse();
+        assertThat(issues).hasSize(2);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).size()).isEqualTo(1);
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES).get(0).asText())
+                .isEqualTo(EXPECTED_MESSAGE_WITH_TWO_DEFENDANTS);
     }
 
     /**

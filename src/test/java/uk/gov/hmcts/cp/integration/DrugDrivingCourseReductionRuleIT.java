@@ -43,6 +43,11 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification. This affects: Alex Driver.";
 
+    private static final String EXPECTED_MESSAGE_WITH_TWO_DEFENDANTS =
+            "You cannot add a disqualification with a reduction for attending a course "
+                    + "to a drug driving offence. Remove this result and add the correct "
+                    + "disqualification. This affects: Alex Driver and Sam Smith.";
+
     @Nested
     @DisplayName("Ac1TriggeringPaths — all five offence codes and both short codes")
     class Ac1TriggeringPaths {
@@ -454,6 +459,49 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
                             containsInAnyOrder("off1", "off2")))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]", is(EXPECTED_MESSAGE_WITH_DEFENDANT)));
+        }
+
+        @Test
+        void both_defendants_trigger_should_each_get_an_error_and_both_be_named_in_summary()
+                throws Exception {
+            // MD2 from CRA-345.http: d1 (DDRCO on RT88584) and d2 (DDRCOT on RT88340) both trigger.
+            // Two errors expected, one summary listing both defendants.
+            String request = """
+                    {
+                      "hearingId": "h-ec-md2",
+                      "hearingDay": "2026-10-16",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "DDRCO", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "DDRCOT", "category": "F",
+                         "label": "Disq course reduction", "defendantId": "d2", "offenceId": "off2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"},
+                        {"defendantId": "d2", "firstName": "Sam", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "RT88584",
+                         "offenceTitle": "Drug driving s.5A", "orderIndex": 1, "isConvicted": true},
+                        {"offenceId": "off2", "defendantId": "d2", "offenceCode": "RT88340",
+                         "offenceTitle": "Drive unfit through drugs", "orderIndex": 2, "isConvicted": true}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_DISQ_013_ERRORS, hasSize(2)))
+                    .andExpect(jsonPath("$.errors.validationIssues[*].affectedOffences[0].offenceId",
+                            containsInAnyOrder("off1", "off2")))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            is(EXPECTED_MESSAGE_WITH_TWO_DEFENDANTS)));
         }
 
         @Test
