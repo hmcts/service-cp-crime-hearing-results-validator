@@ -114,6 +114,7 @@ class CelValidationRuleTest {
                         + " consecutive. Only the primary offence should not have this"
                         + " information. This affects: ${defendantNames}.");
         assertThat(result.affectedDefendantName()).isEqualTo("John Smith");
+        assertThat(result.affectedDefendantKey()).isEqualTo("d1");
         assertThat(error.getValidationLevel()).isEqualTo(ValidationIssue.ValidationLevelEnum.OFFENCE);
         assertThat(error.getAffectedOffences()).hasSize(3);
         assertThat(error.getAffectedOffences()).extracting(AffectedOffence::getOffenceId)
@@ -147,6 +148,7 @@ class CelValidationRuleTest {
         ValidationIssue warning = result.issue();
         assertThat(warning.getSeverity()).isEqualTo(ValidationIssue.SeverityEnum.WARNING);
         assertThat(result.errorMessage()).isNull();
+        assertThat(result.affectedDefendantKey()).isNull();
         assertThat(warning.getAffectedOffences()).hasSize(1);
         assertThat(warning.getAffectedOffences().get(0).getMessage()).isEqualTo(
                 "This offence has both concurrent and consecutive information."

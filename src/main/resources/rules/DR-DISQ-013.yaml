@@ -1,0 +1,41 @@
+rule:
+  id: "DR-DISQ-013"
+  title: "Drug driving offence with course-reduction disqualification"
+  description: >-
+    Blocks sharing when DDRCO or DDRCOT is recorded against a drug driving offence.
+    These results are unlawful on drug driving offences and must be replaced before
+    results are shared with the DVLA and the defendant.
+  priority: 13000
+  enabled: true
+
+  preprocessing:
+    type: "drug-driving-course-reduction"
+    relevantOffenceCodes:
+      - RT88584   # Drive motor vehicle with proportion of specified controlled drug above specified limit (s.5A)
+      - RT88586   # Attempt to drive with specified controlled drug above specified limit
+      - RT88584B  # Aid/abet driving with specified controlled drug above specified limit
+      - RT88340   # Drive a vehicle whilst unfit through drugs (s.4)
+      - RA88045   # Cause death by careless driving while over specified limit – specified controlled drug
+    courseReductionShortCodes:
+      - DDRCO     # Driving Disq (obligatory) – Reduction for course
+      - DDRCOT    # Obligatory disqualification until extended test passed – reduction for course
+
+  conditions:
+    - id: "AC1"
+      name: "Drug driving offence with course-reduction disqualification"
+      expression: "qualifyingCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        You cannot add a disqualification with a reduction for attending a course
+        to a drug driving offence. Remove this result and add the correct
+        disqualification.
+      # ${defendantNames} is the aggregate token resolved by MessageTemplateResolver.resolveDefendantNames()
+      # after all per-context results are collected — distinct from the per-context ${defendantName}
+      # (singular) token. Both are recognised by MessageTemplateResolver; only the plural form
+      # is correct here because the error summary spans all affected offences in the hearing.
+      errorMessageTemplate: >-
+        You cannot add a disqualification with a reduction for attending a course
+        to a drug driving offence. Remove this result and add the correct
+        disqualification. This affects: ${defendantNames}.
+      affectedOffenceSet: "qualifyingOffenceIds"
+      validationLevel: OFFENCE

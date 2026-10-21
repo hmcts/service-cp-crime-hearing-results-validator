@@ -168,8 +168,13 @@ public class CelValidationRule implements ValidationRule {
                                         ? context.defendantName()
                                         : null;
 
+                        final String affectedDefendantKey = affectedDefendantName != null
+                                ? context.defendantId()
+                                : null;
+
                         if (isError) {
-                            results.add(ValidationIssueResult.forError(issueBuilder.build(), errorMessage, affectedDefendantName));
+                            results.add(ValidationIssueResult.forError(
+                                    issueBuilder.build(), errorMessage, affectedDefendantName, affectedDefendantKey));
                         } else {
                             results.add(ValidationIssueResult.forWarning(issueBuilder.build()));
                         }

@@ -3,7 +3,7 @@
          xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
-         https://pmd.github.io/pmd-7.17.0/pmd-7.17.0.xsd">
+         https://pmd.github.io/pmd-7.22.0/pmd-7.22.0.xsd">
 
     <description>
         src/test ruleset. Same base as .github/pmd-ruleset.xml (main), with a small number of
