@@ -175,9 +175,11 @@ public final class PayloadBuilder {
             {"defendantId": "%s", "firstName": "%s", "lastName": "%s"}""".formatted(id, firstName, lastName);
     }
 
-    private static String offence(String id, String defendantId, String code, String title, int orderIndex, String caseUrn) {
+    private static String offence(String id, String defendantId, String code, String title, int orderIndex,
+                                  String caseUrn) {
         return """
-            {"offenceId": "%s", "defendantId": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, "caseUrn": "%s"}"""
+            {"offenceId": "%s", "defendantId": "%s", "offenceCode": "%s", "offenceTitle": "%s", "orderIndex": %d, \
+            "caseUrn": "%s"}"""
             .formatted(id, defendantId, code, title, orderIndex, caseUrn);
     }
 

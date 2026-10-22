@@ -233,7 +233,7 @@ jobs:
           fi
 
           echo "Publishing artefact for version: $ARTEFACT_VERSION"
-          
+
           ./gradlew publish \
             -DARTEFACT_VERSION=$ARTEFACT_VERSION \
             -DGITHUB_REPOSITORY=${{ github.repository }} \

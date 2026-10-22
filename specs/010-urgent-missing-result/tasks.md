@@ -4,7 +4,7 @@ description: "Task list for DR-URG-008 — URGENT Result Missing Warning (CRA-22
 
 # Tasks: URGENT Result Missing Warning (CRA-22 / DR-URG-008)
 
-**Input**: Design documents from `specs/008-urgent-missing-result/`
+**Input**: Design documents from `specs/010-urgent-missing-result/`
 **Branch**: `CRA-22-urgent-missing-result`
 **Date**: 2026-09-09
 
@@ -152,7 +152,7 @@ HTTP request.
 
 - [X] T022 [US3] Add AC5A integration test scenario to `UrgentMissingWarningIntegrationTest`: defendant has two CB offences (off-1 with DS bail-ending result, off-2 with no result lines) → assert zero DR-URG-008 warnings returned and `$.warnings` is empty in `src/test/java/uk/gov/hmcts/cp/integration/UrgentMissingWarningIntegrationTest.java`
 
-- [X] T023 [P] [US3] Add AC5A HTTP request to `CRA-22.http` under the US3 section: POST with two CB offences where one has DS and one has no result → expected: no warning in `specs/008-urgent-missing-result/CRA-22.http`
+- [X] T023 [P] [US3] Add AC5A HTTP request to `CRA-22.http` under the US3 section: POST with two CB offences where one has DS and one has no result → expected: no warning in `specs/010-urgent-missing-result/CRA-22.http`
 
 - [X] T024 Run `gradle test --tests "*UrgentMissingWarningIntegrationTest"` — all scenarios including AC5A must pass, then run `gradle build` to confirm full suite green
 

@@ -24,6 +24,9 @@ import uk.gov.hmcts.cp.services.rules.ValidationRule;
 @Slf4j
 public class CelValidationRule implements ValidationRule {
 
+    /** Default placeholder token name, preserved for every rule authored before DR-APP-009. */
+    private static final String DEFAULT_CALCULATED_VALUE_PLACEHOLDER_NAME = "calculatedEndDate";
+
     private final RuleDefinition ruleDefinition;
     private final PreprocessorRegistry preprocessorRegistry;
     private final CelExpressionEvaluator evaluator;
@@ -150,6 +153,7 @@ public class CelValidationRule implements ValidationRule {
                                                             offenceMap,
                                                             context.allOffenceIds(),
                                                             calculatedValuePlaceholder(
+                                                                    condition.calculatedValuePlaceholderName(),
                                                                     context.getCalculatedValue(
                                                                             calculatedValueSet, id)))));
                         }
@@ -160,7 +164,9 @@ public class CelValidationRule implements ValidationRule {
                                         context.defendantName(),
                                         offenceIdsForTemplate,
                                         offenceMap,
-                                        context.allOffenceIds())
+                                        context.allOffenceIds(),
+                                        errorMessageCalculatedValuePlaceholder(
+                                                condition, context, offenceIdsForTemplate))
                                 : null;
 
                         final String affectedDefendantName =
@@ -208,11 +214,53 @@ public class CelValidationRule implements ValidationRule {
     }
 
     /**
-     * Builds the {@code ${calculatedEndDate}} placeholder map, leaving the token unexpanded
+     * Builds the {@code ${<placeholderName>}} placeholder map, leaving the token unexpanded
      * (empty map) rather than passing a null value into {@code Map.of}, which would throw.
+     * {@code placeholderName} defaults to {@code "calculatedEndDate"} when the condition's YAML
+     * omits {@code calculatedValuePlaceholderName} -- the pre-existing hardcoded behaviour,
+     * unchanged for every rule that doesn't set the new field.
      */
-    private static Map<String, String> calculatedValuePlaceholder(final String calculatedValue) {
-        return calculatedValue == null ? Map.of() : Map.of("calculatedEndDate", calculatedValue);
+    @SuppressWarnings("PMD.OnlyOneReturn") // early-return on the common null case reads clearer here
+    private static Map<String, String> calculatedValuePlaceholder(final String placeholderName,
+                                                                   final String calculatedValue) {
+        if (calculatedValue == null) {
+            return Map.of();
+        }
+        final String name = placeholderName == null
+                ? DEFAULT_CALCULATED_VALUE_PLACEHOLDER_NAME
+                : placeholderName;
+        return Map.of(name, calculatedValue);
+    }
+
+    /**
+     * Builds the extra-placeholder map for the page-level {@code errorMessageTemplate}, mirroring
+     * the per-offence resolution already applied to the inline {@code messageTemplate}. Returns
+     * an empty map (no-op) whenever the condition has no {@code calculatedValueSet} -- true for
+     * every rule shipped before DR-APP-009, so their {@code errorMessage} text is built exactly
+     * as before. When a context spans more than one affected offence id, only the first is used,
+     * matching every current caller of {@code calculatedValueSet} (see data-model.md).
+     *
+     * <p>When the condition sets {@code consolidatePageLevelError: true}, the placeholder value
+     * instead comes from {@link RuleEvaluationContext#getGlobalCalculatedValue} -- a hearing-wide
+     * aggregate rather than this context's own offence -- so every triggered context of the same
+     * rule evaluation resolves to identical page-level text and merges into one entry (see
+     * {@code DefaultValidationService}'s {@code ruleId::errorMessage} bucketing). Every rule
+     * shipped before this flag existed omits it (defaults to {@code false}), so their per-offence
+     * behaviour is unchanged.
+     */
+    @SuppressWarnings("PMD.OnlyOneReturn") // early-return on the common no-op case reads clearer here
+    private static Map<String, String> errorMessageCalculatedValuePlaceholder(
+            final ConditionDefinition condition,
+            final RuleEvaluationContext context,
+            final List<String> offenceIdsForTemplate) {
+        final String calculatedValueSet = condition.calculatedValueSet();
+        if (calculatedValueSet == null || offenceIdsForTemplate.isEmpty()) {
+            return Map.of();
+        }
+        final String calculatedValue = condition.consolidatePageLevelError()
+                ? context.getGlobalCalculatedValue(calculatedValueSet)
+                : context.getCalculatedValue(calculatedValueSet, offenceIdsForTemplate.getFirst());
+        return calculatedValuePlaceholder(condition.calculatedValuePlaceholderName(), calculatedValue);
     }
 
     /**

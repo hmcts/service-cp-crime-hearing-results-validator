@@ -468,6 +468,99 @@ class DefaultValidationServiceTest {
                 .containsExactly("Some offences are missing information.");
     }
 
+    /**
+     * Verifies that two ValidationIssueResults sharing an identical errorMessage AND identical
+     * affectedDefendantName under the same rule collapse to a single occurrence of that name in
+     * the aggregated "This affects" text, rather than duplicating it -- the scenario a
+     * per-breach-occurrence preprocessor (e.g. DR-APP-009's ApplicationResultOffencePreprocessor)
+     * produces when the same defendant breaches with the same label on two different offences.
+     * Identified during a second /speckit.analyze pass on feature
+     * 010-application-result-offence-error (research.md R8).
+     */
+    @Test
+    void appendDefendantName_shouldDedupeIdenticalNameUnderSameErrorMessage() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice.");
+    }
+
+    /**
+     * Verifies a blank ({@code ""}) affectedDefendantName is silently omitted from the aggregated
+     * "This affects" text rather than rendered as an empty entry -- the fallback used when a
+     * breaching result's defendant cannot be resolved to a real name (see DR-APP-009's
+     * ApplicationResultBreachContext).
+     */
+    @Test
+    void appendDefendantName_shouldOmitBlankNameFromAffectsList() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects Alice.");
+    }
+
+    /**
+     * Regression test for an NPE risk identified during a second /speckit.analyze pass: when
+     * every ValidationIssueResult contributing to one errorMessage group has a blank
+     * affectedDefendantName, the aggregated names list for that group must resolve to "no names"
+     * rather than a null List reaching {@code MessageTemplateResolver.resolveDefendantNames} --
+     * which would otherwise throw a NullPointerException on {@code names.isEmpty()} for any
+     * multi-defendant hearing.
+     */
+    @Test
+    void appendDefendantName_shouldNotThrowWhenEveryNameInGroupIsBlank() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Affects ${defendantNames}.", "")));
+
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages()).containsExactly("Affects .");
+    }
+
+    /**
+     * Verifies a null affectedDefendantName still takes the pre-existing "standalone message"
+     * path -- unaffected by the dedup/blank-name guard, which only runs when appendDefendantName
+     * is actually called. Documents unchanged framework behaviour alongside the new guards above.
+     */
+    @Test
+    void nullAffectedDefendantName_shouldTakeStandaloneMessagePath() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(ValidationIssueResult.forError(
+                        ValidationIssue.builder().ruleId("RULE-001")
+                                .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                        "Standalone message with unresolved ${defendantNames} token.", null)));
+
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(2));
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Standalone message with unresolved ${defendantNames} token.");
+    }
+
     private static DraftValidationRequest minimalRequest() {
         return DraftValidationRequest.builder().hearingId("h1").build();
     }
