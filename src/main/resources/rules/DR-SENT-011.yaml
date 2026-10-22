@@ -5,7 +5,7 @@ rule:
     Warns when a custodial result code is recorded against an offence whose
     effective custodial indicator (column, falling back to details_json) is N.
     Advisory only — does not block sharing.
-  priority: 11000
+  priority: 12000
   enabled: true
 
   preprocessing:

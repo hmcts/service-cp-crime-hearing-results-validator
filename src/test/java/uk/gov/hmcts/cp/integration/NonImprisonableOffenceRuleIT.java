@@ -321,10 +321,8 @@ class NonImprisonableOffenceRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.isValid", is(true)))
                     .andExpect(jsonPath("$.errors.validationIssues", empty()))
                     .andExpect(jsonPath(DR_SENT_011_WARNINGS, hasSize(1)))
-                    // TODO CRA-260: after DR-RESTRAO-010 merges to main and this branch is rebased,
-                    // change hasSize(0) → hasSize(1) for DR-RESTRAO-010 and hasSize(1) → hasSize(2) for $.warnings
-                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-RESTRAO-010')]", hasSize(0)))
-                    .andExpect(jsonPath("$.warnings", hasSize(1)));
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-RESTRAO-010')]", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings", hasSize(2)));
         }
     }
 
@@ -381,6 +379,54 @@ class NonImprisonableOffenceRuleIT extends IntegrationTestBase {
                             "$.warnings[?(@.ruleId=='DR-SENT-001' && @.validationLevel=='DEFENDANT')]",
                             hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(2)));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // FR-011 – multiple offences, independent per-offence checks
+    // -----------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("FR-011 – multiple offences produce independent warnings")
+    class MultipleOffencesIndependentChecks {
+
+        @Test
+        void mixedOffences_imprisonableAndNot_should_warnOnlyForNonImprisonable() throws Exception {
+            // off-a: FO (non-custodial) + imprisonable → DR-SENT-011 does not check (FO not in custodial list)
+            // off-b: IMP (custodial) + non-imprisonable → DR-SENT-011 fires
+            // Single custodial result means DR-SENT-001 does not fire (no concurrent/consecutive question)
+            stubReferencedataOffenceCustodialIndicator("fr011-nonimprisonable", columnOnlyBody("N"));
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-03-11",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "FO", "label": "Fine Order",
+                         "defendantId": "d1", "offenceId": "off-a"},
+                        {"resultLineId": "rl2", "shortCode": "IMP", "label": "IMP label",
+                         "defendantId": "d1", "offenceId": "off-b"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe"}],
+                      "offences": [
+                        {"offenceId": "off-a", "defendantId": "d1", "offenceCode": "fr011-imprisonable",
+                         "offenceTitle": "Imprisonable offence", "orderIndex": 1, "caseUrn": "32AH0000001"},
+                        {"offenceId": "off-b", "defendantId": "d1", "offenceCode": "fr011-nonimprisonable",
+                         "offenceTitle": "Non-imprisonable offence", "orderIndex": 2, "caseUrn": "32AH0000001"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_SENT_011_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off-b")));
         }
     }
 }

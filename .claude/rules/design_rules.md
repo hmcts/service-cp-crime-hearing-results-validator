@@ -26,11 +26,13 @@ used instead.
 > startup from all `ValidationPreprocessor` beans, failing fast on a duplicate qualifier;
 > `CelValidationRule` resolves each rule's preprocessor via `PreprocessorRegistry.require(...)` —
 > the registry/dispatch description in this section is the actual, current architecture, not a
-> target. Eight preprocessors are registered today (`CustodialPreprocessor`,
+> target. Twelve preprocessors are registered today (`CustodialPreprocessor`,
 > `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`,
 > `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`,
 > `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`,
-> `SexualOffenceNotificationPreprocessor`), one per shipped rule.
+> `SexualOffenceNotificationPreprocessor`, `ConditionalBailPreprocessor`,
+> `ApplicationResultOffencePreprocessor`, `RestrainingOrderMultiplePersonsPreprocessor`,
+> `NonImprisonableOffencePreprocessor`), one per shipped rule.
 
 ## Domain Concepts
 
@@ -80,7 +82,7 @@ rule:
 
 ## Adding a New Rule
 
-1. **YAML first.** Create `src/main/resources/rules/DR-<CATEGORY>-<NNN>.yaml`. The rule auto-loads at startup — no Java code change is required if an existing `preprocessing.type` fits one of the eight registered preprocessors.
+1. **YAML first.** Create `src/main/resources/rules/DR-<CATEGORY>-<NNN>.yaml`. The rule auto-loads at startup — no Java code change is required if an existing `preprocessing.type` fits one of the twelve registered preprocessors.
 2. **If a new preprocessor type is needed:**
    - Add a `ValidationPreprocessor` `@Component` whose qualifier matches the YAML `preprocessing.type` string
    - Add a corresponding context record (extending or sibling to `DefendantContext`) with a `toCelContext()` returning `Map<String, Long>`

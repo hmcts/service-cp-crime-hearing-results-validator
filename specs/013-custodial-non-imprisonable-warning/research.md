@@ -27,7 +27,7 @@
 
 **Decision**: `DR-SENT-011`
 
-**Rationale**: Rule number suffix matches the spec folder sequence number (global across all categories). Spec folder `011-custodial-non-imprisonable-warning` → rule suffix `011`. This aligns with the established pattern: `DR-SENT-001` = spec `001`, `DR-DISQ-002` = spec `002`, `DR-AGE-007` = spec `007`, `DR-RESTRAO-010` = spec `010`.
+**Rationale**: Rule number suffix matches the spec folder sequence number (global across all categories). Spec folder `013-custodial-non-imprisonable-warning` → rule suffix `011`. This aligns with the established pattern: `DR-SENT-001` = spec `001`, `DR-DISQ-002` = spec `002`, `DR-AGE-007` = spec `007`, `DR-RESTRAO-010` = spec `010`.
 
 ---
 
@@ -88,7 +88,7 @@ resolveIndicator(ReferencedataOffenceResponse offence) → Optional<String>:
 ## 7. YAML Rule Structure
 
 **Rule file**: `src/main/resources/rules/DR-SENT-011.yaml` — already authored.
-**Priority**: `2000` (after DR-SENT-001 at 1000, before DR-AGE-007 at 7000)
+**Priority**: `12000` (after DR-RESTRAO-010 at 11000; unique priority required — duplicate 11000 caused undefined evaluation order and was corrected 2026-10-22)
 **Severity**: `WARNING` (advisory per spec; never to be upgraded per Constitution §VI)
 **validationLevel**: `OFFENCE`
 **Custodial short codes** (18 total):

@@ -47,8 +47,8 @@ getCustodialIndicator(offenceCode: String) → Optional<String>
 - Any value other than `"Y"` or `"N"` (case-sensitive) from either source is treated as absent.
 - Returns `Optional.empty()` when: lookup disabled, blank `offenceCode`, non-2xx, timeout,
   empty offence list, or neither source has `"Y"`/`"N"` — same fail-open contract as `lookupMisCode`.
-- `@Cacheable(value = "referencedataOffences", key = "#offenceCode", unless = "#result == null")` —
-  reuses the same Caffeine cache as `lookupMisCode`; successful lookups cached by code, failures not.
+- `@Cacheable(value = "referencedataOffences", key = "'ci:' + #offenceCode", unless = "#result == null")` —
+  reuses the same Caffeine cache as `lookupMisCode`; the `"ci:"` prefix keeps custodial-indicator entries disjoint from `lookupMisCode` entries (which use the bare `offenceCode`); successful lookups cached, failures not.
 - Logs at WARN on network/HTTP failure, DEBUG when neither source has a usable value.
 
 ---

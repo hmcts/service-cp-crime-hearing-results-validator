@@ -1,7 +1,7 @@
 # Implementation Plan: CRA-256 – Custodial Sentence Recorded Against Non-Imprisonable Offence (Warning)
 
-**Branch**: `dev/CRA-256-custodial-sentence-recorded-against-non-imprisonable-offence` | **Date**: 2026-09-25 (v3 updated 2026-10-06) | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/011-custodial-non-imprisonable-warning/spec.md`
+**Branch**: `dev/CRA-256-to-rv-2634` | **Date**: 2026-09-25 (v3 updated 2026-10-06; v4 updated 2026-10-22) | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `specs/013-custodial-non-imprisonable-warning/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ The rule requires:
 ### Documentation (this feature)
 
 ```text
-specs/011-custodial-non-imprisonable-warning/
+specs/013-custodial-non-imprisonable-warning/
 ├── plan.md                           # This file
 ├── research.md                       # Phase 0 output (updated v3)
 ├── data-model.md                     # Phase 1 output (updated v3)
@@ -99,7 +99,7 @@ Full findings in [research.md](research.md). Key decisions (v3):
 | Decision | Outcome |
 |----------|---------|
 | Rule ID | `DR-SENT-011` |
-| YAML priority | `11000` (suffix × 1000 convention; slots after DR-SEX-008 @ 8000) |
+| YAML priority | `12000` (suffix × 1000 convention; slots after DR-RESTRAO-010 @ 11000) |
 | Preprocessor type qualifier | `"non-imprisonable-offence"` |
 | Preprocessor class | `NonImprisonableOffencePreprocessor` |
 | Context record | `NonImprisonableOffenceContext` |
@@ -248,7 +248,7 @@ Integration tests (`NonImprisonableOffenceRuleIT`) use `REFERENCEDATA_OFFENCE_WI
 - AC5: `custodialIndicator: "Y"`, `details.document.libra.custodialindicator.code: "N"` in stub → no warning (column wins)
 - AC6: `custodialIndicator: null`, no `details.document.libra.custodialindicator` in stub → no warning
 - AC7: non-custodial short code, `custodialIndicator: "N"` in stub → no warning (no lookup call at all)
-- Coexistence with DR-SENT-001 and DR-RESTRAO-010 warnings
+- Coexistence with DR-SENT-001 (defendant-level) and DR-RESTRAO-010 (offence-level) warnings — DR-RESTRAO-010 is present in this branch; the test asserts `hasSize(1)` for each rule
 - `isValid = true` and Share button not blocked
 
 ### Implementation Order (TDD — Constitution §VIII)
@@ -270,7 +270,7 @@ Integration tests (`NonImprisonableOffenceRuleIT`) use `REFERENCEDATA_OFFENCE_WI
 |------|-------|-----------|
 | `OffenceDto` upstream DTO change | None — no longer needed | **NOT BLOCKING** |
 | `libs.versions.toml` revert to 26.25 | This repo | YES — first task |
-| `validation_rule` DB row for DR-SENT-011 | Ops / Liquibase migration (already in `V1.012__insert_dr_sent_011.sql`) | Optional at dev time; required for production |
+| `validation_rule` DB row for DR-SENT-011 | Ops / Liquibase migration (already in `V1.013__insert_dr_sent_011.sql`) | Optional at dev time; required for production |
 
 ## Complexity Tracking
 

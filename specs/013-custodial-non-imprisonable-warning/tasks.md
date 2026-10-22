@@ -1,14 +1,14 @@
 # Tasks: CRA-256 – Custodial Sentence Recorded Against Non-Imprisonable Offence (Warning)
 
-**Input**: Design documents from `specs/011-custodial-non-imprisonable-warning/`
-**Branch**: `dev/CRA-256-custodial-sentence-recorded-against-non-imprisonable-offence`
+**Input**: Design documents from `specs/013-custodial-non-imprisonable-warning/`
+**Branch**: `dev/CRA-256-to-rv-2634`
 **Rule ID**: `DR-SENT-011`
 **Plan**: [plan.md](plan.md) | **Spec**: [spec.md](spec.md)
 **Generated**: 2026-10-06 (v3 — reference-data lookup approach)
 
 **TDD Order (Constitution §VIII)**: Tests MUST be written before production code. Each test must run and FAIL at the assertion level — not a compilation error — before the production code that satisfies it is written.
 
-**Already shipped** (no task needed): `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.012__insert_dr_sent_011.sql`, `IntegrationTestBase.REFERENCEDATA_OFFENCE_WIRE_MOCK`.
+**Already shipped** (no task needed): `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.013__insert_dr_sent_011.sql`, `IntegrationTestBase.REFERENCEDATA_OFFENCE_WIRE_MOCK`.
 
 ---
 
@@ -18,7 +18,7 @@
 
 - [x] T001 Revert `api-hearing-results-validator = "26.26"` to `"26.25"` in `gradle/libs.versions.toml` (single-line change)
 - [x] T002 Extend `src/main/java/uk/gov/hmcts/cp/services/referencedata/ReferencedataOffenceResponse.java` — add `String custodialIndicator` and `OffenceDetails details` fields to the existing record; add four package-private nested records `OffenceDetails(OffenceDocument document)`, `OffenceDocument(LibraSection libra)`, `LibraSection(CustodialIndicatorCode custodialindicator)`, `CustodialIndicatorCode(String code)` — all annotated `@JsonIgnoreProperties(ignoreUnknown = true)`
-- [x] T003 Declare stub `getCustodialIndicator(String offenceCode)` on `src/main/java/uk/gov/hmcts/cp/services/referencedata/ReferencedataOffenceClient.java` — body returns `Optional.empty()`; annotate with `@Cacheable(value = "referencedataOffences", key = "#offenceCode", unless = "#result == null")` — this lets tests compile and fail at assertion, not compilation
+- [x] T003 Declare stub `getCustodialIndicator(String offenceCode)` on `src/main/java/uk/gov/hmcts/cp/services/referencedata/ReferencedataOffenceClient.java` — body returns `Optional.empty()`; annotate with `@Cacheable(value = "referencedataOffences", key = "'ci:' + #offenceCode", unless = "#result == null")` (the `"ci:"` prefix keeps custodial-indicator entries disjoint from `lookupMisCode` entries in the shared cache) — this lets tests compile and fail at assertion, not compilation
 - [x] T004 Rewrite `src/main/java/uk/gov/hmcts/cp/services/rules/cel/NonImprisonableOffencePreprocessor.java` as a compilable skeleton — add `private final ReferencedataOffenceClient referencedataOffenceClient` constructor field via `@RequiredArgsConstructor`; replace the removed `offence.getCustodialIndicator()` / `offence.getLibraCustodialIndicatorCode()` calls with a stub call to `referencedataOffenceClient.getCustodialIndicator(offence.getOffenceCode())`; `preprocess()` may still return `nonImprisonableCount = 0` for all offences — goal is compilation only
 - [x] T005 Update `src/test/java/uk/gov/hmcts/cp/services/rules/ValidationRuleTestHelper.java` — remove the `offenceWithCustodialIndicator(String id, int countNumber, String title, String custodialIndicator, String libraCustodialIndicatorCode)` helper method and its `.custodialIndicator()` / `.libraCustodialIndicatorCode()` builder calls that do not compile against `OffenceDto` `26.25`; update callers in `NonImprisonableOffencePreprocessorTest.java` to use `offenceWithCode()` instead — confirm `gradle compileTestJava` passes
 
@@ -74,7 +74,7 @@
 
 - [x] T014 [US4] Add `Ac7NonCustodialResult` nested class to `NonImprisonableOffenceRuleIT.java` — request uses `shortCode: "COEW"`; register a stub but also verify `REFERENCEDATA_OFFENCE_WIRE_MOCK.verify(0, getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH)))` (no lookup made); asserts no DR-SENT-011 warning; confirm GREEN
 
-- [x] T015 [P] [US5] Add `OffenceLevelCoexistence` nested class to `NonImprisonableOffenceRuleIT.java` — hearing has two offences: one with `IMP` result (stub `custodialIndicator: "N"` → DR-SENT-011 fires) and one with `RESTRAO` result with two protected persons (→ DR-RESTRAO-010 fires); asserts DR-SENT-011 warning present, DR-RESTRAO-010 absent until CRA-260 merges (TODO marker in test)
+- [x] T015 [P] [US5] Add `OffenceLevelCoexistence` nested class to `NonImprisonableOffenceRuleIT.java` — hearing has two offences: one with `IMP` result (stub `custodialIndicator: "N"` → DR-SENT-011 fires) and one with `RESTRAO` result with two protected persons (→ DR-RESTRAO-010 fires); asserts both warnings present (`hasSize(1)` each) — TODO resolved when DR-RESTRAO-010 merged into this branch via `rv-2634`
 
 - [x] T016 [P] [US5] Add `DefendantLevelCoexistence` nested class to `NonImprisonableOffenceRuleIT.java` — hearing has three IMP offences all concurrent/consecutive (no primary → DR-SENT-001 fires at DEFENDANT level), one of them has `custodialIndicator: "N"` stub (→ DR-SENT-011 fires at OFFENCE level); asserts both warnings present, `isValid: true`
 
@@ -86,10 +86,10 @@
 
 **Purpose**: Live API stubs, static analysis clean, full build green.
 
-- [x] T017 Update `wiremock/mappings/referencedataoffences-stub.json` — add stub entries for live API test offence codes (e.g. `live-nonimprisonable-n`, `live-nonimprisonable-y`) following the existing pattern in that file; these are picked up by docker-compose WireMock automatically
+- [x] T017 Create `wiremock/mappings/referencedataoffences-nonimprisonable-stub.json` — 6 individual stubs (one per offence code: `live-nonimprisonable-n`, `live-nonimprisonable-y`, `live-nonimprisonable-json-n`, `live-nonimprisonable-json-y`, `live-nonimprisonable-no-ind`, `live-nonimprisonable-col-y-json-n`), each using `equalTo` on `cjsoffencecode` so each code returns its own `custodialIndicator`/`details` response; picked up by docker-compose WireMock automatically
 - [x] T018 Run `gradle checkstyleMain pmdMain` and fix any violations in changed files (`ReferencedataOffenceClient.java`, `ReferencedataOffenceResponse.java`, `NonImprisonableOffencePreprocessor.java`) — `maxWarnings = 0`
 - [x] T019 Run `gradle build` — full build (Checkstyle + PMD + all unit + integration tests); fix any remaining failures
-- [x] T020 [P] Verify `src/test/java/uk/gov/hmcts/cp/config/ValidationRuleAutoConfigurationTest.java` still passes — confirms DR-SENT-011 rule is loaded and `NonImprisonableOffencePreprocessor` registers under the `"non-imprisonable-offence"` qualifier
+- [x] T020 [P] Verify `src/test/java/uk/gov/hmcts/cp/config/ValidationRuleAutoConfigurationTest.java` still passes — confirms DR-SENT-011 rule is loaded and `NonImprisonableOffencePreprocessor` registers under the `"non-imprisonable-offence"` qualifier; includes new `should_have_unique_priorities_and_expected_rule_id_priority_pairs` test that asserts each rule's exact (ruleId, priority) pair and that no two rules share a priority
 
 **Checkpoint**: `gradle build` GREEN — zero Checkstyle warnings, zero PMD violations, all tests pass.
 
@@ -153,8 +153,14 @@ Continue through Phase 3 (T011, T012), Phase 4, Phase 5.
 ## Notes
 
 - [P] tasks = different files, no incomplete dependencies
-- `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.012__insert_dr_sent_011.sql` are already shipped — no tasks for these
+- `DR-SENT-011.yaml`, `NonImprisonableOffenceContext.java`, `V1.013__insert_dr_sent_011.sql` are already shipped — no tasks for these
 - `REFERENCEDATA_OFFENCE_WIRE_MOCK` is already in `IntegrationTestBase` — no infrastructure task needed
 - The `referencedataOffences` Caffeine cache is shared between `lookupMisCode` (key = `offenceCode`) and `getCustodialIndicator` (key = `'ci:' + offenceCode`) — disjoint key spaces prevent cross-contamination; no config changes needed
 - Do NOT add per-rule override / severity-ceiling ITs to `NonImprisonableOffenceRuleIT` — that coverage lives once in `ValidationRuleOverrideIntegrationTest`
 - Commit after each phase checkpoint using Conventional Commits
+
+### Post-merge corrections (2026-10-22, branch `dev/CRA-256-to-rv-2634`)
+
+- **Priority collision fixed**: DR-SENT-011 was originally assigned `priority: 11000`, which collided with DR-RESTRAO-010 (also `11000`) after that rule merged into the release base. Updated to `priority: 12000` in `src/main/resources/rules/DR-SENT-011.yaml`.
+- **Coexistence test updated**: `NonImprisonableOffenceRuleIT.OffenceLevelCoexistence` had a `TODO CRA-260` placeholder asserting `hasSize(0)` for DR-RESTRAO-010. Resolved to `hasSize(1)` once DR-RESTRAO-010 was present in the branch.
+- **Priority uniqueness test added**: `ValidationRuleAutoConfigurationTest.should_have_unique_priorities_and_expected_rule_id_priority_pairs` added to catch future collisions at build time.

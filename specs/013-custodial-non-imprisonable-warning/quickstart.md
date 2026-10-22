@@ -4,7 +4,7 @@
 
 ## Try it locally
 
-> **HTTP scratch file**: `specs/011-custodial-non-imprisonable-warning/CRA-256.http` contains
+> **HTTP scratch file**: `specs/013-custodial-non-imprisonable-warning/CRA-256.http` contains
 > ready-to-run requests for all acceptance-criteria scenarios (US1–US5 + edge cases). Open it in
 > IntelliJ or VS Code (REST Client) and run against a live stack — see the prerequisite comment at
 > the top of the file.

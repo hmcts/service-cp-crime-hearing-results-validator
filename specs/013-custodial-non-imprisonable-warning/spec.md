@@ -1,6 +1,6 @@
 # Feature Specification: Custodial Sentence Recorded Against Non-Imprisonable Offence – Warning
 
-**Feature Branch**: `dev/CRA-256-custodial-sentence-recorded-against-non-imprisonable-offence`
+**Feature Branch**: `dev/CRA-256-to-rv-2634`
 **Jira Ticket**: CRA-256
 **Created**: 2026-09-25
 **Status**: Draft (v3 — updated 2026-10-06)
@@ -122,7 +122,7 @@ When the same hearing has triggered additional offence-level or defendant-level 
 - **SC-001**: Caseworkers are warned before sharing whenever a custodial sentence is recorded against a non-imprisonable offence — 100% of such cases trigger the advisory warning.
 - **SC-002**: No false-positive warnings appear for imprisonable offences, non-custodial results, or offences with no indicator data — 0 false positives in any of those scenarios.
 - **SC-003**: The column-over-`details_json` precedence rule is correctly applied in all cases — when the column holds a value it always wins, regardless of `details_json`.
-- **SC-004**: The warning does not interrupt the sharing workflow — the Share button remains enabled and caseworkers can complete sharing without additional steps.
+- **SC-004**: The warning does not interrupt the sharing workflow — the Share button remains enabled and caseworkers can complete sharing without additional steps. (Verified by `isValid=true` in the validation response; Share button rendering is out of scope for this service.)
 - **SC-005**: The warning coexists correctly with all other active warnings on the Manage Hearings screen — no warnings are hidden or duplicated due to this rule firing.
 
 ## Assumptions

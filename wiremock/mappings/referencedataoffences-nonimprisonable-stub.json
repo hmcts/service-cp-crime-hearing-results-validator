@@ -1,0 +1,165 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-n" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-n-001",
+              "cjsOffenceCode": "live-nonimprisonable-n",
+              "custodialIndicator": "N"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-y" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-y-001",
+              "cjsOffenceCode": "live-nonimprisonable-y",
+              "custodialIndicator": "Y"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-json-n" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-json-n-001",
+              "cjsOffenceCode": "live-nonimprisonable-json-n",
+              "custodialIndicator": null,
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "N",
+                      "description": "NO"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-json-y" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-json-y-001",
+              "cjsOffenceCode": "live-nonimprisonable-json-y",
+              "custodialIndicator": null,
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "Y",
+                      "description": "YES"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-no-ind" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-no-ind-001",
+              "cjsOffenceCode": "live-nonimprisonable-no-ind"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": { "equalTo": "live-nonimprisonable-col-y-json-n" }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/vnd.referencedataoffences.offences-list+json" },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "live-ni-col-y-json-n-001",
+              "cjsOffenceCode": "live-nonimprisonable-col-y-json-n",
+              "custodialIndicator": "Y",
+              "details": {
+                "document": {
+                  "libra": {
+                    "custodialindicator": {
+                      "code": "N",
+                      "description": "NO"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
