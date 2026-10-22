@@ -47,6 +47,9 @@ public class ReferencedataOffenceClient {
     /** Header the {@code cpp-context-referencedata-offences} Drools ACL requires per request. */
     private static final String CJSCPPUID_HEADER = "CJSCPPUID";
 
+    private static final String CUSTODIAL_INDICATOR_Y = "Y";
+    private static final String CUSTODIAL_INDICATOR_N = "N";
+
     private final ReferencedataOffenceProperties properties;
     private final RestTemplate restTemplate;
 
@@ -89,6 +92,80 @@ public class ReferencedataOffenceClient {
             misCode = fetchMisCode(offenceCode);
         }
         return misCode;
+    }
+
+    /**
+     * Looks up the effective custodial indicator for an offence, by its {@code cjsOffenceCode}.
+     * Applies column-over-JSON precedence client-side: the top-level {@code custodialIndicator}
+     * column value takes precedence; {@code details.document.libra.custodialindicator.code} is
+     * consulted only when the column is absent. Returns {@link Optional#empty()} on any failure
+     * (fail-open: treat as imprisonable, no warning).
+     *
+     * <p>Uses the {@code "ci:"} key prefix in the shared {@code referencedataOffences} cache to
+     * keep custodial-indicator entries separate from {@link #lookupMisCode} entries — both methods
+     * cache by {@code offenceCode} but return semantically different {@code String} values, so
+     * the same raw key would cause cross-contamination (e.g. a cached misCode being returned as a
+     * custodial indicator and vice-versa).
+     *
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
+     * @return {@code Optional.of("N")} when the offence is non-imprisonable,
+     *         {@code Optional.of("Y")} when explicitly imprisonable,
+     *         or {@link Optional#empty()} when the indicator is unknown or the lookup fails
+     */
+    @Cacheable(value = "referencedataOffences", key = "'ci:' + #offenceCode", unless = "#result == null")
+    public Optional<String> getCustodialIndicator(final String offenceCode) {
+        Optional<String> indicator = Optional.empty();
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            indicator = fetchCustodialIndicator(offenceCode);
+        }
+        return indicator;
+    }
+
+    private Optional<String> fetchCustodialIndicator(final String offenceCode) {
+        Optional<String> indicator = Optional.empty();
+        try {
+            final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
+                    .build(Map.of("offenceCode", offenceCode));
+            final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
+                    .header(HttpHeaders.ACCEPT, properties.acceptHeader());
+            final String userId = MDC.get(TracingFilter.USER_ID);
+            if (userId != null && !userId.isBlank()) {
+                requestBuilder.header(CJSCPPUID_HEADER, userId);
+            }
+            final RequestEntity<Void> request = requestBuilder.build();
+            final ResponseEntity<ReferencedataOffencesListResponse> response =
+                    restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
+            final ReferencedataOffenceResponse offence = firstOffenceOf(response.getBody());
+            if (offence != null) {
+                indicator = resolveIndicator(offence);
+            } else {
+                log.debug("No offence returned for offenceCode={} (custodial indicator lookup)",
+                        Encode.forJava(offenceCode));
+            }
+        } catch (RestClientException | IllegalArgumentException e) {
+            log.warn("Reference-data custodial indicator lookup failed for offenceCode={} ({}): {}",
+                    Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
+        }
+        return indicator;
+    }
+
+    private static Optional<String> resolveIndicator(final ReferencedataOffenceResponse offence) {
+        final String col = offence.custodialIndicator();
+        Optional<String> result = Optional.empty();
+        if (CUSTODIAL_INDICATOR_Y.equals(col) || CUSTODIAL_INDICATOR_N.equals(col)) {
+            result = Optional.of(col);
+        } else {
+            final ReferencedataOffenceResponse.OffenceDetails details = offence.details();
+            if (details != null && details.document() != null
+                    && details.document().libra() != null
+                    && details.document().libra().custodialindicator() != null) {
+                final String code = details.document().libra().custodialindicator().code();
+                if (CUSTODIAL_INDICATOR_Y.equals(code) || CUSTODIAL_INDICATOR_N.equals(code)) {
+                    result = Optional.of(code);
+                }
+            }
+        }
+        return result;
     }
 
     private Optional<String> fetchMisCode(final String offenceCode) {
