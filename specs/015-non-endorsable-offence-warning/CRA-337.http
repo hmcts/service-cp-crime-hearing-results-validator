@@ -1,0 +1,173 @@
+### CRA-337 — Non-endorsable offence warning (DR-END-014)
+### Requires: service running on localhost:4550, WireMock returning endorsableFlag per offence code
+### Non-endorsable codes (WireMock stub): live-ne-end-trigger, live-ne-disq-trigger, live-ne-both-off
+### Endorsable code (WireMock stub): live-ne-endorsable
+
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+
+### AC1a — Endorsement on non-endorsable offence (expect WARNING DR-END-014 endorsement condition)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-001",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-end-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-end-trigger", "offenceCode": "live-ne-end-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC1b — Disqualification on non-endorsable offence (expect WARNING DR-END-014 disqualification condition)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-002",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "DDO", "label": "Disqualification",
+     "defendantId": "d1", "offenceId": "live-ne-disq-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-disq-trigger", "offenceCode": "live-ne-disq-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC1c — Both families on same non-endorsable offence (expect two DR-END-014 warnings: endorsement + disqualification conditions)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-003",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-both-off"},
+    {"resultLineId": "rl-002", "shortCode": "DDO", "label": "Disqualification",
+     "defendantId": "d1", "offenceId": "live-ne-both-off"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-both-off", "offenceCode": "live-ne-both-off",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC2 — Endorsement trigger on endorsable offence (expect no DR-END-014 warning)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-004",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-endorsable"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-endorsable", "offenceCode": "live-ne-endorsable",
+     "offenceTitle": "Endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC3 — Non-endorsable disqualification family (DDRN) on non-endorsable offence (expect no DR-END-014 warning)
+### DDRN is not in disqualificationTriggerShortCodes — preprocessor skips ref-data and emits no context
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-005",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "DDRN", "label": "Non-endorsable disqualification",
+     "defendantId": "d1", "offenceId": "live-ne-disq-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-disq-trigger", "offenceCode": "live-ne-disq-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC4 — Non-trigger result on non-endorsable offence (expect no DR-END-014 warning)
+### IMP is not in endorsementShortCodes or disqualificationTriggerShortCodes — ref-data not called
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-006",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "IMP", "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "live-ne-end-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-end-trigger", "offenceCode": "live-ne-end-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC5 — Multiple offences assessed independently (expect exactly one DR-END-014 warning for live-ne-end-trigger only)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-007",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-end-trigger"},
+    {"resultLineId": "rl-002", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-endorsable"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-end-trigger", "offenceCode": "live-ne-end-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"},
+    {"offenceId": "live-ne-endorsable", "offenceCode": "live-ne-endorsable",
+     "offenceTitle": "Endorsable test offence", "orderIndex": 2, "defendantId": "d1"}
+  ]
+}
+
+### AC6 — Coexistence with other rule warnings
+### Automated coverage: NonEndorsableOffenceRuleIT.endorsementWarningAndCustodialWarning_shouldBothAppear
+### Manual test: add an IMP result line to AC1a body above; expect both DR-END-014 and DR-SENT-001 in warnings
