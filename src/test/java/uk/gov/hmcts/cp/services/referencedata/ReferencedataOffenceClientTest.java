@@ -51,6 +51,38 @@ class ReferencedataOffenceClientTest {
     }
 
     @Nested
+    @DisplayName("endorsableFlag present or absent")
+    class EndorsableFlagPresence {
+
+        @Test
+        void getEndorsableFlag_whenTrue_shouldReturnTrue() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": true, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).contains(true);
+        }
+
+        @Test
+        void getEndorsableFlag_whenFalse_shouldReturnFalse() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": false, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).contains(false);
+        }
+
+        @Test
+        void getEndorsableFlag_whenFieldMissing_shouldReturnEmpty() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("misCode present or absent")
     class MisCodePresence {
 
@@ -167,6 +199,24 @@ class ReferencedataOffenceClientTest {
 
             assertThat(result).isEmpty();
         }
+
+        @Test
+        void lookupMisCode_whenResponseBodyNull_shouldReturnEmpty() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(204)));
+
+            assertThat(client().lookupMisCode(OFFENCE_CODE)).isEmpty();
+        }
+
+        @Test
+        void getEndorsableFlag_whenServerReturns500_shouldReturnEmpty() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(500)));
+
+            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).isEmpty();
+        }
     }
 
     @Nested
@@ -240,6 +290,23 @@ class ReferencedataOffenceClientTest {
             Optional<String> result = client().lookupMisCode(null);
 
             assertThat(result).isEmpty();
+        }
+
+        @Test
+        void getEndorsableFlag_whenDisabled_shouldReturnEmpty() {
+            assertThat(new ReferencedataOffenceClient(properties(false)).getEndorsableFlag(OFFENCE_CODE))
+                    .isEmpty();
+            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH)));
+        }
+
+        @Test
+        void getEndorsableFlag_whenOffenceCodeNull_shouldReturnEmpty() {
+            assertThat(client().getEndorsableFlag(null)).isEmpty();
+        }
+
+        @Test
+        void getEndorsableFlag_whenOffenceCodeBlank_shouldReturnEmpty() {
+            assertThat(client().getEndorsableFlag(" ")).isEmpty();
         }
     }
 

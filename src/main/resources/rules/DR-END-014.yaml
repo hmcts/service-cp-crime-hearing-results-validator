@@ -1,0 +1,53 @@
+rule:
+  id: "DR-END-014"
+  title: "Endorsement or disqualification result on non-endorsable offence"
+  description: >-
+    Warns when an endorsement result (LEP, LEN, LEA) or a disqualification result
+    intended for endorsable offences (DDO/DDD/DDP families plus DDRCOT) is recorded
+    against an offence whose reference data records endorsable_flag as false or absent.
+    Advisory only — does not block saving or sharing.
+  priority: 14000
+  enabled: true
+
+  preprocessing:
+    type: "non-endorsable-offence"
+    endorsementShortCodes:
+      - LEP
+      - LEN
+      - LEA
+    disqualificationTriggerShortCodes:
+      - DDO
+      - DDOL
+      - DDOR
+      - DDOTE
+      - DDOTEL
+      - DDD
+      - DDDL
+      - DDDT
+      - DDDTL
+      - DDDTO
+      - DDP
+      - DDPL
+      - DDPR
+      - DDPTE
+      - DDPTEL
+      - DDRCOT
+
+  conditions:
+    - id: "AC1"
+      name: "Endorsement on non-endorsable offence"
+      expression: "endorsementCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence is not endorsable. Remove the endorsement result.
+      affectedOffenceSet: "nonEndorsableEndorsementOffenceIds"
+      validationLevel: OFFENCE
+
+    - id: "AC2"
+      name: "Disqualification on non-endorsable offence"
+      expression: "disqualificationCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        This offence is not endorsable. Remove the disqualification result, or record a disqualification for non-endorsable offence result instead.
+      affectedOffenceSet: "nonEndorsableDisqualificationOffenceIds"
+      validationLevel: OFFENCE

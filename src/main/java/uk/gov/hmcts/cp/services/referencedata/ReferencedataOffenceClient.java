@@ -91,13 +91,61 @@ public class ReferencedataOffenceClient {
         return misCode;
     }
 
+    /**
+     * Looks up the {@code endorsableFlag} for an offence, by its {@code cjsOffenceCode}.
+     *
+     * <p>Fail-open: any failure (timeout, non-2xx, malformed body, missing field) returns
+     * {@link Optional#empty()}, which callers treat as non-endorsable — conservative default
+     * that ensures warnings fire rather than being silently suppressed. Only successful responses
+     * are cached, so a transient outage does not persist into the full cache TTL.
+     *
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
+     * @return {@code Optional.of(true)} if endorsable, {@code Optional.of(false)} if
+     *         non-endorsable, or {@link Optional#empty()} if unavailable for any reason
+     */
+    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode", unless = "#result == null")
+    public Optional<Boolean> getEndorsableFlag(final String offenceCode) {
+        Optional<Boolean> endorsableFlag = Optional.empty();
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            endorsableFlag = fetchEndorsableFlag(offenceCode);
+        }
+        return endorsableFlag;
+    }
+
+    private Optional<Boolean> fetchEndorsableFlag(final String offenceCode) {
+        Optional<Boolean> endorsableFlag = Optional.empty();
+        final ReferencedataOffenceResponse offence = fetchOffenceResponse(offenceCode);
+        if (offence != null && offence.endorsableFlag() != null) {
+            endorsableFlag = Optional.of(offence.endorsableFlag());
+        } else if (offence != null) {
+            log.debug("No endorsableFlag returned for offenceCode={}", Encode.forJava(offenceCode));
+        }
+        return endorsableFlag;
+    }
+
     private Optional<String> fetchMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
+        final ReferencedataOffenceResponse offence = fetchOffenceResponse(offenceCode);
+        if (offence != null && offence.misCode() != null && !offence.misCode().isBlank()) {
+            misCode = Optional.of(offence.misCode());
+        } else if (offence != null) {
+            log.debug("No misCode returned for offenceCode={}", Encode.forJava(offenceCode));
+        }
+        return misCode;
+    }
+
+    /**
+     * Executes the HTTP lookup for a given offence code and returns the first matching
+     * {@link ReferencedataOffenceResponse}, or {@code null} on any failure (timeout, non-2xx,
+     * malformed body, or empty offences list). Callers map the response field they need.
+     *
+     * <p>UriComponentsBuilder percent-encodes the expanded {@code {offenceCode}} template
+     * variable, so a value containing reserved URI characters ({@code /}, {@code ?}, {@code #},
+     * …) is treated as an opaque query value rather than altering the resulting path/query.
+     */
+    private ReferencedataOffenceResponse fetchOffenceResponse(final String offenceCode) {
+        ReferencedataOffenceResponse offence = null;
         try {
-            // UriComponentsBuilder percent-encodes the expanded {offenceCode} template
-            // variable, unlike a raw String.replace, so a value containing reserved URI
-            // characters (/, ?, #, ...) is treated as an opaque query value rather than
-            // altering the resulting path/query.
             final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
                     .build(Map.of("offenceCode", offenceCode));
             final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
@@ -109,18 +157,12 @@ public class ReferencedataOffenceClient {
             final RequestEntity<Void> request = requestBuilder.build();
             final ResponseEntity<ReferencedataOffencesListResponse> response =
                     restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
-            final ReferencedataOffencesListResponse body = response.getBody();
-            final ReferencedataOffenceResponse offence = firstOffenceOf(body);
-            if (offence != null && offence.misCode() != null && !offence.misCode().isBlank()) {
-                misCode = Optional.of(offence.misCode());
-            } else {
-                log.debug("No misCode returned for offenceCode={}", Encode.forJava(offenceCode));
-            }
+            offence = firstOffenceOf(response.getBody());
         } catch (RestClientException | IllegalArgumentException e) {
             log.warn("Reference-data offence lookup failed for offenceCode={} ({}): {}",
                     Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
         }
-        return misCode;
+        return offence;
     }
 
     /**
@@ -131,7 +173,7 @@ public class ReferencedataOffenceClient {
     private ReferencedataOffenceResponse firstOffenceOf(final ReferencedataOffencesListResponse body) {
         ReferencedataOffenceResponse offence = null;
         if (body != null && body.offences() != null && !body.offences().isEmpty()) {
-            offence = body.offences().get(0);
+            offence = body.offences().getFirst();
         }
         return offence;
     }
