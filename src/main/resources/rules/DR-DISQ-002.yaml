@@ -44,6 +44,7 @@ rule:
       - SOCOR     # Sentence of the court for the offence recorded under offence number
       - PDW       # Previously dealt with
       - RBBO      # The court's opinion regarding breach of bail conditions
+      - dnull     # Dismissed - proceedings deemed a nullity
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test

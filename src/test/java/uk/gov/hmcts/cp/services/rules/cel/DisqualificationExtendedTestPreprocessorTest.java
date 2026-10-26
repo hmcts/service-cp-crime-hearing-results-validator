@@ -48,7 +48,7 @@ class DisqualificationExtendedTestPreprocessorTest {
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
             "err", "errf", "dhd", "oni", "dcs", "DCCFSA", "DCCFSTA", "cquash", "iquash",
-            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO");
+            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO", "dnull");
 
     /** Kept in lockstep with the YAML by {@link #extendedTestShortCodes_should_match_the_known_baseline_exactly()}. */
     private static final List<String> EXPECTED_EXTENDED_TEST_SHORT_CODES = List.of("DDOTE", "DDOTEL");
