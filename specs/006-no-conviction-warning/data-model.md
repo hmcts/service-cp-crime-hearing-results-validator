@@ -145,6 +145,7 @@ rule:
       - SOCOR
       - PDW
       - RBBO
+      - dnull
 
   conditions:
     - id: "AC1"

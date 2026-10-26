@@ -47,7 +47,7 @@ class NoConvictionPreprocessorTest {
     private static final List<String> EXPECTED_EXCLUDED_SHORT_CODES = List.of(
             "wdrn", "WDRNOFF", "dism", "dine", "dini", "disch", "disc", "ctrof", "iremfile",
             "err", "errf", "dhd", "oni", "dcs", "DCCFSA", "DCCFSTA", "cquash", "iquash",
-            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO");
+            "RESTRAO", "stayp", "RBBH", "SOCOR", "PDW", "RBBO", "dnull");
 
     private final NoConvictionPreprocessor preprocessor = new NoConvictionPreprocessor();
 

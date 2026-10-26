@@ -18,7 +18,7 @@
 
 **Rationale**: The user stories explicitly reuse the same excluded short-code set (`wdrn`, `WDRNOFF`, `dism`, `dine`, `dini`, `disch`, `disc`, `ctrof`, `iremfile`) as DR-DISQ-001, word for word. Re-deriving this logic independently would duplicate a proven implementation for no benefit and risks the two rules silently drifting apart on what counts as a "final, substantive" result.
 
-**Update**: DR-CONV-006's `excludedFinalShortCodes` was later extended with `err`, `errf`, `dhd`, and on 2026-09-29 with `oni`, `dcs`, `DCCFSA`, `DCCFSTA`, `cquash`, `iquash`, `RESTRAO`, `stayp`, `RBBH`, `SOCOR`, `PDW`, `RBBO`. Both extensions were also applied to DR-DISQ-002, so the two lists are currently identical. They remain configured independently per YAML file (Decision 4) and are not required to stay identical.
+**Update**: DR-CONV-006's `excludedFinalShortCodes` was later extended with `err`, `errf`, `dhd`, and on 2026-09-29 with `oni`, `dcs`, `DCCFSA`, `DCCFSTA`, `cquash`, `iquash`, `RESTRAO`, `stayp`, `RBBH`, `SOCOR`, `PDW`, `RBBO`, and on 2026-10-26 with `dnull`. All extensions were also applied to DR-DISQ-002, so the two lists are currently identical. They remain configured independently per YAML file (Decision 4) and are not required to stay identical.
 
 **Alternatives considered**: Introducing a shared `FinalResultClassifier` helper used by both `DisqualificationExtendedTestPreprocessor` and the new preprocessor — considered but rejected for this change. It would touch an already-shipped, tested class (`DisqualificationExtendedTestPreprocessor`) for a refactor that isn't required by this feature, and the constitution's Spec-Driven Build Loop discourages incidental refactors riding on a feature change. Flagged as a follow-up opportunity, not done here.
 
@@ -76,7 +76,7 @@
 
 | Unknown | Resolution |
 |---------|------------|
-| Excluded final short-code list | Started identical to `DR-DISQ-002`'s `excludedFinalShortCodes` (confirmed by user instruction to reuse); later extended with `err`, `errf`, `dhd` and the 2026-09-29 codes (`oni` … `RBBO`), applied to both rules |
+| Excluded final short-code list | Started identical to `DR-DISQ-002`'s `excludedFinalShortCodes` (confirmed by user instruction to reuse); later extended with `err`, `errf`, `dhd` the 2026-09-29 codes (`oni` … `RBBO`) and `dnull` (2026-10-26), applied to both rules |
 | Conviction signal | `OffenceDto.isConvicted`, already present upstream (added for `DR-CTL-001`); no distinction needed between plea- and verdict-driven conviction |
 | Offence-code scope | Applies to all offences — no `relevantOffenceCodes` restriction, unlike `DR-DISQ-001` |
 | Preprocessor pattern | Per-offence, matching `DisqualificationExtendedTestPreprocessor` / `CtlMissingPreprocessor` |

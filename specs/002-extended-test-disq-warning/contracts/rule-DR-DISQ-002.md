@@ -10,7 +10,11 @@ Three additional short codes are added to `excludedFinalShortCodes`: `err` and `
 
 ## Revision — 2026-09-29
 
-Twelve further short codes are added to `excludedFinalShortCodes`: `oni` (Offence not on indictment), `dcs` (Defendant committed suicide), `DCCFSA` / `DCCFSTA` (Defendant's costs payable from central funds — sum assessed / sum to be assessed), `cquash` (Count quashed), `iquash` (Indictment quashed), `RESTRAO` (Restraining Order), `stayp` (Proceedings stayed), `RBBH` (Result on breach of bail conditions), `SOCOR` (Sentence of the court for the offence recorded under offence number), `PDW` (Previously dealt with) and `RBBO` (The court's opinion regarding breach of bail conditions). The same codes are added to DR-CONV-006. An offence whose final results are drawn solely from the excluded list (e.g. `disch` + `DCCFSA`) does not trigger the warning; this is the existing "at least one non-excluded `'F'` line" gate, so no CEL, preprocessor, or schema change is required. The YAML rule definition below reflects the full, current twenty-four-code list.
+Twelve further short codes are added to `excludedFinalShortCodes`: `oni` (Offence not on indictment), `dcs` (Defendant committed suicide), `DCCFSA` / `DCCFSTA` (Defendant's costs payable from central funds — sum assessed / sum to be assessed), `cquash` (Count quashed), `iquash` (Indictment quashed), `RESTRAO` (Restraining Order), `stayp` (Proceedings stayed), `RBBH` (Result on breach of bail conditions), `SOCOR` (Sentence of the court for the offence recorded under offence number), `PDW` (Previously dealt with) and `RBBO` (The court's opinion regarding breach of bail conditions). The same codes are added to DR-CONV-006. An offence whose final results are drawn solely from the excluded list (e.g. `disch` + `DCCFSA`) does not trigger the warning; this is the existing "at least one non-excluded `'F'` line" gate, so no CEL, preprocessor, or schema change is required.
+
+## Revision — 2026-10-26
+
+One further short code is added to `excludedFinalShortCodes`: `dnull` (Dismissed - proceedings deemed a nullity). The same code is added to DR-CONV-006. Like the other excluded codes it marks a `'F'` line as a "did not proceed to a substantive outcome" result, so no CEL, preprocessor, or schema change is required. The YAML rule definition below reflects the full, current twenty-five-code list.
 
 ---
 
@@ -101,6 +105,7 @@ rule:
       - SOCOR     # Sentence of the court for the offence recorded under offence number
       - PDW       # Previously dealt with
       - RBBO      # The court's opinion regarding breach of bail conditions
+      - dnull     # Dismissed - proceedings deemed a nullity
     extendedTestShortCodes:
       - DDOTE     # obligatory disqualification with extended test
       - DDOTEL    # obligatory disqualification for life with extended test
