@@ -33,6 +33,7 @@
     <rule ref="category/java/codestyle.xml">
         <exclude name="AtLeastOneConstructor"/>
         <exclude name="CallSuperInConstructor"/>
+        <exclude name="LocalVariableDeclarationShouldBeAtStartOfBlock"/>
         <exclude name="LongVariable"/>
         <exclude name="ShortVariable"/>
         <exclude name="TooManyStaticImports"/>
