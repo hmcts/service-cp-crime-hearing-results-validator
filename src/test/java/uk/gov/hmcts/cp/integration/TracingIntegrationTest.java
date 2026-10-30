@@ -119,18 +119,12 @@ class TracingIntegrationTest extends IntegrationTestBase {
         final TypeReference<Map<String, Object>> typeReference = new TypeReference<>() {
         };
 
-        Map<String, Object> stringObjectMap = null;
         for (final String logLine : logLines) {
-            if (logLine.contains("ValidationRulesController") && stringObjectMap == null) {
-                stringObjectMap = objectMapper.readValue(logLine, typeReference);
+            if (logLine.contains("ValidationRulesController")) {
+                return objectMapper.readValue(logLine, typeReference);
             }
         }
-
-        if (stringObjectMap != null) {
-            return stringObjectMap;
-        } else {
-            throw new AssertionError("Controller log message not found in output: " + logOutput);
-        }
+        throw new AssertionError("Controller log message not found in output: " + logOutput);
     }
 
     private void assertTracingFields(final Map<String, Object> log, final String expectedTraceId, final String expectedSpanId) {
@@ -142,7 +136,7 @@ class TracingIntegrationTest extends IntegrationTestBase {
 
     private void assertCommonLogFields(final Map<String, Object> log) {
         assertEquals("uk.gov.hmcts.cp.controllers.ValidationRulesController", log.get("logger_name"));
-        assertEquals(log.get("message"), "List validation rules request received\n");
+        assertEquals("List validation rules request received\n", log.get("message"));
     }
 
     private void assertResponseHeaders(final MvcResult result, final String expectedTraceId, final String expectedSpanId) {
