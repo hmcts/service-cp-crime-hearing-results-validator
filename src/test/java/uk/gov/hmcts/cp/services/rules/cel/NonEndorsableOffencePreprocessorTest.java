@@ -104,6 +104,31 @@ class NonEndorsableOffencePreprocessorTest {
             assertThat(preprocessor.preprocess(request, config)).isEmpty();
         }
 
+        @Test
+        void lepAndLeaOnNonEndorsableOffence_shouldYieldEndorsementCountOne_andCallRefDataOnce() {
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
+            DraftValidationRequest request = request(offence("off1", "RT88026"),
+                    List.of(resultLine("rl1", "LEP", "off1"), resultLine("rl2", "LEA", "off1")));
+
+            Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
+
+            assertThat(result).containsOnlyKeys("off1");
+            assertThat(result.get("off1").endorsementCount()).isEqualTo(1L);
+            verify(referencedataOffenceClient, times(1)).lookupEndorsability("RT88026");
+        }
+
+        @Test
+        void lepAndLepDuplicateOnNonEndorsableOffence_shouldYieldEndorsementCountOne() {
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
+            DraftValidationRequest request = request(offence("off1", "RT88026"),
+                    List.of(resultLine("rl1", "LEP", "off1"), resultLine("rl2", "LEP", "off1")));
+
+            Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
+
+            assertThat(result).containsOnlyKeys("off1");
+            assertThat(result.get("off1").endorsementCount()).isEqualTo(1L);
+        }
+
     }
 
     @Nested
@@ -218,6 +243,22 @@ class NonEndorsableOffencePreprocessorTest {
         @Test
         void noResultLines_shouldYieldNoContext() {
             DraftValidationRequest request = request(offence("off1", "RT88026"), List.of());
+
+            Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
+
+            assertThat(result).isEmpty();
+            verify(referencedataOffenceClient, never()).lookupEndorsability(anyString());
+        }
+
+        @Test
+        void nullResultLines_shouldYieldNoContextAndSkipRefdataCall() {
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(null)
+                    .defendants(List.of())
+                    .offences(List.of(offence("off1", "RT88026")))
+                    .build();
 
             Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
 

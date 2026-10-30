@@ -54,6 +54,7 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
 
             performValidate(request)
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)))
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')].severity", contains("WARNING")))
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')].validationLevel", contains("OFFENCE")))
@@ -235,6 +236,44 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
             REFERENCEDATA_OFFENCE_WIRE_MOCK.verify(1,
                     getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
                             .withQueryParam("cjsoffencecode", equalTo(offenceId)));
+        }
+    }
+
+    @Nested
+    @DisplayName("Same-family duplicate triggers (spec US1 scenario 2)")
+    class SameFamilyDuplicateTriggers {
+
+        @Test
+        void lepAndLeaOnSameNonEndorsableOffence_shouldRaiseExactlyOneEndorsementWarning() throws Exception {
+            stubEndorsableFlagResponse("ne-same-fam", false);
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "ne-same-fam"},
+                        {"resultLineId": "rl2", "shortCode": "LEA", "label": "LEA label",
+                         "defendantId": "d1", "offenceId": "ne-same-fam"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+                      ],
+                      "offences": [
+                        {"offenceId": "ne-same-fam", "offenceCode": "ne-same-fam",
+                         "offenceTitle": "Non-endorsable offence", "orderIndex": 1, "defendantId": "d1"}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].offenceId",
+                            contains("ne-same-fam")));
         }
     }
 

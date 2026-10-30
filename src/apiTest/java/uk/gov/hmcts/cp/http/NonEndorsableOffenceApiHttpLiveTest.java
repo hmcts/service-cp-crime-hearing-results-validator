@@ -57,11 +57,36 @@ class NonEndorsableOffenceApiHttpLiveTest {
 
             final JsonNode json = postValidate(body);
 
+            assertThat(json.get("isValid").asBoolean()).isTrue();
             assertThat(ruleIdsOf(json.get(WARNINGS))).contains(RULE_ID_014);
             final JsonNode warning = findByRuleId(json.get(WARNINGS), RULE_ID_014);
             assertThat(warning.get("severity").asText()).isEqualTo("WARNING");
             assertThat(warning.get("validationLevel").asText()).isEqualTo("OFFENCE");
             assertThat(warning.get("affectedOffences").get(0).get("message").asText())
+                    .isEqualTo(ENDORSEMENT_MESSAGE);
+        }
+
+        @Test
+        void lenOnNonEndorsableOffence_shouldRaiseEndorsementWarning() throws Exception {
+            final String body = singleOffenceRequest("live-ne-len-trigger", "LEN");
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(ruleIdsOf(json.get(WARNINGS))).contains(RULE_ID_014);
+            assertThat(findByRuleId(json.get(WARNINGS), RULE_ID_014)
+                    .get("affectedOffences").get(0).get("message").asText())
+                    .isEqualTo(ENDORSEMENT_MESSAGE);
+        }
+
+        @Test
+        void leaOnNonEndorsableOffence_shouldRaiseEndorsementWarning() throws Exception {
+            final String body = singleOffenceRequest("live-ne-lea-trigger", "LEA");
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(ruleIdsOf(json.get(WARNINGS))).contains(RULE_ID_014);
+            assertThat(findByRuleId(json.get(WARNINGS), RULE_ID_014)
+                    .get("affectedOffences").get(0).get("message").asText())
                     .isEqualTo(ENDORSEMENT_MESSAGE);
         }
 
@@ -90,6 +115,37 @@ class NonEndorsableOffenceApiHttpLiveTest {
             assertThat(warning.get("severity").asText()).isEqualTo("WARNING");
             assertThat(warning.get("affectedOffences").get(0).get("message").asText())
                     .isEqualTo(DISQ_MESSAGE);
+        }
+    }
+
+    @Nested
+    @DisplayName("DR-END-014 — absent endorsableFlag treated as non-endorsable (cra337-010)")
+    class AbsentEndorsableFlag {
+
+        @Test
+        void absentEndorsableFlag_shouldRaiseEndorsementWarning() throws Exception {
+            final String body = singleOffenceRequest("live-ne-absent-flag", "LEP");
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(ruleIdsOf(json.get(WARNINGS))).contains(RULE_ID_014);
+            assertThat(findByRuleId(json.get(WARNINGS), RULE_ID_014)
+                    .get("affectedOffences").get(0).get("message").asText())
+                    .isEqualTo(ENDORSEMENT_MESSAGE);
+        }
+    }
+
+    @Nested
+    @DisplayName("DR-END-014 — fail-open when ref-data returns 500 (cra337-011)")
+    class FailOpen {
+
+        @Test
+        void refDataServerError_shouldNotRaiseAnyWarning() throws Exception {
+            final String body = singleOffenceRequest("live-ne-fail-open", "LEP");
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(ruleIdsOf(json.get(WARNINGS))).doesNotContain(RULE_ID_014);
         }
     }
 
@@ -155,6 +211,47 @@ class NonEndorsableOffenceApiHttpLiveTest {
             assertThat(ruleIdsOf(json.get(WARNINGS)).stream().filter(RULE_ID_014::equals).count())
                     .as("only the non-endorsable offence should trigger DR-END-014")
                     .isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("DR-END-014 — coexistence with other rules (AC6)")
+    class CoexistenceWithOtherRules {
+
+        @Test
+        void lepAndConcurrentImp_shouldRaiseBothEndorsementAndCustodialWarnings() throws Exception {
+            final String body = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "live-ne-end-trigger"},
+                        {"resultLineId": "rl2", "shortCode": "IMP", "label": "IMP label",
+                         "defendantId": "d1", "offenceId": "live-coexist-c1", "isConcurrent": true},
+                        {"resultLineId": "rl3", "shortCode": "IMP", "label": "IMP label",
+                         "defendantId": "d1", "offenceId": "live-coexist-c2", "isConcurrent": true}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Test", "lastName": "User",
+                         "dateOfBirth": "1990-01-01"}
+                      ],
+                      "offences": [
+                        {"offenceId": "live-ne-end-trigger", "offenceCode": "live-ne-end-trigger",
+                         "offenceTitle": "Non-endorsable offence", "orderIndex": 1, "defendantId": "d1"},
+                        {"offenceId": "live-coexist-c1", "offenceCode": "TH68001",
+                         "offenceTitle": "Theft", "orderIndex": 2, "defendantId": "d1"},
+                        {"offenceId": "live-coexist-c2", "offenceCode": "TH68002",
+                         "offenceTitle": "Theft", "orderIndex": 3, "defendantId": "d1"}
+                      ]
+                    }
+                    """;
+
+            final JsonNode json = postValidate(body);
+
+            assertThat(json.get("isValid").asBoolean()).isTrue();
+            assertThat(ruleIdsOf(json.get(WARNINGS))).contains(RULE_ID_014, "DR-SENT-001");
         }
     }
 
