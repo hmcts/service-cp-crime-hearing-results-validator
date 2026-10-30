@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.services.referencedata.Endorsability;
 import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
 
 /**
@@ -66,7 +66,7 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void lepOnNonEndorsableOffence_shouldYieldContextWithEndorsementCount() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEP", "off1")));
 
@@ -79,7 +79,7 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void lenOnNonEndorsableOffence_shouldYieldContext() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEN", "off1")));
 
@@ -88,7 +88,7 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void leaOnNonEndorsableOffence_shouldYieldContext() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEA", "off1")));
 
@@ -97,23 +97,35 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void lepOnEndorsableOffence_shouldYieldNoContext() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(true));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEP", "off1")));
 
             assertThat(preprocessor.preprocess(request, config)).isEmpty();
         }
 
+    }
+
+    @Nested
+    @DisplayName("Reference data unavailable (fail-open)")
+    class ReferenceDataUnavailable {
+
         @Test
-        void absentEndorsableFlag_failOpen_shouldYieldContext() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.empty());
-            DraftValidationRequest request = request(offence("off1", "RT88026"),
+        void lepWhenLookupUnavailable_shouldYieldNoContext() {
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.UNAVAILABLE);
+            final DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEP", "off1")));
 
-            Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
+            assertThat(preprocessor.preprocess(request, config)).isEmpty();
+        }
 
-            assertThat(result).containsOnlyKeys("off1");
-            assertThat(result.get("off1").endorsementCount()).isEqualTo(1L);
+        @Test
+        void ddoWhenLookupUnavailable_shouldYieldNoContext() {
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.UNAVAILABLE);
+            final DraftValidationRequest request = request(offence("off1", "RT88026"),
+                    List.of(resultLine("rl1", "DDO", "off1")));
+
+            assertThat(preprocessor.preprocess(request, config)).isEmpty();
         }
     }
 
@@ -123,7 +135,7 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void ddoOnNonEndorsableOffence_shouldYieldContextWithDisqualificationCount() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "DDO", "off1")));
 
@@ -142,7 +154,7 @@ class NonEndorsableOffencePreprocessorTest {
             "DDRCOT"})
         void allTriggerCodes_onNonEndorsableOffence_shouldYieldDisqualificationContext(
                 final String shortCode) {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             final DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", shortCode, "off1")));
 
@@ -165,7 +177,7 @@ class NonEndorsableOffencePreprocessorTest {
                     preprocessor.preprocess(request, config);
 
             assertThat(result).isEmpty();
-            verify(referencedataOffenceClient, never()).getEndorsableFlag(anyString());
+            verify(referencedataOffenceClient, never()).lookupEndorsability(anyString());
         }
     }
 
@@ -175,7 +187,7 @@ class NonEndorsableOffencePreprocessorTest {
 
         @Test
         void lepAndDdoOnNonEndorsableOffence_shouldYieldBothCounts_andCallRefDataOnce() {
-            when(referencedataOffenceClient.getEndorsableFlag("RT88026")).thenReturn(Optional.of(false));
+            when(referencedataOffenceClient.lookupEndorsability("RT88026")).thenReturn(Endorsability.NON_ENDORSABLE);
             DraftValidationRequest request = request(offence("off1", "RT88026"),
                     List.of(resultLine("rl1", "LEP", "off1"), resultLine("rl2", "DDO", "off1")));
 
@@ -184,7 +196,7 @@ class NonEndorsableOffencePreprocessorTest {
             assertThat(result).containsOnlyKeys("off1");
             assertThat(result.get("off1").endorsementCount()).isEqualTo(1L);
             assertThat(result.get("off1").disqualificationCount()).isEqualTo(1L);
-            verify(referencedataOffenceClient, times(1)).getEndorsableFlag("RT88026");
+            verify(referencedataOffenceClient, times(1)).lookupEndorsability("RT88026");
         }
     }
 
@@ -200,7 +212,7 @@ class NonEndorsableOffencePreprocessorTest {
             Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
 
             assertThat(result).isEmpty();
-            verify(referencedataOffenceClient, never()).getEndorsableFlag(anyString());
+            verify(referencedataOffenceClient, never()).lookupEndorsability(anyString());
         }
 
         @Test
@@ -210,7 +222,7 @@ class NonEndorsableOffencePreprocessorTest {
             Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
 
             assertThat(result).isEmpty();
-            verify(referencedataOffenceClient, never()).getEndorsableFlag(anyString());
+            verify(referencedataOffenceClient, never()).lookupEndorsability(anyString());
         }
 
         @Test
@@ -226,7 +238,7 @@ class NonEndorsableOffencePreprocessorTest {
             Map<String, NonEndorsableOffenceContext> result = preprocessor.preprocess(request, config);
 
             assertThat(result).isEmpty();
-            verify(referencedataOffenceClient, never()).getEndorsableFlag(anyString());
+            verify(referencedataOffenceClient, never()).lookupEndorsability(anyString());
         }
     }
 
@@ -235,9 +247,25 @@ class NonEndorsableOffencePreprocessorTest {
     class MultiOffenceIndependence {
 
         @Test
+        void unavailableLookupOnOneOffence_shouldNotAffectOtherOffences() {
+            when(referencedataOffenceClient.lookupEndorsability("NON-END")).thenReturn(Endorsability.NON_ENDORSABLE);
+            when(referencedataOffenceClient.lookupEndorsability("UNKNOWN")).thenReturn(Endorsability.UNAVAILABLE);
+            final DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .courtType(DraftValidationRequest.CourtTypeEnum.MAGISTRATES)
+                    .resultLines(List.of(resultLine("rl1", "LEP", "off-non-end"),
+                            resultLine("rl2", "LEP", "off-unknown")))
+                    .defendants(List.of())
+                    .offences(List.of(offence("off-non-end", "NON-END"), offence("off-unknown", "UNKNOWN")))
+                    .build();
+
+            assertThat(preprocessor.preprocess(request, config)).containsOnlyKeys("off-non-end");
+        }
+
+        @Test
         void threeOffences_onlyNonEndorsableWithTrigger_shouldYieldSingleContext() {
-            when(referencedataOffenceClient.getEndorsableFlag("NON-END")).thenReturn(Optional.of(false));
-            when(referencedataOffenceClient.getEndorsableFlag("END")).thenReturn(Optional.of(true));
+            when(referencedataOffenceClient.lookupEndorsability("NON-END")).thenReturn(Endorsability.NON_ENDORSABLE);
+            when(referencedataOffenceClient.lookupEndorsability("END")).thenReturn(Endorsability.ENDORSABLE);
 
             DraftValidationRequest request = new DraftValidationRequest(
                     "h1", "case1", null, DraftValidationRequest.CourtTypeEnum.MAGISTRATES,

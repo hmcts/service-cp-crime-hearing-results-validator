@@ -3,12 +3,12 @@ package uk.gov.hmcts.cp.services.rules.cel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
+import uk.gov.hmcts.cp.services.referencedata.Endorsability;
 import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
 
 /**
@@ -18,10 +18,9 @@ import uk.gov.hmcts.cp.services.referencedata.ReferencedataOffenceClient;
  * family (DDO/DDD/DDP families plus DDRCOT). The reference-data lookup is made at most once per
  * offence regardless of how many trigger codes are present.
  *
- * <p>Fail-open: when {@link ReferencedataOffenceClient#getEndorsableFlag(String)} returns
- * {@link Optional#empty()} (timeout, non-2xx, missing field), the offence is treated as
- * non-endorsable and warnings fire — a conservative default that prevents silent suppression
- * of legally relevant warnings.
+ * <p>Only {@link Endorsability#NON_ENDORSABLE} produces a context — that includes a successful
+ * reference-data response with no {@code endorsableFlag} value. {@link Endorsability#UNAVAILABLE}
+ * (lookup failed or disabled) is fail-open: no context, no warning, matching DR-SEX-008.
  */
 @Component
 public class NonEndorsableOffencePreprocessor implements ValidationPreprocessor {
@@ -34,7 +33,7 @@ public class NonEndorsableOffencePreprocessor implements ValidationPreprocessor 
     /**
      * Constructs the preprocessor with its reference-data collaborator.
      *
-     * @param referencedataOffenceClient fail-open client for endorsable-flag lookups
+     * @param referencedataOffenceClient client for endorsability lookups
      */
     public NonEndorsableOffencePreprocessor(final ReferencedataOffenceClient referencedataOffenceClient) {
         this.referencedataOffenceClient = referencedataOffenceClient;
@@ -60,10 +59,9 @@ public class NonEndorsableOffencePreprocessor implements ValidationPreprocessor 
                 final boolean hasEndorsementTrigger = PreprocessorHelper.anyShortCodeIn(lines, endorsementCodes);
                 final boolean hasDisqualificationTrigger = PreprocessorHelper.anyShortCodeIn(lines, disqualificationCodes);
                 if (hasEndorsementTrigger || hasDisqualificationTrigger) {
-                    final Optional<Boolean> endorsableFlag =
-                            referencedataOffenceClient.getEndorsableFlag(offence.getOffenceCode());
-                    final boolean isNonEndorsable = endorsableFlag.isEmpty() || Boolean.FALSE.equals(endorsableFlag.get());
-                    if (isNonEndorsable) {
+                    final Endorsability endorsability =
+                            referencedataOffenceClient.lookupEndorsability(offence.getOffenceCode());
+                    if (endorsability == Endorsability.NON_ENDORSABLE) {
                         result.put(offenceId, new NonEndorsableOffenceContext(
                                 offenceId,
                                 hasEndorsementTrigger ? 1L : 0L,

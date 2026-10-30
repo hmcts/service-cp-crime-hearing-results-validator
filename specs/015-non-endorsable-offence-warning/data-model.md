@@ -56,9 +56,9 @@ public record NonEndorsableOffenceContext(
 2. Determine `hasEndorsementTrigger`: any code in `endorsementShortCodes` (LEP, LEN, LEA).
 3. Determine `hasDisqualificationTrigger`: any code in `disqualificationTriggerShortCodes`.
 4. If neither trigger is present → skip ref-data call entirely; do not emit a context entry for this offence.
-5. If at least one trigger is present → call `referencedataOffenceClient.getEndorsableFlag(offence.getOffenceCode())` **once**.
-6. If flag is `Optional.empty()` or `Boolean.FALSE` (non-endorsable) → emit `NonEndorsableOffenceContext(offenceId, hasEndorsementTrigger ? 1L : 0L, hasDisqualificationTrigger ? 1L : 0L)`.
-7. If flag is `Boolean.TRUE` (endorsable) → skip; do not emit a context entry.
+5. If at least one trigger is present → call `referencedataOffenceClient.lookupEndorsability(offence.getOffenceCode())` **once**.
+6. If the result is `NON_ENDORSABLE` (flag `false`, or absent on a successful response) → emit `NonEndorsableOffenceContext(offenceId, hasEndorsementTrigger ? 1L : 0L, hasDisqualificationTrigger ? 1L : 0L)`.
+7. If the result is `ENDORSABLE` or `UNAVAILABLE` (lookup failed — fail-open) → skip; do not emit a context entry.
 
 **YAML configuration fields** (under `preprocessing:`):
 | Key | Value |
@@ -146,7 +146,7 @@ VALUES ('DR-END-014', true, 'WARNING');
 
 | Type | Location | Role |
 |------|----------|------|
-| `ReferencedataOffenceClient.getEndorsableFlag()` | `uk.gov.hmcts.cp.services.referencedata` | Fetches `endorsable_flag` per offence code; Caffeine-cached |
+| `ReferencedataOffenceClient.lookupEndorsability()` | `uk.gov.hmcts.cp.services.referencedata` | Fetches `endorsable_flag` per offence code; Caffeine-cached |
 | `ValidationPreprocessor` | `uk.gov.hmcts.cp.services.rules.cel` | Interface the new preprocessor implements |
 | `PreprocessorRegistry` | `uk.gov.hmcts.cp.services.rules.cel` | Auto-discovers new preprocessor by qualifier |
 | `PreprocessingDefinition` | `uk.gov.hmcts.cp.services.rules.cel` | Carries YAML `preprocessing:` block; `endorsementShortCodes` and `disqualificationTriggerShortCodes` fields added |
@@ -165,7 +165,7 @@ DraftValidationRequest
             └─ NonEndorsableOffencePreprocessor  (qualifier: "non-endorsable-offence")
                  ├─ endorsementShortCodes ∈ {LEP, LEN, LEA}
                  ├─ disqualificationTriggerShortCodes ∈ {DDO...DDRCOT}
-                 └─ ReferencedataOffenceClient.getEndorsableFlag(offenceCode) = false/absent
+                 └─ ReferencedataOffenceClient.lookupEndorsability(offenceCode) = NON_ENDORSABLE
                       └─ NonEndorsableOffenceContext{offenceId, endorsementCount, disqualificationCount}
                            ├─ DR-END-014 condition AC1: endorsementCount > 0 → WARNING (endorsement message)
                            └─ DR-END-014 condition AC2: disqualificationCount > 0 → WARNING (disqualification message)
