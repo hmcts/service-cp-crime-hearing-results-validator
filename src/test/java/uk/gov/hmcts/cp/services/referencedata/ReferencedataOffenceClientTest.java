@@ -55,30 +55,39 @@ class ReferencedataOffenceClientTest {
     class EndorsableFlagPresence {
 
         @Test
-        void getEndorsableFlag_whenTrue_shouldReturnTrue() {
+        void lookupEndorsability_whenTrue_shouldReturnEndorsable() {
             stubOffencesList("""
                     {"offences": [{"offenceId": "%s", "endorsableFlag": true, "cjsOffenceCode": "%s"}]}
                     """.formatted(OFFENCE_ID, OFFENCE_CODE));
 
-            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).contains(true);
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.ENDORSABLE);
         }
 
         @Test
-        void getEndorsableFlag_whenFalse_shouldReturnFalse() {
+        void lookupEndorsability_whenFalse_shouldReturnNonEndorsable() {
             stubOffencesList("""
                     {"offences": [{"offenceId": "%s", "endorsableFlag": false, "cjsOffenceCode": "%s"}]}
                     """.formatted(OFFENCE_ID, OFFENCE_CODE));
 
-            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).contains(false);
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
         }
 
         @Test
-        void getEndorsableFlag_whenFieldMissing_shouldReturnEmpty() {
+        void lookupEndorsability_whenFieldMissing_shouldReturnNonEndorsable() {
             stubOffencesList("""
                     {"offences": [{"offenceId": "%s", "cjsOffenceCode": "%s"}]}
                     """.formatted(OFFENCE_ID, OFFENCE_CODE));
 
-            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).isEmpty();
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenFieldNull_shouldReturnNonEndorsable() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": null, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
         }
     }
 
@@ -210,12 +219,30 @@ class ReferencedataOffenceClientTest {
         }
 
         @Test
-        void getEndorsableFlag_whenServerReturns500_shouldReturnEmpty() {
+        void lookupEndorsability_whenServerReturns500_shouldReturnUnavailable() {
             wireMock.stubFor(get(urlPathEqualTo(PATH))
                     .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .willReturn(aResponse().withStatus(500)));
 
-            assertThat(client().getEndorsableFlag(OFFENCE_CODE)).isEmpty();
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenReadTimesOut_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withFixedDelay(500) // exceeds the 100ms read timeout used by client()
+                            .withBody("{\"offences\": [{\"endorsableFlag\": false}]}")));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenOffencesListEmpty_shouldReturnUnavailable() {
+            stubOffencesList("{\"offences\": []}");
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
         }
     }
 
@@ -293,20 +320,20 @@ class ReferencedataOffenceClientTest {
         }
 
         @Test
-        void getEndorsableFlag_whenDisabled_shouldReturnEmpty() {
-            assertThat(new ReferencedataOffenceClient(properties(false)).getEndorsableFlag(OFFENCE_CODE))
-                    .isEmpty();
+        void lookupEndorsability_whenDisabled_shouldReturnUnavailable() {
+            assertThat(new ReferencedataOffenceClient(properties(false)).lookupEndorsability(OFFENCE_CODE))
+                    .isEqualTo(Endorsability.UNAVAILABLE);
             wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH)));
         }
 
         @Test
-        void getEndorsableFlag_whenOffenceCodeNull_shouldReturnEmpty() {
-            assertThat(client().getEndorsableFlag(null)).isEmpty();
+        void lookupEndorsability_whenOffenceCodeNull_shouldReturnUnavailable() {
+            assertThat(client().lookupEndorsability(null)).isEqualTo(Endorsability.UNAVAILABLE);
         }
 
         @Test
-        void getEndorsableFlag_whenOffenceCodeBlank_shouldReturnEmpty() {
-            assertThat(client().getEndorsableFlag(" ")).isEmpty();
+        void lookupEndorsability_whenOffenceCodeBlank_shouldReturnUnavailable() {
+            assertThat(client().lookupEndorsability(" ")).isEqualTo(Endorsability.UNAVAILABLE);
         }
     }
 

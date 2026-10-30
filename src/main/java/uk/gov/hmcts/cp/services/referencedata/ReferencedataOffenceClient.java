@@ -19,11 +19,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
 
 /**
- * Fail-open client for the {@code cpp-context-referencedata-offences} offence classification
- * lookup. Any failure (timeout, non-2xx, malformed body, or missing {@code misCode}) returns
- * {@link Optional#empty()} rather than propagating — {@code DR-SEX-008} can only ever produce a
+ * Fail-open client for the {@code cpp-context-referencedata-offences} offence lookup, used by
+ * {@code DR-SEX-008} ({@link #lookupMisCode(String)}) and {@code DR-END-014} ({@link
+ * #lookupEndorsability(String)}). Any failure (timeout, non-2xx, malformed body) degrades to "no
+ * answer" — {@link Optional#empty()} for {@code misCode}, {@link Endorsability#UNAVAILABLE} for
+ * endorsability — rather than propagating, and is never cached. Both rules only ever produce a
  * {@code WARNING}, so a downstream outage degrading to "no warning" is preferable to blocking the
- * whole {@code /validate} response. Mirrors the fail-open convention already used by this
+ * whole {@code /validate} response or raising false warnings. Mirrors the fail-open convention already used by this
  * codebase's identity lookup ({@code IdentityClient}, in the {@code cp-auth-rules-filter}
  * library) and its own {@code AzureAppConfigFetcher}. See
  * {@code specs/009-sexual-offence-norr-warning/contracts/referencedata-offences-integration.md}.
@@ -92,35 +94,45 @@ public class ReferencedataOffenceClient {
     }
 
     /**
-     * Looks up the {@code endorsableFlag} for an offence, by its {@code cjsOffenceCode}.
+     * Looks up whether an offence is endorsable, by its {@code cjsOffenceCode}.
      *
-     * <p>Fail-open: any failure (timeout, non-2xx, malformed body, missing field) returns
-     * {@link Optional#empty()}, which callers treat as non-endorsable — conservative default
-     * that ensures warnings fire rather than being silently suppressed. Only successful responses
-     * are cached, so a transient outage does not persist into the full cache TTL.
+     * <p>A successful response with {@code endorsableFlag} null or missing is {@link
+     * Endorsability#NON_ENDORSABLE} — CRA-337 treats "has no value" as {@code 0}. Any failure to
+     * get an answer is {@link Endorsability#UNAVAILABLE}, which {@code DR-END-014} treats as "no
+     * warning" — the same fail-open posture as {@link #lookupMisCode(String)}, so an outage does
+     * not raise a warning against every genuinely endorsable offence. {@code UNAVAILABLE} is never
+     * cached, so the next validation request retries once the dependency recovers.
      *
      * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
-     * @return {@code Optional.of(true)} if endorsable, {@code Optional.of(false)} if
-     *         non-endorsable, or {@link Optional#empty()} if unavailable for any reason
+     * @return {@code ENDORSABLE}, {@code NON_ENDORSABLE}, or {@code UNAVAILABLE} when the lookup
+     *         is disabled, the code is blank, or the call fails (non-2xx, timeout, malformed body,
+     *         empty {@code offences} list)
      */
-    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode", unless = "#result == null")
-    public Optional<Boolean> getEndorsableFlag(final String offenceCode) {
-        Optional<Boolean> endorsableFlag = Optional.empty();
+    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode",
+            unless = "#result == T(uk.gov.hmcts.cp.services.referencedata.Endorsability).UNAVAILABLE")
+    public Endorsability lookupEndorsability(final String offenceCode) {
+        Endorsability endorsability = Endorsability.UNAVAILABLE;
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
-            endorsableFlag = fetchEndorsableFlag(offenceCode);
+            endorsability = fetchEndorsability(offenceCode);
         }
-        return endorsableFlag;
+        return endorsability;
     }
 
-    private Optional<Boolean> fetchEndorsableFlag(final String offenceCode) {
-        Optional<Boolean> endorsableFlag = Optional.empty();
+    private Endorsability fetchEndorsability(final String offenceCode) {
+        Endorsability endorsability = Endorsability.UNAVAILABLE;
         final ReferencedataOffenceResponse offence = fetchOffenceResponse(offenceCode);
-        if (offence != null && offence.endorsableFlag() != null) {
-            endorsableFlag = Optional.of(offence.endorsableFlag());
-        } else if (offence != null) {
-            log.debug("No endorsableFlag returned for offenceCode={}", Encode.forJava(offenceCode));
+        if (offence != null) {
+            if (Boolean.TRUE.equals(offence.endorsableFlag())) {
+                endorsability = Endorsability.ENDORSABLE;
+            } else {
+                if (offence.endorsableFlag() == null) {
+                    log.debug("No endorsableFlag returned for offenceCode={}; treating as non-endorsable",
+                            Encode.forJava(offenceCode));
+                }
+                endorsability = Endorsability.NON_ENDORSABLE;
+            }
         }
-        return endorsableFlag;
+        return endorsability;
     }
 
     private Optional<String> fetchMisCode(final String offenceCode) {
