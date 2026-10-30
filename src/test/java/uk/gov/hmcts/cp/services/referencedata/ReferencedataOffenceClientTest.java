@@ -51,6 +51,47 @@ class ReferencedataOffenceClientTest {
     }
 
     @Nested
+    @DisplayName("endorsableFlag present or absent")
+    class EndorsableFlagPresence {
+
+        @Test
+        void lookupEndorsability_whenTrue_shouldReturnEndorsable() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": true, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.ENDORSABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenFalse_shouldReturnNonEndorsable() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": false, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenFieldMissing_shouldReturnNonEndorsable() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenFieldNull_shouldReturnNonEndorsable() {
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": null, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.NON_ENDORSABLE);
+        }
+    }
+
+    @Nested
     @DisplayName("misCode present or absent")
     class MisCodePresence {
 
@@ -167,6 +208,79 @@ class ReferencedataOffenceClientTest {
 
             assertThat(result).isEmpty();
         }
+
+        @Test
+        void lookupMisCode_whenResponseBodyNull_shouldReturnEmpty() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(204)));
+
+            assertThat(client().lookupMisCode(OFFENCE_CODE)).isEmpty();
+        }
+
+        @Test
+        void lookupEndorsability_whenServerReturns500_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(500)));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenReadTimesOut_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withFixedDelay(500) // exceeds the 100ms read timeout used by client()
+                            .withBody("{\"offences\": [{\"endorsableFlag\": false}]}")));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenOffencesListEmpty_shouldReturnUnavailable() {
+            stubOffencesList("{\"offences\": []}");
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_when404_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(404)));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenMalformedJson_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
+                            .withBody("{not valid json")));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenServerUnreachable_shouldReturnUnavailable() {
+            ReferencedataOffenceClient unreachableClient = client();
+            wireMock.stop();
+
+            assertThat(unreachableClient.lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenResponseBodyNull_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(204)));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
     }
 
     @Nested
@@ -212,6 +326,20 @@ class ReferencedataOffenceClientTest {
                     .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .withHeader("CJSCPPUID", absent()));
         }
+
+        @Test
+        void lookupEndorsability_whenMdcHasUserId_shouldForwardCjscppuidHeader() {
+            MDC.put(TracingFilter.USER_ID, "test-user-123");
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": true, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            client().lookupEndorsability(OFFENCE_CODE);
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .withHeader("CJSCPPUID", equalTo("test-user-123")));
+        }
     }
 
     @Nested
@@ -240,6 +368,23 @@ class ReferencedataOffenceClientTest {
             Optional<String> result = client().lookupMisCode(null);
 
             assertThat(result).isEmpty();
+        }
+
+        @Test
+        void lookupEndorsability_whenDisabled_shouldReturnUnavailable() {
+            assertThat(new ReferencedataOffenceClient(properties(false)).lookupEndorsability(OFFENCE_CODE))
+                    .isEqualTo(Endorsability.UNAVAILABLE);
+            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH)));
+        }
+
+        @Test
+        void lookupEndorsability_whenOffenceCodeNull_shouldReturnUnavailable() {
+            assertThat(client().lookupEndorsability(null)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenOffenceCodeBlank_shouldReturnUnavailable() {
+            assertThat(client().lookupEndorsability(" ")).isEqualTo(Endorsability.UNAVAILABLE);
         }
     }
 

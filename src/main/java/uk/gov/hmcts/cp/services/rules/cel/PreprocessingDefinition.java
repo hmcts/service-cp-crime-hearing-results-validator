@@ -40,5 +40,9 @@ public record PreprocessingDefinition(
 
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
-        List<String> applicationOnlyShortCodes) {
+        List<String> applicationOnlyShortCodes,
+
+        // Non-endorsable-offence-warning fields (used by NonEndorsableOffencePreprocessor)
+        List<String> endorsementShortCodes,
+        List<String> disqualificationTriggerShortCodes) {
 }
