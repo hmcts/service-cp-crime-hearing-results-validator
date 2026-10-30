@@ -168,6 +168,96 @@ CJSCPPUID: test-user
   ]
 }
 
+### AC1a (LEN variant) — LEN on non-endorsable offence (expect WARNING DR-END-014 endorsement condition)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-008",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEN", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-len-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-len-trigger", "offenceCode": "live-ne-len-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### AC1a (LEA variant) — LEA on non-endorsable offence (expect WARNING DR-END-014 endorsement condition)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-009",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEA", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-lea-trigger"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-lea-trigger", "offenceCode": "live-ne-lea-trigger",
+     "offenceTitle": "Non-endorsable test offence", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### Absent endorsableFlag — ref-data responds successfully but no endorsableFlag field (expect WARNING DR-END-014)
+### endorsableFlag absent == non-endorsable per CRA-337 "has no value" rule
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-010",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-absent-flag"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-absent-flag", "offenceCode": "live-ne-absent-flag",
+     "offenceTitle": "Non-endorsable test offence (absent flag)", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
+### Fail-open — ref-data returns 500 (expect NO warning; outage must not produce false positives)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: test-user
+
+{
+  "hearingId": "cra337-011",
+  "hearingDay": "2026-10-20",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl-001", "shortCode": "LEP", "label": "Endorsement",
+     "defendantId": "d1", "offenceId": "live-ne-fail-open"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+  ],
+  "offences": [
+    {"offenceId": "live-ne-fail-open", "offenceCode": "live-ne-fail-open",
+     "offenceTitle": "Endorsable offence (ref-data unavailable)", "orderIndex": 1, "defendantId": "d1"}
+  ]
+}
+
 ### AC6 — Coexistence with other rule warnings
 ### Automated coverage: NonEndorsableOffenceRuleIT.endorsementWarningAndCustodialWarning_shouldBothAppear
+###                     NonEndorsableOffenceApiHttpLiveTest.lepAndConcurrentImp_shouldRaiseBothEndorsementAndCustodialWarnings
 ### Manual test: add an IMP result line to AC1a body above; expect both DR-END-014 and DR-SENT-001 in warnings

@@ -244,6 +244,43 @@ class ReferencedataOffenceClientTest {
 
             assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
         }
+
+        @Test
+        void lookupEndorsability_when404_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(404)));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenMalformedJson_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
+                            .withBody("{not valid json")));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenServerUnreachable_shouldReturnUnavailable() {
+            ReferencedataOffenceClient unreachableClient = client();
+            wireMock.stop();
+
+            assertThat(unreachableClient.lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
+
+        @Test
+        void lookupEndorsability_whenResponseBodyNull_shouldReturnUnavailable() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(204)));
+
+            assertThat(client().lookupEndorsability(OFFENCE_CODE)).isEqualTo(Endorsability.UNAVAILABLE);
+        }
     }
 
     @Nested
@@ -288,6 +325,20 @@ class ReferencedataOffenceClientTest {
             wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
                     .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
                     .withHeader("CJSCPPUID", absent()));
+        }
+
+        @Test
+        void lookupEndorsability_whenMdcHasUserId_shouldForwardCjscppuidHeader() {
+            MDC.put(TracingFilter.USER_ID, "test-user-123");
+            stubOffencesList("""
+                    {"offences": [{"offenceId": "%s", "endorsableFlag": true, "cjsOffenceCode": "%s"}]}
+                    """.formatted(OFFENCE_ID, OFFENCE_CODE));
+
+            client().lookupEndorsability(OFFENCE_CODE);
+
+            wireMock.verify(getRequestedFor(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .withHeader("CJSCPPUID", equalTo("test-user-123")));
         }
     }
 

@@ -33,7 +33,7 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
 2. Each YAML file becomes a `CelValidationRule` bean (sorted by priority)
 3. `DefaultValidationService.validate()` iterates all rules, calling `rule.evaluate(request)`
 4. `CelValidationRule.evaluate()` runs the preprocessing pipeline, then evaluates CEL conditions:
-   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (eight registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`, `SexualOffenceNotificationPreprocessor`), failing fast if the qualifier has no match
+   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (nine registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`, `SexualOffenceNotificationPreprocessor`, `NonEndorsableOffencePreprocessor`), failing fast if the qualifier has no match
    - `preprocessor.preprocess()` transforms hearing result lines into a context record (e.g. `DefendantContext`, counts like `noInfoCount`, `hasBothCount`, etc.)
    - the context's `toCelContext()` converts it to `Map<String, Long>` for CEL evaluation
    - `CelExpressionEvaluator` compiles and caches CEL expressions
