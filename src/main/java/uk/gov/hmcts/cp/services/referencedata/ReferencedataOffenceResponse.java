@@ -16,8 +16,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @param misCode the offence's classification code — {@code "SEX"} identifies a relevant sexual
  *         offence; any other value, or a missing field, means "not a relevant sexual offence"
  * @param endorsableFlag whether the offence is endorsable ({@code true}), non-endorsable
- *         ({@code false}), or the field is absent ({@code null}) — absent is treated as
- *         non-endorsable (fail-open)
+ *         ({@code false}), or the field is absent ({@code null}) — absent on a successful
+ *         response is treated as non-endorsable, see {@link Endorsability#NON_ENDORSABLE}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReferencedataOffenceResponse(String offenceId, String misCode, Boolean endorsableFlag) {

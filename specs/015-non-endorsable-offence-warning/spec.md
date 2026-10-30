@@ -105,8 +105,8 @@ An offence or hearing already triggers warnings from other validation rules. The
 
 ### Edge Cases
 
-- What happens when an offence has `endorsable_flag` absent (null or missing from reference data)? The check treats absent as non-endorsable (same as `0`), so warnings fire. This is the fail-open conservative default.
-- What happens when the reference data lookup fails for an offence? The preprocessor treats the offence as non-endorsable (fail-open) — prevents silent suppression of legally relevant warnings.
+- What happens when an offence has `endorsable_flag` absent (reference data answered successfully but the field is null or missing)? The check treats absent as non-endorsable (same as `0`), so warnings fire — this is the Jira "has no value" case.
+- What happens when the reference data lookup fails for an offence (timeout, non-2xx, malformed body, empty `offences` list, lookup disabled, or no `offenceCode` on the offence)? Endorsability is **unknown**, so no warning fires for that offence (fail-open, matching DR-SEX-008). A reference-data outage must not raise warnings against every genuinely endorsable motoring offence.
 - What happens when a user replaces a disqualification trigger result with DDRN? The disqualification warning clears because DDRN is not in the trigger set.
 - What happens when a result is removed entirely? The corresponding warning clears because the trigger result is no longer present (stateless validation).
 - What happens when the same result code appears multiple times against the same offence? Each family fires at most once per offence regardless of how many individual result lines carry the trigger code.
@@ -125,7 +125,7 @@ An offence or hearing already triggers warnings from other validation rules. The
 - **FR-008**: The validation check fires on "Save and continue", regardless of result category (Final or ancillary) and regardless of what other results are recorded for the same offence.
 - **FR-009**: Warnings from this rule MUST coexist with, and MUST NOT suppress or alter, warnings produced by other validation rules.
 - **FR-010**: The endorsability of an offence is determined by `endorsable_flag` in offence reference data; the service MUST consult reference data per offence at validation time.
-- **FR-011**: When `endorsable_flag` is absent from reference data (lookup failure, missing field, or non-2xx response), the offence MUST be treated as non-endorsable (fail-open — prevents silent suppression).
+- **FR-011**: When reference data answers successfully but `endorsable_flag` is null or missing, the offence MUST be treated as non-endorsable. When the lookup itself fails (timeout, non-2xx, malformed body, empty `offences` list, lookup disabled, or no `offenceCode`), endorsability is unknown and the offence MUST NOT produce a warning (fail-open, consistent with DR-SEX-008).
 - **FR-012**: The reference data lookup MUST be skipped entirely when no trigger result (from either family) is recorded against the offence, to avoid unnecessary external calls.
 
 ### Key Entities
@@ -157,4 +157,4 @@ An offence or hearing already triggers warnings from other validation rules. The
 - Severity for all conditions is WARNING; the user can continue to save and share.
 - Result category (Final or ancillary) is irrelevant to this check — all result lines for the offence are inspected.
 - Mobile / UI rendering of GDS warning text is out of scope for this service; the service returns the warning text string and the UI renders it.
-- Reference data lookup failures (timeout, non-2xx, missing field) are treated as fail-open: the absent or unresolvable `endorsable_flag` is treated as non-endorsable, so the warning fires rather than being silently suppressed.
+- A successful reference-data response with no `endorsable_flag` is treated as non-endorsable (warning fires). A failed lookup (timeout, non-2xx, malformed body, empty list, disabled) is fail-open: no warning, so an outage does not flood endorsable offences with false warnings. Failed lookups are not cached, so the next validation retries.

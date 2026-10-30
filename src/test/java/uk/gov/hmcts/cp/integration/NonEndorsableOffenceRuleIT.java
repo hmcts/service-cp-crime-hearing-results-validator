@@ -1,5 +1,8 @@
 package uk.gov.hmcts.cp.integration;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -83,7 +86,7 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
         }
 
         @Test
-        void absentEndorsableFlag_shouldRaiseWarningViaFailOpen() throws Exception {
+        void absentEndorsableFlag_shouldRaiseWarning() throws Exception {
             stubEndorsableFlagResponse("ne-end-absent", null);
             String request = singleOffenceRequest("ne-end-absent", "LEP");
 
@@ -179,11 +182,59 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
         @ParameterizedTest(name = "{0}")
         @ValueSource(strings = {"DDRN", "DDRNL", "DDRA", "DDRAL", "DDRV", "DDRVL"})
         void allNonEndorsableDisqCodes_shouldNotRaiseWarning(final String shortCode) throws Exception {
-            final String request = singleOffenceRequest("ne-ac3-" + shortCode, shortCode);
+            final String offenceId = "ne-ac3-" + shortCode;
+            stubEndorsableFlagResponse(offenceId, false);
+            final String request = singleOffenceRequest(offenceId, shortCode);
 
             performValidate(request)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+        }
+    }
+
+    @Nested
+    @DisplayName("Reference data unavailable (fail-open)")
+    class ReferenceDataUnavailable {
+
+        @ParameterizedTest(name = "{0}")
+        @ValueSource(strings = {"LEP", "DDO"})
+        void triggerWhenLookupFails_shouldNotRaiseWarning(final String shortCode) throws Exception {
+            final String offenceId = "ne-unavailable-" + shortCode;
+            stubReferencedataOffenceFailure(offenceId);
+            final String request = singleOffenceRequest(offenceId, shortCode);
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+        }
+
+        @Test
+        void failedLookup_shouldNotBeCached_andNextRequestShouldRetry() throws Exception {
+            final String offenceId = "ne-unavailable-retry";
+            stubReferencedataOffenceFailure(offenceId);
+            final String request = singleOffenceRequest(offenceId, "LEP");
+            performValidate(request)
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+
+            stubEndorsableFlagResponse(offenceId, false);
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)));
+        }
+
+        @Test
+        void successfulLookup_shouldBeCachedAcrossRequests() throws Exception {
+            final String offenceId = "ne-cached-lookup";
+            stubEndorsableFlagResponse(offenceId, false);
+            final String request = singleOffenceRequest(offenceId, "LEP");
+
+            performValidate(request).andExpect(status().isOk());
+            performValidate(request).andExpect(status().isOk());
+
+            REFERENCEDATA_OFFENCE_WIRE_MOCK.verify(1,
+                    getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                            .withQueryParam("cjsoffencecode", equalTo(offenceId)));
         }
     }
 

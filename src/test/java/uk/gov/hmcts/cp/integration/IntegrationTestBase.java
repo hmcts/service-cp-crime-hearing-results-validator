@@ -155,9 +155,21 @@ public abstract class IntegrationTestBase {
     }
 
     /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} to fail with
+     * HTTP 500, exercising the client's fail-open (lookup unavailable) path.
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     */
+    protected static void stubReferencedataOffenceFailure(final String offenceCode) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse().withStatus(500)));
+    }
+
+    /**
      * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode}, returning
      * the given {@code endorsableFlag} value (or omitting the field when {@code null}, exercising
-     * the "absent flag → treat as non-endorsable" fail-open path).
+     * the "absent flag → treat as non-endorsable" path).
      *
      * @param offenceCode the {@code cjsoffencecode} query value to stub
      * @param endorsableFlag the boolean to return, or {@code null} to omit the field

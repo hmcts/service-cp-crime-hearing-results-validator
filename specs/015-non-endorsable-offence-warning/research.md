@@ -5,7 +5,7 @@
 **Decision**: One unified preprocessor `NonEndorsableOffencePreprocessor` (qualifier: `"non-endorsable-offence"`) handling both the endorsement family and the disqualification family in a single pass per offence.
 
 **Rationale**:
-- Both families require an identical `getEndorsableFlag(offenceCode)` call per offence. A single preprocessor issues that call once per offence regardless of how many trigger families fire — the consolidated context record carries both `endorsementCount` and `disqualificationCount`.
+- Both families require an identical `lookupEndorsability(offenceCode)` call per offence. A single preprocessor issues that call once per offence regardless of how many trigger families fire — the consolidated context record carries both `endorsementCount` and `disqualificationCount`.
 - CRA-336 / DR-END-012 is already merged to main and production-tested. No existing preprocessor is touched.
 - The context record shape is slightly wider than a single-family record but is still simple and directly readable — two long fields, two CEL variables.
 
@@ -31,18 +31,22 @@
 
 ## Decision 3: Fail-open vs. fail-closed on reference-data outage
 
-**Decision**: Fail-open — treat an absent or unresolvable `endorsable_flag` as **non-endorsable** (flag = false), which means the warning **fires**.
+**Decision**: Distinguish "flag has no value" from "lookup failed". `ReferencedataOffenceClient.lookupEndorsability` returns an `Endorsability` enum:
+- `ENDORSABLE` — `endorsableFlag: true` → no warning.
+- `NON_ENDORSABLE` — `endorsableFlag: false`, or a successful response where the field is null/missing → warning fires (Jira AC1a/AC1b: "0 or has no value").
+- `UNAVAILABLE` — timeout, non-2xx, malformed body, empty `offences` list, lookup disabled, blank `offenceCode` → **no warning** (fail-open).
 
 **Rationale**:
-- If we cannot confirm the offence is endorsable, the conservative default is to warn rather than suppress.
-- This is the inverse of DR-END-012 (which warns when endorsement is missing). CRA-337's check fires when the offence is non-endorsable, so absent = warn.
-- Consistent with the principle that a transient outage should not silently suppress a warning that might be legally relevant.
+- The Jira "has no value" clause describes the reference data, not the dependency's availability.
+- Warning on outage would raise a false warning against nearly every endorsement/disqualification result (most sit on genuinely endorsable offences) for the duration of the outage.
+- Matches DR-SEX-008, where a failed `misCode` lookup produces no warning. "Fail-open" means the same thing across the codebase: an unavailable dependency degrades to "no warning".
+- `UNAVAILABLE` is never cached (`unless` guard), so recovery is immediate.
 
 ---
 
 ## Decision 4: Reference-data lookup — reuse vs. duplicate
 
-**Decision**: Reuse `ReferencedataOffenceClient.getEndorsableFlag(offenceCode)` directly. No new client method needed.
+**Decision**: Use `ReferencedataOffenceClient.lookupEndorsability(offenceCode)` (returns `Endorsability`; replaces the earlier `getEndorsableFlag` `Optional<Boolean>` which could not tell an absent flag from a failed lookup — see Decision 3).
 
 **Rationale**: The method is already on main (merged as part of CRA-336). It is Caffeine-cached by offence code. The unified preprocessor calls it at most once per offence per request — the skip logic (no ref-data call when no trigger code is present) prevents any call for non-trigger offences.
 

@@ -5,7 +5,7 @@
 
 ## Summary
 
-Warn when an endorsement or endorsable-offence disqualification result is recorded against an offence whose reference data marks it as non-endorsable (`endorsable_flag` = 0 or absent). Two independent offence-level WARNINGs — one per trigger family — are produced by a **single YAML rule (DR-END-014) with two conditions** backed by a **single unified preprocessor** (`NonEndorsableOffencePreprocessor`). Both trigger families share a single reference-data call per offence. The existing `ReferencedataOffenceClient.getEndorsableFlag()` cache layer (introduced in CRA-336) is reused without modification.
+Warn when an endorsement or endorsable-offence disqualification result is recorded against an offence whose reference data marks it as non-endorsable (`endorsable_flag` = 0 or absent). Two independent offence-level WARNINGs — one per trigger family — are produced by a **single YAML rule (DR-END-014) with two conditions** backed by a **single unified preprocessor** (`NonEndorsableOffencePreprocessor`). Both trigger families share a single reference-data call per offence. `ReferencedataOffenceClient.lookupEndorsability()` returns an `Endorsability` enum so an absent flag (warn) is distinguishable from a failed lookup (no warning — fail-open, as DR-SEX-008).
 
 ## Technical Context
 
@@ -15,7 +15,7 @@ Warn when an endorsement or endorsable-offence disqualification result is record
 **Testing**: `gradle test` (unit + integration), `gradle api` (live HTTP)
 **Target Platform**: Azure-hosted Linux container, port 4550
 **Project Type**: Web service (Spring Boot REST)
-**Performance Goals**: No measurable latency increase — `getEndorsableFlag()` call is Caffeine-cached per offence code; cache hit is O(1). Ref-data call skipped entirely when no trigger result is present.
+**Performance Goals**: No measurable latency increase — `lookupEndorsability()` call is Caffeine-cached per offence code; cache hit is O(1). Ref-data call skipped entirely when no trigger result is present.
 **Constraints**: Checkstyle Google `maxWarnings = 0`, PMD `ignoreFailures = false`, no `System.out`
 **Scale/Scope**: One new YAML rule with two conditions, one new preprocessor `@Component` bean, one new context record, one SQL migration, one unit test class, one IT class, one API test class
 
@@ -127,7 +127,7 @@ Write the YAML file first; implementation cannot begin until this is committed.
 Write tests before production Java. All tests must compile and fail at the assertion.
 
 **C1** ✅: `NonEndorsableOffencePreprocessorTest` (unit) — covers:
-- Endorsement family: LEP/LEN/LEA triggers on non-endorsable (flag=false), absent-flag fail-open, no-trigger skips ref-data
+- Endorsement family: LEP/LEN/LEA triggers on non-endorsable (flag=false), absent-flag warns, failed lookup does not, no-trigger skips ref-data
 - Disqualification family: DDO, DDRCOT trigger; DDRN does not; DDO on endorsable does not
 - Both families on same offence: both counts populated, single ref-data call
 - Multi-offence independence
@@ -155,7 +155,7 @@ Write tests before production Java. All tests must compile and fail at the asser
 **D2** ✅: `NonEndorsableOffencePreprocessor`
 - `@Component`, qualifier `"non-endorsable-offence"` via `type()` return value
 - Injects `ReferencedataOffenceClient` via constructor
-- Per offence: check both `endorsementShortCodes` and `disqualificationTriggerShortCodes` presence; skip ref-data if neither trigger is present; call `getEndorsableFlag()` once per offence when any trigger is present; if flag absent or false → set applicable counts to 1; if flag true → no context produced
+- Per offence: check both `endorsementShortCodes` and `disqualificationTriggerShortCodes` presence; skip ref-data if neither trigger is present; call `lookupEndorsability()` once per offence when any trigger is present; if `NON_ENDORSABLE` (flag false or absent) → set applicable counts to 1; if `ENDORSABLE` or `UNAVAILABLE` (lookup failed — fail-open) → no context produced
 
 ### Phase E — API Test & HTTP Client File ✅ DONE
 
@@ -219,8 +219,8 @@ one gap in the HTTP scratch file. All gaps resolved 2026-10-26.
 | YAML files | One file (DR-END-014), two conditions | Both conditions share the same preprocessor context; single rule means single DB row; conditions are still independently represented with distinct IDs (AC1, AC2) and distinct affectedOffenceSets |
 | Context record | `NonEndorsableOffenceContext` with `endorsementCount` + `disqualificationCount` | Avoids duplicate ref-data call; both counts produced in one preprocessor pass |
 | CEL expressions | `endorsementCount > 0` and `disqualificationCount > 0` | Simple integer comparisons; no branching needed in CEL |
-| Fail-open | Absent `endorsable_flag` → warn | Conservative; cannot silently miss a legally relevant warning |
-| Reference-data call | Reuse `getEndorsableFlag()` | Already on main; Caffeine-cached; no new network path |
+| Absent flag vs failed lookup | Absent `endorsable_flag` on a successful response → warn; failed lookup → no warning (fail-open) | Jira "has no value" is a data condition; an outage must not raise false warnings on endorsable offences (matches DR-SEX-008) |
+| Reference-data call | `lookupEndorsability()` → `Endorsability` enum | Caffeine-cached on success only; `UNAVAILABLE` never cached |
 | Ref-data skip | Skip when no trigger result on offence | Avoids any ref-data call for offences with only non-trigger results (e.g. IMP) |
 | DDRN-family exclusion | Not in trigger set | DDRN codes are not listed under `disqualificationTriggerShortCodes`; AC3 passes naturally without explicit exclusion logic |
 | Priority | DR-END-014 → 14000 | Continues from existing DR-END-012 spacing |
