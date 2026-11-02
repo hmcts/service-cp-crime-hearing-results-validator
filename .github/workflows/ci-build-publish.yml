@@ -284,7 +284,7 @@ jobs:
           # image no environment ever runs. What it still cannot reproduce is the ACR image's
           # patch level. Pinned to the multi-arch index digest, not a platform-specific one.
           build-args: |
-            BASE_IMAGE=eclipse-temurin:25-jre-noble@sha256:398f810215757dc1926390014272579fb0e57c41ef1c8aa4f64ae761613a168b
+            BASE_IMAGE=eclipse-temurin:25-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce
             JAR_FILENAME=${{ needs.Build.outputs.artefact_name }}.jar
 
       - name: Run Trivy vulnerability scan
