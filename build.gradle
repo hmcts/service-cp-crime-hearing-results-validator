@@ -23,6 +23,11 @@ if (gradle.startParameter.taskNames.any { it.contains('cyclonedxBom') }) {
 group = 'uk.gov.hmcts.cp'
 version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
 
+// Override the Spring Boot 4.1.2 managed Jackson versions to pick up the fix for CVE-2026-110879
+// (jackson-databind CRITICAL). Remove once Spring Boot manages >= these.
+ext['jackson-bom.version'] = '3.1.8'
+ext['jackson-2-bom.version'] = '2.21.8'
+
 apply {
   from("$rootDir/gradle/dependencies/java-core.gradle")
   from("$rootDir/gradle/dependencies/spring-core.gradle")
