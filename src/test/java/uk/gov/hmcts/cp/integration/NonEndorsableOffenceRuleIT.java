@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.ResultActions;
  *   <li>User Story 3 — both families on the same offence fire two warnings (AC1c)</li>
  *   <li>User Story 4 — multi-offence independence, variant per offence (AC5)</li>
  *   <li>Warning clears when the trigger is removed or replaced (AC4)</li>
- *   <li>User Story 5 — coexistence with other rules</li>
+ *   <li>User Story 5 — coexistence with other rules' offence- and defendant-level warnings (AC6)</li>
  * </ul>
  *
  * <p>Each test uses a unique {@code offenceCode} (equal to its {@code offenceId}) to avoid cache
@@ -592,6 +592,58 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
     @DisplayName("User Story 5 — coexistence with other rules")
     class CoexistenceWithOtherRules {
 
+        /**
+         * AC6: another rule's offence-level warning on the same offence. RT88526B is a DR-DISQ-002
+         * relevant offence (no DDOTE/DDOTEL recorded), stubbed as non-endorsable so both DR-END-014
+         * variants fire too. RT88526B is used by no other IT, so caching it as non-endorsable cannot
+         * leak DR-END-014 warnings into unrelated tests.
+         */
+        @Test
+        void disqExtendedTestAndBothEndorsabilityWarnings_onSameOffence_shouldAllAppearAgainstThatOffence()
+                throws Exception {
+            stubEndorsableFlagResponse("RT88526B", false);
+            final String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "COEW", "category": "F", "label": "Convicted",
+                         "defendantId": "d1", "offenceId": "ne-ac6-same-off"},
+                        {"resultLineId": "rl2", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "ne-ac6-same-off"},
+                        {"resultLineId": "rl3", "shortCode": "DDO", "label": "DDO label",
+                         "defendantId": "d1", "offenceId": "ne-ac6-same-off"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Alex", "lastName": "Driver"}
+                      ],
+                      "offences": [
+                        {"offenceId": "ne-ac6-same-off", "offenceCode": "RT88526B",
+                         "offenceTitle": "Causing serious injury by dangerous driving", "orderIndex": 1,
+                         "defendantId": "d1", "isConvicted": true}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", hasSize(3)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-DISQ-002' && @.validationLevel=='OFFENCE')]"
+                            + ".affectedOffences[0].offenceId", contains("ne-ac6-same-off")))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014' && @.validationLevel=='OFFENCE')]"
+                            + ".affectedOffences[0].offenceId", contains("ne-ac6-same-off", "ne-ac6-same-off")))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac6-same-off") + ".affectedOffences[0].message",
+                            containsInAnyOrder(ENDORSEMENT_MESSAGE, DISQ_MESSAGE)));
+        }
+
+        /**
+         * AC6: another rule's defendant-level warning alongside. The two concurrent IMP lines
+         * trigger DR-SENT-001's "no primary sentence" condition (DEFENDANT level); each warning
+         * must keep its own level and target.
+         */
         @Test
         void endorsementWarningAndCustodialWarning_shouldBothAppear() throws Exception {
             stubEndorsableFlagResponse("ne-coexist-off", false);
@@ -626,8 +678,14 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
             performValidate(request)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isValid", is(true)))
-                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)))
-                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-SENT-001')]", hasSize(1)));
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath("$.warnings", hasSize(2)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014' && @.validationLevel=='OFFENCE')]"
+                            + ".affectedOffences[0].offenceId", contains("ne-coexist-off")))
+                    .andExpect(jsonPath(warningsForOffence("ne-coexist-off") + ".affectedOffences[0].message",
+                            contains(ENDORSEMENT_MESSAGE)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-SENT-001' && @.validationLevel=='DEFENDANT')]"
+                            + ".affectedDefendants[*].defendantId", contains("d1")));
         }
     }
 
