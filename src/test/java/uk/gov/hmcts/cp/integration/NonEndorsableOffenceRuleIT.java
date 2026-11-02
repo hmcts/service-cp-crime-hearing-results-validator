@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,7 +29,8 @@ import org.springframework.test.web.servlet.ResultActions;
  *   <li>User Story 1 — endorsement trigger warns on non-endorsable offence (AC1)</li>
  *   <li>User Story 2 — disqualification trigger warns on non-endorsable offence (AC2)</li>
  *   <li>User Story 3 — both families on the same offence fire two warnings (AC1c)</li>
- *   <li>User Story 4 — multi-offence independence</li>
+ *   <li>User Story 4 — multi-offence independence, variant per offence (AC5)</li>
+ *   <li>Warning clears when the trigger is removed or replaced (AC4)</li>
  *   <li>User Story 5 — coexistence with other rules</li>
  * </ul>
  *
@@ -395,6 +399,193 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
                             "$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].offenceId",
                             contains("ne-disq-multi-ne")));
         }
+
+        @Test
+        void twoNonEndorsableOffences_differentFamilies_shouldEachGetOnlyTheirOwnVariant() throws Exception {
+            stubEndorsableFlagResponse("ne-ac5-mix-a", false);
+            stubEndorsableFlagResponse("ne-ac5-mix-b", false);
+            stubEndorsableFlagResponse("ne-ac5-mix-e", true);
+            final String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-mix-a"},
+                        {"resultLineId": "rl2", "shortCode": "DDO", "label": "DDO label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-mix-b"},
+                        {"resultLineId": "rl3", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-mix-e"},
+                        {"resultLineId": "rl4", "shortCode": "DDO", "label": "DDO label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-mix-e"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+                      ],
+                      "offences": [
+                        {"offenceId": "ne-ac5-mix-a", "offenceCode": "ne-ac5-mix-a",
+                         "offenceTitle": "Offence A", "orderIndex": 1, "defendantId": "d1"},
+                        {"offenceId": "ne-ac5-mix-b", "offenceCode": "ne-ac5-mix-b",
+                         "offenceTitle": "Offence B", "orderIndex": 2, "defendantId": "d1"},
+                        {"offenceId": "ne-ac5-mix-e", "offenceCode": "ne-ac5-mix-e",
+                         "offenceTitle": "Offence C", "orderIndex": 3, "defendantId": "d1"}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(2)))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac5-mix-a") + ".affectedOffences[0].message",
+                            contains(ENDORSEMENT_MESSAGE)))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac5-mix-b") + ".affectedOffences[0].message",
+                            contains(DISQ_MESSAGE)))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac5-mix-e"), empty()));
+        }
+
+        @Test
+        void twoNonEndorsableOffences_sameFamily_shouldRaiseSeparateWarningPerOffence() throws Exception {
+            stubEndorsableFlagResponse("ne-ac5-same-a", false);
+            stubEndorsableFlagResponse("ne-ac5-same-b", false);
+            final String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LEP", "label": "LEP label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-same-a"},
+                        {"resultLineId": "rl2", "shortCode": "LEN", "label": "LEN label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-same-b"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+                      ],
+                      "offences": [
+                        {"offenceId": "ne-ac5-same-a", "offenceCode": "ne-ac5-same-a",
+                         "offenceTitle": "Offence A", "orderIndex": 1, "defendantId": "d1"},
+                        {"offenceId": "ne-ac5-same-b", "offenceCode": "ne-ac5-same-b",
+                         "offenceTitle": "Offence B", "orderIndex": 2, "defendantId": "d1"}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(2)))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].offenceId",
+                            containsInAnyOrder("ne-ac5-same-a", "ne-ac5-same-b")))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].message",
+                            contains(ENDORSEMENT_MESSAGE, ENDORSEMENT_MESSAGE)));
+        }
+
+        @Test
+        void bothFamiliesOnOneOffence_disqOnlyOnAnother_shouldRaiseMatchingVariantsPerOffence() throws Exception {
+            stubEndorsableFlagResponse("ne-ac5-both-a", false);
+            stubEndorsableFlagResponse("ne-ac5-both-b", false);
+            final String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-10-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "LEA", "label": "LEA label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-both-a"},
+                        {"resultLineId": "rl2", "shortCode": "DDP", "label": "DDP label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-both-a"},
+                        {"resultLineId": "rl3", "shortCode": "DDD", "label": "DDD label",
+                         "defendantId": "d1", "offenceId": "ne-ac5-both-b"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+                      ],
+                      "offences": [
+                        {"offenceId": "ne-ac5-both-a", "offenceCode": "ne-ac5-both-a",
+                         "offenceTitle": "Offence A", "orderIndex": 1, "defendantId": "d1"},
+                        {"offenceId": "ne-ac5-both-b", "offenceCode": "ne-ac5-both-b",
+                         "offenceTitle": "Offence B", "orderIndex": 2, "defendantId": "d1"}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(3)))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac5-both-a") + ".affectedOffences[0].message",
+                            containsInAnyOrder(ENDORSEMENT_MESSAGE, DISQ_MESSAGE)))
+                    .andExpect(jsonPath(warningsForOffence("ne-ac5-both-b") + ".affectedOffences[0].message",
+                            contains(DISQ_MESSAGE)));
+        }
+    }
+
+    @Nested
+    @DisplayName("AC4 — warning clears when the trigger result is removed or replaced")
+    class WarningClearsOnRemovalOrReplacement {
+
+        @Test
+        void endorsementResultRemoved_shouldClearEndorsementWarning() throws Exception {
+            stubEndorsableFlagResponse("ne-ac4-lep-removed", false);
+            performValidate(offenceWithResultsRequest("ne-ac4-lep-removed", "LEP", "FO"))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)));
+
+            performValidate(offenceWithResultsRequest("ne-ac4-lep-removed", "FO"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+        }
+
+        @Test
+        void disqualificationResultRemoved_shouldClearDisqualificationWarning() throws Exception {
+            stubEndorsableFlagResponse("ne-ac4-ddo-removed", false);
+            performValidate(offenceWithResultsRequest("ne-ac4-ddo-removed", "DDO", "FO"))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)));
+
+            performValidate(offenceWithResultsRequest("ne-ac4-ddo-removed", "FO"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+        }
+
+        @ParameterizedTest(name = "DDO replaced with {0}")
+        @ValueSource(strings = {"DDRN", "DDRNL", "DDRA", "DDRAL", "DDRV", "DDRVL"})
+        void disqualificationReplacedWithNonEndorsableDisq_shouldClearWarning(final String replacement)
+                throws Exception {
+            final String offenceId = "ne-ac4-replaced-" + replacement;
+            stubEndorsableFlagResponse(offenceId, false);
+            performValidate(offenceWithResultsRequest(offenceId, "DDO"))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)));
+
+            performValidate(offenceWithResultsRequest(offenceId, replacement))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+        }
+
+        @Test
+        void bothFamiliesFired_endorsementRemoved_shouldLeaveOnlyDisqualificationWarning() throws Exception {
+            stubEndorsableFlagResponse("ne-ac4-both-lep-removed", false);
+            performValidate(offenceWithResultsRequest("ne-ac4-both-lep-removed", "LEP", "DDO"))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(2)));
+
+            performValidate(offenceWithResultsRequest("ne-ac4-both-lep-removed", "DDO"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].message",
+                            contains(DISQ_MESSAGE)));
+        }
+
+        @Test
+        void bothFamiliesFired_disqReplacedWithDdrn_shouldLeaveOnlyEndorsementWarning() throws Exception {
+            stubEndorsableFlagResponse("ne-ac4-both-ddo-replaced", false);
+            performValidate(offenceWithResultsRequest("ne-ac4-both-ddo-replaced", "LEP", "DDO"))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(2)));
+
+            performValidate(offenceWithResultsRequest("ne-ac4-both-ddo-replaced", "LEP", "DDRN"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')].affectedOffences[0].message",
+                            contains(ENDORSEMENT_MESSAGE)));
+        }
     }
 
     @Nested
@@ -459,6 +650,42 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
                   ]
                 }
                 """.formatted(shortCode, shortCode, offenceId, offenceId, offenceId);
+    }
+
+    /**
+     * Builds a single-offence request carrying one result line per short code, all linked to
+     * {@code offenceId} (which doubles as the {@code offenceCode} for the reference-data stub).
+     */
+    private static String offenceWithResultsRequest(final String offenceId, final String... shortCodes) {
+        final String resultLines = IntStream.range(0, shortCodes.length)
+                .mapToObj(i -> """
+                        {"resultLineId": "rl%d", "shortCode": "%s", "label": "%s label",
+                         "defendantId": "d1", "offenceId": "%s"}""".formatted(
+                        i + 1, shortCodes[i], shortCodes[i], offenceId))
+                .collect(Collectors.joining(",\n"));
+        return """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-10-20",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    %s
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "firstName": "Test", "lastName": "User"}
+                  ],
+                  "offences": [
+                    {"offenceId": "%s", "offenceCode": "%s", "offenceTitle": "Test offence",
+                     "orderIndex": 1, "defendantId": "d1"}
+                  ]
+                }
+                """.formatted(resultLines, offenceId, offenceId);
+    }
+
+    /** JsonPath selecting the DR-END-014 warnings attached to the given offence. */
+    private static String warningsForOffence(final String offenceId) {
+        return "$.warnings[?(@.ruleId=='DR-END-014' && @.affectedOffences[0].offenceId=='%s')]"
+                .formatted(offenceId);
     }
 
     private ResultActions performValidate(final String request) throws Exception {
