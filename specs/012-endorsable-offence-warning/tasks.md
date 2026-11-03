@@ -174,7 +174,7 @@
 
 **Purpose**: Seed the `DR-END-012` row into the `validation_rule` override table so `ValidationRulesControllerIntegrationTest` and the rules-list API return all 9 rules (including DR-END-012).
 
-- [x] T032 Create `src/main/resources/db/migration/V1.013__insert_dr_endorsement_012.sql` — single INSERT: `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-012', true, 'WARNING');`
+- [x] T032 Create `src/main/resources/db/migration/V1.014__insert_dr_end_012.sql` — single INSERT: `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-012', true, 'WARNING');`
 
 ### Verify
 
@@ -272,4 +272,4 @@ Then sequential:
 - Never hardcode short-code sets in Java — they live entirely in the YAML
 - Use distinct `offenceCode` values per IT test method to avoid Caffeine cache cross-contamination (cache lifetime = Spring context lifetime for ITs)
 - `endorsable_flag` absent / non-TRUE → fail-open (no warning)
-- Flyway migration is V1.013 (slots V1.010–V1.012 reserved for branches merging before this one)
+- Flyway migration is V1.014 (slots V1.010–V1.013 reserved for branches merging before this one)

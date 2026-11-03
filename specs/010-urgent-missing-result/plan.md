@@ -1,7 +1,7 @@
 # Implementation Plan: URGENT Result Missing Warning (CRA-22 / DR-URG-008)
 
 **Branch**: `CRA-22-urgent-missing-result` | **Date**: 2026-09-02 | **Updated**: 2026-09-11 (AC5A) | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/008-urgent-missing-result/spec.md`
+**Input**: Feature specification from `specs/010-urgent-missing-result/spec.md`
 
 ## Summary
 
@@ -43,7 +43,7 @@ Following Constitution Principle I (YAML/CEL Rule-First), the rule is expressed 
 ### Documentation (this feature)
 
 ```text
-specs/008-urgent-missing-result/
+specs/010-urgent-missing-result/
 ├── plan.md              # This file
 ├── spec.md              # Feature specification
 ├── research.md          # Phase 0 — decisions & rationale

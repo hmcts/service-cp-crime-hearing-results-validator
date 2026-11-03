@@ -125,7 +125,7 @@ public class DefaultValidationService implements ValidationService {
         final int hearingDefendantCount = countDistinctDefendants(request);
         final List<String> errorMessages = new ArrayList<>(standaloneMessages);
         for (final Map.Entry<String, String> entry : errorBaseByTemplate.entrySet()) {
-            final List<String> names = errorNamesByTemplate.get(entry.getKey());
+            final List<String> names = errorNamesByTemplate.getOrDefault(entry.getKey(), List.of());
             errorMessages.add(messageTemplateResolver.resolveDefendantNames(
                     entry.getValue(), names, hearingDefendantCount));
         }
@@ -191,6 +191,12 @@ public class DefaultValidationService implements ValidationService {
     private static void appendDefendantName(final Map<String, List<String>> errorNamesByRule,
                                              final String ruleId,
                                              final String name) {
-        errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>()).add(name);
+        if (name == null || name.isBlank()) {
+            return;
+        }
+        final List<String> names = errorNamesByRule.computeIfAbsent(ruleId, k -> new ArrayList<>());
+        if (!names.contains(name)) {
+            names.add(name);
+        }
     }
 }

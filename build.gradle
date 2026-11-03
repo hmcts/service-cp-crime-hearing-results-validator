@@ -23,13 +23,10 @@ if (gradle.startParameter.taskNames.any { it.contains('cyclonedxBom') }) {
 group = 'uk.gov.hmcts.cp'
 version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
 
-// Security override, not a preference. Boot 4.1.1 manages Jackson 2.21.5 / 3.1.5, which carry
-// CVE-2026-68497, -89407, -89425, -91776 and -91777 (HIGH, fixed in 2.21.7 / 3.1.7). Guarded on the
-// exact Boot version so the next Boot bump drops the override and Trivy re-judges Boot's own baseline.
-if (libs.versions.spring.boot.get() == '4.1.1') {
-  ext['jackson-2-bom.version'] = '2.21.7'
-  ext['jackson-bom.version'] = '3.1.7'
-}
+// Override the Spring Boot 4.1.2 managed Jackson versions to pick up the fix for CVE-2026-110879
+// (jackson-databind CRITICAL). Remove once Spring Boot manages >= these.
+ext['jackson-bom.version'] = '3.1.8'
+ext['jackson-2-bom.version'] = '2.21.8'
 
 apply {
   from("$rootDir/gradle/dependencies/java-core.gradle")
@@ -52,7 +49,7 @@ configurations {
   apiSpec
   implementation.extendsFrom apiSpec
 
-  all {
+  configureEach {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
       // cel-generated-pb (see the explicit dependency below) is compiled against protobuf gencode
       // 4.35.1; the Spring Boot BOM and opentelemetry-proto pull protobuf-java to 4.34.x, which
@@ -61,6 +58,13 @@ configurations {
       if (details.requested.group == 'com.google.protobuf' && details.requested.name == 'protobuf-java') {
         details.useVersion '4.35.1'
         details.because 'cel-generated-pb:0.8.0 requires protobuf gencode >= 4.35.1'
+      }
+      // Transitive guava pulled in at 32.1.3-android via cp-audit-filter-springboot → swagger-core 1.6.x;
+      // CVE-2026-102554 (HIGH) is fixed in 33.7.2. swagger-core 1.x is in maintenance and will not
+      // adopt guava 33.x — this override stays until cp-audit-filter-springboot drops the dependency.
+      if (details.requested.group == 'com.google.guava' && details.requested.name == 'guava') {
+        details.useVersion '33.7.2-jre'
+        details.because 'CVE-2026-102554: DoS via unthrottled memory allocation; fixed in 33.7.2'
       }
     }
   }
@@ -77,10 +81,6 @@ springBoot {
 
 dependencies {
   apiSpec libs.api.hearing.results.validator
-
-  // Security: pins the transitive tomcat-embed-core to a patched version. Spring Boot
-  // 4.1.1's BOM selects 11.0.24, which carries three CRITICAL advisories fixed in 11.0.25.
-  implementation libs.tomcat.embed.core
 
   // --- Observability / Actuator / OTEL / Prometheus ---
   implementation libs.spring.boot.starter.actuator

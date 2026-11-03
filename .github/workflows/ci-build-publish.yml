@@ -118,7 +118,7 @@ jobs:
           echo "artefact_name=${repo_name}-${{ needs.Artefact-Version.outputs.artefact_version }}" >> $GITHUB_OUTPUT
 
       - name: Upload JAR Artefact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: app-jar
           path: build/libs/${{ steps.repo_vars.outputs.artefact_name }}.jar
@@ -233,7 +233,7 @@ jobs:
           fi
 
           echo "Publishing artefact for version: $ARTEFACT_VERSION"
-          
+
           ./gradlew publish \
             -DARTEFACT_VERSION=$ARTEFACT_VERSION \
             -DGITHUB_REPOSITORY=${{ github.repository }} \
@@ -284,7 +284,7 @@ jobs:
           # image no environment ever runs. What it still cannot reproduce is the ACR image's
           # patch level. Pinned to the multi-arch index digest, not a platform-specific one.
           build-args: |
-            BASE_IMAGE=eclipse-temurin:25-jre-noble@sha256:398f810215757dc1926390014272579fb0e57c41ef1c8aa4f64ae761613a168b
+            BASE_IMAGE=eclipse-temurin:25-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce
             JAR_FILENAME=${{ needs.Build.outputs.artefact_name }}.jar
 
       - name: Run Trivy vulnerability scan

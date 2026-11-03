@@ -1,9 +1,9 @@
 [versions]
-api-hearing-results-validator = "26.32"
-spring-boot = "4.1.1"
+api-hearing-results-validator = "26.33"
+spring-boot = "4.1.2"
 spring-dependency-management = "1.1.7"
-ben-manes-versions = "0.65.0"
-cyclonedx-bom = "3.5.0"
+ben-manes-versions = "0.66.0"
+cyclonedx-bom = "3.5.1"
 gradle-git-properties = "4.0.1"
 avast-docker-compose = "0.17.21"
 cp-auth-rules-filter = "1.0.7"
@@ -11,25 +11,15 @@ cp-audit-filter-springboot = "1.0.5"
 swagger-core = "2.2.55"
 junit-bom = "6.1.3"
 logstash-logback-encoder = "9.0"
-owasp-encoder = "1.5.0"
+owasp-encoder = "1.6.0"
 lombok = "1.18.48"
 mapstruct = "1.6.3"
 cel-tools = "0.8.0"
 testcontainers = "1.21.4"
 wiremock = "3.13.2"
-caffeine = "3.3.0"
+caffeine = "3.3.1"
 gatling = "3.16.0"
-# Security override, not a preference: see the tomcat-embed-core entry below.
-tomcat-embed = "11.0.26"
-
 [libraries]
-# Pins the tomcat-embed-core that spring-boot-starter-web brings in transitively. The BOM
-# for Spring Boot 4.1.1 selects 11.0.24, which carries three CRITICAL advisories fixed in
-# 11.0.25: CVE-2026-65182, CVE-2026-65905 and CVE-2026-68525. Declaring it here also makes
-# it a dependency Dependabot can see -- a version chosen only by a BOM is invisible to it,
-# which is why this sat on 11.0.24 while the sibling court-register repo, which declares it
-# explicitly, was bumped to 11.0.25 by a routine Dependabot pull request.
-tomcat-embed-core = { module = "org.apache.tomcat.embed:tomcat-embed-core", version.ref = "tomcat-embed" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 api-hearing-results-validator = { module = "uk.gov.hmcts.cp:api-cp-crime-hearing-results-validator", version.ref = "api-hearing-results-validator" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
@@ -71,7 +61,7 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "c
 gatling = { id = "io.gatling.gradle", version.ref = "gatling" }
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
-ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "ben-manes-versions" }
 cyclonedx-bom = { id = "org.cyclonedx.bom", version.ref = "cyclonedx-bom" }
 gradle-git-properties = { id = "com.gorylenko.gradle-git-properties", version.ref = "gradle-git-properties" }
 avast-docker-compose = { id = "com.avast.gradle.docker-compose", version.ref = "avast-docker-compose" }
