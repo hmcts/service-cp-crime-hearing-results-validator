@@ -98,7 +98,7 @@ rule:
       validationLevel: OFFENCE
 ```
 
-## Liquibase Migration: V1.014__insert_dr_disq_013.sql
+## Liquibase Migration: V1.015__insert_dr_disq_013.sql
 
 ```sql
 INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)

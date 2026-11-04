@@ -88,7 +88,7 @@ message. Replace DDRCO with DDO → `$.errors.validationIssues` is empty.
 
 - [X] T006 Create stub `DrugDrivingCourseReductionPreprocessor` in `src/main/java/uk/gov/hmcts/cp/services/rules/cel/DrugDrivingCourseReductionPreprocessor.java` — `@Slf4j @Component`, qualifier `"drug-driving-course-reduction"`, `preprocess()` returns an empty map (stub to unblock IT compilation)
 - [X] T007 Create `DR-DISQ-013.yaml` in `src/main/resources/rules/DR-DISQ-013.yaml` — full YAML per data-model.md: `priority: 13000`, `preprocessing.type: drug-driving-course-reduction`, five `relevantOffenceCodes`, two `courseReductionShortCodes`, single AC1 condition `qualifyingCount > 0` at `severity: ERROR`, `validationLevel: OFFENCE`, exact `messageTemplate` text
-- [X] T008 Create Liquibase migration `src/main/resources/db/migration/V1.014__insert_dr_disq_013.sql` — `INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by) VALUES ('DR-DISQ-013', true, 'ERROR', now(), 'system');`
+- [X] T008 Create Liquibase migration `src/main/resources/db/migration/V1.015__insert_dr_disq_013.sql` — `INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by) VALUES ('DR-DISQ-013', true, 'ERROR', now(), 'system');`
 - [X] T009 Update `src/main/resources/rules/priority.txt` — append `"DR-DISQ-013"` to the comma-separated list (priority position 13000)
 - [X] T010 Implement full `DrugDrivingCourseReductionPreprocessor.preprocess()` — for each offence: `relevant = offenceCode ∈ upperSet(relevantOffenceCodes)`, `hasCourseReduction = anyShortCodeIn(allLines, upperSet(courseReductionShortCodes))`, `qualifying = relevant && hasCourseReduction`; emit `DrugDrivingContext(offenceId, qualifying ? 1 : 0, qualifying ? [offenceId] : [], [offenceId])`
 
@@ -211,7 +211,7 @@ Task: "Write DrugDrivingCourseReductionRuleIT"
 
 # Once stub preprocessor exists (T006), write rule artefacts in parallel (T007+T008+T009):
 Task: "Create DR-DISQ-013.yaml"
-Task: "Create V1.014__insert_dr_disq_013.sql"
+Task: "Create V1.015__insert_dr_disq_013.sql"
 Task: "Update priority.txt"
 ```
 

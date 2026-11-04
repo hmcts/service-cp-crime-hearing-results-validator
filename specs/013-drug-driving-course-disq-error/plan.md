@@ -18,7 +18,7 @@ DDRCO/DDRCOT is found) + new `DrugDrivingContext` record + one new field on `Pre
 
 **Language/Version**: Java 25
 **Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Lombok, Flyway
-**Storage**: PostgreSQL 15.3 — new row in `validation_rule` table via Flyway migration V1.014
+**Storage**: PostgreSQL 15.3 — new row in `validation_rule` table via Flyway migration V1.015
 **Testing**: JUnit 5 + Mockito + AssertJ (unit); TestContainers PostgreSQL + MockMvc (integration)
 **Target Platform**: Linux (Azure Kubernetes Service)
 **Project Type**: Web service (Spring Boot REST API, validation rule engine)
@@ -70,7 +70,7 @@ src/main/resources/rules/
 └── priority.txt                                        [MODIFIED — append DR-DISQ-013]
 
 src/main/resources/db/migration/
-└── V1.014__insert_dr_disq_013.sql                      [NEW]
+└── V1.015__insert_dr_disq_013.sql                      [NEW]
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── PreprocessingDefinition.java                        [MODIFIED — add courseReductionShortCodes field]

@@ -55,5 +55,5 @@ The `DR-DISQ-013.yaml` will follow the DR-DISQ-002 YAML structure with:
 
 ## Liquibase migration
 
-`V1.014__insert_dr_disq_013.sql` — inserts `('DR-DISQ-013', true, 'ERROR', now(), 'system')`.
-Previous migration is V1.010; migrations V1.011–V1.013 are reserved for in-flight rules (DR-APP-009, DR-RESTRAO-010, and one other). V1.014 is confirmed by the user.
+`V1.015__insert_dr_disq_013.sql` — inserts `('DR-DISQ-013', true, 'ERROR', now(), 'system')`.
+Previous migration is V1.010; migrations V1.011–V1.013 are reserved for in-flight rules (DR-APP-009, DR-RESTRAO-010, and one other). V1.015 is confirmed by the user.
