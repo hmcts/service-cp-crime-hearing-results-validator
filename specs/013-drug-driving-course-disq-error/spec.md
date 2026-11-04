@@ -122,4 +122,4 @@ Results have already been shared for a triggering drug driving offence. A user s
 - Short-code matching is case-insensitive, consistent with every other result-code check in this service.
 - The amend-and-reshare UI behaviour (suppression of Request approval / Validate amendments) is gated on CRA-282 being delivered; this rule only needs to return the ERROR — it does not need to know whether the results were previously shared.
 - The GDS error presentation requirements (AC2 — red border, "Error:" prefix, summary with role="alert", defendant name in multi-defendant hearings) are handled by the front-end using the ERROR issues returned by this service. This service is scoped to returning the correct error issue with the correct severity, message, and affected offence set; presentation is out of scope here.
-- Rule ID: `DR-DISQ-013`. Rule priority: `13000`. SQL migration: `V1.014__insert_dr_disq_013.sql`.
+- Rule ID: `DR-DISQ-013`. Rule priority: `13000`. SQL migration: `V1.015__insert_dr_disq_013.sql`.

@@ -32,5 +32,5 @@
 ## Notes
 
 - All 7 original ACs from the Jira ticket are covered across 4 user stories (AC1→US1, AC2→US1 scenarios + edge cases, AC3+AC4→US2, AC5→US1 scenario 3, AC6→US3, AC7→US4).
-- The Assumptions section records the planning-relevant settings: rule ID DR-DISQ-013, priority 13000, SQL migration V1.014__insert_dr_disq_013.sql, and the preprocessor reuse hypothesis.
+- The Assumptions section records the planning-relevant settings: rule ID DR-DISQ-013, priority 13000, SQL migration V1.015__insert_dr_disq_013.sql, and the preprocessor reuse hypothesis.
 - No [NEEDS CLARIFICATION] markers were needed — all reference data (offence codes, result codes, message text) is fully specified in the Jira ticket.
