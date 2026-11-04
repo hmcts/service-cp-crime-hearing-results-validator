@@ -14,6 +14,7 @@ import uk.gov.hmcts.cp.services.rules.RuleOverrideService;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueRecorder;
 import uk.gov.hmcts.cp.services.rules.ValidationRule;
 import uk.gov.hmcts.cp.services.rules.cel.AgeRestrictedImprisonmentPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.ApplicationResultOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CelExpressionEvaluator;
 import uk.gov.hmcts.cp.services.rules.cel.CommunityOrderEndDatePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.ConditionalBailPreprocessor;
@@ -24,6 +25,7 @@ import uk.gov.hmcts.cp.services.rules.cel.DrugDrivingCourseReductionPreprocessor
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
+import uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
 
@@ -46,6 +48,8 @@ class ValidationRuleAutoConfigurationTest {
             new AgeRestrictedImprisonmentPreprocessor(),
             new ConditionalBailPreprocessor(),
             new SexualOffenceNotificationPreprocessor(mock(ReferencedataOffenceClient.class)),
+            new ApplicationResultOffencePreprocessor(),
+            new RestrainingOrderMultiplePersonsPreprocessor(),
             new DrugDrivingCourseReductionPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
@@ -81,12 +85,12 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(10);
+        assertThat(rules).hasSize(12);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                        "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-URG-008", "DR-SEX-008",
-                        "DR-DISQ-013");
+                        "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-URG-008",
+                        "DR-APP-009", "DR-RESTRAO-010", "DR-DISQ-013");
     }
 
     /**

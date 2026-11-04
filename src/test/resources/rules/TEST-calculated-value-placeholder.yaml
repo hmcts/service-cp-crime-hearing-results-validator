@@ -1,0 +1,54 @@
+rule:
+  id: "DR-TEST-CALC-PLACEHOLDER-001"
+  title: "Calculated value placeholder generalisation test rule"
+  priority: 9999
+  enabled: true
+
+  preprocessing:
+    type: "test-fixed-value"
+
+  conditions:
+    - id: "AC1"
+      name: "Default placeholder name when calculatedValuePlaceholderName absent"
+      expression: "triggered == 1"
+      severity: ERROR
+      messageTemplate: >-
+        Inline value is ${calculatedEndDate}.
+      calculatedValueSet: "calcValue"
+      affectedOffenceSet: "offenceIds"
+      validationLevel: OFFENCE
+
+    - id: "AC2"
+      name: "Custom placeholder name in inline message"
+      expression: "triggered == 1"
+      severity: ERROR
+      messageTemplate: >-
+        Inline value is ${customPlaceholder}.
+      calculatedValueSet: "calcValue"
+      calculatedValuePlaceholderName: "customPlaceholder"
+      affectedOffenceSet: "offenceIds"
+      validationLevel: OFFENCE
+
+    - id: "AC3"
+      name: "Custom placeholder name in page-level message"
+      expression: "triggered == 1"
+      severity: ERROR
+      messageTemplate: >-
+        Inline message unrelated to the placeholder.
+      errorMessageTemplate: >-
+        Page-level value is ${customPlaceholder}. This affects ${defendantNames}.
+      calculatedValueSet: "calcValue"
+      calculatedValuePlaceholderName: "customPlaceholder"
+      affectedOffenceSet: "offenceIds"
+      validationLevel: OFFENCE
+
+    - id: "AC4"
+      name: "errorMessageTemplate with no calculatedValueSet is unaffected"
+      expression: "triggered == 1"
+      severity: ERROR
+      messageTemplate: >-
+        Inline message, no calculated value.
+      errorMessageTemplate: >-
+        Page-level message with no calculated value. This affects ${defendantNames}.
+      affectedOffenceSet: "offenceIds"
+      validationLevel: OFFENCE

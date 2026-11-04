@@ -27,6 +27,8 @@ jobs:
         id: pmd
         continue-on-error: true
         with:
+          # keep in sync with toolVersion in gradle/github/pmd.gradle
+          version: '7.29.0'
           rulesets: '.github/pmd-ruleset.xml'
           sourcePath: 'src/main/java'
           analyzeModifiedFilesOnly: false
