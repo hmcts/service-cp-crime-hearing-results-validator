@@ -4,7 +4,7 @@ pmd {
   ruleSets = []
   ruleSetFiles = files(".github/pmd-ruleset.xml")
   ignoreFailures = false
-  toolVersion = "7.22.0"
+  toolVersion = "7.29.0"
 }
 
 // src/test gets its own ruleset -- same base, minus a few rules that are inapplicable to test

@@ -7,12 +7,17 @@ ARG BASE_IMAGE
 # The default is only used for a local build; ADO substitutes the ACR base. Kept on the same
 # Ubuntu release as that base (24.04) so a local image resembles the deployed one -- the
 # digest this replaced was Ubuntu 26.04, which carries a pebble binary we never deploy.
-FROM ${BASE_IMAGE:-eclipse-temurin:25-jre-noble@sha256:398f810215757dc1926390014272579fb0e57c41ef1c8aa4f64ae761613a168b}
+FROM ${BASE_IMAGE:-eclipse-temurin:25-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce}
 
-# install curl for debugging; upgrade openssl ahead of the base image for CVE-2026-84782
+# install curl for debugging; upgrade openssl and libbrotli1 ahead of the base image.
+# The CI/GHCR image is built from the pinned eclipse-temurin digest below, which already
+# ships the patched versions; these lines are a safety net for the ADO-deployed image, which
+# is built from crmdvrepo01.azurecr.io/hmcts/apm-services:25-jre (a private HMCTS base whose
+# patch level we cannot verify here) — without them, CVE-2026-84782 (openssl) and
+# CVE-2026-111497 (libbrotli1) may remain unpatched on the image that actually ships.
 RUN apt-get update \
     && apt-get install -y curl \
-    && apt-get install -y --only-upgrade openssl libssl3t64 \
+    && apt-get install -y --only-upgrade openssl libssl3t64 libbrotli1 \
     && rm -rf /var/lib/apt/lists/*
 
 # run as non-root ... group and user "app"
