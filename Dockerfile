@@ -9,15 +9,19 @@ ARG BASE_IMAGE
 # digest this replaced was Ubuntu 26.04, which carries a pebble binary we never deploy.
 FROM ${BASE_IMAGE:-eclipse-temurin:25-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce}
 
-# install curl for debugging; upgrade openssl and libbrotli1 ahead of the base image.
+# install curl for debugging; upgrade openssl, libbrotli1 and apt ahead of the base image.
 # The CI/GHCR image is built from the pinned eclipse-temurin digest below, which already
 # ships the patched versions; these lines are a safety net for the ADO-deployed image, which
 # is built from crmdvrepo01.azurecr.io/hmcts/apm-services:25-jre (a private HMCTS base whose
 # patch level we cannot verify here) — without them, CVE-2026-84782 (openssl) and
 # CVE-2026-111497 (libbrotli1) may remain unpatched on the image that actually ships.
+# apt: CVE-2026-109518 is NOT yet fixed in the pinned temurin digest (2.8.3, fixed in
+# 2.8.4ubuntu0.1), so this upgrade is what keeps the CI Trivy scan green. apt's libapt-pkg
+# dependency is upgraded with it; it is not named explicitly because its package name differs
+# across Ubuntu releases, and an unknown name fails the build if the ADO base moves release.
 RUN apt-get update \
     && apt-get install -y curl \
-    && apt-get install -y --only-upgrade openssl libssl3t64 libbrotli1 \
+    && apt-get install -y --only-upgrade openssl libssl3t64 libbrotli1 apt \
     && rm -rf /var/lib/apt/lists/*
 
 # run as non-root ... group and user "app"
