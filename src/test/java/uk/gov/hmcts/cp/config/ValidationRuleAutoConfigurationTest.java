@@ -2,6 +2,7 @@ package uk.gov.hmcts.cp.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -23,6 +24,7 @@ import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.NonImprisonableOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 import uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
@@ -48,7 +50,8 @@ class ValidationRuleAutoConfigurationTest {
             new ConditionalBailPreprocessor(),
             new SexualOffenceNotificationPreprocessor(mock(ReferencedataOffenceClient.class)),
             new ApplicationResultOffencePreprocessor(),
-            new RestrainingOrderMultiplePersonsPreprocessor()));
+            new RestrainingOrderMultiplePersonsPreprocessor(),
+            new NonImprisonableOffencePreprocessor(mock(ReferencedataOffenceClient.class))));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -83,12 +86,50 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(11);
+        assertThat(rules).hasSize(12);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
                     "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009",
-                    "DR-RESTRAO-010");
+                    "DR-RESTRAO-010", "DR-SENT-011");
+    }
+
+    /**
+     * Verifies every rule has a unique priority and each rule ID is paired with its expected
+     * priority value. A duplicate priority causes undefined evaluation order; this test
+     * fails fast when a new rule is added with a colliding or wrong priority.
+     */
+    @Test
+    void should_have_unique_priorities_and_expected_rule_id_priority_pairs() throws IOException {
+        List<ValidationRule> rules = config.validationRules(
+                preprocessorRegistry,
+                new CelExpressionEvaluator(),
+                new MessageTemplateResolver(offenceDisplayHelper),
+                offenceDisplayHelper,
+                mock(RuleOverrideService.class),
+                issueRecorder);
+
+        assertThat(rules).hasSize(12);
+
+        assertThat(rules)
+                .extracting(r -> r.getRuleDetail().getRuleId(), ValidationRule::getPriority)
+                .containsExactlyInAnyOrder(
+                        tuple("DR-SENT-001",    1000),
+                        tuple("DR-DISQ-002",    2000),
+                        tuple("DR-CTL-003",     3000),
+                        tuple("DR-YRO-004",     4000),
+                        tuple("DR-COEW-005",    5000),
+                        tuple("DR-CONV-006",    6000),
+                        tuple("DR-AGE-007",     7000),
+                        tuple("DR-SEX-008",     8000),
+                        tuple("DR-URG-008",     9000),
+                        tuple("DR-APP-009",    10_000),
+                        tuple("DR-RESTRAO-010", 11_000),
+                        tuple("DR-SENT-011",   12_000));
+
+        assertThat(rules)
+                .extracting(ValidationRule::getPriority)
+                .doesNotHaveDuplicates();
     }
 
     /**
