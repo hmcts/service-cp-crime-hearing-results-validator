@@ -40,5 +40,17 @@ public record PreprocessingDefinition(
 
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
-        List<String> applicationOnlyShortCodes) {
+        List<String> applicationOnlyShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: remand-type conditional bail parent short codes
+        List<String> remandConditionalBailShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: CCIC parent short code(s)
+        List<String> ccicShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: CCSC parent short code(s)
+        List<String> ccscShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: pre-release bail condition child short codes
+        List<String> preReleaseBailConditionShortCodes) {
 }
