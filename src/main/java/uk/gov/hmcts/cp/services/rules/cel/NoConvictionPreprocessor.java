@@ -18,7 +18,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * <ol>
  *   <li>At least one {@code category='F'} result line on the offence has a short code that is
  *       <em>not</em> in the excluded set (the same {@code excludedFinalShortCodes} used by
- *       DR-DISQ-001, but with no offence-code restriction — this rule applies to every offence).</li>
+ *       DR-DISQ-002, but with no offence-code restriction — this rule applies to every offence).</li>
  *   <li>The offence is not convicted ({@code OffenceDto.isConvicted}, the same field used by
  *       DR-CTL-001; {@code null} is treated as not convicted).</li>
  * </ol>
