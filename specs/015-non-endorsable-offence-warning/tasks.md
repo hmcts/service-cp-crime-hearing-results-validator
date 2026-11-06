@@ -22,7 +22,7 @@
 
 **⚠️ CRITICAL**: Constitution Principle I — YAML is the contract. No preprocessor or test may be written until T001 is done.
 
-- [X] T001 Create `src/main/resources/rules/DR-END-014.yaml` — single rule with two conditions: AC1 (`endorsementCount > 0`, WARNING, "This offence is not endorsable. Remove the endorsement result.", `affectedOffenceSet: "nonEndorsableEndorsementOffenceIds"`) and AC2 (`disqualificationCount > 0`, WARNING, "This offence is not endorsable. Remove the disqualification result, or record a disqualification for non-endorsable offence result instead.", `affectedOffenceSet: "nonEndorsableDisqualificationOffenceIds"`); `preprocessing.type: "non-endorsable-offence"`; `endorsementShortCodes: [LEP, LEN, LEA]`; `disqualificationTriggerShortCodes: [DDO, DDOL, DDOR, DDOTE, DDOTEL, DDD, DDDL, DDDT, DDDTL, DDDTO, DDP, DDPL, DDPR, DDPTE, DDPTEL, DDRCOT]`; `priority: 14000`; `validationLevel: OFFENCE` — full YAML body in data-model.md
+- [X] T001 Create `src/main/resources/rules/DR-END-014.yaml` — single rule with two conditions: AC1 (`endorsementCount > 0`, WARNING, "This offence is not endorsable. Remove the endorsement result.", `affectedOffenceSet: "nonEndorsableEndorsementOffenceIds"`) and AC2 (`disqualificationCount > 0`, WARNING, "This offence is not endorsable. Remove the disqualification result, or record a disqualification for non-endorsable offence result instead.", `affectedOffenceSet: "nonEndorsableDisqualificationOffenceIds"`); `preprocessing.type: "non-endorsable-offence"`; `endorsementShortCodes: [LEP, LEN, LEA]`; `disqualificationTriggerShortCodes: [DDO, DDOL, DDOR, DDOTE, DDOTEL, DDD, DDDL, DDDT, DDDTL, DDDTO, DDP, DDPL, DDPR, DDPTE, DDPTEL, DDRCOT]`; `priority: 15000`; `validationLevel: OFFENCE` — full YAML body in data-model.md
 
 **Checkpoint**: YAML rule committed. Phase 2 and Phase 3 may now begin.
 
@@ -32,7 +32,7 @@
 
 **Purpose**: DB row for DR-END-014 needed by integration test context (`IntegrationTestBase` applies migrations). BLOCKS integration tests.
 
-- [X] T002 [P] Create `src/main/resources/db/migration/V1.015__insert_dr_end_014.sql` — `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-014', true, 'WARNING');`
+- [X] T002 [P] Create `src/main/resources/db/migration/V1.016__insert_dr_end_014.sql` — `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-014', true, 'WARNING');`
 
 **Checkpoint**: Migration committed. Integration tests may now run against the test database.
 

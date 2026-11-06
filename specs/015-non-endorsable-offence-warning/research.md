@@ -63,7 +63,7 @@
 ## Decision 6: SQL migration numbering
 
 **Decision**: One new migration:
-- `V1.015__insert_dr_end_014.sql` — inserts `DR-END-014` row
+- `V1.016__insert_dr_end_014.sql` — inserts `DR-END-014` row
 
 **Rationale**: V1.014 was the last migration (spec 013). One rule = one row = one migration. No V1.016 needed (DR-END-015 does not exist as a separate rule).
 

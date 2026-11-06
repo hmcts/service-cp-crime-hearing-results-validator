@@ -82,7 +82,7 @@ rule:
     intended for endorsable offences (DDO/DDD/DDP families plus DDRCOT) is recorded
     against an offence whose reference data records endorsable_flag as false or absent.
     Advisory only — does not block saving or sharing.
-  priority: 14000
+  priority: 15000
   enabled: true
 
   preprocessing:
@@ -133,7 +133,7 @@ rule:
 
 ## Database Migration
 
-### V1.015__insert_dr_end_014.sql
+### V1.016__insert_dr_end_014.sql
 
 ```sql
 INSERT INTO validation_rule (id, enabled, severity)

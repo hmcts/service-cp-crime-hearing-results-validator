@@ -6,7 +6,7 @@ rule:
     intended for endorsable offences (DDO/DDD/DDP families plus DDRCOT) is recorded
     against an offence whose reference data records endorsable_flag as false or absent.
     Advisory only — does not block saving or sharing.
-  priority: 14000
+  priority: 15000
   enabled: true
 
   preprocessing:

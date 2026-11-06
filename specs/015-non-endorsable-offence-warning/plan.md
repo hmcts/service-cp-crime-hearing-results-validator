@@ -64,7 +64,7 @@ src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 └── NonEndorsableOffencePreprocessor.java                   # @Component qualifier="non-endorsable-offence"
 
 src/main/resources/db/migration/
-└── V1.015__insert_dr_end_014.sql                           # INSERT DR-END-014 row
+└── V1.016__insert_dr_end_014.sql                           # INSERT DR-END-014 row
 
 src/test/java/uk/gov/hmcts/cp/services/rules/cel/
 └── NonEndorsableOffencePreprocessorTest.java               # unit tests (TDD: written first)
@@ -120,7 +120,7 @@ Write the YAML file first; implementation cannot begin until this is committed.
 
 ### Phase B — SQL Migration ✅ DONE
 
-**B1** ✅: `V1.015__insert_dr_end_014.sql` — `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-014', true, 'WARNING');`
+**B1** ✅: `V1.016__insert_dr_end_014.sql` — `INSERT INTO validation_rule (id, enabled, severity) VALUES ('DR-END-014', true, 'WARNING');`
 
 ### Phase C — Failing Tests (TDD gate — Principle VIII) ✅ DONE
 
@@ -223,7 +223,7 @@ one gap in the HTTP scratch file. All gaps resolved 2026-10-26.
 | Reference-data call | `lookupEndorsability()` → `Endorsability` enum | Caffeine-cached on success only; `UNAVAILABLE` never cached |
 | Ref-data skip | Skip when no trigger result on offence | Avoids any ref-data call for offences with only non-trigger results (e.g. IMP) |
 | DDRN-family exclusion | Not in trigger set | DDRN codes are not listed under `disqualificationTriggerShortCodes`; AC3 passes naturally without explicit exclusion logic |
-| Priority | DR-END-014 → 14000 | Continues from existing DR-END-012 spacing |
+| Priority | DR-END-014 → 15000 | Continues from existing DR-END-012 spacing |
 | SQL migration | V1.015 only | One rule, one row |
 
 ## Out of Scope

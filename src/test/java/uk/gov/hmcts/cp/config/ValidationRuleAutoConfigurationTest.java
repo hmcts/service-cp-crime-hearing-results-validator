@@ -128,7 +128,7 @@ class ValidationRuleAutoConfigurationTest {
                         tuple("DR-APP-009",    10_000),
                         tuple("DR-RESTRAO-010", 11_000),
                         tuple("DR-SENT-011",   12_000),
-                        tuple("DR-END-014",    14_000));
+                        tuple("DR-END-014",    15_000));
 
         assertThat(rules)
                 .extracting(ValidationRule::getPriority)
