@@ -1,0 +1,121 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "matches": "live-ne-end-trigger|live-ne-len-trigger|live-ne-lea-trigger|live-ne-disq-trigger|live-ne-both-off"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb88",
+              "cjsOffenceCode": "NON-ENDORSABLE",
+              "endorsableFlag": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "matches": "live-ne-endorsable"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb89",
+              "cjsOffenceCode": "ENDORSABLE",
+              "endorsableFlag": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "matches": "RT88026"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb90",
+              "cjsOffenceCode": "RT88026",
+              "endorsableFlag": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "matches": "live-ne-absent-flag"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/vnd.referencedataoffences.offences-list+json"
+        },
+        "jsonBody": {
+          "offences": [
+            {
+              "offenceId": "0000357a-2b27-3eb5-9377-d7e9d680eb91",
+              "cjsOffenceCode": "live-ne-absent-flag"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/referencedataoffences-query-api/query/api/rest/referencedataoffences/offences",
+        "queryParameters": {
+          "cjsoffencecode": {
+            "matches": "live-ne-fail-open"
+          }
+        }
+      },
+      "response": {
+        "status": 500
+      }
+    }
+  ]
+}
