@@ -1,0 +1,320 @@
+### CRA-362 / DR-BAIL-016 — Pre-release bail condition warning scratch file
+### hearingDay fixed at 2026-11-09 for reproducible age calculations
+
+@baseUrl = http://localhost:4550
+@validatePath = /api/validation/validate
+
+###
+# AC1 — Adult (18+), result RC, trigger condition PASS5, bailStatus C → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac1",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS5", "label": "Passport surrendered", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC2 — Youth (<18), result REMCB, trigger condition PORS, bailStatus S → Warning B
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac2",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "REMCB", "label": "REMCB", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORS",  "label": "PORS",  "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Young", "lastName": "P", "dateOfBirth": "2010-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "S"}]
+}
+
+###
+# AC6 — No DOB, result RC, trigger PORSC, bailStatus C → Warning C
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac6",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORSC", "label": "PORSC", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "No", "lastName": "Dob"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC2A — CCIC result, trigger PASS1, bailStatus L → Warning D (any age)
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac2a",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "CCIC",  "label": "CCIC",  "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS1", "label": "PASS1", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Joe", "lastName": "B", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "L"}]
+}
+
+###
+# AC2B — CCSC result, trigger PASS8, bailStatus C → Warning E (any age)
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac2b",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "CCSC",  "label": "CCSC",  "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS8", "label": "PASS8", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Sam", "lastName": "C", "dateOfBirth": "1985-06-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC3 (English) — PORO1 "Other" bail condition with keyword "passport" → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac3-en",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "surrender passport within 24 hours"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC3 (Welsh) — PORO1 with Welsh keyword "mechnïwr" → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac3-cy",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "mechnïwr"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC5 — bailStatus=B (not custodial) → NO DR-BAIL-016 warning
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac5-status",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS5", "label": "Passport", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "B"}]
+}
+
+###
+# AC5 — Non-conditional result (RIB) → NO DR-BAIL-016 warning
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac5-result",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RIB",   "label": "RIB",   "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS5", "label": "Passport", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC5 — PORO1 with no trigger keyword → NO DR-BAIL-016 warning
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac5-nokw",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "report to probation every Monday"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC3 (English surety) — PORO1 with keyword "surety" → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac3-surety",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "find a continuous surety of £500"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC3 (English security) — PORO1 with keyword "security" → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac3-security",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "lodge security of £1000 with the court"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC3 (Welsh security/sicrwydd) — PORO1 with Welsh keyword "sicrwydd" → Warning A
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac3-sicrwydd",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC", "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other", "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "detail", "promptValue": "sicrwydd o £500"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC4 — Warning does not block sharing (isValid=true even when warning fires)
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac4",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS3", "label": "PASS3", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "bailStatus": "C"}]
+}
+
+###
+# AC7 — Null bailStatus (field absent) → NO DR-BAIL-016 warning (fail-open)
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac7",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "PASS5", "label": "Passport", "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [{"offenceId": "off-1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1}]
+}
+
+###
+# AC4A — DR-BAIL-016 coexists alongside DR-RESTRAO-010 (neither suppresses the other)
+POST {{baseUrl}}{{validatePath}}
+Content-Type: application/json
+CJSCPPUID: test-user
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-cra362-ac4a",
+  "hearingDay": "2026-11-09",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",      "label": "RC",      "defendantId": "d1", "offenceId": "off-bail"},
+    {"resultLineId": "rl2", "shortCode": "PASS5",   "label": "PASS5",   "defendantId": "d1", "offenceId": "off-bail"},
+    {"resultLineId": "rl3", "shortCode": "RESTRAO", "label": "RESTRAO", "defendantId": "d1", "offenceId": "off-rao",
+     "prompts": [{"promptRef": "protectedPersonsName", "promptValue": "John Smith & Jane Smith"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}],
+  "offences": [
+    {"offenceId": "off-bail", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft A", "orderIndex": 1, "bailStatus": "C"},
+    {"offenceId": "off-rao",  "defendantId": "d1", "offenceCode": "TH68002", "offenceTitle": "RAO offence", "orderIndex": 2, "bailStatus": "B"}
+  ]
+}
