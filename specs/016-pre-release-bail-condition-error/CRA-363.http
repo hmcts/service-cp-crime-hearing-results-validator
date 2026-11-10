@@ -1,0 +1,651 @@
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+@userId = test-user
+@hearingDay = 2026-06-15
+
+# DR-BAIL-015 — Pre-release bail conditions on a conditional bail result (CRA-363)
+#
+# Blocks sharing (ERROR) when a conditional bail parent result coexists with a
+# pre-release bail condition child result on the same offence.
+#
+# Parent result short codes — remand on conditional bail:
+#   RC, RCBV, BAILREVC, REMCB, REMCBY, RCCCB
+# Parent result short codes — custody with bail direction:
+#   CCIC, CCSC
+# Pre-release bail condition short codes (child):
+#   PREBC, PRBCO, PRBCP1–PRBCP8, PRBCS1–PRBCS3, PRBCSE1, PRBCSE2, PRBCT
+#
+# Age on hearing day ({{hearingDay}}):
+#   Adult (18+): DOB 1990-01-01  (age 36)
+#   Youth (<18): DOB 2012-01-01  (age 14)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC1 — Adult defendant with remand bail parent → Error A (blocking)
+# Expected: isValid=false, 1 ERROR, ruleId=DR-BAIL-015,
+#   message contains "use 'Remanded in custody with bail direction (RIB)'"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC1 — Adult + RC parent + PREBC child → Error A
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac1-adult-rc",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John", "lastName": "Smith", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC001"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC2 — Youth defendant with remand bail parent → Error B (blocking)
+# Expected: isValid=false, 1 ERROR, ruleId=DR-BAIL-015,
+#   message contains "use 'Remand in care of Local Authority with bail direction (RILAB)'"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC2 — Youth + REMCBY parent + PREBC child → Error B
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac2-youth-remcby",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "REMCBY", "label": "REMCBY", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC",  "label": "PREBC",  "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Taylor", "dateOfBirth": "2012-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC002"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC2A — CCIC parent → Error D (blocking, age-independent)
+# Expected: isValid=false, 1 ERROR, ruleId=DR-BAIL-015,
+#   message contains "use 'Sent to Crown Court in custody for trial with bail direction (CCIIB)'"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC2A — CCIC parent + PRBCS1 child → Error D
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac2a-ccic",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "CCIC",   "label": "CCIC",   "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PRBCS1", "label": "PRBCS1", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Sam", "lastName": "Patel", "dateOfBirth": "1985-03-10"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC003"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC2B — CCSC parent → Error E (blocking, age-independent)
+# Expected: isValid=false, 1 ERROR, ruleId=DR-BAIL-015,
+#   message contains "use 'Committed to Crown Court for sentence - in custody with bail direction (CCSIB)'"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC2B — CCSC parent + PRBCT child → Error E
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac2b-ccsc",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "CCSC",  "label": "CCSC",  "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PRBCT", "label": "PRBCT", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Chris", "lastName": "Brown", "dateOfBirth": "1995-07-22"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC004"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC3 — Multi-defendant: error summary includes "This affects" with defendant names
+# Two defendants; d1 (adult, RC+PREBC) and d2 (adult, BAILREVC+PRBCO) both trigger Error A.
+# Expected: isValid=false, error summary message ends with "This affects John Smith and Jane Jones"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC3 — Two adults, both trigger Error A → "This affects John Smith and Jane Jones"
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac3-multi-defendant",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",      "label": "RC",      "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC",   "label": "PREBC",   "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl3", "shortCode": "BAILREVC","label": "BAILREVC","defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl4", "shortCode": "PRBCO",   "label": "PRBCO",   "defendantId": "d2", "offenceId": "off2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John",  "lastName": "Smith", "dateOfBirth": "1990-01-01"},
+    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Jane",  "lastName": "Jones", "dateOfBirth": "1988-05-20"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (d1)", "orderIndex": 1, "caseUrn": "AC005"},
+    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft (d2)", "orderIndex": 2, "caseUrn": "AC005"}
+  ]
+}
+
+###
+
+### AC3 (three defendants) — Three adults, all trigger Error A → "This affects John Smith, Jane Jones, Sam Patel"
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac3-three-defendants",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl3", "shortCode": "REMCB", "label": "REMCB", "defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl4", "shortCode": "PRBCO", "label": "PRBCO", "defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl5", "shortCode": "RCBV",  "label": "RCBV",  "defendantId": "d3", "offenceId": "off3"},
+    {"resultLineId": "rl6", "shortCode": "PRBCP1","label": "PRBCP1","defendantId": "d3", "offenceId": "off3"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John",  "lastName": "Smith", "dateOfBirth": "1990-01-01"},
+    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Jane",  "lastName": "Jones", "dateOfBirth": "1988-05-20"},
+    {"defendantId": "d3", "masterDefendantId": "d3", "firstName": "Sam",   "lastName": "Patel", "dateOfBirth": "1985-03-10"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (d1)", "orderIndex": 1, "caseUrn": "AC005B"},
+    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft (d2)", "orderIndex": 2, "caseUrn": "AC005B"},
+    {"offenceId": "off3", "defendantId": "d3", "offenceCode": "TH68001", "offenceTitle": "Theft (d3)", "orderIndex": 3, "caseUrn": "AC005B"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC4 — Mixed hearing: adults AND youths both trigger the error
+# Error C in summary; Error A inline for adult, Error B inline for youth.
+# d1 = adult (RC+PREBC), d2 = youth (RC+PREBC).
+# Expected: isValid=false, summary has Error C with "This affects John Smith and Jamie Taylor"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC4 — Mixed adult+youth, RC parent → Error C in summary
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac4-mixed-age",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl3", "shortCode": "RC",    "label": "RC",    "defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl4", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d2", "offenceId": "off2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John",  "lastName": "Smith",  "dateOfBirth": "1990-01-01"},
+    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Jamie", "lastName": "Taylor", "dateOfBirth": "2012-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (adult)", "orderIndex": 1, "caseUrn": "AC006"},
+    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft (youth)", "orderIndex": 2, "caseUrn": "AC006"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC4A — Multiple conditional bail parent types in same hearing
+# d1 adult with RC+PREBC (Error A summary), d2 with CCIC+PRBCS1 (Error D summary).
+# Expected: isValid=false, 2 distinct ERROR entries in validationIssues
+#   (one with Error A message, one with Error D message)
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC4A — Adult RC + CCIC in same hearing → separate Error A and Error D
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac4a-multiple-parent-types",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",     "label": "RC",     "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC",  "label": "PREBC",  "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl3", "shortCode": "CCIC",   "label": "CCIC",   "defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl4", "shortCode": "PRBCS1", "label": "PRBCS1", "defendantId": "d2", "offenceId": "off2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John", "lastName": "Smith",  "dateOfBirth": "1990-01-01"},
+    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Sam",  "lastName": "Patel",  "dateOfBirth": "1985-03-10"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (d1)", "orderIndex": 1, "caseUrn": "AC007"},
+    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "TH68001", "offenceTitle": "Theft (d2)", "orderIndex": 2, "caseUrn": "AC007"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC7 — Error cleared when parent result changed to the suggested alternative
+# Before correction: RC+PREBC → Error A.  After: RIB+PREBC → no error.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC7 (before) — RC + PREBC → Error A (the error that should be corrected)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac7-before-correction",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John", "lastName": "Smith", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC008"}
+  ]
+}
+
+###
+
+### AC7 (after correction) — RIB + PREBC → NO error (RIB is not a conditional bail parent)
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac7-after-correction-rib",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RIB",   "label": "RIB",   "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John", "lastName": "Smith", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC008"}
+  ]
+}
+
+###
+
+### AC7 (after correction — youth) — RILAB + PREBC → NO error
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac7-after-correction-rilab",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RILAB", "label": "RILAB", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Taylor", "dateOfBirth": "2012-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC008"}
+  ]
+}
+
+###
+
+### AC7 (after correction — remove pre-release child) — RC only, no PREBC → NO error
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac7-after-correction-no-prebc",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC", "label": "RC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John", "lastName": "Smith", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC008"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC5A — Error co-exists with another validation rule error (DR-SENT-001)
+# DR-BAIL-015 (d1: RC+PREBC → Error A) fires alongside DR-SENT-001
+# (d2: two IMP results where one has isConcurrent=true AND consecutiveToOffence set).
+# Expected: isValid=false, DR-BAIL-015 ERROR in errors.validationIssues,
+#   DR-SENT-001 WARNING in warnings; neither suppresses the other.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC5A — DR-BAIL-015 alongside DR-SENT-001 → both fire, neither suppressed
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac5a-alongside-sent001",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl3", "shortCode": "IMP",   "label": "IMP",   "defendantId": "d2", "offenceId": "off2"},
+    {"resultLineId": "rl4", "shortCode": "IMP",   "label": "IMP",   "defendantId": "d2", "offenceId": "off3",
+     "isConcurrent": true, "consecutiveToOffence": "off2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "John",  "lastName": "Smith", "dateOfBirth": "1990-01-01"},
+    {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex",  "lastName": "Green"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",   "orderIndex": 1, "caseUrn": "AC5A01"},
+    {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001",   "offenceTitle": "Assault", "orderIndex": 2, "caseUrn": "AC5A01"},
+    {"offenceId": "off3", "defendantId": "d2", "offenceCode": "RS001",   "offenceTitle": "Other",   "orderIndex": 3, "caseUrn": "AC5A01"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC8 — Error NOT shown when condition is not met
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC8-A — Non-conditional bail parent (IMP) + PREBC → NO error
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac8-non-conditional-parent",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP",   "label": "IMP",   "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC009"}
+  ]
+}
+
+###
+
+### AC8-B — Conditional bail parent (RC) with no pre-release child → NO error
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac8-no-prerelease-child",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC", "label": "RC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC009"}
+  ]
+}
+
+###
+
+### AC8-C — Conditional bail on one offence, pre-release child on a DIFFERENT offence → NO error
+# RC is on off1; PREBC is on off2 — cross-offence, not a trigger.
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac8-different-offences",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC",    "label": "RC",    "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (count 1)", "orderIndex": 1, "caseUrn": "AC009"},
+    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft (count 2)", "orderIndex": 2, "caseUrn": "AC009"}
+  ]
+}
+
+###
+
+### AC8-D — RIB (remand in custody with bail direction) + PREBC → NO error
+# RIB is the suggested correction, not itself a conditional bail parent.
+# Expected: isValid=true, no DR-BAIL-015 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac8-rib-not-parent",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RIB",   "label": "RIB",   "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jane", "lastName": "Doe", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC009"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AC9 — Defendant with no date of birth → Error C (combined message, blocking)
+# Expected: isValid=false, 1 ERROR, ruleId=DR-BAIL-015,
+#   message contains "use 'Remanded in custody with bail direction (RIB)' for an adult
+#   or 'Remand in care of Local Authority with bail direction (RILAB)' for a youth"
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC9 — No DOB + BAILREVC parent + PRBCSE1 child → Error C
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-ac9-no-dob",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "BAILREVC", "label": "BAILREVC", "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PRBCSE1",  "label": "PRBCSE1",  "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Unknown", "lastName": "Person"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "AC010"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Additional coverage — all 6 remand parent codes
+# ─────────────────────────────────────────────────────────────────────────────
+
+### RCBV parent + PREBC → Error A (adult)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-extra-rcbv",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RCBV",  "label": "RCBV",  "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PREBC", "label": "PREBC", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Alex", "lastName": "Reid", "dateOfBirth": "1990-01-01"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "EXTRA01"}
+  ]
+}
+
+###
+
+### REMCB parent + PRBCS2 → Error A (adult)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-extra-remcb",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "REMCB",  "label": "REMCB",  "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PRBCS2", "label": "PRBCS2", "defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Paul", "lastName": "Evans", "dateOfBirth": "1988-06-14"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "EXTRA02"}
+  ]
+}
+
+###
+
+### RCCCB parent (Crown Court) + PRBCSE2 → Error A (adult)
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "bail-extra-rcccb",
+  "hearingDay": "{{hearingDay}}",
+  "courtType": "CROWN",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RCCCB",  "label": "RCCCB",  "defendantId": "d1", "offenceId": "off1"},
+    {"resultLineId": "rl2", "shortCode": "PRBCSE2","label": "PRBCSE2","defendantId": "d1", "offenceId": "off1"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Laura", "lastName": "White", "dateOfBirth": "1992-11-30"}
+  ],
+  "offences": [
+    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "caseUrn": "EXTRA03"}
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTE — Null hearingDay (defensive guard, unit-tested only)
+#
+# hearingDay is a required field in the API schema. When it is absent the
+# service returns HTTP 400 Bad Request before the PreReleaseBailConditionPreprocessor
+# is ever reached, so this scenario cannot be exercised via HTTP.
+#
+# The null-hearingDay → hasDob=0 → AC_NODOB (Error C) path in the preprocessor
+# is a defensive layer only reachable programmatically. It is covered at:
+#   Unit:  PreReleaseBailConditionPreprocessorTest
+#          .nullHearingDay_withNonNullDob_shouldSetHasDobZeroRoutingToNoDobPath
+#   IT:    PreReleaseBailConditionRuleIT.MissingHearingDay
+#          .validate_should_return_400_when_hearing_day_is_absent
+#   API:   PreReleaseBailConditionApiHttpLiveTest.MissingHearingDay
+#          .missingHearingDay_should_returnBadRequest
+#
+# To manually verify the 400 boundary, omit "hearingDay" from any request above.
+# ─────────────────────────────────────────────────────────────────────────────
+
+###
