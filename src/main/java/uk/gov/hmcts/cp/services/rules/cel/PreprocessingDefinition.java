@@ -40,5 +40,10 @@ public record PreprocessingDefinition(
 
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
-        List<String> applicationOnlyShortCodes) {
+        List<String> applicationOnlyShortCodes,
+
+        // PreReleaseBailPreprocessor: remand bail change detection
+        List<String> conditionalBailResultCodes,
+        List<String> crownCourtBailCodes,
+        List<String> triggerBailConditionCodes) {
 }
