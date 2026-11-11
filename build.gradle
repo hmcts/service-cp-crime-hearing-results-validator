@@ -28,6 +28,10 @@ version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
 ext['jackson-bom.version'] = '3.1.8'
 ext['jackson-2-bom.version'] = '2.21.8'
 
+// Override Spring Boot 4.1.2 managed OpenTelemetry to pick up the fix for CVE-2026-118259
+// (quadratic CPU in W3C tracestate parsing). Remove once Spring Boot manages >= 1.67.0.
+ext['opentelemetry.version'] = '1.67.0'
+
 apply {
   from("$rootDir/gradle/dependencies/java-core.gradle")
   from("$rootDir/gradle/dependencies/spring-core.gradle")

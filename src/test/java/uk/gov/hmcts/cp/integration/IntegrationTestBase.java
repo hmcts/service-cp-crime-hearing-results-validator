@@ -148,6 +148,27 @@ public abstract class IntegrationTestBase {
     }
 
     /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} with an
+     * arbitrary response body. Used by {@code NonImprisonableOffenceRuleIT} for scenarios that
+     * require custodial-indicator or {@code details_json} fields not covered by
+     * {@link #stubReferencedataOffenceResponse}.
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     * @param responseBody the full JSON response body to return (must be a valid
+     *         {@code application/vnd.referencedataoffences.offences-list+json} payload)
+     */
+    protected static void stubReferencedataOffenceCustodialIndicator(
+            final String offenceCode, final String responseBody) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type",
+                                "application/vnd.referencedataoffences.offences-list+json")
+                        .withBody(responseBody)));
+    }
+
+    /**
      * Restores a rule override row to its default enabled/ERROR state via
      * {@link RuleOverrideService#saveOverride}, which both persists the row and evicts the
      * cache entry in a single call — preventing DB overrides made by one test from leaking
