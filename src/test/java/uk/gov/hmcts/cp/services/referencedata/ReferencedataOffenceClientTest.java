@@ -241,6 +241,147 @@ class ReferencedataOffenceClientTest {
 
             assertThat(result).isEmpty();
         }
+
+        @Test
+        void getCustodialIndicator_whenDisabled_shouldReturnEmptyAndNotCallServer() {
+            stubOffencesList("{\"offences\": [{\"custodialIndicator\": \"N\"}]}");
+
+            Optional<String> result = new ReferencedataOffenceClient(properties(false))
+                    .getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+            wireMock.verify(0, getRequestedFor(urlPathEqualTo(PATH)));
+        }
+
+        @Test
+        void getCustodialIndicator_whenOffenceCodeBlank_shouldReturnEmpty() {
+            Optional<String> result = client().getCustodialIndicator(" ");
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void getCustodialIndicator_whenOffenceCodeNull_shouldReturnEmpty() {
+            Optional<String> result = client().getCustodialIndicator(null);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getCustodialIndicator")
+    class GetCustodialIndicator {
+
+        @Test
+        void getCustodialIndicator_whenColumnY_shouldReturnY() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": "Y"}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).contains("Y");
+        }
+
+        @Test
+        void getCustodialIndicator_whenColumnN_shouldReturnN() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": "N"}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).contains("N");
+        }
+
+        @Test
+        void getCustodialIndicator_whenColumnNull_andJsonCodeN_shouldReturnN() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": null,
+                      "details": {"document": {"libra": {"custodialindicator": {"code": "N"}}}}}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).contains("N");
+        }
+
+        @Test
+        void getCustodialIndicator_whenColumnNull_andJsonCodeY_shouldReturnY() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": null,
+                      "details": {"document": {"libra": {"custodialindicator": {"code": "Y"}}}}}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).contains("Y");
+        }
+
+        @Test
+        void getCustodialIndicator_whenColumnY_andJsonCodeN_shouldReturnY() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": "Y",
+                      "details": {"document": {"libra": {"custodialindicator": {"code": "N"}}}}}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).contains("Y");
+        }
+
+        @Test
+        void getCustodialIndicator_whenNeitherColumnNorJsonPresent_shouldReturnEmpty() {
+            stubCustodialOffencesList("""
+                    {"offences": [{"offenceId": "%s", "custodialIndicator": null}]}
+                    """.formatted(OFFENCE_ID));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void getCustodialIndicator_when404_shouldReturnEmpty() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(404)));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void getCustodialIndicator_whenReadTimesOut_shouldReturnEmpty() {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withFixedDelay(500)
+                            .withBody("{\"offences\": [{\"custodialIndicator\": \"N\"}]}")));
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        void getCustodialIndicator_whenOffencesListEmpty_shouldReturnEmpty() {
+            stubCustodialOffencesList("{\"offences\": []}");
+
+            Optional<String> result = client().getCustodialIndicator(OFFENCE_CODE);
+
+            assertThat(result).isEmpty();
+        }
+
+        private void stubCustodialOffencesList(final String responseBody) {
+            wireMock.stubFor(get(urlPathEqualTo(PATH))
+                    .withQueryParam(QUERY_PARAM, equalTo(OFFENCE_CODE))
+                    .willReturn(aResponse().withStatus(200)
+                            .withHeader("Content-Type",
+                                    "application/vnd.referencedataoffences.offences-list+json")
+                            .withBody(responseBody)));
+        }
     }
 
     private void stubOffencesList(final String responseBody) {
