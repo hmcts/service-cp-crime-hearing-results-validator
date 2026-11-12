@@ -40,6 +40,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-APP-009 | Application result recorded against an offence |
 | DR-RESTRAO-010 | Restraining Order – Multiple Protected Persons Warning |
 | DR-SENT-011 | Custodial sentence recorded against non-imprisonable offence |
+| DR-BAIL-016 | Pre-release bail condition entered for defendant in custody, care, or youth detention |
 
 ### Adding a New Rule
 
@@ -52,7 +53,7 @@ Rule files are located in `src/main/resources/rules/`.
 > **Preprocessor dispatch is data-driven.** `ValidationPreprocessor` beans register themselves
 > under a `type()` qualifier; `PreprocessorRegistry` builds a qualifier → bean map at startup
 > (failing fast on a duplicate qualifier) and `CelValidationRule` resolves each rule's preprocessor
-> via `PreprocessorRegistry.require(preprocessing.type)`. Twelve preprocessors are registered today
+> via `PreprocessorRegistry.require(preprocessing.type)`. Thirteen preprocessors are registered today
 > (one per rule above); adding a new one is a case of implementing `ValidationPreprocessor` with a
 > new qualifier and pointing a rule's YAML `preprocessing.type` at it — no dispatch code to touch.
 
