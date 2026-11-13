@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **DR-DISQ-013** — Drug driving course-reduction disqualification block: raises an ERROR when a
+  drug driving offence (CJS codes `RT88584`, `RT88586`, `RT88584B`, `RT88340`, `RA88045`) has a
+  course-reduction disqualification result (`DDRCO` or `DDRCOT`) recorded against it. Each
+  affected offence receives a separate ERROR at priority 14000; the error blocks sharing until
+  the unlawful result is removed or replaced with a lawful disqualification (e.g. `DDO`).
+  Matching is case-insensitive (CRA-345).
 - **DR-AGE-007** — Imprisonment result age restriction: blocks sharing when a defendant
   under 21 years of age on the hearing date has an imprisonment-type result (`IMP`,
   `EXTIVS`, `SPECC`, `SUSPS`, `SUSPSNR`) recorded against one or more of their offences
