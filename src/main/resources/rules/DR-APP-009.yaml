@@ -3,7 +3,8 @@ rule:
   title: "Application result recorded against an offence"
   description: >-
     Blocks sharing when a result that is only valid against an application (e.g. Legal Aid
-    Withdrawn, Application Refused) is recorded against an offence instead.
+    Withdrawn, Application Refused) is recorded against an offence instead. Not applied when any
+    offence in the hearing is civil (OffenceDto.isCivil == true).
   priority: 10000
   enabled: true
 

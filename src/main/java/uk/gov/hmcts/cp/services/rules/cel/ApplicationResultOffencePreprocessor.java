@@ -33,6 +33,9 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * {@code defendantName} is taken from the offence's breaching result lines ({@code OffenceDto}
  * carries no defendant reference of its own).
  *
+ * <p>If any offence in the request has {@code isCivil == true}, the whole hearing is out of scope
+ * for this rule and no contexts are produced (null/false is treated as not civil).
+ *
  * <p>No upstream contract change is required for this preprocessor: {@code ResultLineDto}
  * already carries {@code offenceId}, {@code shortCode}, {@code label}, and {@code defendantId}.
  * A null/blank {@code offenceId} is treated defensively as "not attached to an offence" (never
@@ -64,6 +67,12 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
         final Map<String, String> defendantNames = buildDefendantNames(request);
 
         if (request.getResultLines() == null) {
+            return Map.of();
+        }
+        if (hasAnyCivilOffence(request)) {
+            // A hearing with even one civil offence is out of scope for this rule: emit no
+            // contexts so no condition can fire.
+            log.debug("Application-result-offence preprocessing skipped: hearing contains a civil offence");
             return Map.of();
         }
 
@@ -99,6 +108,12 @@ public class ApplicationResultOffencePreprocessor implements ValidationPreproces
                     defendantName == null ? "" : defendantName));
         }
         return contexts;
+    }
+
+    private static boolean hasAnyCivilOffence(final DraftValidationRequest request) {
+        return request.getOffences() != null
+                && request.getOffences().stream()
+                        .anyMatch(offence -> offence != null && Boolean.TRUE.equals(offence.getIsCivil()));
     }
 
     @SuppressWarnings("PMD.OnlyOneReturn") // early-return on each non-breach guard reads clearer here
