@@ -235,6 +235,38 @@ class ApplicationResultOffenceApiHttpLiveTest {
         assertThat(ruleIdsOf(secondResponse.get(ERRORS).get(VALIDATION_ISSUES))).doesNotContain(RULE_ID);
     }
 
+    /**
+     * Covers AC0 over live HTTP: {@code "isCivil": true} in the request JSON must deserialise
+     * onto {@code OffenceDto} and suppress DR-APP-009, while the rule is still evaluated.
+     */
+    @Test
+    void civilOffenceWithApplicationOnlyResult_shouldNotRaiseError() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-07-20",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
+                     "defendantId": "d1", "offenceId": "off1"}
+                  ],
+                  "defendants": [
+                    {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
+                  ],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                     "orderIndex": 1, "isCivil": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(ruleIdsOf(json.get(ERRORS).get(VALIDATION_ISSUES))).doesNotContain(RULE_ID);
+        assertThat(rulesEvaluated(json)).contains(RULE_ID);
+    }
+
     private static String singleDefendantSingleBreachRequest(final String shortCode, final String label) {
         return """
                 {
