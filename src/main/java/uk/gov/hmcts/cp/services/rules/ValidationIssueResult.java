@@ -14,18 +14,32 @@ import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
  * @param issue                the validation issue
  * @param errorMessage         optional base error message (null for WARNING issues)
  * @param affectedDefendantName optional defendant name to group into the combined error message
+ * @param affectedDefendantKey  optional defendant identity (dedupe key); when non-null, results of
+ *                              the same rule and message sharing it name that defendant only once
  */
-public record ValidationIssueResult(ValidationIssue issue, String errorMessage, String affectedDefendantName) {
+public record ValidationIssueResult(ValidationIssue issue, String errorMessage, String affectedDefendantName,
+                                    String affectedDefendantKey) {
 
     /** Convenience factory for issues that carry no top-level error message (WARNING severity). */
     public static ValidationIssueResult forWarning(final ValidationIssue issue) {
-        return new ValidationIssueResult(issue, null, null);
+        return new ValidationIssueResult(issue, null, null, null);
     }
 
     /** Convenience factory for ERROR issues carrying an error message and optional defendant name. */
     public static ValidationIssueResult forError(final ValidationIssue issue,
                                                   final String errorMessage,
                                                   final String affectedDefendantName) {
-        return new ValidationIssueResult(issue, errorMessage, affectedDefendantName);
+        return new ValidationIssueResult(issue, errorMessage, affectedDefendantName, null);
+    }
+
+    /**
+     * As {@link #forError(ValidationIssue, String, String)}, also carrying the defendant's identity
+     * so a defendant named by several results (e.g. one per offence) is listed once.
+     */
+    public static ValidationIssueResult forError(final ValidationIssue issue,
+                                                  final String errorMessage,
+                                                  final String affectedDefendantName,
+                                                  final String affectedDefendantKey) {
+        return new ValidationIssueResult(issue, errorMessage, affectedDefendantName, affectedDefendantKey);
     }
 }

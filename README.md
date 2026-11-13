@@ -41,6 +41,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-RESTRAO-010 | Restraining Order – Multiple Protected Persons Warning |
 | DR-SENT-011 | Custodial sentence recorded against non-imprisonable offence |
 | DR-END-012 | Endorsement/disqualification missing on endorsable offence |
+| DR-DISQ-013 | Drug driving offence with course-reduction disqualification (DDRCO / DDRCOT) block |
 
 ### Adding a New Rule
 
