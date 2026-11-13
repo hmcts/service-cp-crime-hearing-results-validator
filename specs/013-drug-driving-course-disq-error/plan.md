@@ -135,7 +135,7 @@ CEL variable exposed: `qualifyingCount`.
 rule:
   id: "DR-DISQ-013"
   title: "Drug driving offence with course-reduction disqualification"
-  priority: 13000
+  priority: 14000
   enabled: true
   preprocessing:
     type: "drug-driving-course-reduction"
