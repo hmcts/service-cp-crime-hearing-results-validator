@@ -654,6 +654,56 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                     }
                     """.formatted(firstOffenceCivil);
         }
+
+        /**
+         * AC3A: "Application within civil proceedings" with G recorded against both the
+         * application and an offence. Hearing's ValidationRequestMapper drops result lines without
+         * an offenceId, so the application's own G never reaches the validator; what arrives is the
+         * civil case offence plus the application's linked offence, with G on the case offence.
+         */
+        @Test
+        void civilApplicationHearingWithGrantedOnOffence_shouldNotRaiseError() throws Exception {
+            performValidate(applicationWithinProceedingsRequest(true))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", empty()))
+                    .andExpect(jsonPath("$.rulesEvaluated", hasItem(RULE_ID)));
+        }
+
+        /** Control for AC3A: the same hearing in criminal proceedings raises the error on the offence. */
+        @Test
+        void criminalApplicationHearingWithGrantedOnOffence_shouldRaiseErrorOnOffence() throws Exception {
+            performValidate(applicationWithinProceedingsRequest(false))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(false)))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(1)))
+                    .andExpect(jsonPath(
+                            "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].offenceId",
+                            containsInAnyOrder("off1")));
+        }
+
+        private static String applicationWithinProceedingsRequest(final boolean isCivil) {
+            return """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "G", "label": "Granted",
+                         "defendantId": "d1", "offenceId": "off1"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
+                         "orderIndex": 1, "isCivil": %1$s},
+                        {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault",
+                         "orderIndex": 2, "isCivil": %1$s}
+                      ]
+                    }
+                    """.formatted(isCivil);
+        }
     }
 
     @Nested
