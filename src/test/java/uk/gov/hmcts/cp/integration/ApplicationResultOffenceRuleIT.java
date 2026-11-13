@@ -605,32 +605,32 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
         }
 
         /**
-         * AC3A: civil hearing with an application result on both an application (result line with
-         * no offence linkage) and an offence raises no DR-APP-009 error.
+         * Mixed hearing: one civil offence alongside a non-civil offence, each carrying an
+         * application-only result. A single civil offence suppresses DR-APP-009 for the whole
+         * hearing, including the non-civil offence. (ResultLineDto.offenceId is mandatory in the
+         * contract, so a result recorded on an application cannot be expressed in the request.)
          */
         @Test
-        void civilHearingWithApplicationResultOnApplicationAndOffence_shouldNotRaiseError()
-                throws Exception {
-            performValidate(applicationAndOffenceResultRequest(true))
+        void oneCivilOffenceInMixedHearing_shouldNotRaiseErrorOnAnyOffence() throws Exception {
+            performValidate(mixedHearingRequest(true))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", empty()))
                     .andExpect(jsonPath("$.rulesEvaluated", hasItem(RULE_ID)));
         }
 
-        /** Control: the same payload with isCivil false still raises the DR-APP-009 error. */
+        /** Control: the same payload with isCivil false on every offence still raises the error. */
         @Test
-        void nonCivilHearingWithApplicationResultOnApplicationAndOffence_shouldStillRaiseError()
-                throws Exception {
-            performValidate(applicationAndOffenceResultRequest(false))
+        void noCivilOffenceInSamePayload_shouldStillRaiseErrorOnBothOffences() throws Exception {
+            performValidate(mixedHearingRequest(false))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isValid", is(false)))
-                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-APP-009')]", hasSize(2)))
                     .andExpect(jsonPath(
                             "$.errors.validationIssues[?(@.ruleId=='DR-APP-009')].affectedOffences[0].offenceId",
-                            containsInAnyOrder("off1")));
+                            containsInAnyOrder("off1", "off2")));
         }
 
-        private static String applicationAndOffenceResultRequest(final boolean isCivil) {
+        private static String mixedHearingRequest(final boolean firstOffenceCivil) {
             return """
                     {
                       "hearingId": "h1",
@@ -638,19 +638,21 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                       "courtType": "MAGISTRATES",
                       "resultLines": [
                         {"resultLineId": "rl1", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
-                         "defendantId": "d1"},
+                         "defendantId": "d1", "offenceId": "off1"},
                         {"resultLineId": "rl2", "shortCode": "LAWD", "label": "Legal Aid Withdrawn",
-                         "defendantId": "d1", "offenceId": "off1"}
+                         "defendantId": "d1", "offenceId": "off2"}
                       ],
                       "defendants": [
                         {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith"}
                       ],
                       "offences": [
                         {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft",
-                         "orderIndex": 1, "isCivil": %s}
+                         "orderIndex": 1, "isCivil": %s},
+                        {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault",
+                         "orderIndex": 2, "isCivil": false}
                       ]
                     }
-                    """.formatted(isCivil);
+                    """.formatted(firstOffenceCivil);
         }
     }
 
