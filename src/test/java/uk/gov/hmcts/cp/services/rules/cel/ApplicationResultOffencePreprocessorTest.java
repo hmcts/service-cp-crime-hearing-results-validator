@@ -6,10 +6,12 @@ import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.buildReque
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.offence;
 import static uk.gov.hmcts.cp.services.rules.ValidationRuleTestHelper.resultLine;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
 
 /**
@@ -30,6 +32,61 @@ class ApplicationResultOffencePreprocessorTest {
         return PreprocessingDefinition.builder()
                 .applicationOnlyShortCodes(APPLICATION_ONLY_CODES)
                 .build();
+    }
+
+    private static OffenceDto civilFlagged(final OffenceDto offence, final Boolean isCivil) {
+        offence.setIsCivil(isCivil);
+        return offence;
+    }
+
+    /** A single civil offence in the hearing suppresses DR-APP-009 entirely. */
+    @Test
+    void preprocess_anyOffenceCivil_should_yieldNoContextsEvenWhenBreachesExist() {
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "LAWD", "d1", "off1"),
+                        resultLine("rl2", "RFSD", "d1", "off2")),
+                List.of(
+                        civilFlagged(offence("off1", 1, "Theft"), false),
+                        civilFlagged(offence("off2", 2, "Assault"), true)));
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).isEmpty();
+    }
+
+    /** isCivil false or absent (null) on every offence leaves the rule in force. */
+    @Test
+    void preprocess_noOffenceCivil_should_stillYieldBreachContexts() {
+        DraftValidationRequest request = buildRequest(
+                List.of(
+                        resultLine("rl1", "LAWD", "d1", "off1"),
+                        resultLine("rl2", "RFSD", "d1", "off2")),
+                List.of(
+                        civilFlagged(offence("off1", 1, "Theft"), false),
+                        civilFlagged(offence("off2", 2, "Assault"), null)));
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).hasSize(2).containsKeys("off1", "off2");
+    }
+
+    /** A null entry in the offences list is ignored by the civil check rather than throwing. */
+    @Test
+    void preprocess_nullOffenceEntryAlongsideCivilOffence_should_yieldNoContexts() {
+        DraftValidationRequest request = DraftValidationRequest.builder()
+                .hearingId("h1")
+                .resultLines(List.of(resultLine("rl1", "LAWD", "d1", "off1")))
+                .offences(Arrays.asList(
+                        null, civilFlagged(offence("off1", 1, "Theft"), true)))
+                .build();
+
+        Map<String, ? extends RuleEvaluationContext> contexts =
+                preprocessor.preprocess(request, config());
+
+        assertThat(contexts).isEmpty();
     }
 
     @Test
