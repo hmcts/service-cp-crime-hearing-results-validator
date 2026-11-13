@@ -40,6 +40,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-APP-009 | Application result recorded against an offence |
 | DR-RESTRAO-010 | Restraining Order – Multiple Protected Persons Warning |
 | DR-SENT-011 | Custodial sentence recorded against non-imprisonable offence |
+| DR-END-012 | Endorsement/disqualification missing on endorsable offence |
 
 ### Adding a New Rule
 
