@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 /**
  * One element of the {@code offences} array in the {@code cpp-context-referencedata-offences}
  * {@code application/vnd.referencedataoffences.offences-list+json} response. The real element
- * carries around 35 fields; this service reads only the fields listed below — every other field
+ * carries around 35 fields (e.g. {@code cjsOffenceCode}, {@code modeOfTrial}, {@code details},
+ * {@code offenceWording}); this service reads only the fields listed below — every other field
  * is ignored rather than mirrored.
  *
  * @param offenceId the reference-data catalog offence id, echoed back from the matched offence
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @param custodialIndicator top-level custodial-indicator column value ({@code "Y"} or
  *         {@code "N"}); {@code null} for pre-migration-022 records — fall through to
  *         {@code details.document.libra.custodialindicator.code} in that case
+ * @param endorsableFlag boolean — {@code true} when endorsable, {@code false} or absent when not
  * @param details the full offence document from {@code details_json}; may be {@code null};
  *         the relevant nested path is {@code document.libra.custodialindicator.code}
  * @param endorsableFlag whether the offence is endorsable ({@code true}), non-endorsable
