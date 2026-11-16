@@ -391,7 +391,7 @@ class PreReleaseBailConditionApiHttpLiveTest {
     }
 
     /**
-     * AC7: offence with no bailStatus field → no DR-BAIL-016 warning (fail-open).
+     * FR-011 fail-open: offence with no bailStatus field → no DR-BAIL-016 warning.
      */
     @Test
     void nullBailStatus_shouldNotEmitWarning() throws Exception {

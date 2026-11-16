@@ -2,7 +2,8 @@
 
 **Feature Branch**: `dev/CRA-362-pre-release-bail-condition-warning`
 **Created**: 2026-11-09
-**Status**: Draft
+**Updated**: 2026-11-17 (v2 — AC7 removed by product; reverts remandStatus API lib bump)
+**Status**: Revised
 **Jira**: CRA-362
 
 ## Overview
@@ -90,7 +91,7 @@ The caseworker selects the "Other" bail condition (PORO1) and enters free text t
 3. **Given** PORO1 prompt text contains "security" or "securities", **When** validation runs, **Then** warning fires
 4. **Given** PORO1 prompt text contains Welsh equivalents (pasbort/pasbortau/basbort, mechnïwr/mechnïwyr/fechnïwr/fechnïwyr, sicrwydd) with or without diacritics, **When** validation runs, **Then** warning fires
 5. **Given** PORO1 prompt text does NOT contain any trigger keyword, **When** validation runs, **Then** no warning is shown for the PORO1 condition
-6. **Given** matching is done on stems: "passport" (covers passport/passports), "suret" (covers surety/sureties), "securit" (covers security/securities), "asbort" (covers Welsh passport variants), "echniw"/"echnïw" (Welsh surety variants), "sicrwydd" (Welsh security)
+6. **Given** matching is done on stems: "passport" (covers passport/passports), "suret" (covers surety/sureties), "securit" (covers security/securities), "asbort" (covers Welsh passport variants), "echniw" (covers Welsh surety variants including diacritic forms — NFD normalisation strips the combining mark before comparison), "sicrwydd" (Welsh security)
 
 ---
 
@@ -149,7 +150,7 @@ No warning is shown when any of the trigger conditions is absent: offence remand
   - Result CCIC (any age/DOB status) → Warning D
   - Result CCSC (any age/DOB status) → Warning E
 - **FR-003**: The system MUST recognise the following shortCodes as trigger bail conditions: PASS1, PASS2, PASS3, PASS4, PASS5, PASS6, PASS7, PASS8, PORSC, PORS
-- **FR-004**: The system MUST recognise PORO1 as a trigger bail condition when the associated free-text prompt contains any of the following trigger stems, matched case-insensitively and accent-insensitively anywhere in the text: "passport", "suret", "securit", "asbort", "echnïw"/"echniw", "sicrwydd"
+- **FR-004**: The system MUST recognise PORO1 as a trigger bail condition when the associated free-text prompt contains any of the following trigger stems, matched case-insensitively and accent-insensitively anywhere in the text: "passport", "suret", "securit", "asbort", "echniw", "sicrwydd". Accent-insensitive matching via Unicode NFD normalisation means the stem "echniw" also matches diacritic forms such as "echnïw".
 - **FR-005**: The system MUST NOT show a warning when the offence remand status is not in {C, L, S}
 - **FR-006**: The system MUST NOT show a warning when the result code is not a conditional bail result (i.e. not in {RC, RCBV, BAILREVC, REMCB, REMCBY, RCCCB, CCIC, CCSC})
 - **FR-007**: The system MUST NOT show a warning when no trigger bail condition is present and PORO1 (if present) does not contain a trigger keyword
@@ -191,11 +192,11 @@ No warning is shown when any of the trigger conditions is absent: offence remand
 - **SC-001**: Warning A is shown for every adult-defendant offence meeting trigger conditions; zero false positives and zero false negatives across all AC1 test cases
 - **SC-002**: Warning B is shown for every youth-defendant offence meeting trigger conditions; Warning C when no DOB; zero misclassifications
 - **SC-003**: Warning D is shown for every CCIC-triggered offence regardless of defendant age or DOB; Warning E for every CCSC-triggered offence
-- **SC-004**: PORO1 keyword matching correctly fires for all trigger stems (passport, suret, securit, asbort, echnïw/echniw, sicrwydd) in both English and Welsh, case-insensitively and accent-insensitively; correctly suppresses the warning when none is present
+- **SC-004**: PORO1 keyword matching correctly fires for all trigger stems (passport, suret, securit, asbort, echniw, sicrwydd) in both English and Welsh, case-insensitively and accent-insensitively (diacritic forms normalised via NFD before matching); correctly suppresses the warning when none is present
 - **SC-005**: Warning does not block sharing — response allows sharing in 100% of cases where only this rule fires
 - **SC-006**: When no trigger condition is met, the rule produces zero warnings — 100% true-negative rate across AC5 test scenarios
 - **SC-007**: Other concurrent warnings for the same defendant or offence are unaffected — co-existence verified in AC4A test scenario
-- **SC-008**: 100% test coverage (unit, integration, API) across all AC1–AC7 scenarios
+- **SC-008**: 100% test coverage (unit, integration, API) across all AC1–AC6 scenarios
 
 ---
 
@@ -211,4 +212,4 @@ No warning is shown when any of the trigger conditions is absent: offence remand
 - Rule ID: **DR-BAIL-016**, priority: **17000**, migration: **V1.018__insert_dr_bail_016.sql**.
 - Spec folder: **017-pre-release-bail-condition-warning**, spec number: **017**.
 - New preprocessor: **PreReleaseBailPreprocessor** with qualifier `"pre-release-bail-condition"`, producing **PreReleaseBailContext** per offence.
-- PreprocessingDefinition fields to be added: `conditionalBailResultCodes`, `crownCourtBailCodes`, `triggerBailConditionCodes`, `otherBailConditionCode`.
+- PreprocessingDefinition fields added: `conditionalBailResultCodes`, `crownCourtBailCodes`, `triggerBailConditionCodes`. PORO1 detection is handled by hardcoded short-code logic inside `PreReleaseBailPreprocessor`, not via a configured field.

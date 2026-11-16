@@ -26,7 +26,8 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * Per-offence preprocessor for DR-BAIL-016. Emits one {@link PreReleaseBailContext} for each
  * offence where:
  * <ul>
- *   <li>{@code offence.bailStatus} ∈ {C, L, S} (defendant currently in custody/care/detention)</li>
+ *   <li>{@code offence.bailStatus} ∈ {C, L, S} (defendant currently in custody/care/detention);
+ *       if {@code offence.bailStatus} is absent the offence is skipped (fail-open, FR-011).</li>
  *   <li>a conditional bail result code is present on the offence</li>
  *   <li>at least one trigger bail condition (PASS1–8, PORSC, PORS, or PORO1 with keyword) is
  *       present on the same offence</li>
@@ -85,8 +86,7 @@ public class PreReleaseBailPreprocessor implements ValidationPreprocessor {
                 continue;
             }
 
-            final String matchedCode = firstMatchingCode(lines, allConditionalCodes);
-            if (matchedCode == null) {
+            if (firstMatchingCode(lines, allConditionalCodes) == null) {
                 continue;
             }
 

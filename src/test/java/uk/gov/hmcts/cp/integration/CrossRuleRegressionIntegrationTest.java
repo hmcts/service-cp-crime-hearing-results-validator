@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
@@ -28,8 +30,27 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
 
     private static final String VALIDATE_URL = "/api/validation/validate";
 
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 14;
+
     @Test
     void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         // off1..off4 — IMP custodial sentences with off1 = primary (first noInfo), off2/off3 noInfo,
         //              off4 concurrent → triggers DR-SENT-001 AC2 ERROR.
         // off5 — RT88026 + COEW + no DDOTE → triggers DR-DISQ-002 AC1 WARNING.
@@ -84,10 +105,7 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
                 .andExpect(jsonPath("$.warnings[0].affectedOffences[0].offenceId", is("off5")))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        containsInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008",
-                                "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011",
-                                "DR-END-012", "DR-BAIL-016")));
+                        containsInAnyOrder(ALL_RULE_IDS.toArray(String[]::new))));
     }
 
     /**

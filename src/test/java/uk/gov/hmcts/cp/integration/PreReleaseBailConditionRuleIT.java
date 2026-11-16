@@ -728,6 +728,142 @@ class PreReleaseBailConditionRuleIT extends IntegrationTestBase {
         }
 
         @Test
+        @DisplayName("PORO1 prompt 'find a surety' (English surety stem) → Warning A")
+        void poro1_english_surety_should_emitWarningA() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ac3-surety",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "find a surety of £500"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(WARNING_A)));
+        }
+
+        @Test
+        @DisplayName("PORO1 prompt 'lodge security' (English security stem) → Warning A")
+        void poro1_english_security_should_emitWarningA() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ac3-security",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "lodge security of £1000"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(WARNING_A)));
+        }
+
+        @Test
+        @DisplayName("PORO1 prompt 'pasbort i'w ildio' (Welsh passport/asbort stem) → Warning A")
+        void poro1_welsh_pasbort_should_emitWarningA() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ac3-pasbort",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "pasbort i'w ildio"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(WARNING_A)));
+        }
+
+        @Test
+        @DisplayName("PORO1 prompt 'sicrwydd o £500' (Welsh security stem) → Warning A")
+        void poro1_welsh_sicrwydd_should_emitWarningA() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ac3-sicrwydd",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "Other",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "sicrwydd o £500"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences[0].message", is(WARNING_A)));
+        }
+
+        @Test
         @DisplayName("PORO1 prompt 'report to probation' (no keyword) → NO DR-BAIL-016 warning")
         void poro1_noKeyword_should_notEmitWarning() throws Exception {
             String request = """
@@ -852,6 +988,59 @@ class PreReleaseBailConditionRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-RESTRAO-010')]", hasSize(1)))
                     .andExpect(jsonPath("$.warnings", hasSize(greaterThanOrEqualTo(2))));
+        }
+
+        @Test
+        @DisplayName("twoDefendants_drBail016ForD1_drRestraoForD2_should_bothBePresent")
+        void twoDefendants_drBail016ForD1_drRestraoForD2_should_bothBePresent() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-ac4a-multi-def",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-bail"},
+                        {"resultLineId": "rl2", "shortCode": "PASS5", "label": "PASS5",
+                         "defendantId": "d1", "offenceId": "off-bail"},
+                        {"resultLineId": "rl3", "shortCode": "RESTRAO", "label": "RESTRAO",
+                         "defendantId": "d2", "offenceId": "off-rao",
+                         "prompts": [{"promptRef": "protectedPersonsName",
+                                      "promptValue": "John Smith & Jane Smith"}]}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                         "dateOfBirth": "1990-01-01"},
+                        {"defendantId": "d2", "firstName": "John", "lastName": "Smith",
+                         "dateOfBirth": "1985-01-01"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-bail", "defendantId": "d1",
+                         "offenceCode": "TH68001", "offenceTitle": "Theft",
+                         "orderIndex": 1, "bailStatus": "C"},
+                        {"offenceId": "off-rao", "defendantId": "d2",
+                         "offenceCode": "TH68002", "offenceTitle": "RAO offence",
+                         "orderIndex": 2, "bailStatus": "B"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-RESTRAO-010')]", hasSize(1)))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-BAIL-016')].affectedOffences[*].offenceId",
+                            hasItem("off-bail")))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-RESTRAO-010')].affectedOffences[*].offenceId",
+                            hasItem("off-rao")));
         }
     }
 
@@ -1076,12 +1265,12 @@ class PreReleaseBailConditionRuleIT extends IntegrationTestBase {
     }
 
     // -----------------------------------------------------------------------
-    // AC7 — null bailStatus → no warning (fail-open)
+    // Null bailStatus — fail-open (FR-011)
     // -----------------------------------------------------------------------
 
     @Nested
-    @DisplayName("AC7 — null bailStatus → no warning (fail-open)")
-    class Ac7NullBailStatus {
+    @DisplayName("Null bailStatus — fail-open (FR-011)")
+    class NullBailStatusFailOpen {
 
         @Test
         @DisplayName("offence with no bailStatus field → no DR-BAIL-016 warning")
@@ -1110,6 +1299,252 @@ class PreReleaseBailConditionRuleIT extends IntegrationTestBase {
                             .header("CPP-ACTION", "validation-service.validate")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(0)));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Multiple defendants and offences — each defendant's qualifying offence warns
+    // -----------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Multiple defendants — each qualifying offence emits its own warning")
+    class MultipleDefendantsAndOffences {
+
+        @Test
+        @DisplayName("twoDefendantsTwoQualifyingOffences_should_emitWarningForEach")
+        void twoDefendantsTwoQualifyingOffences_should_emitWarningForEach() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-multi-def",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PASS1", "label": "PASS1",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl3", "shortCode": "RCBV", "label": "RCBV",
+                         "defendantId": "d2", "offenceId": "off-2"},
+                        {"resultLineId": "rl4", "shortCode": "PASS2", "label": "PASS2",
+                         "defendantId": "d2", "offenceId": "off-2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                         "dateOfBirth": "1990-01-01"},
+                        {"defendantId": "d2", "firstName": "John", "lastName": "Smith",
+                         "dateOfBirth": "1985-06-15"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "defendantId": "d1",
+                         "offenceCode": "TH68001", "offenceTitle": "Theft A",
+                         "orderIndex": 1, "bailStatus": "C"},
+                        {"offenceId": "off-2", "defendantId": "d2",
+                         "offenceCode": "TH68002", "offenceTitle": "Theft B",
+                         "orderIndex": 2, "bailStatus": "C"}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(true)))
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(2)))
+                    // each warning covers exactly one offence — proves the mapping is 1-to-1
+                    .andExpect(jsonPath("$.warnings[0].affectedOffences", hasSize(1)))
+                    .andExpect(jsonPath("$.warnings[1].affectedOffences", hasSize(1)))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-BAIL-016')].affectedOffences[*].offenceId",
+                            hasItem("off-1")))
+                    .andExpect(jsonPath(
+                            "$.warnings[?(@.ruleId=='DR-BAIL-016')].affectedOffences[*].offenceId",
+                            hasItem("off-2")));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Trigger → amend → resubmit
+    // -----------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("Trigger / amend / resubmit — removing a trigger suppresses the warning")
+    class TriggerAmendResubmit {
+
+        @Test
+        @DisplayName("removeNamedTriggerCode_should_suppressWarning")
+        void removeNamedTriggerCode_should_suppressWarning() throws Exception {
+            String withTrigger = """
+                    {
+                      "hearingId": "h-amend-trigger-a",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PASS5", "label": "PASS5",
+                         "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withTrigger))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)));
+
+            String withoutTrigger = """
+                    {
+                      "hearingId": "h-amend-trigger-b",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withoutTrigger))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("changeConditionalResultToNonConditional_should_suppressWarning")
+        void changeConditionalResultToNonConditional_should_suppressWarning() throws Exception {
+            String withConditional = """
+                    {
+                      "hearingId": "h-amend-result-a",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PASS5", "label": "PASS5",
+                         "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withConditional))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)));
+
+            String withNonConditional = """
+                    {
+                      "hearingId": "h-amend-result-b",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RIB", "label": "RIB",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PASS5", "label": "PASS5",
+                         "defendantId": "d1", "offenceId": "off-1"}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withNonConditional))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("replacePoro1KeywordWithNonKeyword_should_suppressWarning")
+        void replacePoro1KeywordWithNonKeyword_should_suppressWarning() throws Exception {
+            String withKeyword = """
+                    {
+                      "hearingId": "h-amend-poro1-a",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "PORO1",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "provide a passport"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withKeyword))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(1)));
+
+            String withNonKeyword = """
+                    {
+                      "hearingId": "h-amend-poro1-b",
+                      "hearingDay": "2026-11-09",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "RC", "label": "RC",
+                         "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "PORO1", "label": "PORO1",
+                         "defendantId": "d1", "offenceId": "off-1",
+                         "prompts": [{"promptRef": "detail", "promptValue": "report to probation"}]}
+                      ],
+                      "defendants": [{"defendantId": "d1", "firstName": "Jane", "lastName": "Doe",
+                                      "dateOfBirth": "1990-01-01"}],
+                      "offences": [{"offenceId": "off-1", "defendantId": "d1",
+                                    "offenceCode": "TH68001", "offenceTitle": "Theft",
+                                    "orderIndex": 1, "bailStatus": "C"}]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(withNonKeyword))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_BAIL_016_WARNINGS, hasSize(0)));
         }

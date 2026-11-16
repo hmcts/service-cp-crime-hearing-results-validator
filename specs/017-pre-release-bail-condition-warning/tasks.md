@@ -19,9 +19,9 @@
 
 **Purpose**: Lay the YAML contract and DB migration **before** any Java is written (Constitution Principle I — YAML/CEL Rule-First).
 
-- [ ] T001 Create `src/main/resources/rules/DR-BAIL-016.yaml` with all 5 conditions (AC1=Warning A, AC2=Warning B, AC6=Warning C, AC2A=Warning D, AC2B=Warning E), `priority: 17000`, `type: pre-release-bail-condition`, code lists per data-model.md
-- [ ] T002 [P] Create `src/main/resources/db/migration/V1.018__insert_dr_bail_016.sql` — single INSERT for `DR-BAIL-016` with `enabled=true`, `severity='WARNING'`
-- [ ] T003 [P] Extend `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java` — add 3 new `List<String>` fields: `conditionalBailResultCodes`, `crownCourtBailCodes`, `triggerBailConditionCodes` (Lombok `@Builder`, append after existing fields)
+- [x] T001 Create `src/main/resources/rules/DR-BAIL-016.yaml` with all 5 conditions (AC1=Warning A, AC2=Warning B, AC6=Warning C, AC2A=Warning D, AC2B=Warning E), `priority: 17000`, `type: pre-release-bail-condition`, code lists per data-model.md
+- [x] T002 [P] Create `src/main/resources/db/migration/V1.018__insert_dr_bail_016.sql` — single INSERT for `DR-BAIL-016` with `enabled=true`, `severity='WARNING'`
+- [x] T003 [P] Extend `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java` — add 3 new `List<String>` fields: `conditionalBailResultCodes`, `crownCourtBailCodes`, `triggerBailConditionCodes` (Lombok `@Builder`, append after existing fields)
 
 **Checkpoint**: YAML rule is readable; PreprocessingDefinition compiles with new fields. `gradle compileJava` passes.
 
@@ -33,8 +33,8 @@
 
 ⚠️ **TDD**: Write the failing test first (T004), confirm it fails at assertion level, then implement (T005).
 
-- [ ] T004 Write failing `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContextTest.java` — unit tests for `toCelContext()` (all 6 vars), `getOffenceIdSet("offenceId")`, `getOffenceIdSet("unknown")` throws, `allOffenceIds()`, `defendantName()` returns null; run `gradle test --tests "*PreReleaseBailContextTest"` → confirm FAIL
-- [ ] T005 Implement `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContext.java` — Java record implementing `RuleEvaluationContext`, 6 `long` fields, `toCelContext()` returns 6-entry map, `getOffenceIdSet("offenceId")` returns `List.of(offenceId)`, `defendantName()` null, `allOffenceIds()` singleton; run `gradle test --tests "*PreReleaseBailContextTest"` → GREEN
+- [x] T004 Write failing `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContextTest.java` — unit tests for `toCelContext()` (all 6 vars), `getOffenceIdSet("offenceId")`, `getOffenceIdSet("unknown")` throws, `allOffenceIds()`, `defendantName()` returns null; run `gradle test --tests "*PreReleaseBailContextTest"` → confirm FAIL
+- [x] T005 Implement `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContext.java` — Java record implementing `RuleEvaluationContext`, 6 `long` fields, `toCelContext()` returns 6-entry map, `getOffenceIdSet("offenceId")` returns `List.of(offenceId)`, `defendantName()` null, `allOffenceIds()` singleton; run `gradle test --tests "*PreReleaseBailContextTest"` → GREEN
 
 **Checkpoint**: `PreReleaseBailContext` unit tests green.
 
@@ -50,7 +50,7 @@
 
 ### Tests (write before implementation — TDD)
 
-- [ ] T006 [US1] [US2] [US6] [US7] Write failing `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java` with `@Nested` groups and `@DisplayName`:
+- [x] T006 [US1] [US2] [US6] [US7] Write failing `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java` with `@Nested` groups and `@DisplayName`:
   - `[US1]` Adult (DOB=1990-01-01, hearingDay=2026-11-09), offence bailStatus=C, result=RC, PASS5 → `triggerCount=1, adultCount=1, youthCount=0, noDobCount=0, ccicCount=0, ccscCount=0`
   - `[US1]` Adult, result=RCBV, BAILREVC, REMCB, REMCBY, RCCCB — each variant produces adultCount=1
   - `[US1]` Adult, trigger conditions PASS1–PASS8, PORSC, PORS — each named code produces triggerCount=1
@@ -64,7 +64,7 @@
 
 ### Implementation
 
-- [ ] T007 Implement `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessor.java`:
+- [x] T007 Implement `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessor.java`:
   - `@Component`, `type()` returns `"pre-release-bail-condition"`, no injected dependencies
   - `preprocess()` builds upper-cased code sets from config, indexes offences and defendants, calls `groupResultsByOffence`
   - Core filter: `offence.bailStatus ∉ CUSTODIAL_STATUSES` → skip; no conditional bail result code → skip; no trigger condition → skip
@@ -87,7 +87,7 @@
 
 ### Tests (extend the test class — TDD)
 
-- [ ] T008 [US3] [US4] [US5] Extend `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java` with new `@Nested` groups:
+- [x] T008 [US3] [US4] [US5] Extend `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java` with new `@Nested` groups:
   - `[US3]` No DOB (`defendant.dateOfBirth = null`), result=RC, PASS5 → `noDobCount=1, adultCount=0, youthCount=0`
   - `[US3]` Null hearingDay, result=RC, PASS5 → `noDobCount=1` (treat as unknown age)
   - `[US4]` Adult, bailStatus=C, result=CCIC, PASS1 → `ccicCount=1, adultCount=1`
@@ -109,21 +109,21 @@
 
 ### Implementation
 
-- [ ] T009 [P] Implement `containsTriggerKeyword(String text)` static utility in `PreReleaseBailPreprocessor`:
+- [x] T009 [P] Implement `containsTriggerKeyword(String text)` static utility in `PreReleaseBailPreprocessor`:
   - `Normalizer.normalize(text, Normalizer.Form.NFD)` → strip `\p{M}` via compiled `Pattern` → `toLowerCase(Locale.ROOT)`
   - Stem set: `Set.of("passport", "suret", "securit", "asbort", "echniw", "sicrwydd")`
   - `contains(stem)` for each; return true on first match
   - Null/blank guard: return false immediately
-- [ ] T010 [P] Add `anyPoro1WithKeyword(List<ResultLineDto> lines)` to `PreReleaseBailPreprocessor`:
+- [x] T010 [P] Add `anyPoro1WithKeyword(List<ResultLineDto> lines)` to `PreReleaseBailPreprocessor`:
   - Filter lines where `shortCode.upper == "PORO1"`
   - For each matching line, test `containsTriggerKeyword(prompt.getPromptValue())` over `line.getPrompts()`
   - Return true on first match; return false if no PORO1 lines or no keyword found
-- [ ] T011 Add no-DOB and Crown Court classification to `PreReleaseBailPreprocessor.preprocess()`:
+- [x] T011 Add no-DOB and Crown Court classification to `PreReleaseBailPreprocessor.preprocess()`:
   - Integrate `anyPoro1WithKeyword(lines)` into the existing trigger-condition check (OR with named codes)
   - Ensure `noDobCount=1` when `dob == null` or `hearingDay == null`
   - Ensure `ccicCount`/`ccscCount` correctly set from `crownCourtBailCodes` upper set
   - Run `gradle test --tests "*PreReleaseBailPreprocessorTest"` → ALL tests GREEN
-- [ ] T012 Run `gradle checkstyleMain pmdMain` and fix any findings in `PreReleaseBailPreprocessor.java` and `PreReleaseBailContext.java`
+- [x] T012 Run `gradle checkstyleMain pmdMain` and fix any findings in `PreReleaseBailPreprocessor.java` and `PreReleaseBailContext.java`
 
 **Checkpoint**: ALL preprocessor unit tests green (US1–US7 coverage). No Checkstyle/PMD violations.
 
@@ -139,7 +139,7 @@
 
 ### Tests (write before verifying green — TDD)
 
-- [ ] T013 Write `src/test/java/uk/gov/hmcts/cp/integration/PreReleaseBailConditionRuleIT.java` extending `IntegrationTestBase`:
+- [x] T013 Write `src/test/java/uk/gov/hmcts/cp/integration/PreReleaseBailConditionRuleIT.java` extending `IntegrationTestBase`:
   - `[US1]` Adult (DOB 18+), bailStatus=C, result=RC, PASS5 → 1 WARNING `DR-BAIL-016` condition AC1, Warning A message, `isValid=true`
   - `[US1]` Adult, result=RCBV — same Warning A
   - `[US2]` Youth (DOB <18), bailStatus=S, result=REMCB, PORS → Warning B, `isValid=true`
@@ -159,7 +159,7 @@
 
 ### Verify integration
 
-- [ ] T014 Run `gradle test --tests "*PreReleaseBailConditionRuleIT"` after all production code is in place → GREEN; if failing, diagnose and fix (check YAML preprocessor type, DB migration applied, context keys match YAML condition variables)
+- [x] T014 Run `gradle test --tests "*PreReleaseBailConditionRuleIT"` after all production code is in place → GREEN; if failing, diagnose and fix (check YAML preprocessor type, DB migration applied, context keys match YAML condition variables)
 
 **Checkpoint**: IT green. Full AC coverage verified end-to-end.
 
@@ -173,7 +173,7 @@
 
 ### API Test (live HTTP)
 
-- [ ] T015 Write `src/apiTest/java/uk/gov/hmcts/cp/http/PreReleaseBailConditionApiHttpLiveTest.java`:
+- [x] T015 Write `src/apiTest/java/uk/gov/hmcts/cp/http/PreReleaseBailConditionApiHttpLiveTest.java`:
   - `[US1]` Adult, bailStatus=C, result=RC, PASS5 → Warning A
   - `[US2]` Youth, bailStatus=S, result=REMCB, PORS → Warning B
   - `[US3]` No DOB, result=RCBV, PORSC → Warning C
@@ -186,7 +186,7 @@
 
 ### HTTP Scratch File
 
-- [ ] T016 [P] Create `specs/017-pre-release-bail-condition-warning/CRA-362.http`:
+- [x] T016 [P] Create `specs/017-pre-release-bail-condition-warning/CRA-362.http`:
   - Header: baseUrl, validateUrl, userId variables; rule description; link to `DR-BAIL-016.yaml`
   - AC1 (adult, RC + PASS5): labelled `### AC1 — Adult conditional bail + passport condition → Warning A`
   - AC2 (youth, REMCB + PORS): → Warning B
@@ -209,12 +209,12 @@
 
 **Purpose**: Documentation, final build validation, build loop agents.
 
-- [ ] T017 Update `README.md` — add `DR-BAIL-016` row to the validation rules table (rule ID, title, severity=WARNING, priority=17000, preprocessor=pre-release-bail-condition, description of trigger)
-- [ ] T018 Run `gradle build` — zero Checkstyle warnings, zero PMD violations, all tests pass
-- [ ] T019 Spawn `code-reviewer` agent on all new/modified Java files (`PreReleaseBailContext.java`, `PreReleaseBailPreprocessor.java`, `PreprocessingDefinition.java`); apply any NEEDS CHANGES findings
-- [ ] T020 [P] Spawn `qa` agent to verify TDD discipline (failing test before production code) and 100% branch coverage across unit + IT; apply any FAIL findings
-- [ ] T021 [P] Spawn `spec-validator` agent on `DR-BAIL-016.yaml` to confirm: schema compliance, `preprocessing.type` resolves to registered bean, all 5 CEL expressions compile, all placeholders in message templates resolve; apply any DRIFT DETECTED findings
-- [ ] T022 Re-run `gradle build` after agent fixes → confirm GREEN
+- [x] T017 Update `README.md` — add `DR-BAIL-016` row to the validation rules table (rule ID, title, severity=WARNING, priority=17000, preprocessor=pre-release-bail-condition, description of trigger)
+- [x] T018 Run `gradle build` — zero Checkstyle warnings, zero PMD violations, all tests pass
+- [x] T019 Spawn `code-reviewer` agent on all new/modified Java files (`PreReleaseBailContext.java`, `PreReleaseBailPreprocessor.java`, `PreprocessingDefinition.java`); apply any NEEDS CHANGES findings
+- [x] T020 [P] Spawn `qa` agent to verify TDD discipline (failing test before production code) and 100% branch coverage across unit + IT; apply any FAIL findings
+- [x] T021 [P] Spawn `spec-validator` agent on `DR-BAIL-016.yaml` to confirm: schema compliance, `preprocessing.type` resolves to registered bean, all 5 CEL expressions compile, all placeholders in message templates resolve; apply any DRIFT DETECTED findings
+- [x] T022 Re-run `gradle build` after agent fixes → confirm GREEN
 
 **Final Checkpoint**: `gradle build` ✅ · `gradle api` ✅ · All agents PASS/COMPLIANT ✅
 
@@ -286,6 +286,42 @@ Task: "anyPoro1WithKeyword() method in PreReleaseBailPreprocessor"
 5. Phase 5 (IT) → end-to-end proven
 6. Phase 6 (API + HTTP) → live-stack verified, IDE-runnable for manual testing
 7. Phase 7 (polish) → build loop clean, agents PASS, merge-ready
+
+---
+
+## Phase 8: v2 Delta — Remove AC7 / Revert remandStatus (2026-11-17)
+
+**Trigger**: Jira spec updated to v2. AC7 ("Production data check — remandStatus fallback") removed by product. The initial implementation overshot the spec; the following tasks bring the code back in line.
+
+**All Phase 1–7 tasks above are DONE.** Only these v2 revert tasks remain.
+
+### TDD step — write the new expected behaviour first
+
+- [x] T023 In `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java` add a new `@Nested @DisplayName("NullBailStatusEdgeCases")` class (separate from `Ac7RemandStatusFallback` — this class must NOT be removed by T026) containing one test: given `offence.bailStatus=null`, `defendant.remandStatus=C`, `result=RC`, `trigger=PASS5`, the preprocessor produces **no** context entry (fail-open, FR-011). Run `gradle test --tests "*PreReleaseBailPreprocessorTest*NullBailStatus*"` → test must **FAIL** with the current code (current fallback emits a warning for remandStatus=C, so the "no warning" assertion fails). After T025 reverts the fallback, re-run → must **PASS**.
+
+### Revert production code
+
+- [x] T024 Revert `gradle/libs.versions.toml`: change `api-hearing-results-validator` back from `26.34` to `26.33`. Run `gradle compileJava` → must compile (api-cp-crime-hearing-results-validator:26.33 does NOT have `remandStatus` on `DefendantDto`).
+- [x] T025 Simplify `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessor.java`:
+  - Replace `resolveEffectiveStatus(offence, defendant)` to return `offence.getBailStatus()` only — remove all defendant-fallback logic
+  - Remove `java.util.Arrays` import (no longer used)
+  - Remove `import uk.gov.hmcts.cp.openapi.model.DefendantDto.RemandStatusEnum` import
+  - Remove the two-line cross-enum bridge comment (the bridge no longer exists)
+  - Run `gradle compileJava` → GREEN
+
+### Remove AC7 tests
+
+- [x] T026 [P] Remove `Ac7RemandStatusFallback` nested class and all its test methods from `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailPreprocessorTest.java`
+- [x] T027 [P] In `src/test/java/uk/gov/hmcts/cp/integration/PreReleaseBailConditionRuleIT.java`: (a) Remove `Ac7RemandStatusFallback` nested class and all its test methods; (b) Add a new `@Nested @DisplayName("NullBailStatusFailOpen")` class containing one IT scenario: POST a request with `offence.bailStatus` field absent from JSON (not present in the offence object), `result=RC`, `trigger=PASS5`, defendant with `dateOfBirth` set → assert no DR-BAIL-016 warning is present in the response (FR-011 coverage at IT layer)
+- [x] T028 [P] Remove `remandStatusFallback_custodialC_shouldEmitWarningA` test method from `src/apiTest/java/uk/gov/hmcts/cp/http/PreReleaseBailConditionApiHttpLiveTest.java`
+
+### Verify
+
+- [x] T029 Run `gradle clean build` → must be GREEN (all tests pass, Checkstyle/PMD clean)
+- [x] T030 Spawn `code-reviewer` agent on `PreReleaseBailPreprocessor.java` to confirm no AC7 remnants and no new violations
+- [x] T031 Spawn `spec-validator` agent on `DR-BAIL-016.yaml` to confirm rule still compliant post-revert
+
+**Checkpoint**: `gradle clean build` ✅ · No `remandStatus` or `RemandStatusEnum` references remain in validator source · API lib pinned at 26.33
 
 ---
 

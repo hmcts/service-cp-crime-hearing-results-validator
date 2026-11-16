@@ -427,7 +427,7 @@ class PreReleaseBailPreprocessorTest {
         }
 
         @Test
-        @DisplayName("bailStatus=null — not custodial → no context entry (AC7: fail-open)")
+        @DisplayName("bailStatus=null — not custodial → no context entry (fail-open, FR-011)")
         void bailStatus_null_should_notEmitContext() {
             OffenceDto offence = OffenceDto.builder()
                     .offenceId("off-1").offenceCode("TH68001").offenceTitle("Test")

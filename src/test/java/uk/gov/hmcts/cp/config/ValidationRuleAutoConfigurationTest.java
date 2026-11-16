@@ -37,6 +37,24 @@ import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
  */
 class ValidationRuleAutoConfigurationTest {
 
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 14;
+
     private final ValidationRuleAutoConfiguration config = new ValidationRuleAutoConfiguration();
 
     private final OffenceDisplayHelper offenceDisplayHelper = new OffenceDisplayHelper();
@@ -82,6 +100,7 @@ class ValidationRuleAutoConfigurationTest {
      */
     @Test
     void should_create_one_rule_per_yaml_file() throws IOException {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         List<ValidationRule> rules = config.validationRules(
                 preprocessorRegistry,
                 new CelExpressionEvaluator(),
@@ -90,12 +109,10 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(14);
+        assertThat(rules).hasSize(RULE_COUNT);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                    "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009",
-                    "DR-RESTRAO-010", "DR-SENT-011", "DR-END-012", "DR-BAIL-016");
+                .containsExactlyInAnyOrder(ALL_RULE_IDS.toArray(String[]::new));
     }
 
     /**
@@ -105,6 +122,7 @@ class ValidationRuleAutoConfigurationTest {
      */
     @Test
     void should_have_unique_priorities_and_expected_rule_id_priority_pairs() throws IOException {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         List<ValidationRule> rules = config.validationRules(
                 preprocessorRegistry,
                 new CelExpressionEvaluator(),
@@ -113,7 +131,7 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(14);
+        assertThat(rules).hasSize(RULE_COUNT);
 
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId(), ValidationRule::getPriority)

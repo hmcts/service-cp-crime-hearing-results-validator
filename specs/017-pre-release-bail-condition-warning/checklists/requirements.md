@@ -1,7 +1,7 @@
-# Specification Quality Checklist: Pre-Release Bail Condition Warning
+# Specification Quality Checklist: Pre-Release Bail Condition Warning (v2)
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-11-09
+**Created**: 2026-11-17
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,8 +31,5 @@
 
 ## Notes
 
-- All items pass. Spec is ready for `/speckit-plan`.
-- 7 user stories covering AC1–AC7 from the Jira ticket, plus edge cases.
-- Warning matrix (A/B/C/D/E) fully specified with message text.
-- PORO1 keyword matching stems specified (English + Welsh).
-- Assumptions section captures all data-model decisions for the planning phase.
+- v2 update (2026-11-17): AC7 (remandStatus fallback from defendant) removed by product. Spec was already correct on this point in FR-011/edge-cases; SC-008 updated from AC1-AC7 to AC1-AC6.
+- Implementation must revert: api lib bump (26.34->26.33), PreReleaseBailPreprocessor AC7 fallback code, and all AC7 tests.

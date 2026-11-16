@@ -247,3 +247,44 @@ The only complexity worth noting: 5 conditions in a single YAML rule file is hig
 same trigger predicate (`triggerCount > 0`) and the same preprocessor — separating them into
 5 rules would require 5 preprocessor invocations, 5 DB rows, and 5 sets of tests for the same
 underlying check. A single rule with 5 conditions is the simpler, more maintainable design.
+
+---
+
+## v2 Delta Plan (2026-11-17) — Remove AC7 / Revert remandStatus ✅ COMPLETE
+
+**Trigger**: Jira spec updated to v2. AC7 ("Production data check — remandStatus fallback from
+defendant") has been removed by product. The initial implementation over-delivered by adding a
+`defendant.remandStatus` fallback and bumping the API lib dependency. All of that has been reverted.
+
+### What was added in error (commit c0d4aa1b and local API lib change)
+
+| Artefact | Status |
+|----------|--------|
+| `gradle/libs.versions.toml` | ✅ Reverted `api-hearing-results-validator` from `26.38.CRA-362` → `26.33` |
+| `PreReleaseBailPreprocessor.java` | ✅ `resolveEffectiveStatus` removed; simplified to single-line `offence.getBailStatus()` guard; unused imports removed; Javadoc updated to remove AC7 reference |
+| `PreReleaseBailPreprocessorTest.java` | ✅ `Ac7RemandStatusFallback` class removed; `NullBailStatusEdgeCases` class added; display name updated to remove AC7 reference |
+| `PreReleaseBailConditionRuleIT.java` | ✅ `Ac7RemandStatusFallback` class removed; `Ac7NullBailStatus` renamed to `NullBailStatusFailOpen` |
+| `PreReleaseBailConditionApiHttpLiveTest.java` | ✅ `remandStatusFallback_custodialC_shouldEmitWarningA` test removed; `nullBailStatus_shouldNotEmitWarning` comment updated to FR-011 |
+| `api-cp-crime-hearing-results-validator` repo | ✅ Not bumped; local change discarded; production lib stays at 26.33 |
+
+### What stays (all AC1–AC6 coverage is correct and unaffected)
+
+All production code and tests for AC1, AC2, AC2A, AC2B, AC3, AC4, AC4A, AC5, AC6 are correct and
+must remain. The 5-condition YAML rule, the preprocessor logic for offence-level `bailStatus`,
+context record, Liquibase migration, and all non-AC7 tests are all in-scope.
+
+### Implementation Order (v2 delta — TDD)
+
+1. **Write failing test first**: confirm that after the change, a request with `defendant.remandStatus=C` and `offence.bailStatus=null` produces NO warning (test must start failing to demonstrate regression). This is the inverse of the AC7 tests being removed.
+2. **Simplify `resolveEffectiveStatus`**: remove defendant fallback, return `offence.getBailStatus()` only.
+3. **Remove AC7 tests** from `PreReleaseBailPreprocessorTest`, `PreReleaseBailConditionRuleIT`, `PreReleaseBailConditionApiHttpLiveTest`.
+4. **Revert `libs.versions.toml`** from 26.38.CRA-362 → 26.33.
+5. **Run `gradle clean build`** — must be GREEN.
+6. **Run code-reviewer agent** — confirm no violations.
+
+### Updated Dependency Tracking
+
+| Item | Status |
+|------|--------|
+| `api-cp-crime-hearing-results-validator:26.38.CRA-362` | **NOT needed** — reverted to 26.33 |
+| `DefendantDto.remandStatus` field | **NOT needed** — do not add to OpenAPI spec |

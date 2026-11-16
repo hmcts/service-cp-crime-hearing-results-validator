@@ -277,7 +277,7 @@ CPP-ACTION: validation-service.validate
 }
 
 ###
-# AC7 — Null bailStatus (field absent) → NO DR-BAIL-016 warning (fail-open)
+# FR-011 — Null bailStatus (field absent from offence) → NO DR-BAIL-016 warning (fail-open)
 POST {{baseUrl}}{{validatePath}}
 Content-Type: application/json
 CJSCPPUID: test-user
