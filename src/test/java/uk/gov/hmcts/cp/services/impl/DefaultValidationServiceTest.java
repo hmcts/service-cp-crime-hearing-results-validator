@@ -450,10 +450,10 @@ class DefaultValidationServiceTest {
     }
 
     /**
-     * Verifies three+ defendant names are comma-separated with a trailing " and ".
+     * Verifies three+ defendant names are pure comma-separated (no trailing "and") per spec AC4.
      */
     @Test
-    void formatDefendantNames_three_names_should_be_comma_separated_with_and() {
+    void formatDefendantNames_three_names_should_be_comma_separated_without_and() {
         ValidationRule rule = stubRule("RULE-001",
                 List.of(
                         ValidationIssueResult.forError(
@@ -472,7 +472,7 @@ class DefaultValidationServiceTest {
                 List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(3));
 
         assertThat(response.getErrors().getErrorMessages())
-                .containsExactly("Affects Alice, Bob and Charlie.");
+                .containsExactly("Affects Alice, Bob, Charlie.");
     }
 
     /**

@@ -14,6 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   affected offence receives a separate ERROR at priority 14000; the error blocks sharing until
   the unlawful result is removed or replaced with a lawful disqualification (e.g. `DDO`).
   Matching is case-insensitive (CRA-345).
+- **DR-EMON-017** — Electronic monitoring status not updated: errors when a final or
+  non-exempt interim result is recorded against an EM-flagged offence (`hasActiveElectronicMonitoring
+  = true`) without a continuing EM prompt (`ELMONDET`, `EMREQ`, `EMREQV`, or `EMSO` with
+  `promptValue = "Yes"`) or an EMONE ending result. Exempt main results (`NHMC`, `NHCC`, `A`,
+  `ADJNN`, `ADJAPP` entered as the offence's main result) and ancillary-only offences are
+  resolved without an error. For multi-defendant hearings the page-level error message appends
+  "This affects [name]..." naming every affected defendant. Seeds `enabled=true, severity=ERROR`
+  via Flyway migration `V1.019` (CRA-38).
 - **DR-AGE-007** — Imprisonment result age restriction: blocks sharing when a defendant
   under 21 years of age on the hearing date has an imprisonment-type result (`IMP`,
   `EXTIVS`, `SPECC`, `SUSPS`, `SUSPSNR`) recorded against one or more of their offences

@@ -418,8 +418,8 @@ class ApplicationResultOffenceRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.errorMessages", containsInAnyOrder(
                             "Legal Aid Withdrawn, Application refused, Granted are application results. "
                                     + "They cannot be added to an offence. Remove them from the offence and add "
-                                    + "an application to the hearing. This affects: Jamie Smith, Alex Jones "
-                                    + "and Sam Lee.")));
+                                    + "an application to the hearing. This affects: Jamie Smith, Alex Jones, "
+                                    + "Sam Lee.")));
         }
 
         @Test

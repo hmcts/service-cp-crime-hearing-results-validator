@@ -106,9 +106,10 @@ public class MessageTemplateResolver {
             result = "";
         } else if (names.size() == SINGLE_ELEMENT) {
             result = names.get(0);
+        } else if (names.size() == TWO_ELEMENTS) {
+            result = names.get(0) + " and " + names.get(1);
         } else {
-            result = String.join(", ", names.subList(0, names.size() - 1))
-                    + " and " + names.get(names.size() - 1);
+            result = String.join(", ", names);
         }
         return result;
     }
