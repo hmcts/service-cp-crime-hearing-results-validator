@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,23 +18,40 @@ import org.junit.jupiter.api.Test;
  */
 class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
 
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 14;
+
     /**
      * Verifies listing rules returns the configured rule summary and identifiers.
      */
     @Test
     void list_rules_should_return_ok_with_rules() throws Exception {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         mockMvc.perform(get("/api/validation/rules")
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count", is(12)))
-                // All 12 rules ship enabled by their Flyway seed migrations.
-                .andExpect(jsonPath("$.enabledCount", is(12)))
-                .andExpect(jsonPath("$.rules", hasSize(12)))
+                .andExpect(jsonPath("$.count", is(RULE_COUNT)))
+                // All rules ship enabled by their Flyway seed migrations.
+                .andExpect(jsonPath("$.enabledCount", is(RULE_COUNT)))
+                .andExpect(jsonPath("$.rules", hasSize(RULE_COUNT)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
-                        contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008",
-                                "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011")));
+                        contains(ALL_RULE_IDS.toArray(String[]::new))));
     }
 
     /**

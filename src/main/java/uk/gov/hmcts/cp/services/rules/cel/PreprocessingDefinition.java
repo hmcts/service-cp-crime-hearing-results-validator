@@ -32,6 +32,9 @@ public record PreprocessingDefinition(
         // ConditionalBailPreprocessor: non-Category-F short codes that end conditional bail
         List<String> bailEndingShortCodes,
 
+        // Endorsable-offence-specific short-code lists (used by EndorsableOffencePreprocessor)
+        List<String> satisfyingShortCodes,
+
         // Sexual-offence-notification-specific fields (used by
         // SexualOffenceNotificationPreprocessor)
         String qualifyingMisCode,
@@ -40,5 +43,10 @@ public record PreprocessingDefinition(
 
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
-        List<String> applicationOnlyShortCodes) {
+        List<String> applicationOnlyShortCodes,
+
+        // PreReleaseBailPreprocessor: remand bail change detection
+        List<String> conditionalBailResultCodes,
+        List<String> crownCourtBailCodes,
+        List<String> triggerBailConditionCodes) {
 }

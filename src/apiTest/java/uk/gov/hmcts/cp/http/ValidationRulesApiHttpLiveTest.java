@@ -40,6 +40,24 @@ class ValidationRulesApiHttpLiveTest {
     private static final String TEST_USER = "test-user";
     private static final String TOGGLED_RULE_ID = "DR-SENT-001";
 
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 14;
+
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate(new JdkClientHttpRequestFactory());
     private final ObjectMapper mapper = new ObjectMapper();
@@ -49,6 +67,7 @@ class ValidationRulesApiHttpLiveTest {
      */
     @Test
     void list_rules_should_return_ok_with_rules() throws Exception {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         final HttpHeaders headers = new HttpHeaders();
         headers.set(CJSCPPUID, TEST_USER);
 
@@ -62,15 +81,13 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(12);
-        // All 12 rules ship enabled by their Flyway seed migrations.
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(12);
-        assertThat(json.get("rules")).hasSize(12);
+        assertThat(json.get("count").asInt()).isEqualTo(RULE_COUNT);
+        // All rules ship enabled by their Flyway seed migrations.
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(RULE_COUNT);
+        assertThat(json.get("rules")).hasSize(RULE_COUNT);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
-        assertThat(ruleIds).containsExactlyInAnyOrder(
-                "DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004", "DR-COEW-005", "DR-CONV-006",
-                "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011");
+        assertThat(ruleIds).containsExactlyInAnyOrder(ALL_RULE_IDS.toArray(String[]::new));
     }
 
     /**

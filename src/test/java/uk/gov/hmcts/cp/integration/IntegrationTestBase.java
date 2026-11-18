@@ -136,6 +136,25 @@ public abstract class IntegrationTestBase {
     }
 
     /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} with a
+     * verbatim JSON response body. Use this for fields not covered by
+     * {@link #stubReferencedataOffenceResponse(String, String)} (e.g. {@code endorsableFlag}).
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     * @param responseBody the raw JSON body to return
+     */
+    protected static void stubReferencedataOffenceRawBody(
+            final String offenceCode, final String responseBody) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type",
+                                "application/vnd.referencedataoffences.offences-list+json")
+                        .withBody(responseBody)));
+    }
+
+    /**
      * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} to fail
      * (404), exercising the fail-open path.
      *
