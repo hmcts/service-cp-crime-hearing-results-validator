@@ -42,6 +42,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-SENT-011 | Custodial sentence recorded against non-imprisonable offence |
 | DR-END-012 | Endorsement/disqualification missing on endorsable offence |
 | DR-DISQ-013 | Drug driving offence with course-reduction disqualification (DDRCO / DDRCOT) block |
+| DR-BAIL-016 | Pre-release bail condition entered for defendant in custody, care, or youth detention |
 
 ### Adding a New Rule
 

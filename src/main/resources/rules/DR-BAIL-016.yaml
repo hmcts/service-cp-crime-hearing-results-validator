@@ -1,0 +1,92 @@
+rule:
+  id: "DR-BAIL-016"
+  title: "Pre-release bail condition entered for defendant in custody"
+  description: >-
+    Advisory warning when bail conditions typically used as pre-release conditions
+    are entered alongside a conditional bail result for a defendant currently in
+    custody, care of local authority, or youth detention accommodation. Does not
+    block sharing.
+  priority: 17000
+  enabled: true
+
+  preprocessing:
+    type: "pre-release-bail-condition"
+    conditionalBailResultCodes:
+      - RC
+      - RCBV
+      - BAILREVC
+      - REMCB
+      - REMCBY
+      - RCCCB
+    crownCourtBailCodes:
+      - CCIC
+      - CCSC
+    triggerBailConditionCodes:
+      - PASS1
+      - PASS2
+      - PASS3
+      - PASS4
+      - PASS5
+      - PASS6
+      - PASS7
+      - PASS8
+      - PORSC
+      - PORS
+
+  conditions:
+    - id: "AC1"
+      name: "Adult on conditional bail with pre-release condition"
+      expression: "triggerCount > 0 && ccicCount == 0 && ccscCount == 0 && adultCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Do not share until you have checked the remand result. This result releases the
+        defendant from custody. If any bail conditions are pre-release conditions, use
+        'Remanded in custody with bail direction (RIB)' instead.
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC2"
+      name: "Youth on conditional bail with pre-release condition"
+      expression: "triggerCount > 0 && ccicCount == 0 && ccscCount == 0 && youthCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Do not share until you have checked the remand result. This result releases the
+        defendant on bail. If any bail conditions are pre-release conditions, use 'Remand
+        in care of Local Authority with bail direction (RILAB)' instead.
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC6"
+      name: "Unknown age on conditional bail with pre-release condition"
+      expression: "triggerCount > 0 && ccicCount == 0 && ccscCount == 0 && noDobCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Do not share until you have checked the remand result. This result releases the
+        defendant on bail. If any bail conditions are pre-release conditions, use
+        'Remanded in custody with bail direction (RIB)' for an adult or 'Remand in care
+        of Local Authority with bail direction (RILAB)' for a youth instead.
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC2A"
+      name: "CCIC result with pre-release bail condition"
+      expression: "triggerCount > 0 && ccicCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Do not share until you have checked the remand result. This result releases the
+        defendant on bail. If any bail conditions are pre-release conditions, use 'Sent to
+        Crown Court in custody for trial with bail direction (CCIIB)' instead.
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC2B"
+      name: "CCSC result with pre-release bail condition"
+      expression: "triggerCount > 0 && ccscCount > 0"
+      severity: WARNING
+      messageTemplate: >-
+        Do not share until you have checked the remand result. This result releases the
+        defendant on bail. If any bail conditions are pre-release conditions, use
+        'Committed to Crown Court for sentence - in custody with bail direction (CCSIB)'
+        instead.
+      affectedOffenceSet: "offenceId"
+      validationLevel: OFFENCE
