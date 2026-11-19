@@ -44,9 +44,10 @@ class CrossRuleRegressionIntegrationTest extends IntegrationTestBase {
             "DR-RESTRAO-010",
             "DR-SENT-011",
             "DR-END-012",
+            "DR-DISQ-013",
             "DR-BAIL-016"
     );
-    private static final int RULE_COUNT = 14;
+    private static final int RULE_COUNT = 15;
 
     @Test
     void hearing_triggering_both_rules_should_emit_one_error_and_one_warning() throws Exception {

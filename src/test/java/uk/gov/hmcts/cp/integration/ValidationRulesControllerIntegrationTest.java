@@ -32,9 +32,10 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
             "DR-RESTRAO-010",
             "DR-SENT-011",
             "DR-END-012",
+            "DR-DISQ-013",
             "DR-BAIL-016"
     );
-    private static final int RULE_COUNT = 14;
+    private static final int RULE_COUNT = 15;
 
     /**
      * Verifies listing rules returns the configured rule summary and identifiers.

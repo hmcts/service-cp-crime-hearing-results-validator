@@ -22,6 +22,7 @@ import uk.gov.hmcts.cp.services.rules.cel.ConditionalBailPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CtlMissingPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.CustodialPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.DisqualificationExtendedTestPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.DrugDrivingCourseReductionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.EndorsableOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
@@ -51,9 +52,10 @@ class ValidationRuleAutoConfigurationTest {
             "DR-RESTRAO-010",
             "DR-SENT-011",
             "DR-END-012",
+            "DR-DISQ-013",
             "DR-BAIL-016"
     );
-    private static final int RULE_COUNT = 14;
+    private static final int RULE_COUNT = 15;
 
     private final ValidationRuleAutoConfiguration config = new ValidationRuleAutoConfiguration();
 
@@ -73,6 +75,7 @@ class ValidationRuleAutoConfigurationTest {
             new RestrainingOrderMultiplePersonsPreprocessor(),
             new NonImprisonableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
             new EndorsableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
+            new DrugDrivingCourseReductionPreprocessor(),
             new PreReleaseBailPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
@@ -149,6 +152,7 @@ class ValidationRuleAutoConfigurationTest {
                         tuple("DR-RESTRAO-010", 11_000),
                         tuple("DR-SENT-011",   12_000),
                         tuple("DR-END-012",    13_000),
+                        tuple("DR-DISQ-013",   14_000),
                         tuple("DR-BAIL-016",   17_000));
 
         assertThat(rules)

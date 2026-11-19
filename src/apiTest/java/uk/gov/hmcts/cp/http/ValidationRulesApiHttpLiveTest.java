@@ -54,9 +54,10 @@ class ValidationRulesApiHttpLiveTest {
             "DR-RESTRAO-010",
             "DR-SENT-011",
             "DR-END-012",
+            "DR-DISQ-013",
             "DR-BAIL-016"
     );
-    private static final int RULE_COUNT = 14;
+    private static final int RULE_COUNT = 15;
 
     private final String baseUrl = System.getProperty("app.baseUrl", "http://localhost:8082");
     private final RestTemplate http = new RestTemplate(new JdkClientHttpRequestFactory());
