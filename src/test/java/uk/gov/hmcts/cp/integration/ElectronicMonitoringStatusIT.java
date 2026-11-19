@@ -264,6 +264,29 @@ class ElectronicMonitoringStatusIT extends IntegrationTestBase {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(DR_EMON_ERRORS, hasSize(0)));
         }
+
+        @Test
+        @DisplayName("(e2) Zero offences in hearing → no errors")
+        void zeroOffences_should_produceNoErrors() throws Exception {
+            String request = """
+                    {
+                      "hearingId": "h-emon-ac9e2",
+                      "hearingDay": "2026-11-18",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [],
+                      "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+                      "offences": []
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(DR_EMON_ERRORS, hasSize(0)));
+        }
     }
 
     @Nested
@@ -315,7 +338,7 @@ class ElectronicMonitoringStatusIT extends IntegrationTestBase {
         }
 
         @Test
-        @DisplayName("(g) Three defendants, all unresolved → error message names all three comma-separated")
+        @DisplayName("(g) Three defendants, all unresolved → error message names all three with 'and' before last")
         void threeDefendantsAllUnresolved_should_containAllNamesInErrorMessage() throws Exception {
             final String request = """
                     {
@@ -362,7 +385,7 @@ class ElectronicMonitoringStatusIT extends IntegrationTestBase {
                     .andExpect(jsonPath(DR_EMON_ERRORS, hasSize(3)))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]",
-                            containsString("John Smith, Jane Jones, Sam Patel")));
+                            containsString("John Smith, Jane Jones and Sam Patel")));
         }
 
         @Test
@@ -440,6 +463,66 @@ class ElectronicMonitoringStatusIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.isValid", is(false)))
                     .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
                     .andExpect(jsonPath("$.errors.errorMessages[0]", not(containsString("This affects"))));
+        }
+
+        @Test
+        @DisplayName("(i) Five defendants, all unresolved → error message names all five with commas and 'and' before last")
+        void fiveDefendantsAllUnresolved_should_containAllNamesWithCommaAndFormat() throws Exception {
+            final String request = """
+                    {
+                      "hearingId": "h-emon-ac4i",
+                      "hearingDay": "2026-11-18",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+                         "label": "Imprisonment", "defendantId": "d1", "offenceId": "off-1"},
+                        {"resultLineId": "rl2", "shortCode": "IMP", "category": "F",
+                         "label": "Imprisonment", "defendantId": "d2", "offenceId": "off-2"},
+                        {"resultLineId": "rl3", "shortCode": "IMP", "category": "F",
+                         "label": "Imprisonment", "defendantId": "d3", "offenceId": "off-3"},
+                        {"resultLineId": "rl4", "shortCode": "IMP", "category": "F",
+                         "label": "Imprisonment", "defendantId": "d4", "offenceId": "off-4"},
+                        {"resultLineId": "rl5", "shortCode": "IMP", "category": "F",
+                         "label": "Imprisonment", "defendantId": "d5", "offenceId": "off-5"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "firstName": "John",  "lastName": "Smith"},
+                        {"defendantId": "d2", "firstName": "Jane",  "lastName": "Jones"},
+                        {"defendantId": "d3", "firstName": "Sam",   "lastName": "Patel"},
+                        {"defendantId": "d4", "firstName": "Alex",  "lastName": "Lee"},
+                        {"defendantId": "d5", "firstName": "Kim",   "lastName": "Davis"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+                         "offenceTitle": "Theft A", "orderIndex": 1,
+                         "hasActiveElectronicMonitoring": true},
+                        {"offenceId": "off-2", "defendantId": "d2", "offenceCode": "CD98001",
+                         "offenceTitle": "Theft B", "orderIndex": 2,
+                         "hasActiveElectronicMonitoring": true},
+                        {"offenceId": "off-3", "defendantId": "d3", "offenceCode": "CD98001",
+                         "offenceTitle": "Theft C", "orderIndex": 3,
+                         "hasActiveElectronicMonitoring": true},
+                        {"offenceId": "off-4", "defendantId": "d4", "offenceCode": "CD98001",
+                         "offenceTitle": "Theft D", "orderIndex": 4,
+                         "hasActiveElectronicMonitoring": true},
+                        {"offenceId": "off-5", "defendantId": "d5", "offenceCode": "CD98001",
+                         "offenceTitle": "Theft E", "orderIndex": 5,
+                         "hasActiveElectronicMonitoring": true}
+                      ]
+                    }
+                    """;
+
+            mockMvc.perform(post(VALIDATE_URL)
+                            .header("CJSCPPUID", "test-user")
+                            .header("CPP-ACTION", "validation-service.validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(request))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isValid", is(false)))
+                    .andExpect(jsonPath(DR_EMON_ERRORS, hasSize(5)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]",
+                            containsString("John Smith, Jane Jones, Sam Patel, Alex Lee and Kim Davis")));
         }
     }
 

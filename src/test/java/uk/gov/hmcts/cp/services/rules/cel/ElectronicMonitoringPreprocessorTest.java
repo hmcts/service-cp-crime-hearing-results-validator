@@ -43,7 +43,7 @@ class ElectronicMonitoringPreprocessorTest {
 
     @Test
     @DisplayName("type() must return the electronic-monitoring-status qualifier")
-    void type_should_return_electronic_monitoring_status() {
+    void type_always_should_returnElectronicMonitoringStatusQualifier() {
         assertThat(preprocessor.type()).isEqualTo("electronic-monitoring-status");
     }
 
@@ -446,7 +446,7 @@ class ElectronicMonitoringPreprocessorTest {
 
         @Test
         @DisplayName("Hearing with offences all having hasActiveElectronicMonitoring=false → empty context")
-        void noEmFlaggedOffences_shouldReturnEmptyContext() {
+        void noEmFlaggedOffences_allFlagsFalse_should_returnEmptyContext() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", "IMP", "d1", "off-1")
                             .category(ResultLineDto.CategoryEnum.F)),
@@ -458,7 +458,7 @@ class ElectronicMonitoringPreprocessorTest {
 
         @Test
         @DisplayName("Hearing with offence having hasActiveElectronicMonitoring=null → empty context")
-        void nullEmFlag_shouldBeTreatedAsFalse_andReturnEmptyContext() {
+        void nullEmFlag_should_beTreatedAsFalseAndReturnEmptyContext() {
             DraftValidationRequest request = buildRequest(
                     List.of(resultLine("rl1", "IMP", "d1", "off-1")
                             .category(ResultLineDto.CategoryEnum.F)),

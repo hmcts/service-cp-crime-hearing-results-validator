@@ -143,7 +143,7 @@ result line for the offence has `shortCode.equalsIgnoreCase("EMONE")`.
 
 **Decision**: Use `${defendantNames}` placeholder in the page-level `errorMessageTemplate`. The existing
 `MessageTemplateResolver.resolveDefendantNames()` handles single-defendant suppression and "and"/"," formatting automatically.  
-**Rationale**: `MessageTemplateResolver` already implements AC4 logic (single defendant → omit, two defendants → "and", three+ → comma-separated). No new code required in the resolver.
+**Rationale**: `MessageTemplateResolver` already implements AC4 logic (single defendant → omit, two defendants → "and", three+ → comma with "and" before last name, e.g. "A, B and C"). The 3+ format was corrected in v2 of the spec (Jira v2 PDF, 2026-11-19); `MessageTemplateResolver.formatDefendantNames` was updated accordingly. No new code required in the resolver.
 
 ### Research Finding 7 — Next DB migration number
 
@@ -182,8 +182,9 @@ See [data-model.md](data-model.md).
 public record ElectronicMonitoringContext(
     String defendantId,
     String defendantName,
-    long unresolvedEmCount,          // count of unresolved EM-flagged offences for this defendant
-    List<String> unresolvedOffenceIds // IDs of unresolved offences → affectedOffenceSet in YAML
+    long unresolvedEmCount,           // count of unresolved EM-flagged offences for this defendant
+    List<String> unresolvedOffenceIds, // IDs of unresolved offences → affectedOffenceSet in YAML
+    List<String> allEmOffenceIds       // full set of EM-flagged offence IDs (resolved + unresolved)
 ) implements RuleEvaluationContext
 ```
 
@@ -194,6 +195,10 @@ Map.of("unresolvedEmCount", unresolvedEmCount)
 ```
 
 **`getOffenceIdSet("unresolvedOffenceIds")` returns** `unresolvedOffenceIds`.
+
+**`allOffenceIds()` returns** `allEmOffenceIds` — the full set of EM-flagged offences for this
+defendant (resolved + unresolved), used by `MessageTemplateResolver` for stable offence-number
+ordering when `orderIndex` is absent from the offence payload.
 
 ### YAML Rule Contract
 
@@ -263,7 +268,7 @@ ElectronicMonitoringPreprocessor.preprocess(request, config):
       if !resolved → unresolvedIds.add(offenceId)
 
     if unresolvedIds is not empty:
-      emit context(defendantId, defendantName, unresolvedIds.size(), unresolvedIds)
+      emit context(defendantId, defendantName, unresolvedIds.size(), unresolvedIds, allEmOffencesForDefendant)
 
   return contexts keyed by defendantId
 

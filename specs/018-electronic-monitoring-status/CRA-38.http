@@ -375,7 +375,7 @@ CPP-ACTION: validation-service.validate
   ]
 }
 
-### AC4 — Error summary names three defendants: pure comma "John Smith, Jane Jones, Sam Patel" (no "and")
+### AC4 — Error summary names three defendants: "This affects John Smith, Jane Jones and Sam Patel"
 POST {{baseUrl}}/api/validation/validate
 Content-Type: application/json
 CJSCPPUID: {{userId}}

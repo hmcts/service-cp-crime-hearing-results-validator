@@ -59,17 +59,33 @@ class ElectronicMonitoringMessageTemplateTest {
     }
 
     @Nested
-    @DisplayName("Three-defendant hearing — names pure comma-separated (spec AC4)")
+    @DisplayName("Three-defendant hearing — comma with 'and' before last name (spec AC4)")
     class ThreeDefendantHearing {
 
         @Test
-        @DisplayName("errorMessageTemplate appends 'This affects A, B, C' (comma-only) for three defendants")
-        void threeDefendants_should_appendPureCommaSeparatedNames() {
+        @DisplayName("errorMessageTemplate appends 'This affects A, B and C' for three defendants")
+        void threeDefendants_should_appendCommaAndBeforeLastName() {
             String resolved = resolver.resolveDefendantNames(
                     ERROR_MSG_TEMPLATE, List.of("John Smith", "Jane Jones", "Sam Patel"), 3);
 
-            assertThat(resolved).contains("This affects John Smith, Jane Jones, Sam Patel");
-            assertThat(resolved).doesNotContain("Jane Jones and Sam Patel");
+            assertThat(resolved).contains("This affects John Smith, Jane Jones and Sam Patel");
+        }
+    }
+
+    @Nested
+    @DisplayName("Five-defendant hearing — four commas and 'and' before last (spec AC4)")
+    class FiveDefendantHearing {
+
+        @Test
+        @DisplayName("errorMessageTemplate appends 'This affects A, B, C, D and E' for five defendants")
+        void fiveDefendants_should_appendCommaAndBeforeLastName() {
+            String resolved = resolver.resolveDefendantNames(
+                    ERROR_MSG_TEMPLATE,
+                    List.of("John Smith", "Jane Jones", "Sam Patel", "Alex Lee", "Kim Davis"),
+                    5);
+
+            assertThat(resolved).contains(
+                    "This affects John Smith, Jane Jones, Sam Patel, Alex Lee and Kim Davis");
         }
     }
 }

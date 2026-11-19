@@ -33,7 +33,7 @@
 
 **Decision**: Use `${defendantNames}` placeholder in `errorMessageTemplate`. `MessageTemplateResolver.resolveDefendantNames()` handles single/double/triple+ formatting.  
 **Code reference**: `MessageTemplateResolver.java` — `resolveDefendantNames(template, names, hearingDefendantCount)`.  
-**Bug found and fixed (2026-11-18)**: The original `formatDefendantNames` implementation produced "A, B and C" for 3+ names (Oxford-comma style). The spec (AC4) requires pure comma-separated output for 3+ defendants: "A, B, C". The method was corrected to use `String.join(", ", names)` for lists of three or more, reserving the " and " join exclusively for the two-name case. All affected tests across the codebase were updated to match the corrected behaviour.
+**Format confirmed (2026-11-19)**: The existing `formatDefendantNames` implementation ("A, B and C" for 3+ names — comma between all but the last, " and " before the last) was correct all along — this is the deliberately shipped format used by all 13 pre-existing rules. An earlier draft of the spec misread AC4 as requiring pure comma separation ("A, B, C"), which was reverted after the Jira ticket was updated to confirm the Oxford-style format: e.g. "This affects John Smith, Jane Jones and Sam Patel". No change to the method was ultimately required; all test assertions were updated to match the confirmed "and"-before-last-name format.
 
 ## Finding 7 — Next DB migration file
 

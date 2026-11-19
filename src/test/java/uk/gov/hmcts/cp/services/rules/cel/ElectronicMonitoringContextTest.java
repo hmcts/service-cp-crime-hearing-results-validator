@@ -21,7 +21,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void toCelContext_withNonZeroCount_should_exposeUnresolvedEmCount() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 2L, List.of("off-1", "off-2"));
+                    "def-1", "John Smith", 2L, List.of("off-1", "off-2"), List.of("off-1", "off-2"));
 
             Map<String, Long> cel = ctx.toCelContext();
 
@@ -31,7 +31,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void toCelContext_withZeroCount_should_exposeZero() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 0L, List.of());
+                    "def-1", "John Smith", 0L, List.of(), List.of("off-1"));
 
             assertThat(ctx.toCelContext()).containsEntry("unresolvedEmCount", 0L);
         }
@@ -44,7 +44,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void getOffenceIdSet_withKnownSetName_should_returnConfiguredList() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 2L, List.of("off-1", "off-2"));
+                    "def-1", "John Smith", 2L, List.of("off-1", "off-2"), List.of("off-1", "off-2"));
 
             assertThat(ctx.getOffenceIdSet("unresolvedOffenceIds"))
                     .containsExactly("off-1", "off-2");
@@ -53,7 +53,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void getOffenceIdSet_withUnknownSetName_should_throwIllegalArgumentException() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 1L, List.of("off-1"));
+                    "def-1", "John Smith", 1L, List.of("off-1"), List.of("off-1"));
 
             assertThatThrownBy(() -> ctx.getOffenceIdSet("unknownSet"))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -66,11 +66,13 @@ class ElectronicMonitoringContextTest {
     class AllOffenceIds {
 
         @Test
-        void allOffenceIds_withConfiguredList_should_returnAllIds() {
+        void allOffenceIds_withPartiallyResolvedOffences_should_returnFullEmSet() {
+            // off-1 is resolved (not in unresolvedOffenceIds), off-2 is unresolved
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 2L, List.of("off-1", "off-2"));
+                    "def-1", "John Smith", 1L, List.of("off-2"), List.of("off-1", "off-2"));
 
             assertThat(ctx.allOffenceIds()).containsExactly("off-1", "off-2");
+            assertThat(ctx.getOffenceIdSet("unresolvedOffenceIds")).containsExactly("off-2");
         }
     }
 
@@ -81,7 +83,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void defendantName_withConfiguredName_should_returnConfiguredName() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 1L, List.of("off-1"));
+                    "def-1", "John Smith", 1L, List.of("off-1"), List.of("off-1"));
 
             assertThat(ctx.defendantName()).isEqualTo("John Smith");
         }
@@ -89,7 +91,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void defendantName_withNullInput_should_returnNull() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", null, 1L, List.of("off-1"));
+                    "def-1", null, 1L, List.of("off-1"), List.of("off-1"));
 
             assertThat(ctx.defendantName()).isNull();
         }
@@ -102,7 +104,7 @@ class ElectronicMonitoringContextTest {
         @Test
         void defendantId_withConfiguredId_should_returnConfiguredId() {
             ElectronicMonitoringContext ctx = new ElectronicMonitoringContext(
-                    "def-1", "John Smith", 1L, List.of("off-1"));
+                    "def-1", "John Smith", 1L, List.of("off-1"), List.of("off-1"));
 
             assertThat(ctx.defendantId()).isEqualTo("def-1");
         }

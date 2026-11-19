@@ -263,10 +263,10 @@ class ElectronicMonitoringStatusApiHttpLiveTest {
         }
 
         /**
-         * Covers AC4 three-or-more defendants: names are pure comma-separated (no "and").
+         * Covers AC4 three-or-more defendants: comma-separated with "and" before the last name.
          */
         @Test
-        void threeDefendantsAllUnresolved_should_containPureCommaSeparatedNames() throws Exception {
+        void threeDefendantsAllUnresolved_should_containCommaAndBeforeLastName() throws Exception {
             final String body = """
                     {
                       "hearingId": "h-emon-live-ac4c",
@@ -306,8 +306,7 @@ class ElectronicMonitoringStatusApiHttpLiveTest {
 
             assertThat(json.get(IS_VALID).asBoolean()).isFalse();
             final String errorMsg = json.get(ERRORS).get("errorMessages").get(0).asText();
-            assertThat(errorMsg).contains("John Smith, Jane Jones, Sam Patel");
-            assertThat(errorMsg).doesNotContain("Jane Jones and Sam Patel");
+            assertThat(errorMsg).contains("John Smith, Jane Jones and Sam Patel");
             assertThat(rulesEvaluated(json)).contains(RULE_ID);
         }
 

@@ -67,7 +67,7 @@ When a hearing has multiple defendants and the EM error is triggered for one or 
 **Acceptance Scenarios**:
 
 1. **Given** the hearing has two defendants and both trigger the error, **When** validation runs, **Then** the message ends with "This affects [Name1] and [Name2]" (AC4)
-2. **Given** the hearing has three or more defendants and all trigger the error, **When** validation runs, **Then** the message ends with "This affects [Name1], [Name2], [Name3]" (AC4)
+2. **Given** the hearing has three or more defendants and all trigger the error, **When** validation runs, **Then** the message ends with "This affects [Name1], [Name2] and [Name3]" (AC4)
 3. **Given** the hearing has only one defendant and the error is triggered, **When** validation runs, **Then** the message does NOT include "This affects …" (AC4)
 4. **Given** multiple defendants exist but only one triggers the error, **When** validation runs, **Then** only the affected defendant is named (AC4)
 
@@ -82,6 +82,7 @@ When a hearing has multiple defendants and the EM error is triggered for one or 
 - **Exempt result as child**: NHMC entered as a child of RC (not as the main result) — does NOT resolve the offence; error must fire (AC3).
 - **No offences at all**: Hearing with zero offences — no EM validation is performed.
 - **All EM-flagged offences, all blank**: No results entered on any EM-flagged offence — all are resolved (blank = no result = resolved); no error.
+- **Five defendants all unresolved**: Message ends with "This affects John Smith, Jane Jones, Sam Patel, Alex Lee and Kim Davis" — confirming the N≥3 comma-and format scales beyond 3 names.
 
 ## Requirements *(mandatory)*
 
@@ -119,7 +120,7 @@ When a hearing has multiple defendants and the EM error is triggered for one or 
 - **SC-002**: Hearings with no EM-flagged offences produce zero EM-related validation issues, regardless of what results are entered.
 - **SC-003**: All nine AC1 "must pass" example combinations produce a clean validation response (zero errors).
 - **SC-004**: The error message wording exactly matches the specified strings for both summary-level and offence-level messages.
-- **SC-005**: Multi-defendant hearings include the "This affects …" suffix with correct name formatting (comma-separated for 3+, "and"-separated for exactly 2, absent for 1).
+- **SC-005**: Multi-defendant hearings include the "This affects …" suffix with correct name formatting (comma-separated with "and" before the last name for 3+ defendants, e.g. "This affects A, B and C"; "and"-separated for exactly 2, e.g. "This affects A and B"; absent for 1 defendant).
 - **SC-006**: An exempt main result entered as a child (not as the main result) does not suppress the error (AC3 scenario verified by test).
 - **SC-007**: Unit test coverage ≥ 100% for the new preprocessor and YAML rule conditions; integration test coverage proves end-to-end behaviour; API test covers the happy path and the primary error path.
 

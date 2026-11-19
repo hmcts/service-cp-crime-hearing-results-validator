@@ -33,7 +33,7 @@ import uk.gov.hmcts.cp.openapi.model.ResultLineDto;
  * </ul>
  */
 @Component
-@SuppressWarnings("PMD.OnlyOneReturn")
+@SuppressWarnings("PMD.OnlyOneReturn") // isResolved() uses early-return guards that are clearer than a single-return form
 public class ElectronicMonitoringPreprocessor implements ValidationPreprocessor {
 
     public static final String QUALIFIER = "electronic-monitoring-status";
@@ -44,7 +44,7 @@ public class ElectronicMonitoringPreprocessor implements ValidationPreprocessor 
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops") // per-defendant context and unresolved-id list must be new instances per iteration
     public Map<String, ElectronicMonitoringContext> preprocess(
             final DraftValidationRequest request,
             final PreprocessingDefinition config) {
@@ -75,7 +75,8 @@ public class ElectronicMonitoringPreprocessor implements ValidationPreprocessor 
                         defendantId,
                         defendantNames.get(defendantId),
                         unresolvedIds.size(),
-                        List.copyOf(unresolvedIds)));
+                        List.copyOf(unresolvedIds),
+                        List.copyOf(entry.getValue())));
             }
         }
         return contexts;
@@ -95,7 +96,7 @@ public class ElectronicMonitoringPreprocessor implements ValidationPreprocessor 
         return emOffenceToDefendant;
     }
 
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops") // per-defendant ArrayList must be created inside the loop; no way to pre-allocate
     private static Map<String, List<String>> groupEmOffencesByDefendant(
             final Map<String, String> emOffenceToDefendant) {
         final Map<String, List<String>> byDefendant = new LinkedHashMap<>();
@@ -129,10 +130,12 @@ public class ElectronicMonitoringPreprocessor implements ValidationPreprocessor 
         if (promptRefs == null || promptRefs.isEmpty()) {
             return false;
         }
+        final Set<String> upperRefs = upperSet(promptRefs);
         for (final ResultLineDto line : lines) {
             if (line.getPrompts() != null) {
                 for (final Prompt prompt : line.getPrompts()) {
-                    if (promptRefs.contains(prompt.getPromptRef())
+                    final String upperRef = upperOrNull(prompt.getPromptRef());
+                    if (upperRef != null && upperRefs.contains(upperRef)
                             && "Yes".equalsIgnoreCase(prompt.getPromptValue())) {
                         return true;
                     }

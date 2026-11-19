@@ -34,4 +34,4 @@
 - All 12 ACs from the Jira ticket (CRA-38) are reflected in the spec
 - AC5, AC10, AC11, AC12 are explicitly scoped out as frontend concerns
 - AC6, AC7, AC8 are explicitly noted as framework-level concerns requiring no new code
-- Spec is ready for `/speckit-plan`
+- Spec updated 2026-11-19 from Jira v2 PDF: AC4 three-or-more-defendants format corrected — names now use "and" before the last name (e.g. "This affects A, B and C"), not pure comma separation as in v1

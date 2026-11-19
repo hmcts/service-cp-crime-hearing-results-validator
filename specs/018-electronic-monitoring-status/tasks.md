@@ -31,9 +31,9 @@
 
 **Purpose**: The `ElectronicMonitoringContext` record is the shared output type used by US1–US4.
 
-- [X] T004 Write failing unit tests for `ElectronicMonitoringContext` in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringContextTest.java` covering: `toCelContext()` returns `Map.of("unresolvedEmCount", n)`, `getOffenceIdSet("unresolvedOffenceIds")` returns the list, unknown set name throws `IllegalArgumentException`, `defendantName()` returns stored name, `allOffenceIds()` returns `unresolvedOffenceIds`; run `gradle test --tests "...ElectronicMonitoringContextTest"` and confirm it fails to compile (class doesn't exist yet)
+- [X] T004 Write failing unit tests for `ElectronicMonitoringContext` in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringContextTest.java` covering: `toCelContext()` returns `Map.of("unresolvedEmCount", n)`, `getOffenceIdSet("unresolvedOffenceIds")` returns the list, unknown set name throws `IllegalArgumentException`, `defendantName()` returns stored name, `allOffenceIds()` returns `allEmOffenceIds` (the full EM-flagged set, not just the unresolved subset); run `gradle test --tests "...ElectronicMonitoringContextTest"` and confirm it fails to compile (class doesn't exist yet)
 
-- [X] T005 Create Java record `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringContext.java` implementing `RuleEvaluationContext` with fields `String defendantId`, `String defendantName`, `long unresolvedEmCount`, `List<String> unresolvedOffenceIds`; implement `toCelContext()`, `getOffenceIdSet()`, `allOffenceIds()`, `defendantId()`; run `gradle test --tests "...ElectronicMonitoringContextTest"` and confirm all tests pass
+- [X] T005 Create Java record `src/main/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringContext.java` implementing `RuleEvaluationContext` with five fields `String defendantId`, `String defendantName`, `long unresolvedEmCount`, `List<String> unresolvedOffenceIds`, `List<String> allEmOffenceIds`; implement `toCelContext()`, `getOffenceIdSet("unresolvedOffenceIds")`, `allOffenceIds()` (returns `allEmOffenceIds`), `defendantId()`; run `gradle test --tests "...ElectronicMonitoringContextTest"` and confirm all tests pass
 
 **Checkpoint**: `ElectronicMonitoringContextTest` is green.
 
@@ -82,7 +82,7 @@
 
 - [X] T013 [P] [US4] Add unit test methods to `ElectronicMonitoringPreprocessorTest.java` for **AC4**: (a) single-defendant hearing → `ElectronicMonitoringContext.defendantName()` populated, `${defendantNames}` suppressed by `MessageTemplateResolver`; (b) two-defendant hearing where both trigger → contexts for each have distinct `defendantId`/`defendantName`; (c) two-defendant hearing where only one triggers → only the affected defendant's context is emitted; (d) three-defendant hearing where all three trigger → three separate contexts
 
-- [X] T014 [US4] Verify the YAML `errorMessageTemplate` in `DR-EMON-017.yaml` includes `${defendantNames}` and that the existing `MessageTemplateResolver.resolveDefendantNames()` produces "This affects A and B" for 2 defendants and "This affects A, B, C" for 3 defendants (via a focused unit test against `MessageTemplateResolver` itself, in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringMessageTemplateTest.java`)
+- [X] T014 [US4] Verify the YAML `errorMessageTemplate` in `DR-EMON-017.yaml` includes `${defendantNames}` and that the existing `MessageTemplateResolver.resolveDefendantNames()` produces "This affects A and B" for 2 defendants and "This affects A, B and C" for 3 defendants — updated for Jira v2 AC4 (comma + "and" before last name) — (via a focused unit test against `MessageTemplateResolver` itself, in `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringMessageTemplateTest.java`)
 
 **Checkpoint**: All multi-defendant scenarios pass unit tests.
 
@@ -127,6 +127,8 @@
 - [X] T024 Spawn `qa` agent to verify TDD discipline (failing test before production code), test method naming convention (`{action}_{scenario}_should_{expectation}`), `@Nested`/`@DisplayName` usage, and that every AC from spec.md is exercised by at least one test; apply all FAIL findings
 
 - [X] T025 Spawn `spec-validator` agent (read-only) to verify `DR-EMON-017.yaml`: schema compliance, `preprocessing.type = "electronic-monitoring-status"` resolves to a registered bean, every CEL expression compiles, `${defendantNames}` placeholder is valid, `affectedOffenceSet` matches a named set on the context record; apply all DRIFT DETECTED findings
+
+- [X] T026 [US4] Add 5-defendant tests to cover the "A, B, C, D and E" comma+and format: (a) add `resolveDefendantNames_five_names_should_use_comma_and_before_last()` to `src/test/java/uk/gov/hmcts/cp/services/rules/cel/MessageTemplateResolverTest.java` asserting `"Affects Alice, Bob, Charlie, Dave and Eve."`; (b) add `formatDefendantNames_five_names_should_use_comma_and_before_last()` to `src/test/java/uk/gov/hmcts/cp/services/impl/DefaultValidationServiceTest.java` with five defendants all triggering the error asserting `"Affects Alice, Bob, Charlie, Dave and Eve."`; (c) add a `FiveDefendantHearing` nested class to `src/test/java/uk/gov/hmcts/cp/services/rules/cel/ElectronicMonitoringMessageTemplateTest.java` with one test asserting "This affects John Smith, Jane Jones, Sam Patel, Alex Lee and Kim Davis"; (d) add a 5-defendant IT scenario to `src/test/java/uk/gov/hmcts/cp/integration/ElectronicMonitoringStatusIT.java` covering all five unresolved and verifying the error message format; run `gradle test` and confirm all pass
 
 ---
 
