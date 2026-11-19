@@ -62,16 +62,16 @@ class ValidationRulesApiHttpLiveTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         final JsonNode json = mapper.readTree(response.getBody());
-        assertThat(json.get("count").asInt()).isEqualTo(13);
-        // All 13 rules ship enabled by their Flyway seed migrations.
-        assertThat(json.get("enabledCount").asInt()).isEqualTo(13);
-        assertThat(json.get("rules")).hasSize(13);
+        assertThat(json.get("count").asInt()).isEqualTo(14);
+        // All 14 rules ship enabled by their Flyway seed migrations.
+        assertThat(json.get("enabledCount").asInt()).isEqualTo(14);
+        assertThat(json.get("rules")).hasSize(14);
         final List<String> ruleIds = new ArrayList<>();
         json.get("rules").forEach(r -> ruleIds.add(r.get("ruleId").asText()));
         assertThat(ruleIds).containsExactlyInAnyOrder(
                 "DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004", "DR-COEW-005", "DR-CONV-006",
                 "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011",
-                "DR-END-012");
+                "DR-END-012", "DR-DISQ-013");
     }
 
     /**

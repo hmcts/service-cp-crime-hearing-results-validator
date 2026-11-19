@@ -1,0 +1,675 @@
+@baseUrl = http://localhost:4550
+@validateUrl = {{baseUrl}}/api/validation/validate
+@userId = test-user
+
+# DR-DISQ-013 — Drug Driving Course-Reduction Disqualification Error (CRA-345)
+# Blocks sharing when DDRCO or DDRCOT is recorded against a drug driving offence.
+#
+# Triggering offence codes:
+#   RT88584  — Drive with specified controlled drug above limit (s.5A)
+#   RT88586  — Attempt to drive with specified controlled drug above limit
+#   RT88584B — Aid/abet driving with specified controlled drug above limit
+#   RT88340  — Drive whilst unfit through drugs (s.4)
+#   RA88045  — Cause death by careless driving while over specified controlled drug limit
+#
+# Course-reduction short codes: DDRCO | DDRCOT
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US1 — Error fires when DDRCO / DDRCOT applied to a drug driving offence
+# ─────────────────────────────────────────────────────────────────────────────
+
+### AC1a — DDRCO on RT88584 → ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac1a-ddrco",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC1b — DDRCOT on RT88584 → same ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac1b-ddrcot",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCOT",
+      "category": "F",
+      "label": "Obligatory disqualification until extended test passed — reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC2a — DDRCO on RT88586 (attempt to drive) → ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac2a-rt88586",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88586",
+      "offenceTitle": "Attempt to drive with specified controlled drug above limit",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC2b — DDRCO on RT88584B (aid/abet) → ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac2b-rt88584b",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584B",
+      "offenceTitle": "Aid/abet driving with specified controlled drug above limit",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC2c — DDRCO on RT88340 (unfit through drugs s.4) → ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac2c-rt88340",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88340",
+      "offenceTitle": "Drive a vehicle whilst unfit through drugs (s.4)",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC2d — DDRCO on RA88045 (death by careless driving over drug limit) → ERROR
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac2d-ra88045",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RA88045",
+      "offenceTitle": "Cause death by careless driving while over specified controlled drug limit",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### AC3 — Two drug driving offences each with DDRCO → 2 separate ERRORs
+# off1 (RT88584) + off2 (RT88586), each with DDRCO → 2 errors, each scoped to its own offence.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ac3-two-offences",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off2",
+      "offenceCode": "RT88586",
+      "offenceTitle": "Attempt to drive with specified controlled drug above limit",
+      "orderIndex": 2,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US2 — Error is cleared when unlawful result is replaced with a lawful one
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US2 — Drug driving offence with DDO (lawful disqualification) after replacing DDRCO → no error
+# Represents the corrected state after the user follows the error guidance.
+# Expected: isValid=true, no DR-DISQ-013 issue.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-us2-replaced-with-ddo",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDO",
+      "category": "F",
+      "label": "Driving Disqualification (obligatory)",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US3 — No false positives
+# ─────────────────────────────────────────────────────────────────────────────
+
+### NF1 — DDRCO on non-drug-driving offence (RT88026) → no error
+# RT88026 is not in the triggering list → rule must not fire.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-nf1-non-triggering",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88026",
+      "offenceTitle": "Drink driving (excess alcohol)",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### NF2 — Drug driving offence with DDOTE (extended test disqualification) → no error
+# DDOTE is a lawful result code; only DDRCO / DDRCOT are course-reduction codes.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-nf2-ddote",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDOTE",
+      "category": "F",
+      "label": "Driving Disq obligatory until extended test passed",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### NF3 — Hearing with no drug driving offences at all → no error (US3/AC3)
+# Non-triggering offence with a normal result — rule produces no output.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-nf3-no-drug-driving",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDO",
+      "category": "F",
+      "label": "Driving Disqualification (obligatory)",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88026",
+      "offenceTitle": "Drink driving (excess alcohol)",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+### NF4 — Drug driving offence with no result lines → no error
+# qualifyingCount=0 because no DDRCO/DDRCOT result exists.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-nf4-no-result",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# US4 — Amend and reshare: same error reappears when DDRCO added post-sharing
+# ─────────────────────────────────────────────────────────────────────────────
+
+### US4/AC1 — Amendment path: DDRCO added to triggering offence after prior share → same ERROR
+# The service is stateless with respect to amendment vs initial entry — the validate
+# endpoint behaves identically in both cases.
+# Expected: isValid=false, one ERROR with prescribed message.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-us4-amend-reshare",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Edge Cases
+# ─────────────────────────────────────────────────────────────────────────────
+
+### EC1 — DDRCO alongside another result on the same offence → ERROR still fires
+# Spec edge case: rule fires regardless of other results present on the same offence.
+# Expected: isValid=false, one ERROR.
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-ec1-mixed-results",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "DDO",
+      "category": "F",
+      "label": "Driving Disqualification (obligatory)",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Multi-Defendant Scenarios
+# ─────────────────────────────────────────────────────────────────────────────
+
+### MD1 — d1 triggers error (DDRCO on RT88584), d2 does not (DDO on RT88584) → ERROR for d1 only
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-md1-two-defendants",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "DDO",
+      "category": "F",
+      "label": "Driving Disqualification (obligatory)",
+      "defendantId": "d2",
+      "offenceId": "off2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" },
+    { "defendantId": "d2", "firstName": "Sam", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off2",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 2,
+      "isConvicted": true,
+      "defendantId": "d2"
+    }
+  ]
+}
+
+###
+
+### MD2 — Both defendants trigger error → 2 errors, one per defendant
+POST {{validateUrl}}
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+
+{
+  "hearingId": "h-md2-both-trigger",
+  "hearingDay": "2026-10-16",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {
+      "resultLineId": "rl1",
+      "shortCode": "DDRCO",
+      "category": "F",
+      "label": "Driving Disq (obligatory) — Reduction for course",
+      "defendantId": "d1",
+      "offenceId": "off1"
+    },
+    {
+      "resultLineId": "rl2",
+      "shortCode": "DDRCOT",
+      "category": "F",
+      "label": "Obligatory disqualification until extended test passed — reduction for course",
+      "defendantId": "d2",
+      "offenceId": "off2"
+    }
+  ],
+  "defendants": [
+    { "defendantId": "d1", "firstName": "Alex", "lastName": "Driver" },
+    { "defendantId": "d2", "firstName": "Sam", "lastName": "Smith" }
+  ],
+  "offences": [
+    {
+      "offenceId": "off1",
+      "offenceCode": "RT88584",
+      "offenceTitle": "Drug driving s.5A — specified controlled drug",
+      "orderIndex": 1,
+      "isConvicted": true,
+      "defendantId": "d1"
+    },
+    {
+      "offenceId": "off2",
+      "offenceCode": "RT88340",
+      "offenceTitle": "Drive a vehicle whilst unfit through drugs (s.4)",
+      "orderIndex": 2,
+      "isConvicted": true,
+      "defendantId": "d2"
+    }
+  ]
+}
+
+###
