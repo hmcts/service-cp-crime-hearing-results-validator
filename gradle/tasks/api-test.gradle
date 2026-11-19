@@ -49,6 +49,10 @@ sourceSets {
   }
 }
 
+tasks.named("pmdApiTest").configure {
+  ruleSetFiles = files(".github/pmd-test-ruleset.xml")
+}
+
 configurations {
   apiTestImplementation.extendsFrom testImplementation
   apiTestRuntimeOnly.extendsFrom testRuntimeOnly

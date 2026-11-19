@@ -16,10 +16,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *         {@code details.document.libra.custodialindicator.code} in that case
  * @param details the full offence document from {@code details_json}; may be {@code null};
  *         the relevant nested path is {@code document.libra.custodialindicator.code}
+ * @param endorsableFlag whether the offence is endorsable ({@code true}), non-endorsable
+ *         ({@code false}), or the field is absent ({@code null}) — absent on a successful
+ *         response is treated as non-endorsable, see {@link Endorsability#NON_ENDORSABLE}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReferencedataOffenceResponse(String offenceId, String misCode,
-        String custodialIndicator, OffenceDetails details) {
+        String custodialIndicator, OffenceDetails details, Boolean endorsableFlag) {
 
     /** Root of the {@code details_json} offence document. */
     @JsonIgnoreProperties(ignoreUnknown = true)
