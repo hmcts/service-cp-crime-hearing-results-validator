@@ -41,6 +41,10 @@ public record PreprocessingDefinition(
         List<String> adultNotificationShortCodes,
         List<String> youthNotificationShortCodes,
 
+        // Drug-driving-course-reduction-specific short codes (used by
+        // DrugDrivingCourseReductionPreprocessor)
+        List<String> courseReductionShortCodes,
+
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
         List<String> applicationOnlyShortCodes) {

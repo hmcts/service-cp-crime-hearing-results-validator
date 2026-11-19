@@ -85,5 +85,5 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/013-custodial-non-imprisonable-warning/plan.md](specs/013-custodial-non-imprisonable-warning/plan.md)
+[specs/013-drug-driving-course-disq-error/plan.md](specs/013-drug-driving-course-disq-error/plan.md)
 <!-- SPECKIT END -->

@@ -302,6 +302,83 @@ class AgeRestrictedImprisonmentRuleIT extends IntegrationTestBase {
                     .andExpect(jsonPath("$.errors.errorMessages[0]", is(
                             EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith and Alex Jones.")));
         }
+
+        @Test
+        void linkedCaseRecordsForSamePerson_shouldNameThatPersonOnce() throws Exception {
+            // d1 and d1b are two records for the same person (shared masterDefendantId), so they
+            // fold into one context: one issue for Jamie Smith, named once alongside Alex Jones.
+            // rl2 carries isConcurrent=true to keep DR-SENT-001 silent (see above).
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                         "defendantId": "d1b", "offenceId": "off2", "isConcurrent": true},
+                        {"resultLineId": "rl3", "shortCode": "EXTIVS", "label": "Extended sentence",
+                         "defendantId": "d2", "offenceId": "off3"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "2006-08-01"},
+                        {"defendantId": "d1b", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "2006-08-01"},
+                        {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Alex", "lastName": "Jones",
+                         "dateOfBirth": "2007-01-01"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "defendantId": "d1b", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                        {"offenceId": "off3", "defendantId": "d2", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-AGE-007')]", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(
+                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith and Alex Jones.")));
+        }
+
+        @Test
+        void distinctDefendantsSharingAName_shouldBothBeNamed() throws Exception {
+            // Summary deduplication is by defendant key, never by display name.
+            String request = """
+                    {
+                      "hearingId": "h1",
+                      "hearingDay": "2026-07-20",
+                      "courtType": "MAGISTRATES",
+                      "resultLines": [
+                        {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment",
+                         "defendantId": "d1", "offenceId": "off1"},
+                        {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment",
+                         "defendantId": "d2", "offenceId": "off2"}
+                      ],
+                      "defendants": [
+                        {"defendantId": "d1", "masterDefendantId": "d1", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "2006-08-01"},
+                        {"defendantId": "d2", "masterDefendantId": "d2", "firstName": "Jamie", "lastName": "Smith",
+                         "dateOfBirth": "2007-01-01"}
+                      ],
+                      "offences": [
+                        {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                        {"offenceId": "off2", "defendantId": "d2", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2}
+                      ]
+                    }
+                    """;
+
+            performValidate(request)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.errors.validationIssues[?(@.ruleId=='DR-AGE-007')]", hasSize(2)))
+                    .andExpect(jsonPath("$.errors.errorMessages", hasSize(1)))
+                    .andExpect(jsonPath("$.errors.errorMessages[0]", is(
+                            EXPECTED_BASE_MESSAGE + " This affects: Jamie Smith and Jamie Smith.")));
+        }
     }
 
     @Nested
