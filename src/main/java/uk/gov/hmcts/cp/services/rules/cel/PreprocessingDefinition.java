@@ -47,5 +47,10 @@ public record PreprocessingDefinition(
 
         // Application-result-offence-specific field (used by
         // ApplicationResultOffencePreprocessor)
-        List<String> applicationOnlyShortCodes) {
+        List<String> applicationOnlyShortCodes,
+
+        // Electronic-monitoring-specific fields (used by ElectronicMonitoringPreprocessor)
+        List<String> continuingEmPromptRefs,
+        List<String> endingEmShortCodes,
+        List<String> exemptMainResultShortCodes) {
 }

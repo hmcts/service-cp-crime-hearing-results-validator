@@ -1,0 +1,43 @@
+rule:
+  id: "DR-EMON-017"
+  title: "Electronic monitoring status not updated on EM-flagged offence"
+  description: >-
+    Errors when a final or non-exempt interim result is recorded against an offence that carries
+    the active electronic monitoring flag, but neither a continuing EM result nor an EMONE ending
+    result is present. Prevents sharing until the EM contractor is informed whether monitoring
+    continues or ends.
+  priority: 18000
+  enabled: true
+
+  preprocessing:
+    type: "electronic-monitoring-status"
+    continuingEmPromptRefs:
+      - ELMONDET
+      - EMREQ
+      - EMREQV
+      - EMSO
+    endingEmShortCodes:
+      - EMONE
+    exemptMainResultShortCodes:
+      - NHMC
+      - NHCC
+      - A     # "A" is the Adjournment result shortCode — distinct from CategoryEnum.A (Ancillary)
+      - ADJNN
+      - ADJAPP
+
+  # AC1 (all offences resolved → no issue) is enforced by the preprocessor returning an empty
+  # context; only AC2 (at least one unresolved offence) produces a condition.
+  conditions:
+    - id: "AC2"
+      name: "EM-flagged offence not resolved"
+      expression: "unresolvedEmCount > 0"
+      severity: ERROR
+      messageTemplate: >-
+        Electronic monitoring is in place on this offence. Add a result that continues electronic
+        monitoring, or end it with 'Electronic Monitoring End - notify contractor (EMONE)'.
+      errorMessageTemplate: >-
+        Electronic monitoring is in place on offences. Add a result that continues electronic
+        monitoring, or end it with 'Electronic Monitoring End - notify contractor (EMONE)'.
+        This affects ${defendantNames}.
+      affectedOffenceSet: "unresolvedOffenceIds"
+      validationLevel: OFFENCE
