@@ -4,15 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import uk.gov.hmcts.cp.openapi.model.DefendantDto;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationRequest;
 import uk.gov.hmcts.cp.openapi.model.DraftValidationResponse;
+import uk.gov.hmcts.cp.openapi.model.OffenceDto;
 import uk.gov.hmcts.cp.openapi.model.RuleDetailResponse;
 import uk.gov.hmcts.cp.openapi.model.ValidationIssue;
+import uk.gov.hmcts.cp.services.feature.FeatureToggleConstants;
 import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 import uk.gov.hmcts.cp.services.rules.OffenceDisplayHelper;
 import uk.gov.hmcts.cp.services.rules.ValidationIssueResult;
@@ -796,5 +801,160 @@ class DefaultValidationServiceTest {
                 return List.of();
             }
         };
+    }
+
+    @Nested
+    @DisplayName("Civil hearings - gated by the ValidateCivilHearings flag (default off)")
+    class CivilHearingExclusion {
+
+        private static final String CIVIL_FLAG = FeatureToggleConstants.VALIDATE_CIVIL_HEARINGS.getFeatureName();
+
+        /** Results validation on, civil validation off. */
+        private final FeatureToggleService civilFlagOff = featureName -> !CIVIL_FLAG.equals(featureName);
+
+        @Test
+        void validate_anyOffenceCivil_and_civilFlagDisabled_should_skip_all_rules_and_return_valid() {
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            ValidationRule rule = trackingErrorRule("RULE-001", evaluated);
+            DefaultValidationService service = new DefaultValidationService(List.of(rule), civilFlagOff, RESOLVER);
+
+            DraftValidationResponse response = service.validate(requestWithOffences(
+                    offence("off1", false), offence("off2", true)));
+
+            assertThat(evaluated).isFalse();
+            assertThat(response.getIsValid()).isTrue();
+            assertThat(response.getValidationId()).startsWith("val-");
+            assertThat(response.getMode()).isEqualTo("advisory");
+            assertThat(response.getRulesEvaluated()).isEmpty();
+            assertThat(response.getErrors().getValidationIssues()).isEmpty();
+            assertThat(response.getErrors().getErrorMessages()).isEmpty();
+            assertThat(response.getWarnings()).isEmpty();
+        }
+
+        @Test
+        void validate_anyOffenceCivil_and_civilFlagEnabled_should_evaluate_all_rules() {
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            ValidationRule rule = trackingErrorRule("RULE-001", evaluated);
+            DefaultValidationService service = new DefaultValidationService(List.of(rule), ALWAYS_ENABLED, RESOLVER);
+
+            DraftValidationResponse response = service.validate(requestWithOffences(
+                    offence("off1", false), offence("off2", true)));
+
+            assertThat(evaluated).isTrue();
+            assertThat(response.getIsValid()).isFalse();
+            assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
+        }
+
+        @Test
+        void validate_anyOffenceCivil_and_civilFlagCheckThrows_should_default_to_skipping_rules() {
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            ValidationRule rule = trackingErrorRule("RULE-001", evaluated);
+            FeatureToggleService civilFlagBroken = featureName -> {
+                if (CIVIL_FLAG.equals(featureName)) {
+                    throw new IllegalStateException("Azure unavailable");
+                }
+                return true;
+            };
+            DefaultValidationService service = new DefaultValidationService(List.of(rule), civilFlagBroken, RESOLVER);
+
+            DraftValidationResponse response = service.validate(requestWithOffences(offence("off1", true)));
+
+            assertThat(evaluated).isFalse();
+            assertThat(response.getIsValid()).isTrue();
+            assertThat(response.getRulesEvaluated()).isEmpty();
+        }
+
+        @Test
+        void validate_civilFlag_should_be_looked_up_with_default_false() {
+            List<String> lookups = new ArrayList<>();
+            FeatureToggleService recording = new FeatureToggleService() {
+                @Override
+                public boolean isFeatureEnabled(String featureName) {
+                    throw new AssertionError("single-arg lookup must not be used");
+                }
+
+                @Override
+                public boolean isFeatureEnabled(String featureName, boolean defaultValue) {
+                    lookups.add(featureName + "=" + defaultValue);
+                    return defaultValue;
+                }
+            };
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            DefaultValidationService service = new DefaultValidationService(
+                    List.of(trackingErrorRule("RULE-001", evaluated)), recording, RESOLVER);
+
+            service.validate(requestWithOffences(offence("off1", true)));
+
+            assertThat(lookups).containsExactly("ResultsValidation=true", CIVIL_FLAG + "=false");
+            assertThat(evaluated).isFalse();
+        }
+
+        @Test
+        void validate_noOffenceCivil_and_civilFlagDisabled_should_evaluate_rules() {
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            ValidationRule rule = trackingErrorRule("RULE-001", evaluated);
+            DefaultValidationService service = new DefaultValidationService(List.of(rule), civilFlagOff, RESOLVER);
+
+            DraftValidationResponse response = service.validate(requestWithOffences(
+                    offence("off1", false), offence("off2", null)));
+
+            assertThat(evaluated).isTrue();
+            assertThat(response.getIsValid()).isFalse();
+            assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
+        }
+
+        @Test
+        void validate_nullOffenceEntries_and_civilFlagDisabled_should_evaluate_rules() {
+            AtomicBoolean evaluated = new AtomicBoolean(false);
+            ValidationRule rule = trackingErrorRule("RULE-001", evaluated);
+            DefaultValidationService service = new DefaultValidationService(List.of(rule), civilFlagOff, RESOLVER);
+            List<OffenceDto> offences = new ArrayList<>();
+            offences.add(null);
+            DraftValidationRequest request = DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .offences(offences)
+                    .build();
+
+            DraftValidationResponse response = service.validate(request);
+
+            assertThat(evaluated).isTrue();
+            assertThat(response.getRulesEvaluated()).containsExactly("RULE-001");
+        }
+
+        private DraftValidationRequest requestWithOffences(OffenceDto... offences) {
+            return DraftValidationRequest.builder()
+                    .hearingId("h1")
+                    .offences(List.of(offences))
+                    .build();
+        }
+
+        private OffenceDto offence(String offenceId, Boolean isCivil) {
+            return OffenceDto.builder()
+                    .offenceId(offenceId)
+                    .isCivil(isCivil)
+                    .build();
+        }
+
+        private ValidationRule trackingErrorRule(String ruleId, AtomicBoolean evaluated) {
+            ValidationRule delegate = stubRule(ruleId,
+                    List.of(ValidationIssueResult.forError(
+                            ValidationIssue.builder()
+                                    .ruleId(ruleId)
+                                    .severity(ValidationIssue.SeverityEnum.ERROR)
+                                    .build(),
+                            "Test error", null)));
+            return new ValidationRule() {
+                @Override
+                public RuleDetailResponse getRuleDetail() {
+                    return delegate.getRuleDetail();
+                }
+
+                @Override
+                public List<ValidationIssueResult> evaluate(DraftValidationRequest request) {
+                    evaluated.set(true);
+                    return delegate.evaluate(request);
+                }
+            };
+        }
     }
 }
