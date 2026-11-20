@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Feature toggle backed by Azure App Configuration. Fail-open: returns {@code true}
- * (feature enabled) when Azure is unreachable, not configured, or feature not found.
+ * Feature toggle backed by Azure App Configuration. When Azure is unreachable, not configured, or
+ * the feature is not found, returns the caller's default ({@code true} for the single-arg form).
  */
 @Service
 @Slf4j
@@ -25,19 +25,24 @@ public class AzureFeatureToggleService implements FeatureToggleService {
     }
 
     @Override
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public boolean isFeatureEnabled(final String featureName) {
-        boolean enabled = true;
+        return isFeatureEnabled(featureName, true);
+    }
+
+    @Override
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public boolean isFeatureEnabled(final String featureName, final boolean defaultValue) {
+        boolean enabled = defaultValue;
 
         if (label.isBlank()) {
-            log.debug("Feature label not configured, defaulting to enabled for '{}'", featureName);
+            log.debug("Feature label not configured, defaulting to {} for '{}'", defaultValue, featureName);
         } else {
             try {
                 final Map<String, Boolean> features = fetcher.fetchFeatures(label);
-                enabled = features.getOrDefault(featureName, true);
+                enabled = features.getOrDefault(featureName, defaultValue);
             } catch (Exception e) {
-                log.warn("Feature toggle check failed for '{}', defaulting to enabled: {}",
-                        featureName, e.getMessage());
+                log.warn("Feature toggle check failed for '{}', defaulting to {}: {}",
+                        featureName, defaultValue, e.getMessage());
             }
         }
 
