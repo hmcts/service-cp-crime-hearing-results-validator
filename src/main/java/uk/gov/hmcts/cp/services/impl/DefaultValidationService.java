@@ -55,14 +55,39 @@ public class DefaultValidationService implements ValidationService {
     public DraftValidationResponse validate(final DraftValidationRequest request) {
         final DraftValidationResponse response;
 
-        if (isFeatureActive()) {
-            response = evaluateRules(request);
+        if (isFeatureActive(FeatureToggleConstants.RESULTS_VALIDATION)) {
+            if (isExcludedCivilHearing(request)) {
+                response = buildCivilHearingResponse();
+                log.info("Hearing contains a civil offence, skipping all validation rules for hearingId={}"
+                        + " validationId={}", request.getHearingId(), response.getValidationId());
+            } else {
+                response = evaluateRules(request);
+            }
         } else {
             log.info("Validation feature disabled, returning success for hearingId={}", request.getHearingId());
             response = buildDisabledResponse();
         }
 
         return response;
+    }
+
+    /**
+     * A hearing with any civil offence skips every rule unless the {@code ValidateCivilHearings}
+     * flag is enabled. The flag defaults to disabled when missing or unreachable.
+     */
+    private boolean isExcludedCivilHearing(final DraftValidationRequest request) {
+        return hasAnyCivilOffence(request)
+                && !isFeatureActive(FeatureToggleConstants.VALIDATE_CIVIL_HEARINGS);
+    }
+
+    /**
+     * True when at least one offence has {@code OffenceDto.isCivil == true};
+     * {@code null}/{@code false} is treated as not civil.
+     */
+    private static boolean hasAnyCivilOffence(final DraftValidationRequest request) {
+        return request.getOffences() != null
+                && request.getOffences().stream()
+                        .anyMatch(offence -> offence != null && Boolean.TRUE.equals(offence.getIsCivil()));
     }
 
     private DraftValidationResponse evaluateRules(final DraftValidationRequest request) {
@@ -164,22 +189,31 @@ public class DefaultValidationService implements ValidationService {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private boolean isFeatureActive() {
-        boolean active = true;
+    private boolean isFeatureActive(final FeatureToggleConstants feature) {
+        boolean active = feature.isDefaultEnabled();
         try {
-            active = featureToggleService.isFeatureEnabled(
-                    FeatureToggleConstants.RESULTS_VALIDATION.getFeatureName());
+            active = featureToggleService.isFeatureEnabled(feature.getFeatureName(), feature.isDefaultEnabled());
         } catch (Exception e) {
-            log.warn("Feature toggle check failed, proceeding with validation: {}", e.getMessage());
+            log.warn("Feature toggle check failed for '{}', defaulting to {}: {}",
+                    feature.getFeatureName(), feature.isDefaultEnabled(), e.getMessage());
         }
         return active;
     }
 
     private DraftValidationResponse buildDisabledResponse() {
+        return buildNoRulesRunResponse("disabled");
+    }
+
+    /** Civil hearings are valid by definition: no rule is evaluated, so nothing can trigger. */
+    private DraftValidationResponse buildCivilHearingResponse() {
+        return buildNoRulesRunResponse("advisory");
+    }
+
+    private DraftValidationResponse buildNoRulesRunResponse(final String mode) {
         return DraftValidationResponse.builder()
                 .validationId("val-" + UUID.randomUUID())
                 .timestamp(Instant.now())
-                .mode("disabled")
+                .mode(mode)
                 .rulesEvaluated(List.of())
                 .isValid(true)
                 .errors(ValidationErrors.builder()

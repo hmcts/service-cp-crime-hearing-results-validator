@@ -65,4 +65,35 @@ class AzureFeatureToggleServiceTest {
 
         assertThat(service.isFeatureEnabled("ResultsValidation")).isTrue();
     }
+
+    @Test
+    void isFeatureEnabledWithDefault_returns_azure_value_when_feature_present() {
+        when(fetcher.fetchFeatures("STE86")).thenReturn(Map.of("ValidateCivilHearings", true));
+        AzureFeatureToggleService service = new AzureFeatureToggleService(fetcher, "STE86");
+
+        assertThat(service.isFeatureEnabled("ValidateCivilHearings", false)).isTrue();
+    }
+
+    @Test
+    void isFeatureEnabledWithDefault_returns_default_when_feature_not_found() {
+        when(fetcher.fetchFeatures("STE86")).thenReturn(Map.of("OtherFeature", true));
+        AzureFeatureToggleService service = new AzureFeatureToggleService(fetcher, "STE86");
+
+        assertThat(service.isFeatureEnabled("ValidateCivilHearings", false)).isFalse();
+    }
+
+    @Test
+    void isFeatureEnabledWithDefault_returns_default_when_fetcher_throws() {
+        when(fetcher.fetchFeatures("STE86")).thenThrow(new RuntimeException("Azure unavailable"));
+        AzureFeatureToggleService service = new AzureFeatureToggleService(fetcher, "STE86");
+
+        assertThat(service.isFeatureEnabled("ValidateCivilHearings", false)).isFalse();
+    }
+
+    @Test
+    void isFeatureEnabledWithDefault_returns_default_when_label_blank() {
+        AzureFeatureToggleService service = new AzureFeatureToggleService(fetcher, "");
+
+        assertThat(service.isFeatureEnabled("ValidateCivilHearings", false)).isFalse();
+    }
 }
