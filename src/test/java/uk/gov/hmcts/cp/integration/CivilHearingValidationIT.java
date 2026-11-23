@@ -2,6 +2,7 @@ package uk.gov.hmcts.cp.integration;
 
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -23,9 +24,10 @@ import uk.gov.hmcts.cp.services.feature.FeatureToggleService;
 /**
  * CRA-391: hearings containing a civil offence ({@code "isCivil": true}) skip every rule unless the
  * {@code ValidateCivilHearings} flag is enabled. Uses the AC2 sentencing payload (which raises
- * DR-SENT-001) plus one civil offence, so the outcome shows whether rules ran. The flag-absent
- * default (skip) is covered by {@code ValidationControllerIntegrationTest}, which runs with no
- * feature label configured.
+ * DR-SENT-001) plus one civil offence, so the outcome shows whether rules ran. A second,
+ * warning-producing payload (the AC3 sentencing payload, all offences civil) proves no warnings
+ * are returned for civil hearings (CRA-419 AC2). The flag-absent default (skip) is covered by
+ * {@code ValidationControllerIntegrationTest}, which runs with no feature label configured.
  */
 @DisplayName("Civil hearings behind the ValidateCivilHearings flag")
 class CivilHearingValidationIT extends IntegrationTestBase {
@@ -54,6 +56,23 @@ class CivilHearingValidationIT extends IntegrationTestBase {
             }
             """;
 
+    private static final String CIVIL_HEARING_WARNING_REQUEST = """
+            {
+              "hearingId": "h1",
+              "hearingDay": "2026-03-11",
+              "courtType": "CROWN",
+              "resultLines": [
+                {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
+              ],
+              "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+              "offences": [
+                {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isCivil": true},
+                {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2, "isCivil": true}
+              ]
+            }
+            """;
+
     @MockitoBean
     private FeatureToggleService featureToggleService;
 
@@ -66,7 +85,7 @@ class CivilHearingValidationIT extends IntegrationTestBase {
     void validate_civilHearing_and_civilFlagDisabled_should_skip_all_rules_and_return_valid() throws Exception {
         when(featureToggleService.isFeatureEnabled(eq(CIVIL_FLAG), anyBoolean())).thenReturn(false);
 
-        performValidate()
+        performValidate(CIVIL_HEARING_REQUEST)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(true)))
                 .andExpect(jsonPath("$.mode", is("advisory")))
@@ -77,18 +96,43 @@ class CivilHearingValidationIT extends IntegrationTestBase {
 
     @Test
     void validate_civilHearing_and_civilFlagEnabled_should_evaluate_all_rules() throws Exception {
-        performValidate()
+        performValidate(CIVIL_HEARING_REQUEST)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isValid", is(false)))
                 .andExpect(jsonPath("$.rulesEvaluated", hasItem("DR-SENT-001")))
                 .andExpect(jsonPath("$.errors.validationIssues[*].ruleId", hasItem("DR-SENT-001")));
     }
 
-    private ResultActions performValidate() throws Exception {
+    /** CRA-419 AC2: a payload that warns in criminal mode must return no warnings for a civil hearing. */
+    @Test
+    void validate_civilHearingWithWarningPayload_and_civilFlagDisabled_should_return_no_warnings() throws Exception {
+        when(featureToggleService.isFeatureEnabled(eq(CIVIL_FLAG), anyBoolean())).thenReturn(false);
+
+        performValidate(CIVIL_HEARING_WARNING_REQUEST)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(true)))
+                .andExpect(jsonPath("$.mode", is("advisory")))
+                .andExpect(jsonPath("$.rulesEvaluated", empty()))
+                .andExpect(jsonPath("$.warnings", empty()));
+    }
+
+    /** Control: the same payload with the flag on proves the payload really does warn. */
+    @Test
+    void validate_civilHearingWithWarningPayload_and_civilFlagEnabled_should_return_warning() throws Exception {
+        performValidate(CIVIL_HEARING_WARNING_REQUEST)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(true)))
+                .andExpect(jsonPath("$.rulesEvaluated", hasItem("DR-SENT-001")))
+                .andExpect(jsonPath("$.warnings", hasSize(1)))
+                .andExpect(jsonPath("$.warnings[0].ruleId", is("DR-SENT-001")))
+                .andExpect(jsonPath("$.warnings[0].severity", is("WARNING")));
+    }
+
+    private ResultActions performValidate(final String request) throws Exception {
         return mockMvc.perform(post(VALIDATE_URL)
                 .header("CJSCPPUID", "test-user")
                 .header("CPP-ACTION", "validation-service.validate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(CIVIL_HEARING_REQUEST));
+                .content(request));
     }
 }

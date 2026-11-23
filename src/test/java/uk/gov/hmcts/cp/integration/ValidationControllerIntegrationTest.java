@@ -519,6 +519,39 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.warnings", empty()));
     }
 
+    /**
+     * CRA-419 AC2: with the ValidateCivilHearings flag defaulted off, a civil hearing whose
+     * payload warns in criminal mode (the AC3 concurrent-and-consecutive payload) must return no
+     * warnings.
+     */
+    @Test
+    void validate_civil_hearing_with_warning_payload_should_return_no_warnings() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "CROWN",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isCivil": true},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2, "isCivil": true}
+                  ]
+                }
+                """;
+
+        performValidate(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(true)))
+                .andExpect(jsonPath("$.mode", is("advisory")))
+                .andExpect(jsonPath("$.rulesEvaluated", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                .andExpect(jsonPath("$.warnings", empty()));
+    }
+
     private ResultActions performValidate(final String request) throws Exception {
         return mockMvc.perform(post(VALIDATE_URL)
                 .header("CJSCPPUID", "test-user")
