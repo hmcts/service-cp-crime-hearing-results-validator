@@ -17,6 +17,7 @@ public class MessageTemplateResolver {
     private static final int TWO_ELEMENTS = 2;
     private static final int SOLE_DEFENDANT_IN_HEARING = 1;
     private static final String DEFENDANT_NAMES_TOKEN = "${defendantNames}";
+    private static final String AND_SEPARATOR = " and ";
 
     private final OffenceDisplayHelper offenceDisplayHelper;
 
@@ -105,10 +106,11 @@ public class MessageTemplateResolver {
         if (names.isEmpty()) {
             result = "";
         } else if (names.size() == SINGLE_ELEMENT) {
-            result = names.get(0);
+            result = names.getFirst();
+        } else if (names.size() == TWO_ELEMENTS) {
+            result = names.getFirst() + AND_SEPARATOR + names.getLast();
         } else {
-            result = String.join(", ", names.subList(0, names.size() - 1))
-                    + " and " + names.get(names.size() - 1);
+            result = String.join(", ", names.subList(0, names.size() - 1)) + AND_SEPARATOR + names.getLast();
         }
         return result;
     }
@@ -128,10 +130,10 @@ public class MessageTemplateResolver {
         } else if (SINGLE_ELEMENT == formatted.size()) {
             result = formatted.getFirst();
         } else if (TWO_ELEMENTS == formatted.size()) {
-            result = formatted.get(0) + " and " + formatted.get(1);
+            result = formatted.get(0) + AND_SEPARATOR + formatted.get(1);
         } else {
             result = String.join(", ", formatted.subList(0, formatted.size() - 1))
-                    + " and " + formatted.getLast();
+                    + AND_SEPARATOR + formatted.getLast();
         }
         return result;
     }

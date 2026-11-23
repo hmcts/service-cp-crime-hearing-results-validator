@@ -1,0 +1,509 @@
+### CRA-38 — Electronic Monitoring Status Validation (DR-EMON-017)
+### Run against local service on port 4550
+
+@baseUrl = http://localhost:4550
+@userId = test-user
+
+### AC2 — Error: EM-flagged offence with IMP result, no continuing/ending result → ERROR
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac2",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: EM-flagged offence with EMONE ending result → no DR-EMON-017 error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1a",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "EMONE",
+     "label": "Electronic Monitoring End",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: EM-flagged offence with RC + ELMONDET=Yes continuing prompt → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1b",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC", "category": "I",
+     "label": "Remand on conditional bail",
+     "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "ELMONDET", "promptValue": "Yes"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: exempt main result (NHMC as sole category-I) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1c",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "NHMC", "category": "I",
+     "label": "No hearing case management",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC3 — Error: RC + NHMC (both category I; RC is non-exempt) → error fires
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac3",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "RC", "category": "I",
+     "label": "Remand on conditional bail",
+     "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "NHMC", "category": "I",
+     "label": "No hearing case management",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC4 — Error summary names affected defendants (two defendants, both unresolved)
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac4",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d2", "offenceId": "off-2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "John", "lastName": "Smith"},
+    {"defendantId": "d2", "firstName": "Jane", "lastName": "Jones"}
+  ],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft A", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-2", "defendantId": "d2", "offenceCode": "CD98001",
+     "offenceTitle": "Theft B", "orderIndex": 2,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: EM-flagged offence with COEW + EMREQ=Yes continuing prompt → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1d",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+     "label": "Conditional order of discharge",
+     "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "EMREQ", "promptValue": "Yes"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: EM-flagged offence with COEW + EMREQV=Yes continuing prompt → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1e",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+     "label": "Conditional order of discharge",
+     "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "EMREQV", "promptValue": "Yes"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: EM-flagged offence with COEW + EMSO=Yes continuing prompt → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1f",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+     "label": "Conditional order of discharge",
+     "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "EMSO", "promptValue": "Yes"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: exempt main result NHCC (sole category-I) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1g",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "NHCC", "category": "I",
+     "label": "No hearing crown court",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: exempt main result A/Adjournment (sole category-I) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1h",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "A", "category": "I",
+     "label": "Adjournment",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: exempt main result ADJAPP (sole category-I) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1i",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "ADJAPP", "category": "I",
+     "label": "Adjournment application",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: ancillary-only (ODIR, category A) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1j",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "ODIR", "category": "A",
+     "label": "Other directions",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC2 — Error: EMREQ=No prompt, no other resolution → error fires (prompt=No is NOT a continuing result)
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac2b",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "COEW", "category": "F",
+     "label": "Conditional order of discharge",
+     "defendantId": "d1", "offenceId": "off-1",
+     "prompts": [{"promptRef": "EMREQ", "promptValue": "No"}]}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC4 — Two defendants, only one unresolved → error names ONLY the affected defendant (not both)
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac4d",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "EMONE",
+     "label": "Electronic Monitoring End",
+     "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d2", "offenceId": "off-2"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "John", "lastName": "Smith"},
+    {"defendantId": "d2", "firstName": "Jane", "lastName": "Jones"}
+  ],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft A", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-2", "defendantId": "d2", "offenceCode": "CD98001",
+     "offenceTitle": "Theft B", "orderIndex": 2,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC4 — Error summary names three defendants: "This affects John Smith, Jane Jones and Sam Patel"
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac4b",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "off-1"},
+    {"resultLineId": "rl2", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d2", "offenceId": "off-2"},
+    {"resultLineId": "rl3", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d3", "offenceId": "off-3"}
+  ],
+  "defendants": [
+    {"defendantId": "d1", "firstName": "John", "lastName": "Smith"},
+    {"defendantId": "d2", "firstName": "Jane", "lastName": "Jones"},
+    {"defendantId": "d3", "firstName": "Sam", "lastName": "Patel"}
+  ],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft A", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-2", "defendantId": "d2", "offenceCode": "CD98001",
+     "offenceTitle": "Theft B", "orderIndex": 2,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-3", "defendantId": "d3", "offenceCode": "CD98001",
+     "offenceTitle": "Theft C", "orderIndex": 3,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC4 — Single defendant, error triggered → error message must NOT contain "This affects"
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac4c",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: exempt main result ADJNN (sole category-I) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1k",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "ADJNN", "category": "I",
+     "label": "Adjournment no notice",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC1 — Pass: all EM-flagged offences blank (no results entered) → no error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac1l",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft A", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-2", "defendantId": "d1", "offenceCode": "CD98002",
+     "offenceTitle": "Theft B", "orderIndex": 2,
+     "hasActiveElectronicMonitoring": true},
+    {"offenceId": "off-3", "defendantId": "d1", "offenceCode": "CD98003",
+     "offenceTitle": "Theft C", "orderIndex": 3,
+     "hasActiveElectronicMonitoring": true}
+  ]
+}
+
+### AC9 — Pass: no EM-flagged offences → no DR-EMON-017 error
+POST {{baseUrl}}/api/validation/validate
+Content-Type: application/json
+CJSCPPUID: {{userId}}
+CPP-ACTION: validation-service.validate
+
+{
+  "hearingId": "h-emon-local-ac9",
+  "hearingDay": "2026-11-18",
+  "courtType": "MAGISTRATES",
+  "resultLines": [
+    {"resultLineId": "rl1", "shortCode": "IMP", "category": "F",
+     "label": "Imprisonment",
+     "defendantId": "d1", "offenceId": "off-1"}
+  ],
+  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Smith"}],
+  "offences": [
+    {"offenceId": "off-1", "defendantId": "d1", "offenceCode": "CD98001",
+     "offenceTitle": "Theft", "orderIndex": 1,
+     "hasActiveElectronicMonitoring": false}
+  ]
+}

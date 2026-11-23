@@ -450,10 +450,10 @@ class DefaultValidationServiceTest {
     }
 
     /**
-     * Verifies three+ defendant names are comma-separated with a trailing " and ".
+     * Verifies three+ defendant names use comma separation with "and" before the last name per spec AC4.
      */
     @Test
-    void formatDefendantNames_three_names_should_be_comma_separated_with_and() {
+    void formatDefendantNames_three_names_should_use_comma_and_before_last() {
         ValidationRule rule = stubRule("RULE-001",
                 List.of(
                         ValidationIssueResult.forError(
@@ -473,6 +473,40 @@ class DefaultValidationServiceTest {
 
         assertThat(response.getErrors().getErrorMessages())
                 .containsExactly("Affects Alice, Bob and Charlie.");
+    }
+
+    /**
+     * Verifies five defendant names use comma separation with "and" before the last name per spec AC4.
+     */
+    @Test
+    void formatDefendantNames_five_names_should_use_comma_and_before_last() {
+        ValidationRule rule = stubRule("RULE-001",
+                List.of(
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Alice"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Bob"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Charlie"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Dave"),
+                        ValidationIssueResult.forError(
+                                ValidationIssue.builder().ruleId("RULE-001")
+                                        .severity(ValidationIssue.SeverityEnum.ERROR).build(),
+                                "Affects ${defendantNames}.", "Eve")));
+        DraftValidationResponse response = new DefaultValidationService(
+                List.of(rule), ALWAYS_ENABLED, RESOLVER).validate(requestWithDefendantCount(5));
+
+        assertThat(response.getErrors().getErrorMessages())
+                .containsExactly("Affects Alice, Bob, Charlie, Dave and Eve.");
     }
 
     /**

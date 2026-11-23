@@ -234,13 +234,23 @@ class MessageTemplateResolverTest {
     }
 
     /**
-     * Verifies three+ names are comma-separated with a trailing " and ".
+     * Verifies three+ names use comma separation with "and" before the last name per spec AC4.
      */
     @Test
-    void resolveDefendantNames_three_names_should_be_comma_separated_with_and() {
+    void resolveDefendantNames_three_names_should_use_comma_and_before_last() {
         String result = resolver.resolveDefendantNames(
                 "Affects ${defendantNames}.", List.of("Alice", "Bob", "Charlie"), 3);
         assertThat(result).isEqualTo("Affects Alice, Bob and Charlie.");
+    }
+
+    /**
+     * Verifies five names use comma separation with "and" before the last name per spec AC4.
+     */
+    @Test
+    void resolveDefendantNames_five_names_should_use_comma_and_before_last() {
+        String result = resolver.resolveDefendantNames(
+                "Affects ${defendantNames}.", List.of("Alice", "Bob", "Charlie", "Dave", "Eve"), 5);
+        assertThat(result).isEqualTo("Affects Alice, Bob, Charlie, Dave and Eve.");
     }
 
     /**
