@@ -8,9 +8,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
 
 /**
@@ -39,11 +42,26 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
 
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_DISQ_WARNINGS = "$.warnings[?(@.ruleId=='DR-DISQ-002')]";
-
     private static final String EXPECTED_MESSAGE =
             "Check whether you need to add extended test disqualification with DDOTE "
                     + "(disqualification and extended test) or DDOTEL (disqualification for "
                     + "life and extended test)";
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /**
+     * Resets all reference-data WireMock stubs and clears the Caffeine cache before each
+     * test. Tests in this class reuse shared offence codes (RT88026, RA88046, RT88526)
+     * across different scenarios. Without both resets, a Caffeine cache entry populated by
+     * one test would serve stale endorsability data to the next test, even if WireMock was
+     * re-stubbed with different values.
+     */
+    @BeforeEach
+    void resetReferencedataWireMock() {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.resetAll();
+        cacheManager.getCache("referencedataOffences").clear();
+    }
 
     @Nested
     @DisplayName("WarnsOnQualifyingOffence")
@@ -228,6 +246,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
 
         @Test
         void ddote_recorded_against_relevant_offence_should_not_warn() throws Exception {
+            // RT88026 must be endorsable so DR-END-014 does not fire for the DDOTE result.
+            stubEndorsableFlagResponse("RT88026", true);
             String request = """
                     {
                       "hearingId": "h4",
@@ -277,6 +297,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
         @Test
         void hearing_with_excluded_final_and_extended_test_present_should_have_no_warnings()
                 throws Exception {
+            // RA88046 must be endorsable so DR-END-014 does not fire for the DDOTE result.
+            stubEndorsableFlagResponse("RA88046", true);
             String request = """
                     {
                       "hearingId": "h-mixed",
@@ -350,6 +372,8 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
 
         @Test
         void ddotel_should_suppress() throws Exception {
+            // RT88026 must be endorsable so DR-END-014 does not fire for the DDOTEL result.
+            stubEndorsableFlagResponse("RT88026", true);
             String request = """
                     {
                       "hearingId": "h-ddotel",
@@ -383,6 +407,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
 
         @Test
         void two_relevant_offences_one_with_ddote_should_warn_only_on_the_other() throws Exception {
+            // RA88046 must be endorsable so DR-END-014 does not fire for the DDOTE on off2.
+            // RT88026 (off1, COEW only) intentionally stays non-endorsable so DR-END-012 does not fire.
+            stubEndorsableFlagResponse("RA88046", true);
             String request = """
                     {
                       "hearingId": "h-mixed-2",
@@ -562,6 +589,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
         @Test
         void multi_defendant_different_offences_one_with_ddote_should_warn_only_the_other()
                 throws Exception {
+            // RT88526 (off2) must be endorsable so DR-END-014 does not fire for the DDOTE.
+            // RT88026 (off1, COEW only) intentionally stays non-endorsable so DR-END-012 does not fire.
+            stubEndorsableFlagResponse("RT88526", true);
             String request = """
                     {
                       "hearingId": "h-multi-def",
@@ -611,6 +641,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
          */
         @Test
         void mixed_compliance_hearing_should_warn_only_non_compliant_offences() throws Exception {
+            // RT88526 (off3) must be endorsable so DR-END-014 does not fire for the DDOTEL.
+            // Off1/off2/off4 are non-endorsable by default so neither DR-END-012 nor DR-END-014 fires.
+            stubEndorsableFlagResponse("RT88526", true);
             String request = """
                     {
                       "hearingId": "h-mixed-large",
@@ -665,6 +698,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
          */
         @Test
         void all_relevant_offences_with_ddote_should_have_no_warnings() throws Exception {
+            // Both offences must be endorsable so DR-END-014 does not fire for DDOTE/DDOTEL.
+            stubEndorsableFlagResponse("RT88026", true);
+            stubEndorsableFlagResponse("RT88526", true);
             String request = """
                     {
                       "hearingId": "h-all-compliant",
@@ -762,6 +798,9 @@ class DisqualificationExtendedTestRuleIntegrationTest extends IntegrationTestBas
         @Test
         void three_offences_one_warns_one_ddotel_suppressed_one_excluded_should_warn_only_first()
                 throws Exception {
+            // RT88526 (off2) must be endorsable so DR-END-014 does not fire for the DDOTEL.
+            // RT88026 (off1, COEW only) intentionally stays non-endorsable so DR-END-012 does not fire.
+            stubEndorsableFlagResponse("RT88526", true);
             String request = """
                     {
                       "hearingId": "h-s20-exact",
