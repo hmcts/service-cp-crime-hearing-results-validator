@@ -476,6 +476,82 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.timestamp", notNullValue()));
     }
 
+    /**
+     * CRA-391: with no feature label configured, the ValidateCivilHearings flag defaults to
+     * disabled, so a hearing in which any offence is civil ({@code "isCivil": true}) skips every
+     * rule. The same payload as AC2 (which raises DR-SENT-001) plus a civil offence must come back
+     * valid with no rule evaluated.
+     */
+    @Test
+    void validate_any_civil_offence_should_skip_all_rules_and_return_valid() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "LAWD", "label": "Legal Aid Withdrawn", "defendantId": "d1", "offenceId": "off4"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d1", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d1", "offenceCode": "CV001", "offenceTitle": "Civil matter", "orderIndex": 4, "isCivil": true}
+                  ]
+                }
+                """;
+
+        mockMvc.perform(post(VALIDATE_URL)
+                        .header("CJSCPPUID", "test-user")
+                        .header("CPP-ACTION", "validation-service.validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(true)))
+                .andExpect(jsonPath("$.mode", is("advisory")))
+                .andExpect(jsonPath("$.rulesEvaluated", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                .andExpect(jsonPath("$.errors.errorMessages", empty()))
+                .andExpect(jsonPath("$.warnings", empty()));
+    }
+
+    /**
+     * CRA-419 AC2: with the ValidateCivilHearings flag defaulted off, a civil hearing whose
+     * payload warns in criminal mode (the AC3 concurrent-and-consecutive payload) must return no
+     * warnings.
+     */
+    @Test
+    void validate_civil_hearing_with_warning_payload_should_return_no_warnings() throws Exception {
+        String request = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "CROWN",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isCivil": true},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2, "isCivil": true}
+                  ]
+                }
+                """;
+
+        performValidate(request)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isValid", is(true)))
+                .andExpect(jsonPath("$.mode", is("advisory")))
+                .andExpect(jsonPath("$.rulesEvaluated", empty()))
+                .andExpect(jsonPath("$.errors.validationIssues", empty()))
+                .andExpect(jsonPath("$.warnings", empty()));
+    }
+
     private ResultActions performValidate(final String request) throws Exception {
         return mockMvc.perform(post(VALIDATE_URL)
                 .header("CJSCPPUID", "test-user")

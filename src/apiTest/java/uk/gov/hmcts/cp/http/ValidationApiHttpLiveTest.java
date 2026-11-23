@@ -202,6 +202,79 @@ class ValidationApiHttpLiveTest {
                                 + " primary sentence. Check that this is correct before sharing");
     }
 
+    /**
+     * CRA-391: with no feature label configured (as in docker-compose) the ValidateCivilHearings
+     * flag takes its default of disabled, so a hearing with any civil offence skips every rule.
+     * The AC2 payload (which raises DR-SENT-001) plus one civil offence must come back valid with
+     * no rule evaluated. The flag-enabled path needs Azure App Configuration and is covered by
+     * CivilHearingValidationIT instead.
+     */
+    @Test
+    void validate_any_civil_offence_with_civil_flag_defaulted_off_should_skip_all_rules() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "MAGISTRATES",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2"},
+                    {"resultLineId": "rl3", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off3"},
+                    {"resultLineId": "rl4", "shortCode": "LAWD", "label": "Legal Aid Withdrawn", "defendantId": "d1", "offenceId": "off4"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2},
+                    {"offenceId": "off3", "defendantId": "d1", "offenceCode": "BG001", "offenceTitle": "Burglary", "orderIndex": 3},
+                    {"offenceId": "off4", "defendantId": "d1", "offenceCode": "CV001", "offenceTitle": "Civil matter", "orderIndex": 4, "isCivil": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get("mode").asText()).isEqualTo("advisory");
+        assertThat(json.get(RULES_EVALUATED)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(ERRORS).get(ERROR_MESSAGES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
+    /**
+     * CRA-419 AC2: with the ValidateCivilHearings flag defaulted off, a civil hearing whose
+     * payload warns in criminal mode (the AC3 concurrent-and-consecutive payload) must return no
+     * warnings.
+     */
+    @Test
+    void validate_civil_hearing_with_warning_payload_should_return_no_warnings() throws Exception {
+        final String body = """
+                {
+                  "hearingId": "h1",
+                  "hearingDay": "2026-03-11",
+                  "courtType": "CROWN",
+                  "resultLines": [
+                    {"resultLineId": "rl1", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off1"},
+                    {"resultLineId": "rl2", "shortCode": "IMP", "label": "Imprisonment", "defendantId": "d1", "offenceId": "off2", "isConcurrent": true, "consecutiveToOffence": "off1"}
+                  ],
+                  "defendants": [{"defendantId": "d1", "firstName": "John", "lastName": "Doe"}],
+                  "offences": [
+                    {"offenceId": "off1", "defendantId": "d1", "offenceCode": "TH68001", "offenceTitle": "Theft", "orderIndex": 1, "isCivil": true},
+                    {"offenceId": "off2", "defendantId": "d1", "offenceCode": "AS001", "offenceTitle": "Assault", "orderIndex": 2, "isCivil": true}
+                  ]
+                }
+                """;
+
+        final JsonNode json = postValidate(body);
+
+        assertThat(json.get(IS_VALID).asBoolean()).isTrue();
+        assertThat(json.get("mode").asText()).isEqualTo("advisory");
+        assertThat(json.get(RULES_EVALUATED)).isEmpty();
+        assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
+        assertThat(json.get(WARNINGS)).isEmpty();
+    }
+
     private JsonNode postValidate(final String body) throws Exception {
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
