@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 /**
  * One element of the {@code offences} array in the {@code cpp-context-referencedata-offences}
  * {@code application/vnd.referencedataoffences.offences-list+json} response. The real element
- * carries around 35 fields; this service reads only the fields listed below — every other field
+ * carries around 35 fields (e.g. {@code cjsOffenceCode}, {@code modeOfTrial}, {@code details},
+ * {@code offenceWording}); this service reads only the fields listed below — every other field
  * is ignored rather than mirrored.
  *
  * @param offenceId the reference-data catalog offence id, echoed back from the matched offence

@@ -81,12 +81,22 @@ public abstract class IntegrationTestBase {
 
     /**
      * Catch-all stub for the reference-data offences endpoint that returns
-     * {@code endorsableFlag: true} for any offence code not explicitly stubbed by a test.
-     * This stub has no query-param constraint, so test-specific stubs (which add a
-     * {@code cjsoffencecode} query-param matcher) are always more specific; WireMock selects
-     * the most-specific matching stub first, so the catch-all only fires when no test stub matches.
-     * This prevents DR-END-014 (AC1 and AC2) from firing unexpectedly in tests that do not set up
-     * an endorsableFlag stub for their offence codes.
+     * {@code endorsableFlag: false} (non-endorsable) for any offence code not explicitly stubbed
+     * by a test. This prevents both DR-END-012 and DR-END-014 from firing unexpectedly in tests
+     * that do not set up an endorsableFlag stub:
+     * <ul>
+     *   <li>DR-END-012 ({@code EndorsableOffencePreprocessor}) fires when the offence IS
+     *       endorsable but lacks a satisfying result — returning {@code false} here keeps
+     *       DR-END-012 silent for non-RTA test offence codes (TH68001, AS001, etc.).</li>
+     *   <li>DR-END-014 ({@code NonEndorsableOffencePreprocessor}) fires when the offence is NOT
+     *       endorsable and a trigger result is present — tests that use genuinely endorsable codes
+     *       (RT88026, RA88046, RT88526) with disqualification trigger codes (DDOTE, DDO, etc.)
+     *       must call {@link #stubEndorsableFlagResponse(String, Boolean)} with {@code true} so
+     *       DR-END-014 is correctly suppressed.</li>
+     * </ul>
+     * Tests that reuse offence codes across methods must also clear the Caffeine cache in
+     * {@code @BeforeEach} (see {@code DisqualificationExtendedTestRuleIntegrationTest} and
+     * {@code DrugDrivingCourseReductionRuleIT}) to prevent cross-test cache pollution.
      */
     private static void stubDefaultEndorsableFlagResponse() {
         REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
@@ -94,7 +104,7 @@ public abstract class IntegrationTestBase {
                         .withStatus(200)
                         .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
                         .withBody("{\"offences\":[{\"offenceId\":\"default\","
-                                + "\"cjsOffenceCode\":\"default\",\"endorsableFlag\":true}]}")));
+                                + "\"cjsOffenceCode\":\"default\",\"endorsableFlag\":false}]}")));
     }
 
     /**
@@ -187,12 +197,30 @@ public abstract class IntegrationTestBase {
                   ]
                 }
                 """.formatted(flagJson, offenceCode);
-
         REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
                 .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/vnd.referencedataoffences.offences-list+json")
+                        .withBody(responseBody)));
+    }
+
+    /**
+     * Stubs the reference-data offence lookup for a specific {@code cjsOffenceCode} with a
+     * verbatim JSON response body. Use this for fields not covered by
+     * {@link #stubReferencedataOffenceResponse(String, String)} (e.g. {@code endorsableFlag}).
+     *
+     * @param offenceCode the {@code cjsoffencecode} query value to stub
+     * @param responseBody the raw JSON body to return
+     */
+    protected static void stubReferencedataOffenceRawBody(
+            final String offenceCode, final String responseBody) {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.stubFor(get(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                .withQueryParam(CJS_OFFENCE_CODE_PARAM, equalTo(offenceCode))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type",
+                                "application/vnd.referencedataoffences.offences-list+json")
                         .withBody(responseBody)));
     }
 

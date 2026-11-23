@@ -194,6 +194,12 @@ class NonEndorsableOffenceRuleIT extends IntegrationTestBase {
             performValidate(request)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.warnings[?(@.ruleId=='DR-END-014')]", empty()));
+
+            // The preprocessor short-circuits before calling lookupEndorsability when no
+            // trigger codes are present, so the reference-data endpoint must not be called.
+            REFERENCEDATA_OFFENCE_WIRE_MOCK.verify(0,
+                    getRequestedFor(urlPathEqualTo(REFERENCEDATA_OFFENCE_PATH))
+                            .withQueryParam("cjsoffencecode", equalTo(offenceId)));
         }
     }
 

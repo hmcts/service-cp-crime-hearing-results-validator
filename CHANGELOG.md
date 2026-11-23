@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **DR-DISQ-013** — Drug driving course-reduction disqualification block: raises an ERROR when a
+  drug driving offence (CJS codes `RT88584`, `RT88586`, `RT88584B`, `RT88340`, `RA88045`) has a
+  course-reduction disqualification result (`DDRCO` or `DDRCOT`) recorded against it. Each
+  affected offence receives a separate ERROR at priority 14000; the error blocks sharing until
+  the unlawful result is removed or replaced with a lawful disqualification (e.g. `DDO`).
+  Matching is case-insensitive (CRA-345).
 - **DR-AGE-007** — Imprisonment result age restriction: blocks sharing when a defendant
   under 21 years of age on the hearing date has an imprisonment-type result (`IMP`,
   `EXTIVS`, `SPECC`, `SUSPS`, `SUSPSNR`) recorded against one or more of their offences
@@ -32,6 +38,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `DR-SENT-002` → `DR-SENT-001` (1000), `DR-DISQ-001` → `DR-DISQ-002` (2000),
   `DR-CTL-001` → `DR-CTL-003` (3000), `DR-YRO-001` → `DR-YRO-004` (4000), and the new
   `DR-COEW-005` (5000). Previously each rule category numbered independently from 001.
+- `DR-CONV-006` and `DR-DISQ-002` `excludedFinalShortCodes` extended with `oni`, `dcs`, `DCCFSA`, `DCCFSTA`, `cquash`, `iquash`, `RESTRAO`, `stayp`, `RBBH`, `SOCOR`, `PDW`, `RBBO`. An offence
+  whose final results are drawn solely from the excluded list no longer warns.
+- `DR-CONV-006` and `DR-DISQ-002` `excludedFinalShortCodes` extended with `dnull` (Dismissed -
+  proceedings deemed a nullity).
 - `DR-CTL-003`'s `ctlShortCodes` narrowed to just `CTL`, dropping `CCII`, `CCIIB`, `CCIILA`,
   `CCIITDH`, `CCIIYDA`, `CCQB`.
 - `DR-SENT-001`, `DR-DISQ-002`, `DR-CTL-003`, `DR-YRO-004`, and `DR-COEW-005` now seed

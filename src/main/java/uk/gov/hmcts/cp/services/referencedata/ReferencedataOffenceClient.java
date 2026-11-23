@@ -49,6 +49,7 @@ public class ReferencedataOffenceClient {
     /** Header the {@code cpp-context-referencedata-offences} Drools ACL requires per request. */
     private static final String CJSCPPUID_HEADER = "CJSCPPUID";
 
+    private static final String CACHE_NAME = "referencedataOffences";
     private static final String CUSTODIAL_INDICATOR_Y = "Y";
     private static final String CUSTODIAL_INDICATOR_N = "N";
 
@@ -87,7 +88,7 @@ public class ReferencedataOffenceClient {
      *         reason (lookup disabled, blank code, non-2xx, timeout, malformed body, an empty
      *         {@code offences} list, or missing {@code misCode})
      */
-    @Cacheable(value = "referencedataOffences", key = "#offenceCode", unless = "#result == null")
+    @Cacheable(value = CACHE_NAME, key = "#offenceCode", unless = "#result == null")
     public Optional<String> lookupMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
@@ -114,13 +115,42 @@ public class ReferencedataOffenceClient {
      *         {@code Optional.of("Y")} when explicitly imprisonable,
      *         or {@link Optional#empty()} when the indicator is unknown or the lookup fails
      */
-    @Cacheable(value = "referencedataOffences", key = "'ci:' + #offenceCode", unless = "#result == null")
+    @Cacheable(value = CACHE_NAME, key = "'ci:' + #offenceCode", unless = "#result == null")
     public Optional<String> getCustodialIndicator(final String offenceCode) {
         Optional<String> indicator = Optional.empty();
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
             indicator = fetchCustodialIndicator(offenceCode);
         }
         return indicator;
+    }
+
+    /**
+     * Looks up the {@code endorsableFlag} for an offence, by its {@code cjsOffenceCode}.
+     * Returns {@link Optional#of(Boolean) Optional.of(true)} when endorsable,
+     * {@code Optional.of(false)} when explicitly non-endorsable, or {@link Optional#empty()} on
+     * any failure (fail-open: treat as non-endorsable, no warning). Cached with key prefix
+     * {@code "ef:"} to avoid cross-contamination with misCode (bare key) entries.
+     *
+     * <p><b>Semantic difference from {@link #lookupEndorsability}:</b>
+     * This method is used by {@code DR-END-012} ({@code EndorsableOffencePreprocessor}), which
+     * fires a warning when the offence IS endorsable but lacks an endorsement/disqualification
+     * result. Its fail-open returns {@link Optional#empty()}, which the preprocessor interprets
+     * as "not endorsable → do not fire". {@link #lookupEndorsability} is used by {@code DR-END-014}
+     * ({@code NonEndorsableOffencePreprocessor}), which fires when the offence is NOT endorsable.
+     * Its fail-open returns {@link Endorsability#UNAVAILABLE}, which that preprocessor interprets
+     * as "skip → do not fire". Both methods degrade safely on outage, but callers must not be
+     * swapped — the two preprocessors rely on opposite interpretations of the absent/unknown state.
+     *
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
+     * @return the offence's endorsable flag value, or {@link Optional#empty()} when unavailable
+     */
+    @Cacheable(value = CACHE_NAME, key = "'ef:' + #offenceCode", unless = "#result == null")
+    public Optional<Boolean> getEndorsableFlag(final String offenceCode) {
+        Optional<Boolean> flag = Optional.empty();
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            flag = fetchEndorsableFlag(offenceCode);
+        }
+        return flag;
     }
 
     private Optional<String> fetchCustodialIndicator(final String offenceCode) {
@@ -185,7 +215,7 @@ public class ReferencedataOffenceClient {
      *         is disabled, the code is blank, or the call fails (non-2xx, timeout, malformed body,
      *         empty {@code offences} list)
      */
-    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode",
+    @Cacheable(value = CACHE_NAME, key = "'end:' + #offenceCode",
             unless = "#result == T(uk.gov.hmcts.cp.services.referencedata.Endorsability).UNAVAILABLE")
     public Endorsability lookupEndorsability(final String offenceCode) {
         Endorsability endorsability = Endorsability.UNAVAILABLE;
@@ -210,6 +240,34 @@ public class ReferencedataOffenceClient {
             }
         }
         return endorsability;
+    }
+
+    private Optional<Boolean> fetchEndorsableFlag(final String offenceCode) {
+        Optional<Boolean> flag = Optional.empty();
+        try {
+            final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
+                    .build(Map.of("offenceCode", offenceCode));
+            final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
+                    .header(HttpHeaders.ACCEPT, properties.acceptHeader());
+            final String userId = MDC.get(TracingFilter.USER_ID);
+            if (userId != null && !userId.isBlank()) {
+                requestBuilder.header(CJSCPPUID_HEADER, userId);
+            }
+            final RequestEntity<Void> request = requestBuilder.build();
+            final ResponseEntity<ReferencedataOffencesListResponse> response =
+                    restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
+            final ReferencedataOffenceResponse offence = firstOffenceOf(response.getBody());
+            if (offence != null && offence.endorsableFlag() != null) {
+                flag = Optional.of(offence.endorsableFlag());
+            } else {
+                log.debug("No endorsableFlag returned for offenceCode={} (endorsable flag lookup)",
+                        Encode.forJava(offenceCode));
+            }
+        } catch (RestClientException | IllegalArgumentException e) {
+            log.warn("Reference-data endorsable flag lookup failed for offenceCode={} ({}): {}",
+                    Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
+        }
+        return flag;
     }
 
     private Optional<String> fetchMisCode(final String offenceCode) {
