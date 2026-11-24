@@ -27,7 +27,6 @@ WORKDIR /app
 # ---- Application files ----
 COPY docker/* /app/
 COPY build/libs/*.jar /app/
-COPY lib/applicationinsights.json /app/
 
 USER app
 ENTRYPOINT ["/bin/sh","./startup.sh"]
