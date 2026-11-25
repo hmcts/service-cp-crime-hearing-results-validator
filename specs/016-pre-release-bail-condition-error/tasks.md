@@ -38,7 +38,7 @@ TDD (Principle VIII) requires each failing test to be written and confirmed fail
 
 - [X] T006 Create `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailConditionPreprocessor.java`: `@Component` implementing `ValidationPreprocessor`; `QUALIFIER = "pre-release-bail-condition"`; `type()` returns `QUALIFIER`. Implement `preprocess()` using the three-pass algorithm from `specs/016-pre-release-bail-condition-error/data-model.md`: (Pass 1) scan result lines into `parentCodeByOffence`, `preReleaseOffences`, `defendantByOffence`; (Pass 2) compute hearing-wide `hearingHasRemandAdult` / `hearingHasRemandYouth` flags; (Pass 3) emit one `PreReleaseBailContext` per triggered offence. Build defendant name from `PreprocessorHelper.buildDefendantNames(request)`. Use `PreprocessorHelper.upperSet()` for case-insensitive short-code matching. Age check: `Period.between(dob, hearingDay).getYears() >= 18` (fail-safe to `false` when either date is null). Run `gradle test --tests "*.PreReleaseBailConditionPreprocessorTest"` — all green.
 
-- [X] T007 Create `src/main/resources/db/migration/V1.017__pre_release_bail_condition_error.sql`:
+- [X] T007 Create `src/main/resources/db/migration/V1.017__insert_dr_bail_015.sql`:
   ```sql
   INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)
   VALUES ('DR-BAIL-015', true, 'ERROR', now(), 'system');
@@ -223,7 +223,7 @@ All user story phases (3–7) are independently executable after the foundationa
 # Run together (independent):
 T001: Create DR-BAIL-015.yaml
 T002: Extend PreprocessingDefinition.java with 4 new fields
-T007: Create V1.017__pre_release_bail_condition_error.sql
+T007: Create V1.017__insert_dr_bail_015.sql
 
 # Then sequentially:
 T003 → T004 → T005 → T006

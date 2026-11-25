@@ -39,7 +39,7 @@ Five error messages are produced depending on parent result type and defendant a
 | NEW    | `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailConditionPreprocessor.java` |
 | NEW    | `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContext.java` |
 | MODIFY | `src/main/java/uk/gov/hmcts/cp/services/rules/cel/PreprocessingDefinition.java` (4 new fields) |
-| NEW    | `src/main/resources/db/migration/V1.017__pre_release_bail_condition_error.sql` |
+| NEW    | `src/main/resources/db/migration/V1.017__insert_dr_bail_015.sql` |
 | NEW    | `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailConditionPreprocessorTest.java` |
 | NEW    | `src/test/java/uk/gov/hmcts/cp/services/rules/cel/PreReleaseBailContextTest.java` |
 | NEW    | `src/test/java/uk/gov/hmcts/cp/integration/PreReleaseBailConditionRuleIT.java` |

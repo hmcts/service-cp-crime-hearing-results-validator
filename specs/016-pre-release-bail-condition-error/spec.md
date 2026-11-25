@@ -5,7 +5,7 @@
 **Status**: Draft
 **Jira**: CRA-363
 **Spec Folder**: `specs/016-pre-release-bail-condition-error`
-**SQL Migration**: `V1.017__pre_release_bail_condition_error.sql`
+**SQL Migration**: `V1.017__insert_dr_bail_015.sql`
 **Rule Short Code**: `PRBCE` (≤5 chars)
 
 ---
@@ -192,7 +192,7 @@ When the trigger condition is not present — parent result is not a conditional
 - **FR-016**: The rule MUST NOT trigger for RICD (Remand in Customs detention) parent results.
 - **FR-017**: The rule MUST NOT trigger for Extradition "on conditional bail" results (E1CB, E1CONCB, E2CB, etc.) as they set post-hearing custody status A, not B.
 - **FR-018**: ~~Welsh language versions of all five error messages (A–E) MUST be provided.~~ Not required — confirmed out of scope; English-only messages are the agreed launch scope for this rule, consistent with every other rule currently shipped in this service.
-- **FR-019**: The DB migration `V1.017__pre_release_bail_condition_error.sql` MUST insert the rule record into the `validation_rule` table.
+- **FR-019**: The DB migration `V1.017__insert_dr_bail_015.sql` MUST insert the rule record into the `validation_rule` table.
 - **FR-020**: A `CRA-363.http` file MUST be created for local HTTP testing, covering every AC.
 
 ### Key Entities

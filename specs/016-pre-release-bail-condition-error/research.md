@@ -66,7 +66,7 @@ All four are YAML-configurable in `DR-BAIL-015.yaml`, satisfying Constitution Pr
 
 ## R7 — SQL migration numbering
 
-**Decision**: `V1.017__pre_release_bail_condition_error.sql` — next available after `V1.012__insert_dr_restrao_010.sql`. Inserts `('DR-BAIL-015', true, 'ERROR', now(), 'system')`.
+**Decision**: `V1.017__insert_dr_bail_015.sql` — next available after `V1.012__insert_dr_restrao_010.sql`. Inserts `('DR-BAIL-015', true, 'ERROR', now(), 'system')`.
 
 ---
 

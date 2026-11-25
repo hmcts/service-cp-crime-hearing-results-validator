@@ -315,7 +315,7 @@ The inline `messageTemplate` is still age-specific: Error A for AC_MIXED_ADULT, 
 
 ## Database Migration
 
-**File**: `src/main/resources/db/migration/V1.017__pre_release_bail_condition_error.sql`
+**File**: `src/main/resources/db/migration/V1.017__insert_dr_bail_015.sql`
 
 ```sql
 INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)
@@ -336,7 +336,7 @@ src/main/resources/rules/
 └── DR-BAIL-015.yaml                           (new)
 
 src/main/resources/db/migration/
-└── V1.017__pre_release_bail_condition_error.sql  (new)
+└── V1.017__insert_dr_bail_015.sql  (new)
 
 src/test/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── PreReleaseBailConditionPreprocessorTest.java  (new)

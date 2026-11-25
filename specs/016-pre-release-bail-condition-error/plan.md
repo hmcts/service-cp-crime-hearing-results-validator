@@ -17,7 +17,7 @@ or the message-consolidation framework are needed.
 
 **Language/Version**: Java 25
 **Primary Dependencies**: Spring Boot 4, `org.projectnessie.cel` (CEL engine), Lombok, Flyway
-**Storage**: PostgreSQL 15.3 (`validation_rule` table, migration `V1.017__pre_release_bail_condition_error.sql`)
+**Storage**: PostgreSQL 15.3 (`validation_rule` table, migration `V1.017__insert_dr_bail_015.sql`)
 **Testing**: JUnit 5 + Mockito + AssertJ (unit), TestContainers + MockMvc (IT), RestTemplate (API)
 **Target Platform**: Spring Boot service on JVM, deployed on Azure / Kubernetes
 **Project Type**: Spring Boot REST service
@@ -61,7 +61,7 @@ src/main/resources/rules/
 └── DR-BAIL-015.yaml                           (NEW)
 
 src/main/resources/db/migration/
-└── V1.017__pre_release_bail_condition_error.sql  (NEW)
+└── V1.017__insert_dr_bail_015.sql  (NEW)
 
 src/main/java/uk/gov/hmcts/cp/services/rules/cel/
 ├── PreReleaseBailConditionPreprocessor.java   (NEW)
@@ -217,7 +217,7 @@ PASS 3 — emit contexts
 ## SQL Migration
 
 ```sql
--- V1.017__pre_release_bail_condition_error.sql
+-- V1.017__insert_dr_bail_015.sql
 INSERT INTO validation_rule (id, enabled, severity, updated_at, updated_by)
 VALUES ('DR-BAIL-015', true, 'ERROR', now(), 'system');
 ```
