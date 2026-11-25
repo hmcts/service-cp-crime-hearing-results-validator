@@ -55,7 +55,7 @@ Overrides are written via `PATCH /api/validation/rules/{ruleId}` (`ValidationRul
 - **Fail-open:** any failure (disabled, timeout, non-2xx, malformed body) returns `Optional.empty()` and the dependent warning is not raised.
 - **Caching:** Caffeine cache `referencedataOffences`, successful results only (`unless = "#result == null"`); custodial-indicator and endorsable keys carry `ci:` / `ef:` prefixes so they never collide with the unprefixed `misCode` key.
 - **Identity:** forwards the inbound `CJSCPPUID` from MDC (`TracingFilter.USER_ID`) for the downstream Drools ACL.
-- **Config:** `referencedata.offences.*` in `application.yaml` — `CP_BASE_URL`, `REFERENCEDATA_OFFENCES_ENABLED`, connect/read timeouts (2000/3000 ms), cache TTL (3600 s). Integration tests stub it via WireMock (`wiremock/mappings/referencedataoffences-*.json`).
+- **Config:** `referencedata.offences.*` in `application.yaml` — `CP_BASE_URL`, `REFERENCEDATA_OFFENCES_ENABLED`, connect/read timeouts (2000/3000 ms), cache TTL (3600 s). The `gradle api` docker-compose stack stubs it via WireMock (`wiremock/mappings/referencedataoffences-*.json`).
 
 ### Feature Toggle
 
