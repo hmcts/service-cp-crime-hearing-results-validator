@@ -15,7 +15,7 @@ rule:
   conditions:
     - id: "AC2"
       name: "Multiple offences missing info"
-      expression: "noInfoCount > 1"
+      expression: "noInfoCount > 0"
       severity: ERROR
       messageTemplate: >-
         Offence/counts ${offenceNumbers} do not include details of whether
@@ -60,7 +60,7 @@ Rule files are located in `src/main/resources/rules/`.
 
 ### Runtime Rule Overrides
 
-Rules can be toggled or have their severity adjusted at runtime via the `validation_rule` database table, without redeployment.
+Rules can be toggled or have their severity adjusted at runtime, without redeployment, via `PATCH /api/validation/rules/{ruleId}` (body: `enabled` and/or `severity`). Overrides are stored in the `validation_rule` database table; the caller's `CJSCPPUID` is recorded in `updated_by`.
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -117,6 +117,14 @@ This project uses [GitHub Spec Kit](https://github.com/github/spec-kit) for spec
 | POST | `/api/validation/validate` | Validate draft hearing results |
 | GET | `/api/validation/rules` | List all validation rules |
 | GET | `/api/validation/rules/{ruleId}` | Get rule detail by ID |
+| PATCH | `/api/validation/rules/{ruleId}` | Update a rule's runtime override (`enabled`, `severity` ceiling) |
+
+## External Dependencies
+
+| Dependency | Used by | Configuration | Failure behaviour |
+|------------|---------|---------------|-------------------|
+| Reference-data offences (`referencedataoffences-query-api`) | DR-SEX-008 (`misCode`), DR-SENT-011 (custodial indicator), DR-END-012 (endorsable flag) | `CP_BASE_URL`, `REFERENCEDATA_OFFENCES_ENABLED` (default `true`), `REFERENCEDATA_OFFENCES_CONNECT_TIMEOUT_MS` (2000), `REFERENCEDATA_OFFENCES_READ_TIMEOUT_MS` (3000), `REFERENCEDATA_OFFENCES_CACHE_TTL` (3600s) | Fail-open: lookup failures return no value and the dependent warning is not raised. Only successful lookups are cached. The inbound `CJSCPPUID` is forwarded for the downstream ACL. |
+| Azure App Configuration | `RESULTS_VALIDATION` feature toggle | `FEATURE_MANAGER_CONNECTION_STRING` | When disabled, `/validate` returns success with `mode="disabled"`. |
 
 ## Prerequisites
 
@@ -165,7 +173,7 @@ gradle api        # API tests
 This project uses `.env` and `.envrc` files for environment variable management.
 
 **Quick Setup:**
-1. Install `direnv`: `brew install direnv`
+1. Install `direnv`: `brew install direnv` (macOS) or your distro's package manager (e.g. `sudo apt install direnv`)
 2. Add to shell: `echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc`
 3. Allow direnv: `direnv allow`
 4. Create `.env` file with your local configuration
@@ -185,7 +193,9 @@ See the [Environment Variables Guide](docs/EnvironmentVariables.md) for full det
 ## Static Code Analysis
 
 ```bash
-gradle pmdTest
+gradle checkstyleMain   # Checkstyle (Google style, zero warnings allowed)
+gradle pmdMain          # PMD on main sources
+gradle pmdTest          # PMD on test sources
 ```
 
 ## License
