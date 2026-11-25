@@ -8,9 +8,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
 
 /**
@@ -32,21 +35,32 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
     private static final String VALIDATE_URL = "/api/validation/validate";
     private static final String DR_DISQ_013_ERRORS =
             "$.errors.validationIssues[?(@.ruleId=='DR-DISQ-013')]";
-
     private static final String EXPECTED_MESSAGE =
             "You cannot add a disqualification with a reduction for attending a course "
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification.";
-
     private static final String EXPECTED_MESSAGE_WITH_DEFENDANT =
             "You cannot add a disqualification with a reduction for attending a course "
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification. This affects: Alex Driver.";
-
     private static final String EXPECTED_MESSAGE_WITH_TWO_DEFENDANTS =
             "You cannot add a disqualification with a reduction for attending a course "
                     + "to a drug driving offence. Remove this result and add the correct "
                     + "disqualification. This affects: Alex Driver and Sam Smith.";
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /**
+     * Resets all reference-data WireMock stubs and clears the Caffeine cache before each
+     * test. RT88584 is reused across scenarios; without both resets a Caffeine entry from
+     * one test would serve stale endorsability data to the next.
+     */
+    @BeforeEach
+    void resetReferencedataWireMock() {
+        REFERENCEDATA_OFFENCE_WIRE_MOCK.resetAll();
+        cacheManager.getCache("referencedataOffences").clear();
+    }
 
     @Nested
     @DisplayName("Ac1TriggeringPaths — all five offence codes and both short codes")
@@ -196,6 +210,9 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
 
         @Test
         void ac4_replacing_ddrco_with_ddo_should_produce_no_error() throws Exception {
+            // RT88584 must be endorsable: DDO is both a DR-END-014 trigger and a DR-END-012
+            // satisfying code, so endorsable avoids both rules firing.
+            stubEndorsableFlagResponse("RT88584", true);
             mockMvc.perform(post(VALIDATE_URL)
                             .header("CJSCPPUID", "test-user")
                             .header("CPP-ACTION", "validation-service.validate")
@@ -318,6 +335,9 @@ class DrugDrivingCourseReductionRuleIT extends IntegrationTestBase {
 
         @Test
         void ac6_ddo_on_triggering_offence_should_not_produce_error() throws Exception {
+            // RT88584 must be endorsable: DDO is both a DR-END-014 trigger and a DR-END-012
+            // satisfying code, so endorsable avoids both rules firing.
+            stubEndorsableFlagResponse("RT88584", true);
             mockMvc.perform(post(VALIDATE_URL)
                             .header("CJSCPPUID", "test-user")
                             .header("CPP-ACTION", "validation-service.validate")

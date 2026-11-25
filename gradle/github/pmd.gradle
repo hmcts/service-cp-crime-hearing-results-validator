@@ -7,8 +7,8 @@ pmd {
   toolVersion = "7.29.0"
 }
 
-// src/test gets its own ruleset -- same base, minus a few rules that are inapplicable to test
-// code or false-positive against this project's own test conventions (see the ruleset file).
+// src/test and src/apiTest get the test ruleset -- same base, minus rules that are inapplicable
+// to test code or false-positive against this project's test conventions (see the ruleset file).
 tasks.named("pmdTest").configure {
   ruleSetFiles = files(".github/pmd-test-ruleset.xml")
 }

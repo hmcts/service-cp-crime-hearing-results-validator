@@ -33,7 +33,7 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
 2. Each YAML file becomes a `CelValidationRule` bean (sorted by priority)
 3. `DefaultValidationService.validate()` iterates all rules, calling `rule.evaluate(request)`
 4. `CelValidationRule.evaluate()` runs the preprocessing pipeline, then evaluates CEL conditions:
-   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (fourteen registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`, `SexualOffenceNotificationPreprocessor`, `ConditionalBailPreprocessor`, `ApplicationResultOffencePreprocessor`, `RestrainingOrderMultiplePersonsPreprocessor`, `NonImprisonableOffencePreprocessor`, `EndorsableOffencePreprocessor`, `DrugDrivingCourseReductionPreprocessor`), failing fast if the qualifier has no match
+   - `PreprocessorRegistry.require(preprocessing.type)` resolves the rule's `ValidationPreprocessor` bean (fifteen registered: `CustodialPreprocessor`, `DisqualificationExtendedTestPreprocessor`, `CtlMissingPreprocessor`, `YouthRehabilitationPreprocessor`, `CommunityOrderEndDatePreprocessor`, `NoConvictionPreprocessor`, `AgeRestrictedImprisonmentPreprocessor`, `SexualOffenceNotificationPreprocessor`, `ConditionalBailPreprocessor`, `ApplicationResultOffencePreprocessor`, `RestrainingOrderMultiplePersonsPreprocessor`, `NonImprisonableOffencePreprocessor`, `EndorsableOffencePreprocessor`, `DrugDrivingCourseReductionPreprocessor`, `NonEndorsableOffencePreprocessor`), failing fast if the qualifier has no match
    - `preprocessor.preprocess()` transforms hearing result lines into a context record (e.g. `DefendantContext`, counts like `noInfoCount`, `hasBothCount`, etc.)
    - the context's `toCelContext()` converts it to `Map<String, Long>` for CEL evaluation
    - `CelExpressionEvaluator` compiles and caches CEL expressions
@@ -50,10 +50,10 @@ Overrides are written via `PATCH /api/validation/rules/{ruleId}` (`ValidationRul
 
 ### Reference-Data Offences Lookup
 
-`ReferencedataOffenceClient` is the service's outbound call to `referencedataoffences-query-api` (looked up by `cjsOffenceCode`). It backs three preprocessors: `SexualOffenceNotificationPreprocessor` (`misCode`, DR-SEX-008), `NonImprisonableOffencePreprocessor` (custodial indicator, DR-SENT-011) and `EndorsableOffencePreprocessor` (endorsable flag, DR-END-012).
+`ReferencedataOffenceClient` is the service's outbound call to `referencedataoffences-query-api` (looked up by `cjsOffenceCode`). It backs four preprocessors: `SexualOffenceNotificationPreprocessor` (`misCode`, DR-SEX-008), `NonImprisonableOffencePreprocessor` (custodial indicator, DR-SENT-011), `EndorsableOffencePreprocessor` (endorsable flag via `getEndorsableFlag`, DR-END-012) and `NonEndorsableOffencePreprocessor` (`Endorsability` via `lookupEndorsability`, DR-END-014).
 
 - **Fail-open:** any failure (disabled, timeout, non-2xx, malformed body) returns `Optional.empty()` and the dependent warning is not raised.
-- **Caching:** Caffeine cache `referencedataOffences`, successful results only (`unless = "#result == null"`); custodial-indicator and endorsable keys carry `ci:` / `ef:` prefixes so they never collide with the unprefixed `misCode` key.
+- **Caching:** Caffeine cache `referencedataOffences`, successful results only (`unless = "#result == null"`); custodial-indicator, endorsable-flag and endorsability keys carry `ci:` / `ef:` / `end:` prefixes so they never collide with the unprefixed `misCode` key (`Endorsability.UNAVAILABLE` is never cached).
 - **Identity:** forwards the inbound `CJSCPPUID` from MDC (`TracingFilter.USER_ID`) for the downstream Drools ACL.
 - **Config:** `referencedata.offences.*` in `application.yaml` — `CP_BASE_URL`, `REFERENCEDATA_OFFENCES_ENABLED`, connect/read timeouts (2000/3000 ms), cache TTL (3600 s). The `gradle api` docker-compose stack stubs it via WireMock (`wiremock/mappings/referencedataoffences-*.json`).
 
@@ -96,5 +96,5 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-[specs/013-drug-driving-course-disq-error/plan.md](specs/013-drug-driving-course-disq-error/plan.md)
+[specs/015-non-endorsable-offence-warning/plan.md](specs/015-non-endorsable-offence-warning/plan.md)
 <!-- SPECKIT END -->

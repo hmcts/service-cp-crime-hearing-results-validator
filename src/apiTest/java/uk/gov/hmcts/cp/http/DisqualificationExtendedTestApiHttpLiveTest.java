@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -160,16 +161,26 @@ class DisqualificationExtendedTestApiHttpLiveTest {
 
         final JsonNode json = postValidate(body);
 
+        // RT88026 (dangerous driving) is endorsable: DR-END-012 also fires alongside DR-DISQ-002
+        // because COEW is a qualifying category-F result with no endorsement/disqualification.
         assertThat(json.get(IS_VALID).asBoolean()).isTrue();
         assertThat(json.get(ERRORS).get(VALIDATION_ISSUES)).isEmpty();
-        assertThat(json.get(WARNINGS)).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("ruleId").asText()).isEqualTo(RULE_ID);
-        assertThat(json.get(WARNINGS).get(0).get("severity").asText()).isEqualTo("WARNING");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences")).hasSize(1);
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("offenceId").asText())
+        assertThat(json.get(WARNINGS)).hasSize(2);
+        final JsonNode disq002Warning = findWarningByRuleId(json, RULE_ID);
+        assertThat(disq002Warning).isNotNull();
+        assertThat(disq002Warning.get("severity").asText()).isEqualTo("WARNING");
+        assertThat(disq002Warning.get("affectedOffences")).hasSize(1);
+        assertThat(disq002Warning.get("affectedOffences").get(0).get("offenceId").asText())
                 .isEqualTo("off1");
-        assertThat(json.get(WARNINGS).get(0).get("affectedOffences").get(0).get("message").asText())
+        assertThat(disq002Warning.get("affectedOffences").get(0).get("message").asText())
                 .isEqualToIgnoringWhitespace(EXPECTED_MESSAGE);
+    }
+
+    private JsonNode findWarningByRuleId(final JsonNode json, final String ruleId) {
+        return StreamSupport.stream(json.get(WARNINGS).spliterator(), false)
+                .filter(w -> ruleId.equals(w.get("ruleId").asText()))
+                .findFirst()
+                .orElse(null);
     }
 
     private List<String> rulesEvaluated(final JsonNode json) {
