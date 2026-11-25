@@ -51,5 +51,17 @@ public record PreprocessingDefinition(
 
         // Non-endorsable-offence-warning fields (used by NonEndorsableOffencePreprocessor)
         List<String> endorsementShortCodes,
-        List<String> disqualificationTriggerShortCodes) {
+        List<String> disqualificationTriggerShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: remand-type conditional bail parent short codes
+        List<String> remandConditionalBailShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: CCIC parent short code(s)
+        List<String> ccicShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: CCSC parent short code(s)
+        List<String> ccscShortCodes,
+
+        // PreReleaseBailConditionPreprocessor: pre-release bail condition child short codes
+        List<String> preReleaseBailConditionShortCodes) {
 }

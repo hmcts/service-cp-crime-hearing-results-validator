@@ -43,6 +43,7 @@ Rule files are located in `src/main/resources/rules/`.
 | DR-END-012 | Endorsement/disqualification missing on endorsable offence |
 | DR-DISQ-013 | Drug driving offence with course-reduction disqualification (DDRCO / DDRCOT) block |
 | DR-END-014 | Endorsement or disqualification result on non-endorsable offence |
+| DR-BAIL-015 | Pre-release bail conditions on a conditional bail result |
 
 ### Adding a New Rule
 
@@ -55,7 +56,7 @@ Rule files are located in `src/main/resources/rules/`.
 > **Preprocessor dispatch is data-driven.** `ValidationPreprocessor` beans register themselves
 > under a `type()` qualifier; `PreprocessorRegistry` builds a qualifier → bean map at startup
 > (failing fast on a duplicate qualifier) and `CelValidationRule` resolves each rule's preprocessor
-> via `PreprocessorRegistry.require(preprocessing.type)`. Fifteen preprocessors are registered today
+> via `PreprocessorRegistry.require(preprocessing.type)`. Sixteen preprocessors are registered today
 > (one per rule above); adding a new one is a case of implementing `ValidationPreprocessor` with a
 > new qualifier and pointing a rule's YAML `preprocessing.type` at it — no dispatch code to touch.
 

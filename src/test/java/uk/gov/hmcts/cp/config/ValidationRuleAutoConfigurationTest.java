@@ -28,6 +28,7 @@ import uk.gov.hmcts.cp.services.rules.cel.MessageTemplateResolver;
 import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.NonEndorsableOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.NonImprisonableOffencePreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.PreReleaseBailConditionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 import uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
@@ -57,7 +58,8 @@ class ValidationRuleAutoConfigurationTest {
             new NonImprisonableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
             new NonEndorsableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
             new EndorsableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
-            new DrugDrivingCourseReductionPreprocessor()));
+            new DrugDrivingCourseReductionPreprocessor(),
+            new PreReleaseBailConditionPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -92,12 +94,13 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(15);
+        assertThat(rules).hasSize(16);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
                 .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
                     "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009",
-                    "DR-RESTRAO-010", "DR-SENT-011", "DR-END-012", "DR-DISQ-013", "DR-END-014");
+                    "DR-RESTRAO-010", "DR-SENT-011", "DR-END-012", "DR-DISQ-013", "DR-END-014",
+                    "DR-BAIL-015");
     }
 
     /**
@@ -115,7 +118,7 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(15);
+        assertThat(rules).hasSize(16);
 
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId(), ValidationRule::getPriority)
@@ -134,7 +137,8 @@ class ValidationRuleAutoConfigurationTest {
                         tuple("DR-SENT-011",   12_000),
                         tuple("DR-END-012",    13_000),
                         tuple("DR-DISQ-013",   14_000),
-                        tuple("DR-END-014",    15_000));
+                        tuple("DR-END-014",    15_000),
+                        tuple("DR-BAIL-015",   16_000));
 
         assertThat(rules)
                 .extracting(ValidationRule::getPriority)

@@ -13,6 +13,10 @@ tasks.named("pmdTest").configure {
   ruleSetFiles = files(".github/pmd-test-ruleset.xml")
 }
 
+tasks.matching { it.name == 'pmdApiTest' }.configureEach {
+  ruleSetFiles = files(".github/pmd-test-ruleset.xml")
+}
+
 tasks.withType(Pmd) {
   reports {
     xml.required.set(true)

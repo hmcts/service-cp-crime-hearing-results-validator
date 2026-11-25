@@ -25,15 +25,15 @@ class ValidationRulesControllerIntegrationTest extends IntegrationTestBase {
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.rules"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.count", is(15)))
-                // All 15 rules ship enabled by their Flyway seed migrations.
-                .andExpect(jsonPath("$.enabledCount", is(15)))
-                .andExpect(jsonPath("$.rules", hasSize(15)))
+                .andExpect(jsonPath("$.count", is(16)))
+                // All 16 rules ship enabled by their Flyway seed migrations.
+                .andExpect(jsonPath("$.enabledCount", is(16)))
+                .andExpect(jsonPath("$.rules", hasSize(16)))
                 .andExpect(jsonPath("$.rules[*].ruleId",
                         contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
                                 "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008",
                                 "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011",
-                                "DR-END-012", "DR-DISQ-013", "DR-END-014")));
+                                "DR-END-012", "DR-DISQ-013", "DR-END-014", "DR-BAIL-015")));
     }
 
     /**

@@ -1,0 +1,165 @@
+rule:
+  id: "DR-BAIL-015"
+  title: "Pre-release bail conditions on a conditional bail result"
+  description: >-
+    Blocks sharing when a conditional bail parent result has one or more pre-release
+    bail condition results as child results on the same offence. Pre-release conditions
+    are only valid under a remand in custody with a bail direction; attaching them to a
+    conditional bail result is contradictory.
+  priority: 16000
+  enabled: true
+
+  preprocessing:
+    type: "pre-release-bail-condition"
+    remandConditionalBailShortCodes:
+      - RC
+      - RCBV
+      - BAILREVC
+      - REMCB
+      - REMCBY
+      - RCCCB
+    ccicShortCodes:
+      - CCIC
+    ccscShortCodes:
+      - CCSC
+    preReleaseBailConditionShortCodes:
+      - PREBC
+      - PRBCO
+      - PRBCP1
+      - PRBCP2
+      - PRBCP3
+      - PRBCP4
+      - PRBCP5
+      - PRBCP6
+      - PRBCP7
+      - PRBCP8
+      - PRBCS1
+      - PRBCS2
+      - PRBCS3
+      - PRBCSE1
+      - PRBCSE2
+      - PRBCT
+
+  conditions:
+    - id: "AC_ADULT"
+      name: "Adult defendant — remand on conditional bail with pre-release conditions (adult-only hearing)"
+      expression: "isRemandBail == 1 && isAdult == 1 && hasDob == 1 && hearingHasRemandYouth == 0"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        instead. If the conditions apply after release, remove the pre-release conditions
+        and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        instead. If the conditions apply after release, remove the pre-release conditions
+        and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_YOUTH"
+      name: "Youth defendant — remand on conditional bail with pre-release conditions (youth-only hearing)"
+      expression: "isRemandBail == 1 && isYouth == 1 && hasDob == 1 && hearingHasRemandAdult == 0"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remand in care of Local Authority with bail
+        direction (RILAB)' instead. If the conditions apply after release, remove the
+        pre-release conditions and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remand in care of Local Authority with bail
+        direction (RILAB)' instead. If the conditions apply after release, remove the
+        pre-release conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_MIXED_ADULT"
+      name: "Adult defendant — remand on conditional bail with pre-release conditions (mixed adult+youth hearing, inline)"
+      expression: "isRemandBail == 1 && isAdult == 1 && hasDob == 1 && hearingHasRemandYouth == 1"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        instead. If the conditions apply after release, remove the pre-release conditions
+        and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        for an adult or 'Remand in care of Local Authority with bail direction (RILAB)' for
+        a youth instead. If the conditions apply after release, remove the pre-release
+        conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_MIXED_YOUTH"
+      name: "Youth defendant — remand on conditional bail with pre-release conditions (mixed adult+youth hearing, inline)"
+      expression: "isRemandBail == 1 && isYouth == 1 && hasDob == 1 && hearingHasRemandAdult == 1"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remand in care of Local Authority with bail
+        direction (RILAB)' instead. If the conditions apply after release, remove the
+        pre-release conditions and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        for an adult or 'Remand in care of Local Authority with bail direction (RILAB)' for
+        a youth instead. If the conditions apply after release, remove the pre-release
+        conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_NODOB"
+      name: "Unknown-age defendant — remand on conditional bail with pre-release conditions (no date of birth)"
+      expression: "isRemandBail == 1 && hasDob == 0"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        for an adult or 'Remand in care of Local Authority with bail direction (RILAB)' for
+        a youth instead. If the conditions apply after release, remove the pre-release
+        conditions and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Remanded in custody with bail direction (RIB)'
+        for an adult or 'Remand in care of Local Authority with bail direction (RILAB)' for
+        a youth instead. If the conditions apply after release, remove the pre-release
+        conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_CCIC"
+      name: "Sent to Crown Court for trial on conditional bail (CCIC) with pre-release conditions"
+      expression: "isCcic == 1"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Sent to Crown Court in custody for trial with
+        bail direction (CCIIB)' instead. If the conditions apply after release, remove the
+        pre-release conditions and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Sent to Crown Court in custody for trial with
+        bail direction (CCIIB)' instead. If the conditions apply after release, remove the
+        pre-release conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
+
+    - id: "AC_CCSC"
+      name: "Committed to Crown Court for sentence on conditional bail (CCSC) with pre-release conditions"
+      expression: "isCcsc == 1"
+      severity: ERROR
+      messageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Committed to Crown Court for sentence - in
+        custody with bail direction (CCSIB)' instead. If the conditions apply after release,
+        remove the pre-release conditions and enter them as bail conditions.
+      errorMessageTemplate: >-
+        A conditional bail result cannot have pre-release bail conditions. If the court
+        ordered pre-release conditions, use 'Committed to Crown Court for sentence - in
+        custody with bail direction (CCSIB)' instead. If the conditions apply after release,
+        remove the pre-release conditions and enter them as bail conditions. This affects: ${defendantNames}.
+      affectedOffenceSet: "triggeredOffenceId"
+      validationLevel: OFFENCE
