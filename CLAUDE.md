@@ -46,6 +46,17 @@ The core of this service is a rule engine that evaluates hearing data using CEL 
 
 Database severity overrides act as a ceiling, not a replacement. `SeverityCeiling.resolve()` caps condition severities downward (ERROR -> WARNING) but never upgrades them.
 
+Overrides are written via `PATCH /api/validation/rules/{ruleId}` (`ValidationRulesController.updateValidationRule` → `DefaultValidationRulesService.updateRule`), which accepts `enabled` and/or `severity` and records the caller's `CJSCPPUID` in `updated_by`.
+
+### Reference-Data Offences Lookup
+
+`ReferencedataOffenceClient` is the service's outbound call to `referencedataoffences-query-api` (looked up by `cjsOffenceCode`). It backs three preprocessors: `SexualOffenceNotificationPreprocessor` (`misCode`, DR-SEX-008), `NonImprisonableOffencePreprocessor` (custodial indicator, DR-SENT-011) and `EndorsableOffencePreprocessor` (endorsable flag, DR-END-012).
+
+- **Fail-open:** any failure (disabled, timeout, non-2xx, malformed body) returns `Optional.empty()` and the dependent warning is not raised.
+- **Caching:** Caffeine cache `referencedataOffences`, successful results only (`unless = "#result == null"`); custodial-indicator and endorsable keys carry `ci:` / `ef:` prefixes so they never collide with the unprefixed `misCode` key.
+- **Identity:** forwards the inbound `CJSCPPUID` from MDC (`TracingFilter.USER_ID`) for the downstream Drools ACL.
+- **Config:** `referencedata.offences.*` in `application.yaml` — `CP_BASE_URL`, `REFERENCEDATA_OFFENCES_ENABLED`, connect/read timeouts (2000/3000 ms), cache TTL (3600 s). The `gradle api` docker-compose stack stubs it via WireMock (`wiremock/mappings/referencedataoffences-*.json`).
+
 ### Feature Toggle
 
 Validation is gated by a `RESULTS_VALIDATION` feature flag in Azure App Configuration, checked via `AzureFeatureToggleService`. When disabled, the service returns a success response with `mode="disabled"`.
@@ -77,7 +88,7 @@ The base package `uk.gov.hmcts.cp` means Spring auto-scans beans from HMCTS libr
 - **PMD:** Custom ruleset (`.github/pmd-ruleset.xml`), `ignoreFailures = false`
 - **No wildcard imports** -- use explicit imports for each class
 - Test naming: `{action}_{scenario}_should_{expectation}` for methods; `@Nested` classes with `@DisplayName` for grouped scenarios
-- Docker health checks use `bash /dev/tcp` (JRE image lacks curl)
+- Docker image installs `curl` (for debugging); the only compose health check is Postgres `pg_isready`
 - Default server port: `4550` (override via `SERVER_PORT` env var)
 - **Spec-driven workflow**: features flow through `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`. The constitution at `.specify/memory/constitution.md` is authoritative for principles (YAML/CEL Rule-First, TDD, SLF4J-only / no `System.out`, severity-ceiling never-promote, etc.). Branches use Jira-id prefix (e.g. `DD-41656-...`).
 - **Local speckit patches**: `SPECKIT-LOCAL-PATCH:` markers identify files diverged from upstream — `.specify/scripts/bash/{common,setup-plan,check-prerequisites}.sh`, `.specify/extensions/git/scripts/bash/{create-new-feature,auto-commit}.sh`, and `.claude/skills/speckit-git-feature/SKILL.md`. Re-apply after `specify extension update`.
