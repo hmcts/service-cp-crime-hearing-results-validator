@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **DR-BAIL-016** — Pre-release bail condition warning: raises a WARNING when a conditional bail
+  result (`RC`, `RCBV`, `BAILREVC`, `REMCB`, `REMCBY`, `RCCCB`, or Crown Court `CCIC` / `CCSC`)
+  is recorded alongside a bail condition typically used as a pre-release condition (`PASS1`–`PASS8`,
+  `PORSC`, `PORS`) for a defendant currently in custody, local-authority care, or youth detention.
+  Message varies by adult / youth / unknown age and by `CCIC` / `CCSC`, pointing at the correct
+  "with bail direction" result (`RIB`, `RILAB`, `CCIIB`, `CCSIB`). Advisory only, priority 17000,
+  new `PreReleaseBailPreprocessor` (qualifier `pre-release-bail-warning`), seeded enabled by
+  `V1.018__insert_dr_bail_016.sql` (CRA-362).
+- **DR-BAIL-015** — Pre-release bail conditions on a conditional bail result: raises an ERROR when
+  a conditional bail parent result (`RC`, `RCBV`, `BAILREVC`, `REMCB`, `REMCBY`, `RCCCB`, `CCIC`,
+  `CCSC`) has one or more pre-release bail condition child results (`PREBC`, `PRBCO`, `PRBCP1`–`PRBCP8`,
+  `PRBCS1`–`PRBCS3`, `PRBCSE1`, `PRBCSE2`, `PRBCT`) on the same offence. Message steers the user to the
+  correct "with bail direction" result per adult / youth / unknown age and per `CCIC` / `CCSC`,
+  including mixed adult+youth hearings. Blocks sharing, priority 16000, new
+  `PreReleaseBailConditionPreprocessor` (qualifier `pre-release-bail-condition`), seeded enabled by
+  `V1.017__insert_dr_bail_015.sql` (CRA-363).
+- **DR-END-014** — Endorsement or disqualification on a non-endorsable offence: raises a WARNING
+  when an endorsement result (`LEP`, `LEN`, `LEA`) or an endorsable-offence disqualification result
+  (`DDO`/`DDD`/`DDP` families plus `DDRCOT`) is recorded against an offence whose reference data
+  `endorsableFlag` is `false` or absent. Uses the new `ReferencedataOffenceClient.lookupEndorsability`
+  (cache key prefix `end:`), which fails open — an unavailable lookup raises no warning and is not
+  cached. Advisory only, priority 15000, new `NonEndorsableOffencePreprocessor`, seeded enabled by
+  `V1.016__insert_dr_end_014.sql` (CRA-337).
 - **DR-DISQ-013** — Drug driving course-reduction disqualification block: raises an ERROR when a
   drug driving offence (CJS codes `RT88584`, `RT88586`, `RT88584B`, `RT88340`, `RA88045`) has a
   course-reduction disqualification result (`DDRCO` or `DDRCOT`) recorded against it. Each

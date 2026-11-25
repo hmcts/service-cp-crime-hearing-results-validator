@@ -19,11 +19,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import uk.gov.hmcts.cp.filters.tracing.TracingFilter;
 
 /**
- * Fail-open client for the {@code cpp-context-referencedata-offences} offence classification
- * lookup. Any failure (timeout, non-2xx, malformed body, or missing {@code misCode}) returns
- * {@link Optional#empty()} rather than propagating — {@code DR-SEX-008} can only ever produce a
+ * Fail-open client for the {@code cpp-context-referencedata-offences} offence lookup, used by
+ * {@code DR-SEX-008} ({@link #lookupMisCode(String)}) and {@code DR-END-014} ({@link
+ * #lookupEndorsability(String)}). Any failure (timeout, non-2xx, malformed body) degrades to "no
+ * answer" — {@link Optional#empty()} for {@code misCode}, {@link Endorsability#UNAVAILABLE} for
+ * endorsability — rather than propagating, and is never cached. Both rules only ever produce a
  * {@code WARNING}, so a downstream outage degrading to "no warning" is preferable to blocking the
- * whole {@code /validate} response. Mirrors the fail-open convention already used by this
+ * whole {@code /validate} response or raising false warnings. Mirrors the fail-open convention already used by this
  * codebase's identity lookup ({@code IdentityClient}, in the {@code cp-auth-rules-filter}
  * library) and its own {@code AzureAppConfigFetcher}. See
  * {@code specs/009-sexual-offence-norr-warning/contracts/referencedata-offences-integration.md}.
@@ -47,6 +49,7 @@ public class ReferencedataOffenceClient {
     /** Header the {@code cpp-context-referencedata-offences} Drools ACL requires per request. */
     private static final String CJSCPPUID_HEADER = "CJSCPPUID";
 
+    private static final String CACHE_NAME = "referencedataOffences";
     private static final String CUSTODIAL_INDICATOR_Y = "Y";
     private static final String CUSTODIAL_INDICATOR_N = "N";
 
@@ -85,7 +88,7 @@ public class ReferencedataOffenceClient {
      *         reason (lookup disabled, blank code, non-2xx, timeout, malformed body, an empty
      *         {@code offences} list, or missing {@code misCode})
      */
-    @Cacheable(value = "referencedataOffences", key = "#offenceCode", unless = "#result == null")
+    @Cacheable(value = CACHE_NAME, key = "#offenceCode", unless = "#result == null")
     public Optional<String> lookupMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
@@ -112,7 +115,7 @@ public class ReferencedataOffenceClient {
      *         {@code Optional.of("Y")} when explicitly imprisonable,
      *         or {@link Optional#empty()} when the indicator is unknown or the lookup fails
      */
-    @Cacheable(value = "referencedataOffences", key = "'ci:' + #offenceCode", unless = "#result == null")
+    @Cacheable(value = CACHE_NAME, key = "'ci:' + #offenceCode", unless = "#result == null")
     public Optional<String> getCustodialIndicator(final String offenceCode) {
         Optional<String> indicator = Optional.empty();
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
@@ -128,10 +131,20 @@ public class ReferencedataOffenceClient {
      * any failure (fail-open: treat as non-endorsable, no warning). Cached with key prefix
      * {@code "ef:"} to avoid cross-contamination with misCode (bare key) entries.
      *
+     * <p><b>Semantic difference from {@link #lookupEndorsability}:</b>
+     * This method is used by {@code DR-END-012} ({@code EndorsableOffencePreprocessor}), which
+     * fires a warning when the offence IS endorsable but lacks an endorsement/disqualification
+     * result. Its fail-open returns {@link Optional#empty()}, which the preprocessor interprets
+     * as "not endorsable → do not fire". {@link #lookupEndorsability} is used by {@code DR-END-014}
+     * ({@code NonEndorsableOffencePreprocessor}), which fires when the offence is NOT endorsable.
+     * Its fail-open returns {@link Endorsability#UNAVAILABLE}, which that preprocessor interprets
+     * as "skip → do not fire". Both methods degrade safely on outage, but callers must not be
+     * swapped — the two preprocessors rely on opposite interpretations of the absent/unknown state.
+     *
      * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
      * @return the offence's endorsable flag value, or {@link Optional#empty()} when unavailable
      */
-    @Cacheable(value = "referencedataOffences", key = "'ef:' + #offenceCode", unless = "#result == null")
+    @Cacheable(value = CACHE_NAME, key = "'ef:' + #offenceCode", unless = "#result == null")
     public Optional<Boolean> getEndorsableFlag(final String offenceCode) {
         Optional<Boolean> flag = Optional.empty();
         if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
@@ -187,6 +200,48 @@ public class ReferencedataOffenceClient {
         return result;
     }
 
+    /**
+     * Looks up whether an offence is endorsable, by its {@code cjsOffenceCode}.
+     *
+     * <p>A successful response with {@code endorsableFlag} null or missing is {@link
+     * Endorsability#NON_ENDORSABLE} — CRA-337 treats "has no value" as {@code 0}. Any failure to
+     * get an answer is {@link Endorsability#UNAVAILABLE}, which {@code DR-END-014} treats as "no
+     * warning" — the same fail-open posture as {@link #lookupMisCode(String)}, so an outage does
+     * not raise a warning against every genuinely endorsable offence. {@code UNAVAILABLE} is never
+     * cached, so the next validation request retries once the dependency recovers.
+     *
+     * @param offenceCode the offence's CJS offence code ({@code OffenceDto.getOffenceCode()})
+     * @return {@code ENDORSABLE}, {@code NON_ENDORSABLE}, or {@code UNAVAILABLE} when the lookup
+     *         is disabled, the code is blank, or the call fails (non-2xx, timeout, malformed body,
+     *         empty {@code offences} list)
+     */
+    @Cacheable(value = CACHE_NAME, key = "'end:' + #offenceCode",
+            unless = "#result == T(uk.gov.hmcts.cp.services.referencedata.Endorsability).UNAVAILABLE")
+    public Endorsability lookupEndorsability(final String offenceCode) {
+        Endorsability endorsability = Endorsability.UNAVAILABLE;
+        if (properties.enabled() && offenceCode != null && !offenceCode.isBlank()) {
+            endorsability = fetchEndorsability(offenceCode);
+        }
+        return endorsability;
+    }
+
+    private Endorsability fetchEndorsability(final String offenceCode) {
+        Endorsability endorsability = Endorsability.UNAVAILABLE;
+        final ReferencedataOffenceResponse offence = fetchOffenceResponse(offenceCode);
+        if (offence != null) {
+            if (Boolean.TRUE.equals(offence.endorsableFlag())) {
+                endorsability = Endorsability.ENDORSABLE;
+            } else {
+                if (offence.endorsableFlag() == null) {
+                    log.debug("No endorsableFlag returned for offenceCode={}; treating as non-endorsable",
+                            Encode.forJava(offenceCode));
+                }
+                endorsability = Endorsability.NON_ENDORSABLE;
+            }
+        }
+        return endorsability;
+    }
+
     private Optional<Boolean> fetchEndorsableFlag(final String offenceCode) {
         Optional<Boolean> flag = Optional.empty();
         try {
@@ -217,11 +272,27 @@ public class ReferencedataOffenceClient {
 
     private Optional<String> fetchMisCode(final String offenceCode) {
         Optional<String> misCode = Optional.empty();
+        final ReferencedataOffenceResponse offence = fetchOffenceResponse(offenceCode);
+        if (offence != null && offence.misCode() != null && !offence.misCode().isBlank()) {
+            misCode = Optional.of(offence.misCode());
+        } else if (offence != null) {
+            log.debug("No misCode returned for offenceCode={}", Encode.forJava(offenceCode));
+        }
+        return misCode;
+    }
+
+    /**
+     * Executes the HTTP lookup for a given offence code and returns the first matching
+     * {@link ReferencedataOffenceResponse}, or {@code null} on any failure (timeout, non-2xx,
+     * malformed body, or empty offences list). Callers map the response field they need.
+     *
+     * <p>UriComponentsBuilder percent-encodes the expanded {@code {offenceCode}} template
+     * variable, so a value containing reserved URI characters ({@code /}, {@code ?}, {@code #},
+     * …) is treated as an opaque query value rather than altering the resulting path/query.
+     */
+    private ReferencedataOffenceResponse fetchOffenceResponse(final String offenceCode) {
+        ReferencedataOffenceResponse offence = null;
         try {
-            // UriComponentsBuilder percent-encodes the expanded {offenceCode} template
-            // variable, unlike a raw String.replace, so a value containing reserved URI
-            // characters (/, ?, #, ...) is treated as an opaque query value rather than
-            // altering the resulting path/query.
             final URI uri = UriComponentsBuilder.fromUriString(properties.offenceUrlTemplate())
                     .build(Map.of("offenceCode", offenceCode));
             final RequestEntity.HeadersBuilder<?> requestBuilder = RequestEntity.get(uri)
@@ -233,18 +304,12 @@ public class ReferencedataOffenceClient {
             final RequestEntity<Void> request = requestBuilder.build();
             final ResponseEntity<ReferencedataOffencesListResponse> response =
                     restTemplate.exchange(request, ReferencedataOffencesListResponse.class);
-            final ReferencedataOffencesListResponse body = response.getBody();
-            final ReferencedataOffenceResponse offence = firstOffenceOf(body);
-            if (offence != null && offence.misCode() != null && !offence.misCode().isBlank()) {
-                misCode = Optional.of(offence.misCode());
-            } else {
-                log.debug("No misCode returned for offenceCode={}", Encode.forJava(offenceCode));
-            }
+            offence = firstOffenceOf(response.getBody());
         } catch (RestClientException | IllegalArgumentException e) {
             log.warn("Reference-data offence lookup failed for offenceCode={} ({}): {}",
                     Encode.forJava(offenceCode), e.getClass().getSimpleName(), e.getMessage());
         }
-        return misCode;
+        return offence;
     }
 
     /**
@@ -255,7 +320,7 @@ public class ReferencedataOffenceClient {
     private ReferencedataOffenceResponse firstOffenceOf(final ReferencedataOffencesListResponse body) {
         ReferencedataOffenceResponse offence = null;
         if (body != null && body.offences() != null && !body.offences().isEmpty()) {
-            offence = body.offences().get(0);
+            offence = body.offences().getFirst();
         }
         return offence;
     }
