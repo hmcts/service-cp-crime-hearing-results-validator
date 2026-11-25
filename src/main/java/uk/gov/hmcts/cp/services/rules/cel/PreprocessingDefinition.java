@@ -63,5 +63,10 @@ public record PreprocessingDefinition(
         List<String> ccscShortCodes,
 
         // PreReleaseBailConditionPreprocessor: pre-release bail condition child short codes
-        List<String> preReleaseBailConditionShortCodes) {
+        List<String> preReleaseBailConditionShortCodes,
+
+        // PreReleaseBailPreprocessor: remand bail change detection
+        List<String> conditionalBailResultCodes,
+        List<String> crownCourtBailCodes,
+        List<String> triggerBailConditionCodes) {
 }

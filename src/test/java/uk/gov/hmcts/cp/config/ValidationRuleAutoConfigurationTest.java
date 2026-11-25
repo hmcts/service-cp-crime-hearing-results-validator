@@ -29,6 +29,7 @@ import uk.gov.hmcts.cp.services.rules.cel.NoConvictionPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.NonEndorsableOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.NonImprisonableOffencePreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreReleaseBailConditionPreprocessor;
+import uk.gov.hmcts.cp.services.rules.cel.PreReleaseBailPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.PreprocessorRegistry;
 import uk.gov.hmcts.cp.services.rules.cel.RestrainingOrderMultiplePersonsPreprocessor;
 import uk.gov.hmcts.cp.services.rules.cel.SexualOffenceNotificationPreprocessor;
@@ -38,6 +39,27 @@ import uk.gov.hmcts.cp.services.rules.cel.YouthRehabilitationPreprocessor;
  * Tests for YAML-driven validation rule discovery.
  */
 class ValidationRuleAutoConfigurationTest {
+
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-DISQ-013",
+            "DR-END-014",
+            "DR-BAIL-015",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 17;
 
     private final ValidationRuleAutoConfiguration config = new ValidationRuleAutoConfiguration();
 
@@ -59,7 +81,8 @@ class ValidationRuleAutoConfigurationTest {
             new NonEndorsableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
             new EndorsableOffencePreprocessor(mock(ReferencedataOffenceClient.class)),
             new DrugDrivingCourseReductionPreprocessor(),
-            new PreReleaseBailConditionPreprocessor()));
+            new PreReleaseBailConditionPreprocessor(),
+            new PreReleaseBailPreprocessor()));
 
     private final ValidationIssueRecorder issueRecorder =
             new ValidationIssueRecorder(new SimpleMeterRegistry());
@@ -86,6 +109,7 @@ class ValidationRuleAutoConfigurationTest {
      */
     @Test
     void should_create_one_rule_per_yaml_file() throws IOException {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         List<ValidationRule> rules = config.validationRules(
                 preprocessorRegistry,
                 new CelExpressionEvaluator(),
@@ -94,13 +118,10 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(16);
+        assertThat(rules).hasSize(RULE_COUNT);
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId())
-                .containsExactlyInAnyOrder("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                    "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008", "DR-URG-008", "DR-APP-009",
-                    "DR-RESTRAO-010", "DR-SENT-011", "DR-END-012", "DR-DISQ-013", "DR-END-014",
-                    "DR-BAIL-015");
+                .containsExactlyInAnyOrder(ALL_RULE_IDS.toArray(String[]::new));
     }
 
     /**
@@ -110,6 +131,7 @@ class ValidationRuleAutoConfigurationTest {
      */
     @Test
     void should_have_unique_priorities_and_expected_rule_id_priority_pairs() throws IOException {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         List<ValidationRule> rules = config.validationRules(
                 preprocessorRegistry,
                 new CelExpressionEvaluator(),
@@ -118,7 +140,7 @@ class ValidationRuleAutoConfigurationTest {
                 mock(RuleOverrideService.class),
                 issueRecorder);
 
-        assertThat(rules).hasSize(16);
+        assertThat(rules).hasSize(RULE_COUNT);
 
         assertThat(rules)
                 .extracting(r -> r.getRuleDetail().getRuleId(), ValidationRule::getPriority)
@@ -138,7 +160,8 @@ class ValidationRuleAutoConfigurationTest {
                         tuple("DR-END-012",    13_000),
                         tuple("DR-DISQ-013",   14_000),
                         tuple("DR-END-014",    15_000),
-                        tuple("DR-BAIL-015",   16_000));
+                        tuple("DR-BAIL-015",   16_000),
+                        tuple("DR-BAIL-016",   17_000));
 
         assertThat(rules)
                 .extracting(ValidationRule::getPriority)

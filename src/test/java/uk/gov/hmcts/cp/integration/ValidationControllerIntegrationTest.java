@@ -1,5 +1,6 @@
 package uk.gov.hmcts.cp.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
@@ -10,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
@@ -24,6 +26,27 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
     private static final String SENT_001_SUMMARY =
             "Some offences do not include details of whether they are concurrent or"
                     + " consecutive. Only the primary offence should not have this information.";
+
+    private static final List<String> ALL_RULE_IDS = List.of(
+            "DR-SENT-001",
+            "DR-DISQ-002",
+            "DR-CTL-003",
+            "DR-YRO-004",
+            "DR-COEW-005",
+            "DR-CONV-006",
+            "DR-AGE-007",
+            "DR-SEX-008",
+            "DR-URG-008",
+            "DR-APP-009",
+            "DR-RESTRAO-010",
+            "DR-SENT-011",
+            "DR-END-012",
+            "DR-DISQ-013",
+            "DR-END-014",
+            "DR-BAIL-015",
+            "DR-BAIL-016"
+    );
+    private static final int RULE_COUNT = 17;
 
     private static final String EMPTY_ARRAYS_REQUEST = """
             {
@@ -114,6 +137,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
      */
     @Test
     void validate_empty_arrays_should_return_valid() throws Exception {
+        assertThat(ALL_RULE_IDS).hasSize(RULE_COUNT);
         mockMvc.perform(post(VALIDATE_URL)
                         .header("CJSCPPUID", "test-user")
                         .header("CPP-ACTION", "validation-service.validate")
@@ -127,10 +151,7 @@ class ValidationControllerIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.errors.validationIssues", empty()))
                 .andExpect(jsonPath("$.warnings", empty()))
                 .andExpect(jsonPath("$.rulesEvaluated",
-                        contains("DR-SENT-001", "DR-DISQ-002", "DR-CTL-003", "DR-YRO-004",
-                                "DR-COEW-005", "DR-CONV-006", "DR-AGE-007", "DR-SEX-008",
-                                "DR-URG-008", "DR-APP-009", "DR-RESTRAO-010", "DR-SENT-011",
-                                "DR-END-012", "DR-DISQ-013", "DR-END-014", "DR-BAIL-015")));
+                        contains(ALL_RULE_IDS.toArray(String[]::new))));
     }
 
     /**
